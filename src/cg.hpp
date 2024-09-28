@@ -6,7 +6,7 @@
 
 std::string generate_random_string(size_t length);
 
-enum class OpKind { NIL, ADD, SUB, MUL, COS, SIN, VALUE };
+enum class OpKind { NIL, ADD, SUB, MUL, COS, SIN, VALIABLE, ZERO, ONE };
 
 struct Operation : std::enable_shared_from_this<Operation> {
   using Ptr = std::shared_ptr<Operation>;
@@ -18,9 +18,12 @@ struct Operation : std::enable_shared_from_this<Operation> {
                                Operation::Ptr rhs,
                                OpKind kind);
   static Operation::Ptr make_value(std::string&& name);
+  static Operation::Ptr make_zero();
+  static Operation::Ptr make_one();
   std::vector<Operation::Ptr> get_leafs();
   void unroll(const std::vector<std::string>& arg_names);
-  inline bool is_unary() const { return lhs != nullptr && rhs == nullptr; }
+  inline bool is_nullaryop() const { return lhs == nullptr && rhs == nullptr; }
+  inline bool is_unaryop() const { return lhs != nullptr && rhs == nullptr; }
 
   // member variables
   OpKind kind;

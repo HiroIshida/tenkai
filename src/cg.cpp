@@ -34,9 +34,6 @@ Operation::Ptr Operation::create(Operation::Ptr lhs,
                                  Operation::Ptr rhs,
                                  OpKind kind) {
   auto op = std::make_shared<Operation>(lhs, rhs, kind);
-  if (lhs == nullptr) {
-    throw std::runtime_error("lhs is nullptr");
-  }
   lhs->requireds.push_back(op);
   if (rhs != nullptr) {
     rhs->requireds.push_back(op);
@@ -46,8 +43,20 @@ Operation::Ptr Operation::create(Operation::Ptr lhs,
 
 Operation::Ptr Operation::make_value(std::string&& name) {
   Operation::Ptr value = std::make_shared<Operation>(name);
-  value->kind = OpKind::VALUE;
+  value->kind = OpKind::VALIABLE;
   return value;
+}
+
+Operation::Ptr Operation::make_zero() {
+  Operation::Ptr zero = std::make_shared<Operation>("0.0");
+  zero->kind = OpKind::ZERO;
+  return zero;
+}
+
+Operation::Ptr Operation::make_one() {
+  Operation::Ptr one = std::make_shared<Operation>("1.0");
+  one->kind = OpKind::ONE;
+  return one;
 }
 
 std::vector<Operation::Ptr> Operation::get_leafs() {
@@ -60,7 +69,7 @@ std::vector<Operation::Ptr> Operation::get_leafs() {
   while (!stack.empty()) {
     auto op = stack.top();
     stack.pop();
-    if (op->kind == OpKind::VALUE) {
+    if (op->kind == OpKind::VALIABLE) {
       leafs.push_back(op);
     } else {
       if (!is_added(op->lhs)) {

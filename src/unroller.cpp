@@ -10,10 +10,13 @@ void Operation::unroll(const std::vector<std::string>& input_args) {
   while (!opstack.empty()) {
     auto op = opstack.top();
     opstack.pop();
-    if (op->kind != OpKind::VALUE) {
+    if (op->kind != OpKind::VALIABLE && op->kind != OpKind::ONE &&
+        op->kind != OpKind::ZERO) {
       operations.push_back(op);
-      opstack.push(op->lhs);
-      if (!op->is_unary()) {
+      if (op->lhs != nullptr) {
+        opstack.push(op->lhs);
+      }
+      if (op->rhs != nullptr) {
         opstack.push(op->rhs);
       }
     }
@@ -25,13 +28,10 @@ void Operation::unroll(const std::vector<std::string>& input_args) {
     if (is_evaluated.find(op->name) != is_evaluated.end()) {
       continue;
     }
-    if (op->kind == OpKind::VALUE) {
-      std::cout << "// value " << op->name << std::endl;
-      continue;
-    }
-
     std::cout << "double " << op->name << " = ";
-    if (op->is_unary()) {
+    if (op->is_nullaryop()) {
+      throw std::runtime_error("must not reach here");
+    } else if (op->is_unaryop()) {
       switch (op->kind) {
         case OpKind::COS:
           std::cout << "cos(";

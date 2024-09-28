@@ -8,8 +8,8 @@ int main() {
   auto q2 = Operation::make_value("q2");
   auto m = q0 + q1 + q2;
   auto mm = m * m;
-  auto mmm = m * mm;
-  auto mmmm = m * mmm;
+  auto mmm = m * mm + Operation::make_one();
+  auto mmmm = m * mmm + Operation::make_zero();
   auto tmp = m + mm + mmm + mmmm;
   auto ret = cos(tmp) + sin(tmp);
   std::vector<std::string> inputs = {"q0", "q1", "q2"};
