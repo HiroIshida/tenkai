@@ -1,11 +1,14 @@
+#include <dlfcn.h>
+#include <fstream>
+#include <iostream>
+#include <stack>
 #include <unordered_map>
 #include "cg.hpp"
-#include "iostream"
-#include "stack"
 
 void flatten(const std::string& func_name,
              const std::vector<Operation::Ptr>& inputs,
              const std::vector<Operation::Ptr>& outputs,
+             std::ostream& strm,
              const FlattenType type) {
   std::vector<Operation::Ptr> operations;
   std::stack<Operation::Ptr> opstack;
@@ -42,9 +45,10 @@ void flatten(const std::string& func_name,
   };
 
   // code generation
-  std::cout << "#include <cmath>" << std::endl;
+  strm << "#include <cmath>" << std::endl;
+  strm << "extern \"C\" {" << std::endl;
   if (type == FlattenType::TEMPLATE) {
-    std::cout << "template <typename T>" << std::endl;
+    strm << "template <typename T>" << std::endl;
   }
   auto type_name = [](FlattenType type) -> std::string {
     switch (type) {
@@ -58,8 +62,8 @@ void flatten(const std::string& func_name,
         throw std::runtime_error("unknown type");
     }
   };
-  std::cout << "void flattend_" << func_name << "(" << type_name(type)
-            << "* input, " << type_name(type) << "* output) {" << std::endl;
+  strm << "void flattend_" << func_name << "(" << type_name(type) << "* input, "
+       << type_name(type) << "* output) {" << std::endl;
 
   std::unordered_map<std::string, bool> is_evaluated;
   for (auto it = operations.rbegin(); it != operations.rend(); ++it) {
@@ -68,44 +72,66 @@ void flatten(const std::string& func_name,
       continue;
     }
     if (remapped_name(op).find("output") == std::string::npos) {
-      std::cout << "  auto " << remapped_name(op) << " = ";
+      strm << "  auto " << remapped_name(op) << " = ";
     } else {
-      std::cout << "  " << remapped_name(op) << " = ";
+      strm << "  " << remapped_name(op) << " = ";
     }
     if (op->is_nullaryop()) {
       throw std::runtime_error("must not reach here");
     } else if (op->is_unaryop()) {
       switch (op->kind) {
         case OpKind::COS:
-          std::cout << "cos(" << remapped_name(op->lhs) << ");" << std::endl;
+          strm << "cos(" << remapped_name(op->lhs) << ");" << std::endl;
           break;
         case OpKind::SIN:
-          std::cout << "sin(" << remapped_name(op->lhs) << ");" << std::endl;
+          strm << "sin(" << remapped_name(op->lhs) << ");" << std::endl;
           break;
         case OpKind::NEGATE:
-          std::cout << "-" << remapped_name(op->lhs) << ";" << std::endl;
+          strm << "-" << remapped_name(op->lhs) << ";" << std::endl;
           break;
         default:
           throw std::runtime_error("unknown operator");
       }
     } else {
-      std::cout << remapped_name(op->lhs) << " ";
+      strm << remapped_name(op->lhs) << " ";
       switch (op->kind) {
         case OpKind::ADD:
-          std::cout << "+";
+          strm << "+";
           break;
         case OpKind::SUB:
-          std::cout << "-";
+          strm << "-";
           break;
         case OpKind::MUL:
-          std::cout << "*";
+          strm << "*";
           break;
         default:
           throw std::runtime_error("unknown operator");
       }
-      std::cout << " " << remapped_name(op->rhs) << ";" << std::endl;
+      strm << " " << remapped_name(op->rhs) << ";" << std::endl;
     }
     is_evaluated[remapped_name(op)] = true;
   }
-  std::cout << "}" << std::endl;
+  strm << "}" << std::endl;
+  strm << "}" << std::endl;  // for extern "C"
+}
+
+jit_func_t jit_compile(const std::string& func_name,
+                       const std::vector<Operation::Ptr>& inputs,
+                       const std::vector<Operation::Ptr>& outputs,
+                       const FlattenType type) {
+  auto fs = std::ofstream("/tmp/hoge.cpp");
+  flatten(func_name, inputs, outputs, fs, type);
+  fs.close();
+  std::string cmd = "gcc -O3 -shared -fPIC /tmp/hoge.cpp -o /tmp/hoge.so";
+  system(cmd.c_str());
+  void* lib = dlopen("/tmp/hoge.so", RTLD_LAZY);
+  if (lib == nullptr) {
+    throw std::runtime_error("dlopen failed");
+  }
+  std::string sym = "flattend_" + func_name;
+  auto func = reinterpret_cast<jit_func_t>(dlsym(lib, sym.c_str()));
+  if (func == nullptr) {
+    throw std::runtime_error("dlsym failed");
+  }
+  return func;
 }

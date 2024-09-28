@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <ostream>
 #include <string>
 #include <vector>
 
@@ -36,7 +37,14 @@ enum class FlattenType { TEMPLATE, DOUBLE, FLOAT };
 void flatten(const std::string& func_name,
              const std::vector<Operation::Ptr>& inputs,
              const std::vector<Operation::Ptr>& outputs,
+             std::ostream& strm,
              const FlattenType type = FlattenType::DOUBLE);
+
+using jit_func_t = void (*)(double*, double*);
+jit_func_t jit_compile(const std::string& func_name,
+                       const std::vector<Operation::Ptr>& inputs,
+                       const std::vector<Operation::Ptr>& outputs,
+                       const FlattenType type = FlattenType::DOUBLE);
 
 Operation::Ptr operator+(Operation::Ptr lhs, Operation::Ptr rhs);
 Operation::Ptr operator-(Operation::Ptr lhs, Operation::Ptr rhs);
