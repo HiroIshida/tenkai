@@ -21,7 +21,6 @@ struct Operation : std::enable_shared_from_this<Operation> {
   static Operation::Ptr make_zero();
   static Operation::Ptr make_one();
   std::vector<Operation::Ptr> get_leafs();
-  void unroll(const std::vector<std::string>& arg_names);
   inline bool is_nullaryop() const { return lhs == nullptr && rhs == nullptr; }
   inline bool is_unaryop() const { return lhs != nullptr && rhs == nullptr; }
 
@@ -32,6 +31,10 @@ struct Operation : std::enable_shared_from_this<Operation> {
   std::string name;
   std::vector<WeakPtr> requireds;
 };
+
+void unroll(const std::string& func_name,
+            const std::vector<Operation::Ptr>& inputs,
+            const std::vector<Operation::Ptr>& outputs);
 
 Operation::Ptr operator+(Operation::Ptr lhs, Operation::Ptr rhs);
 Operation::Ptr operator-(Operation::Ptr lhs, Operation::Ptr rhs);

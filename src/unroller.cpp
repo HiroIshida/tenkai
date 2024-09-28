@@ -3,10 +3,14 @@
 #include "iostream"
 #include "stack"
 
-void Operation::unroll(const std::vector<std::string>& input_args) {
+void unroll(const std::string& func_name,
+            const std::vector<Operation::Ptr>& inputs,
+            const std::vector<Operation::Ptr>& outputs) {
   std::vector<Operation::Ptr> operations;
   std::stack<Operation::Ptr> opstack;
-  opstack.push(shared_from_this());
+  for (auto& output : outputs) {
+    opstack.push(output);
+  }
   while (!opstack.empty()) {
     auto op = opstack.top();
     opstack.pop();
@@ -22,45 +26,56 @@ void Operation::unroll(const std::vector<std::string>& input_args) {
     }
   }
 
-  auto remap = [&](const std::string& name) {
-    for (int i = 0; i < input_args.size(); i++) {
-      if (input_args[i] == name) {
+  auto remapped_name = [&](const Operation::Ptr op) -> std::string {
+    for (size_t i = 0; i < inputs.size(); ++i) {
+      if (inputs[i] == op) {
         return "input[" + std::to_string(i) + "]";
       }
     }
-    return name;
+    for (size_t i = 0; i < outputs.size(); ++i) {
+      if (outputs[i] == op) {
+        return "output[" + std::to_string(i) + "]";
+      }
+    }
+    return op->name;
   };
 
+  // code generation
   std::cout << "#include <cmath>" << std::endl;
   std::cout << "template <typename T>" << std::endl;
-  std::cout << "T "
-            << "unrolled_" << name << "(T* input) {" << std::endl;
+  std::cout << "void "
+            << "unrolled_" << func_name << "(T* input, T* output) {"
+            << std::endl;
 
   std::unordered_map<std::string, bool> is_evaluated;
   for (auto it = operations.rbegin(); it != operations.rend(); ++it) {
     auto op = *it;
-    if (is_evaluated.find(remap(op->name)) != is_evaluated.end()) {
+    if (is_evaluated.find(remapped_name(op)) != is_evaluated.end()) {
       continue;
     }
-    std::cout << "  auto " << remap(op->name) << " = ";
+    if (remapped_name(op).find("output") == std::string::npos) {
+      std::cout << "  auto " << remapped_name(op) << " = ";
+    } else {
+      std::cout << "  " << remapped_name(op) << " = ";
+    }
     if (op->is_nullaryop()) {
       throw std::runtime_error("must not reach here");
     } else if (op->is_unaryop()) {
       switch (op->kind) {
         case OpKind::COS:
-          std::cout << "cos(" << remap(op->lhs->name) << ");" << std::endl;
+          std::cout << "cos(" << remapped_name(op->lhs) << ");" << std::endl;
           break;
         case OpKind::SIN:
-          std::cout << "sin(" << remap(op->lhs->name) << ");" << std::endl;
+          std::cout << "sin(" << remapped_name(op->lhs) << ");" << std::endl;
           break;
         case OpKind::NEGATE:
-          std::cout << "-" << remap(op->lhs->name) << ";" << std::endl;
+          std::cout << "-" << remapped_name(op->lhs) << ";" << std::endl;
           break;
         default:
           throw std::runtime_error("unknown operator");
       }
     } else {
-      std::cout << remap(op->lhs->name) << " ";
+      std::cout << remapped_name(op->lhs) << " ";
       switch (op->kind) {
         case OpKind::ADD:
           std::cout << "+";
@@ -74,10 +89,9 @@ void Operation::unroll(const std::vector<std::string>& input_args) {
         default:
           throw std::runtime_error("unknown operator");
       }
-      std::cout << " " << remap(op->rhs->name) << ";" << std::endl;
+      std::cout << " " << remapped_name(op->rhs) << ";" << std::endl;
     }
-    is_evaluated[remap(op->name)] = true;
+    is_evaluated[remapped_name(op)] = true;
   }
-  std::cout << "  return " << name << ";" << std::endl;
   std::cout << "}" << std::endl;
 }

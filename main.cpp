@@ -5,29 +5,26 @@
 #include "linalg.hpp"
 
 int main() {
-  auto q0 = Operation::make_var("q0");
-  auto q1 = Operation::make_var("q1");
-  auto q2 = Operation::make_var("q2");
-  std::vector<std::string> inputs = {"q0", "q1", "q2"};
+  auto inp0 = Operation::make_var("q0");
+  auto inp1 = Operation::make_var("q1");
+  auto inp2 = Operation::make_var("q2");
 
-  {
-    std::cout << "ARITHMETIC EXAMPLE >>" << std::endl;
-    auto m = q0 + q1 + q2;
-    auto mm = m * m;
-    auto mmm = m * mm + Operation::make_one();
-    auto mmmm = m * mmm + Operation::make_zero();
-    auto tmp = m + mm + mmm + mmmm;
-    auto ret = cos(tmp) + sin(tmp) + cos(Operation::make_zero()) + sin(Operation::make_zero());
-    ret->unroll(inputs);
-  }
+  auto A = Matrix3::RotX(inp0);
+  auto B = Matrix3::RotY(inp1);
+  auto C = Matrix3::RotZ(inp2);
+  auto v = Vector3({inp0, inp1, inp2});
+  auto Av = (A * v);
+  auto BAv = (B * Av);
+  auto CBAv = (C * BAv);
+  auto out1 = Av.sum();
+  auto out2 = BAv.sum();
+  auto out3 = CBAv.sqnorm();
+  auto out4 = CBAv.get(0);
+  auto out5 = (Av + BAv + CBAv).sqnorm();
 
-  {
-    std::cout << "LINALG EXAMPLE >>" << std::endl;
-    auto A = Matrix3::RotX(q0);
-    auto B = Matrix3::RotY(q1);
-    auto C = Matrix3::RotZ(q2);
-    auto b = Vector3({q0, q1, q2});
-    auto c = ((A * b) + (B * b) + (C * b)).sum();
-    c->unroll(inputs);
-  }
+  std::vector<Operation::Ptr> inputs = {inp0, inp1, inp2};
+  std::vector<Operation::Ptr> outputs = {out1, out2, out3, out4, out5};
+
+  std::string func_name = "example";
+  unroll(func_name, inputs, outputs);
 }

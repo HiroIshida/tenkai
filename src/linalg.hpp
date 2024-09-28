@@ -5,6 +5,10 @@
 struct Vector3 {
   std::array<Operation::Ptr, 3> elements;
   Operation::Ptr sum() { return elements[0] + elements[1] + elements[2]; };
+  Operation::Ptr sqnorm() {
+    return elements[0] * elements[0] + elements[1] * elements[1] +
+           elements[2] * elements[2];
+  };
   Operation::Ptr get(size_t i) const { return elements[i]; };
   Vector3 operator+(const Vector3& v);
 };
