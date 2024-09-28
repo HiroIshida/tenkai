@@ -6,6 +6,8 @@
 #include <unordered_map>
 #include "cg.hpp"
 
+namespace tenkai {
+
 void flatten(const std::string& func_name,
              const std::vector<Operation::Ptr>& inputs,
              const std::vector<Operation::Ptr>& outputs,
@@ -151,3 +153,5 @@ template JitFunc<float> jit_compile<float>(
     const std::vector<Operation::Ptr>& inputs,
     const std::vector<Operation::Ptr>& outputs,
     const std::string& backend);
+
+}  // namespace tenkai

@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+namespace tenkai {
+
 std::string generate_random_string(size_t length);
 
 enum class OpKind { NIL, ADD, SUB, MUL, COS, SIN, NEGATE, VALIABLE, ZERO, ONE };
@@ -55,3 +57,5 @@ Operation::Ptr operator*(Operation::Ptr lhs, Operation::Ptr rhs);
 Operation::Ptr cos(Operation::Ptr op);
 Operation::Ptr sin(Operation::Ptr op);
 Operation::Ptr negate(Operation::Ptr op);
+
+}  // namespace tenkai

@@ -4,6 +4,8 @@
 #include <stack>
 #include <stdexcept>
 
+namespace tenkai {
+
 std::string generate_random_string(size_t length) {
   // c++ does not have a built-in random string generator??
   const std::string charset =
@@ -131,3 +133,5 @@ Operation::Ptr negate(Operation::Ptr op) {
   }
   return Operation::create(op, nullptr, OpKind::NEGATE);
 }
+
+};

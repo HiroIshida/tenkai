@@ -1,5 +1,7 @@
 #include "linalg.hpp"
 
+namespace tenkai {
+
 Vector3 Vector3::operator+(const Vector3& v) {
   std::array<Operation::Ptr, 3> elements;
   for (size_t i = 0; i < 3; i++) {
@@ -81,4 +83,6 @@ Matrix3 Matrix3::operator*(const Matrix3& m) {
     }
   }
   return Matrix3({elements});
+}
+
 }

@@ -7,6 +7,8 @@
 #include "cg.hpp"
 #include "linalg.hpp"
 
+using namespace tenkai;
+
 auto gen_jit_func() {
   auto inp0 = Operation::make_var();
   auto inp1 = Operation::make_var();
