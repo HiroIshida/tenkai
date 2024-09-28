@@ -1,20 +1,21 @@
 ## tenkai
-For a given computation graph, tenkai generates a flattened (i.e. fully inlined, elimination of unnecessary operations...) c++ code, which can be easily optimized by the compiler.
-Future TODO is use LLVM to generate optimized machine code runtime.
+Given a computation graph, tenkai performs runtime C++ code generation and conducts a super-naive just-in-time (JIT) compilation. The generated 'flattened' C++ code is easily optimizable by C++ compilers because it's fully inlined and all needless operations have been removed. It's super-naive because we call `system("g++ ..")` to create a .so file and load it using `dlopen` and `dlsym` runtime;c. I'm honestly not sure if this qualifies as JIT compilation in the normal sense. An obvious todo is to generate IR code and apply LLVM compilation, but the current implementation is actually sufficient for my research purposes. 
 
 ### example
 Create computation graph
 ```cpp
-#include <iostream>
 #include <string>
 #include <vector>
 #include "cg.hpp"
 #include "linalg.hpp"
 
+using namespace tenkai;
+
 int main() {
-  auto inp0 = Operation::make_var("q0");
-  auto inp1 = Operation::make_var("q1");
-  auto inp2 = Operation::make_var("q2");
+  // define computation graph
+  auto inp0 = Operation::make_var();
+  auto inp1 = Operation::make_var();
+  auto inp2 = Operation::make_var();
 
   auto A = Matrix3::RotX(inp0);
   auto B = Matrix3::RotY(inp1);
@@ -29,17 +30,22 @@ int main() {
   auto out4 = CBAv.get(0);
   auto out5 = (Av + BAv + CBAv).sqnorm();
 
+  // define inputs and outputs order
   std::vector<Operation::Ptr> inputs = {inp0, inp1, inp2};
   std::vector<Operation::Ptr> outputs = {out1, out2, out3, out4, out5};
 
-  std::string func_name = "example";
-  flatten(func_name, inputs, outputs);
-}
+  // compile
+  auto f = jit_compile<double>(inputs, outputs, "g++"); // or clang
+
+  // run
+  double input[3] = {0.1, 0.2, 0.3};
+  double output[5];
+  f(input, output);
 ```
-which generates the following "flattened" c++ code
+
+Also you can check the intermediate flattend c++ code by calling `tenkai::flatten` function as
 ```cpp
-template <typename T>
-void flatten_example(T* input, T* output) {
+void example(double* input, double* output) {
   auto dwbzUTzq = cos(input[0]);
   auto lwAxgRDg = dwbzUTzq * input[1];
   auto qNdstjvw = sin(input[0]);
