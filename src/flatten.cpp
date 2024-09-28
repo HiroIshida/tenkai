@@ -5,7 +5,8 @@
 
 void flatten(const std::string& func_name,
              const std::vector<Operation::Ptr>& inputs,
-             const std::vector<Operation::Ptr>& outputs) {
+             const std::vector<Operation::Ptr>& outputs,
+             const FlattenType type) {
   std::vector<Operation::Ptr> operations;
   std::stack<Operation::Ptr> opstack;
   for (auto& output : outputs) {
@@ -42,10 +43,23 @@ void flatten(const std::string& func_name,
 
   // code generation
   std::cout << "#include <cmath>" << std::endl;
-  std::cout << "template <typename T>" << std::endl;
-  std::cout << "void "
-            << "flattend_" << func_name << "(T* input, T* output) {"
-            << std::endl;
+  if (type == FlattenType::TEMPLATE) {
+    std::cout << "template <typename T>" << std::endl;
+  }
+  auto type_name = [](FlattenType type) -> std::string {
+    switch (type) {
+      case FlattenType::TEMPLATE:
+        return "T";
+      case FlattenType::DOUBLE:
+        return "double";
+      case FlattenType::FLOAT:
+        return "float";
+      default:
+        throw std::runtime_error("unknown type");
+    }
+  };
+  std::cout << "void flattend_" << func_name << "(" << type_name(type)
+            << "* input, " << type_name(type) << "* output) {" << std::endl;
 
   std::unordered_map<std::string, bool> is_evaluated;
   for (auto it = operations.rbegin(); it != operations.rend(); ++it) {

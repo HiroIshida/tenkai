@@ -26,5 +26,5 @@ int main() {
   std::vector<Operation::Ptr> outputs = {out1, out2, out3, out4, out5};
 
   std::string func_name = "example";
-  flatten(func_name, inputs, outputs);
+  flatten(func_name, inputs, outputs, FlattenType::DOUBLE);
 }
