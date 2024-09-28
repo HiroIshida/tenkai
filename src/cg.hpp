@@ -33,18 +33,20 @@ struct Operation : std::enable_shared_from_this<Operation> {
   std::vector<WeakPtr> requireds;
 };
 
-enum class FlattenType { TEMPLATE, DOUBLE, FLOAT };
 void flatten(const std::string& func_name,
              const std::vector<Operation::Ptr>& inputs,
              const std::vector<Operation::Ptr>& outputs,
              std::ostream& strm,
-             const FlattenType type = FlattenType::DOUBLE);
+             const std::string& type_name);
 
-using jit_func_t = void (*)(double*, double*);
-jit_func_t jit_compile(const std::string& func_name,
+template <typename T>
+using JitFunc = void (*)(T*, T*);
+
+template <typename T>
+JitFunc<T> jit_compile(const std::string& func_name,
                        const std::vector<Operation::Ptr>& inputs,
                        const std::vector<Operation::Ptr>& outputs,
-                       const FlattenType type = FlattenType::DOUBLE);
+                       const std::string& backend = "g++");
 
 Operation::Ptr operator+(Operation::Ptr lhs, Operation::Ptr rhs);
 Operation::Ptr operator-(Operation::Ptr lhs, Operation::Ptr rhs);

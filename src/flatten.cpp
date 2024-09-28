@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include <stack>
+#include <typeinfo>
 #include <unordered_map>
 #include "cg.hpp"
 
@@ -9,7 +10,7 @@ void flatten(const std::string& func_name,
              const std::vector<Operation::Ptr>& inputs,
              const std::vector<Operation::Ptr>& outputs,
              std::ostream& strm,
-             const FlattenType type) {
+             const std::string& type_name) {
   std::vector<Operation::Ptr> operations;
   std::stack<Operation::Ptr> opstack;
   for (auto& output : outputs) {
@@ -47,24 +48,8 @@ void flatten(const std::string& func_name,
   // code generation
   strm << "#include <cmath>" << std::endl;
   strm << "extern \"C\" {" << std::endl;
-  if (type == FlattenType::TEMPLATE) {
-    strm << "template <typename T>" << std::endl;
-  }
-  auto type_name = [](FlattenType type) -> std::string {
-    switch (type) {
-      case FlattenType::TEMPLATE:
-        return "T";
-      case FlattenType::DOUBLE:
-        return "double";
-      case FlattenType::FLOAT:
-        return "float";
-      default:
-        throw std::runtime_error("unknown type");
-    }
-  };
-  strm << "void flattend_" << func_name << "(" << type_name(type) << "* input, "
-       << type_name(type) << "* output) {" << std::endl;
-
+  strm << "void flattend_" << func_name << "(" << type_name << "* input, "
+       << type_name << "* output) {" << std::endl;
   std::unordered_map<std::string, bool> is_evaluated;
   for (auto it = operations.rbegin(); it != operations.rend(); ++it) {
     auto op = *it;
@@ -115,23 +100,47 @@ void flatten(const std::string& func_name,
   strm << "}" << std::endl;  // for extern "C"
 }
 
-jit_func_t jit_compile(const std::string& func_name,
+template <typename T>
+JitFunc<T> jit_compile(const std::string& func_name,
                        const std::vector<Operation::Ptr>& inputs,
                        const std::vector<Operation::Ptr>& outputs,
-                       const FlattenType type) {
+                       const std::string& backend) {
   auto fs = std::ofstream("/tmp/hoge.cpp");
-  flatten(func_name, inputs, outputs, fs, type);
+
+  std::string type_name;
+  if constexpr (std::is_same<T, double>::value) {
+    type_name = "double";
+  } else if constexpr (std::is_same<T, float>::value) {
+    type_name = "float";
+  } else {
+    throw std::runtime_error("unsupported type");
+  }
+
+  flatten(func_name, inputs, outputs, fs, type_name);
   fs.close();
-  std::string cmd = "gcc -O3 -shared -fPIC /tmp/hoge.cpp -o /tmp/hoge.so";
+  std::string cmd =
+      backend + " -O3 -shared -fPIC /tmp/hoge.cpp -o /tmp/hoge.so";
   system(cmd.c_str());
   void* lib = dlopen("/tmp/hoge.so", RTLD_LAZY);
   if (lib == nullptr) {
     throw std::runtime_error("dlopen failed");
   }
   std::string sym = "flattend_" + func_name;
-  auto func = reinterpret_cast<jit_func_t>(dlsym(lib, sym.c_str()));
+  auto func = reinterpret_cast<JitFunc<T>>(dlsym(lib, sym.c_str()));
   if (func == nullptr) {
     throw std::runtime_error("dlsym failed");
   }
   return func;
 }
+
+template JitFunc<double> jit_compile<double>(
+    const std::string& func_name,
+    const std::vector<Operation::Ptr>& inputs,
+    const std::vector<Operation::Ptr>& outputs,
+    const std::string& backend);
+
+template JitFunc<float> jit_compile<float>(
+    const std::string& func_name,
+    const std::vector<Operation::Ptr>& inputs,
+    const std::vector<Operation::Ptr>& outputs,
+    const std::string& backend);

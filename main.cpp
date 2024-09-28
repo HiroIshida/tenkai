@@ -26,8 +26,8 @@ int main() {
   std::vector<Operation::Ptr> outputs = {out1, out2, out3, out4, out5};
 
   std::string func_name = "example";
-  flatten(func_name, inputs, outputs, std::cout, FlattenType::DOUBLE);
-  auto f = jit_compile(func_name, inputs, outputs, FlattenType::DOUBLE);
+  flatten(func_name, inputs, outputs, std::cout, "double");
+  auto f = jit_compile<double>(func_name, inputs, outputs, "g++"); // or clang
   double input[3] = {0.1, 0.2, 0.3};
   double output[5];
   f(input, output);
