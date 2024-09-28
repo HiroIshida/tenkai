@@ -6,7 +6,7 @@
 
 std::string generate_random_string(size_t length);
 
-enum class OpKind { NIL, ADD, SUB, MUL, COS, SIN, VALIABLE, ZERO, ONE };
+enum class OpKind { NIL, ADD, SUB, MUL, COS, SIN, NEGATE, VALIABLE, ZERO, ONE };
 
 struct Operation : std::enable_shared_from_this<Operation> {
   using Ptr = std::shared_ptr<Operation>;
@@ -36,5 +36,8 @@ struct Operation : std::enable_shared_from_this<Operation> {
 Operation::Ptr operator+(Operation::Ptr lhs, Operation::Ptr rhs);
 Operation::Ptr operator-(Operation::Ptr lhs, Operation::Ptr rhs);
 Operation::Ptr operator*(Operation::Ptr lhs, Operation::Ptr rhs);
-Operation::Ptr cos(Operation::Ptr op);  // rhs is nullptr
-Operation::Ptr sin(Operation::Ptr op);  // rhs is nullptr
+
+// unary operators
+Operation::Ptr cos(Operation::Ptr op);
+Operation::Ptr sin(Operation::Ptr op);
+Operation::Ptr negate(Operation::Ptr op);

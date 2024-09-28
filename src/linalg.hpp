@@ -10,6 +10,9 @@ struct Vector3 {
 
 struct Matrix3 {
   static Matrix3 identity();
+  static Matrix3 RotX(Operation::Ptr angle);
+  static Matrix3 RotY(Operation::Ptr angle);
+  static Matrix3 RotZ(Operation::Ptr angle);
   Vector3 operator*(const Vector3& v);
   Operation::Ptr get(size_t i, size_t j) const { return elements[i * 3 + j]; };
   std::array<Operation::Ptr, 9> elements;

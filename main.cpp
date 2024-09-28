@@ -21,7 +21,7 @@ int main() {
 
   // simple linalg
   std::cout << "LINALG EXAMPLE >>" << std::endl;
-  auto A = Matrix3::identity();
+  auto A = Matrix3::RotX(q0);
   auto b = Vector3({q0, q1, q2});
   auto c = (A * b).sum();
   c->unroll(inputs);

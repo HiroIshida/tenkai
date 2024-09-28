@@ -34,15 +34,18 @@ void Operation::unroll(const std::vector<std::string>& input_args) {
     } else if (op->is_unaryop()) {
       switch (op->kind) {
         case OpKind::COS:
-          std::cout << "cos(";
+          std::cout << "cos(" << op->lhs->name << ");" << std::endl;
           break;
         case OpKind::SIN:
-          std::cout << "sin(";
+          std::cout << "sin(" << op->lhs->name << ");" << std::endl;
+          break;
+        case OpKind::NEGATE:
+          std::cout << "-" << op->lhs->name << ";" << std::endl;
+
           break;
         default:
           throw std::runtime_error("unknown operator");
       }
-      std::cout << op->lhs->name << ");" << std::endl;
     } else {
       std::cout << op->lhs->name << " ";
       switch (op->kind) {
