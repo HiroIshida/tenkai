@@ -41,8 +41,8 @@ Operation::Ptr Operation::create(Operation::Ptr lhs,
   return op;
 }
 
-Operation::Ptr Operation::make_var(std::string&& name) {
-  Operation::Ptr value = std::make_shared<Operation>(name);
+Operation::Ptr Operation::make_var() {
+  Operation::Ptr value = std::make_shared<Operation>();
   value->kind = OpKind::VALIABLE;
   return value;
 }

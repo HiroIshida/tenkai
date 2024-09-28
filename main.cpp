@@ -5,9 +5,9 @@
 #include "linalg.hpp"
 
 int main() {
-  auto inp0 = Operation::make_var("q0");
-  auto inp1 = Operation::make_var("q1");
-  auto inp2 = Operation::make_var("q2");
+  auto inp0 = Operation::make_var();
+  auto inp1 = Operation::make_var();
+  auto inp2 = Operation::make_var();
 
   auto A = Matrix3::RotX(inp0);
   auto B = Matrix3::RotY(inp1);
