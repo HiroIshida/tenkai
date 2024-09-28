@@ -17,7 +17,7 @@ struct Operation : std::enable_shared_from_this<Operation> {
   static Operation::Ptr create(Operation::Ptr lhs,
                                Operation::Ptr rhs,
                                OpKind kind);
-  static Operation::Ptr make_value(std::string&& name);
+  static Operation::Ptr make_var(std::string&& name);
   static Operation::Ptr make_zero();
   static Operation::Ptr make_one();
   std::vector<Operation::Ptr> get_leafs();

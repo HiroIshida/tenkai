@@ -7,9 +7,9 @@
 int main() {
   // simple arithmetic
   std::cout << "ARITHMETIC EXAMPLE >>" << std::endl;
-  auto q0 = Operation::make_value("q0");
-  auto q1 = Operation::make_value("q1");
-  auto q2 = Operation::make_value("q2");
+  auto q0 = Operation::make_var("q0");
+  auto q1 = Operation::make_var("q1");
+  auto q2 = Operation::make_var("q2");
   auto m = q0 + q1 + q2;
   auto mm = m * m;
   auto mmm = m * mm + Operation::make_one();
