@@ -1,0 +1,5 @@
+FILE(GLOB_RECURSE SRC_FILES src/*.cpp)
+add_library(cgunroll ${SRC_FILES})
+add_executable(main main.cpp)
+include_directories(src)
+target_link_libraries(main cgunroll)
