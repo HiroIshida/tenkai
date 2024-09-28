@@ -11,7 +11,7 @@ int main() {
   auto mmm = m * mm + Operation::make_one();
   auto mmmm = m * mmm + Operation::make_zero();
   auto tmp = m + mm + mmm + mmmm;
-  auto ret = cos(tmp) + sin(tmp);
+  auto ret = cos(tmp) + sin(tmp) + cos(Operation::make_zero()) + sin(Operation::make_zero());
   std::vector<std::string> inputs = {"q0", "q1", "q2"};
   ret->unroll(inputs);
 }

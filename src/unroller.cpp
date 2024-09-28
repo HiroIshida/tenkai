@@ -10,9 +10,9 @@ void Operation::unroll(const std::vector<std::string>& input_args) {
   while (!opstack.empty()) {
     auto op = opstack.top();
     opstack.pop();
-    if (op->kind != OpKind::VALIABLE && op->kind != OpKind::ONE &&
-        op->kind != OpKind::ZERO) {
+    if (!op->is_nullaryop()) {
       operations.push_back(op);
+
       if (op->lhs != nullptr) {
         opstack.push(op->lhs);
       }

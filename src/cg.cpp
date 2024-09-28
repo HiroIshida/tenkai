@@ -84,17 +84,44 @@ std::vector<Operation::Ptr> Operation::get_leafs() {
 }
 
 Operation::Ptr operator+(Operation::Ptr lhs, Operation::Ptr rhs) {
+  if (lhs->kind == OpKind::ZERO) {
+    return rhs;
+  }
+  if (rhs->kind == OpKind::ZERO) {
+    return lhs;
+  }
   return Operation::create(lhs, rhs, OpKind::ADD);
 }
 Operation::Ptr operator-(Operation::Ptr lhs, Operation::Ptr rhs) {
+  if (lhs->kind == OpKind::ZERO) {
+    return rhs;
+  }
+  if (rhs->kind == OpKind::ZERO) {
+    return lhs;
+  }
   return Operation::create(lhs, rhs, OpKind::SUB);
 }
 Operation::Ptr operator*(Operation::Ptr lhs, Operation::Ptr rhs) {
+  if (lhs->kind == OpKind::ZERO || rhs->kind == OpKind::ZERO) {
+    return Operation::make_zero();
+  }
+  if (lhs->kind == OpKind::ONE) {
+    return rhs;
+  }
+  if (rhs->kind == OpKind::ONE) {
+    return lhs;
+  }
   return Operation::create(lhs, rhs, OpKind::MUL);
 }
 Operation::Ptr cos(Operation::Ptr op) {
+  if (op->kind == OpKind::ZERO) {
+    return Operation::make_one();
+  }
   return Operation::create(op, nullptr, OpKind::COS);
 }
 Operation::Ptr sin(Operation::Ptr op) {
+  if (op->kind == OpKind::ZERO) {
+    return Operation::make_zero();
+  }
   return Operation::create(op, nullptr, OpKind::SIN);
 }
