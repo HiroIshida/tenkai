@@ -22,32 +22,45 @@ void Operation::unroll(const std::vector<std::string>& input_args) {
     }
   }
 
+  auto remap = [&](const std::string& name) {
+    for (int i = 0; i < input_args.size(); i++) {
+      if (input_args[i] == name) {
+        return "input[" + std::to_string(i) + "]";
+      }
+    }
+    return name;
+  };
+
+  std::cout << "#include <cmath>" << std::endl;
+  std::cout << "template <typename T>" << std::endl;
+  std::cout << "T "
+            << "unrolled_" << name << "(T* input) {" << std::endl;
+
   std::unordered_map<std::string, bool> is_evaluated;
   for (auto it = operations.rbegin(); it != operations.rend(); ++it) {
     auto op = *it;
-    if (is_evaluated.find(op->name) != is_evaluated.end()) {
+    if (is_evaluated.find(remap(op->name)) != is_evaluated.end()) {
       continue;
     }
-    std::cout << "double " << op->name << " = ";
+    std::cout << "  auto " << remap(op->name) << " = ";
     if (op->is_nullaryop()) {
       throw std::runtime_error("must not reach here");
     } else if (op->is_unaryop()) {
       switch (op->kind) {
         case OpKind::COS:
-          std::cout << "cos(" << op->lhs->name << ");" << std::endl;
+          std::cout << "cos(" << remap(op->lhs->name) << ");" << std::endl;
           break;
         case OpKind::SIN:
-          std::cout << "sin(" << op->lhs->name << ");" << std::endl;
+          std::cout << "sin(" << remap(op->lhs->name) << ");" << std::endl;
           break;
         case OpKind::NEGATE:
-          std::cout << "-" << op->lhs->name << ";" << std::endl;
-
+          std::cout << "-" << remap(op->lhs->name) << ";" << std::endl;
           break;
         default:
           throw std::runtime_error("unknown operator");
       }
     } else {
-      std::cout << op->lhs->name << " ";
+      std::cout << remap(op->lhs->name) << " ";
       switch (op->kind) {
         case OpKind::ADD:
           std::cout << "+";
@@ -61,9 +74,10 @@ void Operation::unroll(const std::vector<std::string>& input_args) {
         default:
           throw std::runtime_error("unknown operator");
       }
-      std::cout << " " << op->rhs->name << ";" << std::endl;
+      std::cout << " " << remap(op->rhs->name) << ";" << std::endl;
     }
-    is_evaluated[op->name] = true;
+    is_evaluated[remap(op->name)] = true;
   }
-  std::cout << "return " << name << ";" << std::endl;
+  std::cout << "  return " << name << ";" << std::endl;
+  std::cout << "}" << std::endl;
 }
