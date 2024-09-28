@@ -3,9 +3,9 @@
 #include "iostream"
 #include "stack"
 
-void unroll(const std::string& func_name,
-            const std::vector<Operation::Ptr>& inputs,
-            const std::vector<Operation::Ptr>& outputs) {
+void flatten(const std::string& func_name,
+             const std::vector<Operation::Ptr>& inputs,
+             const std::vector<Operation::Ptr>& outputs) {
   std::vector<Operation::Ptr> operations;
   std::stack<Operation::Ptr> opstack;
   for (auto& output : outputs) {
@@ -44,7 +44,7 @@ void unroll(const std::string& func_name,
   std::cout << "#include <cmath>" << std::endl;
   std::cout << "template <typename T>" << std::endl;
   std::cout << "void "
-            << "unrolled_" << func_name << "(T* input, T* output) {"
+            << "flattend_" << func_name << "(T* input, T* output) {"
             << std::endl;
 
   std::unordered_map<std::string, bool> is_evaluated;
