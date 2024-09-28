@@ -27,7 +27,8 @@ int main() {
 
   std::string func_name = "example";
   flatten(func_name, inputs, outputs, std::cout, "double");
-  auto f = jit_compile<double>(func_name, inputs, outputs, "g++"); // or clang
+
+  auto f = jit_compile<double>(inputs, outputs, "g++"); // or clang
   double input[3] = {0.1, 0.2, 0.3};
   double output[5];
   f(input, output);

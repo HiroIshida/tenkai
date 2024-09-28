@@ -48,8 +48,8 @@ void flatten(const std::string& func_name,
   // code generation
   strm << "#include <cmath>" << std::endl;
   strm << "extern \"C\" {" << std::endl;
-  strm << "void flattend_" << func_name << "(" << type_name << "* input, "
-       << type_name << "* output) {" << std::endl;
+  strm << "void " << func_name << "(" << type_name << "* input, " << type_name
+       << "* output) {" << std::endl;
   std::unordered_map<std::string, bool> is_evaluated;
   for (auto it = operations.rbegin(); it != operations.rend(); ++it) {
     auto op = *it;
@@ -101,12 +101,9 @@ void flatten(const std::string& func_name,
 }
 
 template <typename T>
-JitFunc<T> jit_compile(const std::string& func_name,
-                       const std::vector<Operation::Ptr>& inputs,
+JitFunc<T> jit_compile(const std::vector<Operation::Ptr>& inputs,
                        const std::vector<Operation::Ptr>& outputs,
                        const std::string& backend) {
-  auto fs = std::ofstream("/tmp/hoge.cpp");
-
   std::string type_name;
   if constexpr (std::is_same<T, double>::value) {
     type_name = "double";
@@ -116,31 +113,41 @@ JitFunc<T> jit_compile(const std::string& func_name,
     throw std::runtime_error("unsupported type");
   }
 
+  std::string func_name = generate_random_string(16);
+  std::string source_name = "/tmp/" + func_name + ".cpp";
+  std::string so_name = "/tmp/" + func_name + ".so";
+
+  auto fs = std::ofstream(source_name);
   flatten(func_name, inputs, outputs, fs, type_name);
   fs.close();
   std::string cmd =
-      backend + " -O3 -shared -fPIC /tmp/hoge.cpp -o /tmp/hoge.so";
-  system(cmd.c_str());
-  void* lib = dlopen("/tmp/hoge.so", RTLD_LAZY);
+      backend + " -O3 -shared -fPIC " + source_name + " -o " + so_name;
+
+  auto ret = system(cmd.c_str());
+  if (ret != 0) {
+    throw std::runtime_error("failed to compile");
+  }
+
+  void* lib = dlopen(so_name.c_str(), RTLD_LAZY);
   if (lib == nullptr) {
     throw std::runtime_error("dlopen failed");
   }
-  std::string sym = "flattend_" + func_name;
-  auto func = reinterpret_cast<JitFunc<T>>(dlsym(lib, sym.c_str()));
+  auto func = reinterpret_cast<JitFunc<T>>(dlsym(lib, func_name.c_str()));
   if (func == nullptr) {
     throw std::runtime_error("dlsym failed");
   }
+
+  remove(source_name.c_str());
+  remove(so_name.c_str());
   return func;
 }
 
 template JitFunc<double> jit_compile<double>(
-    const std::string& func_name,
     const std::vector<Operation::Ptr>& inputs,
     const std::vector<Operation::Ptr>& outputs,
     const std::string& backend);
 
 template JitFunc<float> jit_compile<float>(
-    const std::string& func_name,
     const std::vector<Operation::Ptr>& inputs,
     const std::vector<Operation::Ptr>& outputs,
     const std::string& backend);

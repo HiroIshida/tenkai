@@ -43,8 +43,7 @@ template <typename T>
 using JitFunc = void (*)(T*, T*);
 
 template <typename T>
-JitFunc<T> jit_compile(const std::string& func_name,
-                       const std::vector<Operation::Ptr>& inputs,
+JitFunc<T> jit_compile(const std::vector<Operation::Ptr>& inputs,
                        const std::vector<Operation::Ptr>& outputs,
                        const std::string& backend = "g++");
 
