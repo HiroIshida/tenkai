@@ -7,7 +7,7 @@
 std::string generate_random_string(size_t length) {
   // c++ does not have a built-in random string generator??
   const std::string charset =
-      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
   std::random_device rd;
   std::mt19937 generator(rd());
   std::uniform_int_distribution<> distribution(0, charset.size() - 1);
@@ -20,14 +20,14 @@ std::string generate_random_string(size_t length) {
 }
 
 Operation::Operation() : kind(OpKind::NIL) {
-  name = generate_random_string(6);
+  name = generate_random_string(8);
 }
 
 Operation::Operation(const std::string& name) : kind(OpKind::NIL), name(name) {}
 
 Operation::Operation(Operation::Ptr lhs, Operation::Ptr rhs, OpKind kind)
     : lhs(lhs), rhs(rhs), kind(kind) {
-  name = generate_random_string(6);
+  name = generate_random_string(8);
 }
 
 Operation::Ptr Operation::create(Operation::Ptr lhs,
