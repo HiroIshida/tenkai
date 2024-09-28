@@ -5,9 +5,9 @@
 #include "linalg.hpp"
 
 int main() {
-  auto inp0 = Operation::make_var("q0");
-  auto inp1 = Operation::make_var("q1");
-  auto inp2 = Operation::make_var("q2");
+  auto inp0 = Operation::make_var();
+  auto inp1 = Operation::make_var();
+  auto inp2 = Operation::make_var();
 
   auto A = Matrix3::RotX(inp0);
   auto B = Matrix3::RotY(inp1);
@@ -26,5 +26,15 @@ int main() {
   std::vector<Operation::Ptr> outputs = {out1, out2, out3, out4, out5};
 
   std::string func_name = "example";
-  flatten(func_name, inputs, outputs);
+  flatten(func_name, inputs, outputs, std::cout, "double");
+
+  auto f = jit_compile<double>(inputs, outputs, "g++"); // or clang
+  double input[3] = {0.1, 0.2, 0.3};
+  double output[5];
+  f(input, output);
+  std::cout << "out1: " << output[0] << std::endl;
+  std::cout << "out2: " << output[1] << std::endl;
+  std::cout << "out3: " << output[2] << std::endl;
+  std::cout << "out4: " << output[3] << std::endl;
+  std::cout << "out5: " << output[4] << std::endl;
 }

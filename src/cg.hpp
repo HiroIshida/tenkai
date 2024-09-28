@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <ostream>
 #include <string>
 #include <vector>
 
@@ -17,7 +18,7 @@ struct Operation : std::enable_shared_from_this<Operation> {
   static Operation::Ptr create(Operation::Ptr lhs,
                                Operation::Ptr rhs,
                                OpKind kind);
-  static Operation::Ptr make_var(std::string&& name);
+  static Operation::Ptr make_var();
   static Operation::Ptr make_zero();
   static Operation::Ptr make_one();
   std::vector<Operation::Ptr> get_leafs();
@@ -34,7 +35,17 @@ struct Operation : std::enable_shared_from_this<Operation> {
 
 void flatten(const std::string& func_name,
              const std::vector<Operation::Ptr>& inputs,
-             const std::vector<Operation::Ptr>& outputs);
+             const std::vector<Operation::Ptr>& outputs,
+             std::ostream& strm,
+             const std::string& type_name);
+
+template <typename T>
+using JitFunc = void (*)(T*, T*);
+
+template <typename T>
+JitFunc<T> jit_compile(const std::vector<Operation::Ptr>& inputs,
+                       const std::vector<Operation::Ptr>& outputs,
+                       const std::string& backend = "g++");
 
 Operation::Ptr operator+(Operation::Ptr lhs, Operation::Ptr rhs);
 Operation::Ptr operator-(Operation::Ptr lhs, Operation::Ptr rhs);

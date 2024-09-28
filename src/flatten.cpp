@@ -1,11 +1,16 @@
+#include <dlfcn.h>
+#include <fstream>
+#include <iostream>
+#include <stack>
+#include <typeinfo>
 #include <unordered_map>
 #include "cg.hpp"
-#include "iostream"
-#include "stack"
 
 void flatten(const std::string& func_name,
              const std::vector<Operation::Ptr>& inputs,
-             const std::vector<Operation::Ptr>& outputs) {
+             const std::vector<Operation::Ptr>& outputs,
+             std::ostream& strm,
+             const std::string& type_name) {
   std::vector<Operation::Ptr> operations;
   std::stack<Operation::Ptr> opstack;
   for (auto& output : outputs) {
@@ -41,12 +46,10 @@ void flatten(const std::string& func_name,
   };
 
   // code generation
-  std::cout << "#include <cmath>" << std::endl;
-  std::cout << "template <typename T>" << std::endl;
-  std::cout << "void "
-            << "flattend_" << func_name << "(T* input, T* output) {"
-            << std::endl;
-
+  strm << "#include <cmath>" << std::endl;
+  strm << "extern \"C\" {" << std::endl;
+  strm << "void " << func_name << "(" << type_name << "* input, " << type_name
+       << "* output) {" << std::endl;
   std::unordered_map<std::string, bool> is_evaluated;
   for (auto it = operations.rbegin(); it != operations.rend(); ++it) {
     auto op = *it;
@@ -54,44 +57,97 @@ void flatten(const std::string& func_name,
       continue;
     }
     if (remapped_name(op).find("output") == std::string::npos) {
-      std::cout << "  auto " << remapped_name(op) << " = ";
+      strm << "  auto " << remapped_name(op) << " = ";
     } else {
-      std::cout << "  " << remapped_name(op) << " = ";
+      strm << "  " << remapped_name(op) << " = ";
     }
     if (op->is_nullaryop()) {
       throw std::runtime_error("must not reach here");
     } else if (op->is_unaryop()) {
       switch (op->kind) {
         case OpKind::COS:
-          std::cout << "cos(" << remapped_name(op->lhs) << ");" << std::endl;
+          strm << "cos(" << remapped_name(op->lhs) << ");" << std::endl;
           break;
         case OpKind::SIN:
-          std::cout << "sin(" << remapped_name(op->lhs) << ");" << std::endl;
+          strm << "sin(" << remapped_name(op->lhs) << ");" << std::endl;
           break;
         case OpKind::NEGATE:
-          std::cout << "-" << remapped_name(op->lhs) << ";" << std::endl;
+          strm << "-" << remapped_name(op->lhs) << ";" << std::endl;
           break;
         default:
           throw std::runtime_error("unknown operator");
       }
     } else {
-      std::cout << remapped_name(op->lhs) << " ";
+      strm << remapped_name(op->lhs) << " ";
       switch (op->kind) {
         case OpKind::ADD:
-          std::cout << "+";
+          strm << "+";
           break;
         case OpKind::SUB:
-          std::cout << "-";
+          strm << "-";
           break;
         case OpKind::MUL:
-          std::cout << "*";
+          strm << "*";
           break;
         default:
           throw std::runtime_error("unknown operator");
       }
-      std::cout << " " << remapped_name(op->rhs) << ";" << std::endl;
+      strm << " " << remapped_name(op->rhs) << ";" << std::endl;
     }
     is_evaluated[remapped_name(op)] = true;
   }
-  std::cout << "}" << std::endl;
+  strm << "}" << std::endl;
+  strm << "}" << std::endl;  // for extern "C"
 }
+
+template <typename T>
+JitFunc<T> jit_compile(const std::vector<Operation::Ptr>& inputs,
+                       const std::vector<Operation::Ptr>& outputs,
+                       const std::string& backend) {
+  std::string type_name;
+  if constexpr (std::is_same<T, double>::value) {
+    type_name = "double";
+  } else if constexpr (std::is_same<T, float>::value) {
+    type_name = "float";
+  } else {
+    throw std::runtime_error("unsupported type");
+  }
+
+  std::string func_name = generate_random_string(16);
+  std::string source_name = "/tmp/" + func_name + ".cpp";
+  std::string so_name = "/tmp/" + func_name + ".so";
+
+  auto fs = std::ofstream(source_name);
+  flatten(func_name, inputs, outputs, fs, type_name);
+  fs.close();
+  std::string cmd =
+      backend + " -O3 -shared -fPIC " + source_name + " -o " + so_name;
+
+  auto ret = system(cmd.c_str());
+  if (ret != 0) {
+    throw std::runtime_error("failed to compile");
+  }
+
+  void* lib = dlopen(so_name.c_str(), RTLD_LAZY);
+  if (lib == nullptr) {
+    throw std::runtime_error("dlopen failed");
+  }
+  auto func = reinterpret_cast<JitFunc<T>>(dlsym(lib, func_name.c_str()));
+  if (func == nullptr) {
+    throw std::runtime_error("dlsym failed");
+  }
+
+  remove(source_name.c_str());
+  remove(so_name.c_str());
+  return func;
+}
+
+template JitFunc<double> jit_compile<double>(
+    const std::vector<Operation::Ptr>& inputs,
+    const std::vector<Operation::Ptr>& outputs,
+    const std::string& backend);
+
+template JitFunc<float> jit_compile<float>(
+    const std::vector<Operation::Ptr>& inputs,
+    const std::vector<Operation::Ptr>& outputs,
+    const std::string& backend);
