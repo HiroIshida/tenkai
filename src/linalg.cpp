@@ -1,5 +1,13 @@
 #include "linalg.hpp"
 
+Vector3 Vector3::operator+(const Vector3& v) {
+  std::array<Operation::Ptr, 3> elements;
+  for (size_t i = 0; i < 3; i++) {
+    elements[i] = this->get(i) + v.get(i);
+  }
+  return Vector3({elements});
+}
+
 Matrix3 Matrix3::identity() {
   std::array<Operation::Ptr, 9> elements = {
       Operation::make_one(),  Operation::make_zero(), Operation::make_zero(),
@@ -61,4 +69,16 @@ Vector3 Matrix3::operator*(const Vector3& v) {
   auto e2 = this->get(2, 0) * v.get(0) + this->get(2, 1) * v.get(1) +
             this->get(2, 2) * v.get(2);
   return Vector3({e0, e1, e2});
+}
+
+Matrix3 Matrix3::operator*(const Matrix3& m) {
+  std::array<Operation::Ptr, 9> elements;
+  for (size_t i = 0; i < 3; i++) {
+    for (size_t j = 0; j < 3; j++) {
+      elements[i * 3 + j] = this->get(i, 0) * m.get(0, j) +
+                            this->get(i, 1) * m.get(1, j) +
+                            this->get(i, 2) * m.get(2, j);
+    }
+  }
+  return Matrix3({elements});
 }
