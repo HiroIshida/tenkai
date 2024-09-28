@@ -10,7 +10,8 @@ int main() {
   auto mm = m * m;
   auto mmm = m * mm;
   auto mmmm = m * mmm;
-  auto ret = m + mm + mmm + mmmm;
+  auto tmp = m + mm + mmm + mmmm;
+  auto ret = cos(tmp) + sin(tmp);
   std::vector<std::string> inputs = {"q0", "q1", "q2"};
   ret->unroll(inputs);
 }

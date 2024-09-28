@@ -13,7 +13,9 @@ void Operation::unroll(const std::vector<std::string>& input_args) {
     if (op->kind != OpKind::VALUE) {
       operations.push_back(op);
       opstack.push(op->lhs);
-      opstack.push(op->rhs);
+      if (!op->is_unary()) {
+        opstack.push(op->rhs);
+      }
     }
   }
 
@@ -27,21 +29,37 @@ void Operation::unroll(const std::vector<std::string>& input_args) {
       std::cout << "// value " << op->name << std::endl;
       continue;
     }
-    std::cout << "double " << op->name << " = " << op->lhs->name << " ";
-    switch (op->kind) {
-      case OpKind::ADD:
-        std::cout << "+";
-        break;
-      case OpKind::SUB:
-        std::cout << "-";
-        break;
-      case OpKind::MUL:
-        std::cout << "*";
-        break;
-      default:
-        throw std::runtime_error("unknown operator");
+
+    std::cout << "double " << op->name << " = ";
+    if (op->is_unary()) {
+      switch (op->kind) {
+        case OpKind::COS:
+          std::cout << "cos(";
+          break;
+        case OpKind::SIN:
+          std::cout << "sin(";
+          break;
+        default:
+          throw std::runtime_error("unknown operator");
+      }
+      std::cout << op->lhs->name << ");" << std::endl;
+    } else {
+      std::cout << op->lhs->name << " ";
+      switch (op->kind) {
+        case OpKind::ADD:
+          std::cout << "+";
+          break;
+        case OpKind::SUB:
+          std::cout << "-";
+          break;
+        case OpKind::MUL:
+          std::cout << "*";
+          break;
+        default:
+          throw std::runtime_error("unknown operator");
+      }
+      std::cout << " " << op->rhs->name << ";" << std::endl;
     }
-    std::cout << " " << op->rhs->name << ";" << std::endl;
     is_evaluated[op->name] = true;
   }
   std::cout << "return " << name << ";" << std::endl;

@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <random>
 #include <stack>
+#include <stdexcept>
 
 std::string generate_random_string(size_t length) {
   // c++ does not have a built-in random string generator??
@@ -33,8 +34,13 @@ Operation::Ptr Operation::create(Operation::Ptr lhs,
                                  Operation::Ptr rhs,
                                  OpKind kind) {
   auto op = std::make_shared<Operation>(lhs, rhs, kind);
+  if (lhs == nullptr) {
+    throw std::runtime_error("lhs is nullptr");
+  }
   lhs->requireds.push_back(op);
-  rhs->requireds.push_back(op);
+  if (rhs != nullptr) {
+    rhs->requireds.push_back(op);
+  }
   return op;
 }
 
@@ -76,4 +82,10 @@ Operation::Ptr operator-(Operation::Ptr lhs, Operation::Ptr rhs) {
 }
 Operation::Ptr operator*(Operation::Ptr lhs, Operation::Ptr rhs) {
   return Operation::create(lhs, rhs, OpKind::MUL);
+}
+Operation::Ptr cos(Operation::Ptr op) {
+  return Operation::create(op, nullptr, OpKind::COS);
+}
+Operation::Ptr sin(Operation::Ptr op) {
+  return Operation::create(op, nullptr, OpKind::SIN);
 }
