@@ -19,7 +19,7 @@ auto get_jit_func() {
   auto x5 = Operation::make_var();
   auto x6 = Operation::make_var();
 
-  auto trans = Vector({Operation::make_constant(1.0), Operation::make_constant(2.0), Operation::make_constant(3.0)});
+  auto trans = Vector({Operation::make_constant(0.1), Operation::make_constant(0.2), Operation::make_constant(0.3)});
   auto tf1 = SpatialTransform(Matrix::RotX(x0), trans);
   auto tf2 = SpatialTransform(Matrix::RotY(x1), trans);
   auto tf3 = SpatialTransform(Matrix::RotZ(x2), trans);
@@ -33,43 +33,55 @@ auto get_jit_func() {
 
   std::vector<Operation::Ptr> inputs = {x0, x1, x2, x3, x4, x5, x6};
   auto outputs = tf10.trans.elements;
-  flatten("flattened", inputs, outputs, std::cout, "double"); // debug
-  auto f_jit = jit_compile<double>(inputs, outputs, "g++");
+  // flatten("flattened", inputs, outputs, std::cout, "double"); // debug
+  bool disassemble = true;
+  auto f_jit = jit_compile<double>(inputs, outputs, "g++", disassemble);
   return f_jit;
 }
 
+
+struct QuatTrans {
+  Eigen::Quaterniond quat;
+  Eigen::Vector3d trans;
+  void multiply_and_overwrite_self(const QuatTrans& other) {
+    this->trans  = quat * other.trans + trans;
+    this->quat = quat * other.quat;
+  };
+};
+
+
 void eigen_counterpart(double* input, double* output) {
-    Eigen::Vector3d trans = Eigen::Vector3d(1.0, 2.0, 3.0);
+    Eigen::Quaterniond q1, q2, q3, q4, q5, q6, q7;
+    q1.coeffs() << std::sin(input[0] / 2), 0, 0, std::cos(input[0] / 2);
+    q2.coeffs() << 0, std::sin(input[1] / 2), 0, std::cos(input[1] / 2);
+    q3.coeffs() << 0, 0, std::sin(input[2] / 2), std::cos(input[2] / 2);
+    q4.coeffs() << std::sin(input[3] / 2), 0, 0, std::cos(input[3] / 2);
+    q5.coeffs() << 0, std::sin(input[4] / 2), 0, std::cos(input[4] / 2);
+    q6.coeffs() << 0, 0, std::sin(input[5] / 2), std::cos(input[5] / 2);
+    q7.coeffs() << std::sin(input[6] / 2), 0, 0, std::cos(input[6] / 2);
+    Eigen::Vector3d trans = Eigen::Vector3d(0.1, 0.2, 0.3);
 
-    Eigen::Isometry3d tf1 = Eigen::Isometry3d(Eigen::AngleAxisd(input[0], Eigen::Vector3d::UnitX()));
-    tf1.pretranslate(trans);
+    QuatTrans tf1{q1, trans};
+    QuatTrans tf2{q2, trans};
+    QuatTrans tf3{q3, trans};
+    QuatTrans tf4{q4, trans};
+    QuatTrans tf5{q5, trans};
+    QuatTrans tf6{q6, trans};
+    QuatTrans tf7{q7, trans};
 
-    Eigen::Isometry3d tf2 = Eigen::Isometry3d(Eigen::AngleAxisd(input[1], Eigen::Vector3d::UnitY()));
-    tf2.pretranslate(trans);
+    tf4.multiply_and_overwrite_self(tf3);
+    tf4.multiply_and_overwrite_self(tf2);
+    tf4.multiply_and_overwrite_self(tf1);
 
-    Eigen::Isometry3d tf3 = Eigen::Isometry3d(Eigen::AngleAxisd(input[2], Eigen::Vector3d::UnitZ()));
-    tf3.pretranslate(trans);
+    tf7.multiply_and_overwrite_self(tf6);
+    tf7.multiply_and_overwrite_self(tf5);
+    tf7.multiply_and_overwrite_self(tf1);
 
-    Eigen::Isometry3d tf4 = Eigen::Isometry3d(Eigen::AngleAxisd(input[3], Eigen::Vector3d::UnitX()));
-    tf4.pretranslate(trans);
+    tf7.multiply_and_overwrite_self(tf4);
 
-    Eigen::Isometry3d tf5 = Eigen::Isometry3d(Eigen::AngleAxisd(input[4], Eigen::Vector3d::UnitY()));
-    tf5.pretranslate(trans);
-
-    Eigen::Isometry3d tf6 = Eigen::Isometry3d(Eigen::AngleAxisd(input[5], Eigen::Vector3d::UnitZ()));
-    tf6.pretranslate(trans);
-
-    Eigen::Isometry3d tf7 = Eigen::Isometry3d(Eigen::AngleAxisd(input[6], Eigen::Vector3d::UnitX()));
-    tf7.pretranslate(trans);
-
-    Eigen::Isometry3d tf8 = tf4 * tf3 * tf2 * tf1;
-    Eigen::Isometry3d tf9 = tf7 * tf6 * tf5 * tf1;
-    Eigen::Isometry3d tf10 = tf9 * tf8;
-
-    auto tmp = tf10.translation();
-    output[0] = tmp[0];
-    output[1] = tmp[1];
-    output[2] = tmp[2];
+    output[0] = tf7.trans.x();
+    output[1] = tf7.trans.y();
+    output[2] = tf7.trans.z();
 }
 
 int main() {
@@ -80,23 +92,29 @@ int main() {
   std::random_device rd;
   std::mt19937 gen(rd());
   std::uniform_real_distribution<double> dis(-M_PI, M_PI);
-  size_t n_trials = 1000000;
+  size_t n_trials = 10000000;
   for (int i = 0; i < 7; i++) {
     input[i] = dis(gen);
   }
   f_jit(input.data(), output.data());
   auto start = std::chrono::high_resolution_clock::now();
+  double sum = 0;
   for(int i = 0; i < n_trials; i++) {
     f_jit(input.data(), output.data());
+    sum += output[0];
   }
   auto end = std::chrono::high_resolution_clock::now();
   std::cout << "jit: " << std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count() / n_trials << " ns" << std::endl;
+  std::cout << sum << std::endl;
 
   eigen_counterpart(input.data(), output_eigen.data());
   start = std::chrono::high_resolution_clock::now();
+  double sum_eigen = 0.0;
   for(int i = 0; i < n_trials; i++) {
     eigen_counterpart(input.data(), output_eigen.data());
+    sum_eigen += output_eigen[0];
   }
   end = std::chrono::high_resolution_clock::now();
   std::cout << "eigen: " << std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count() / n_trials << " ns" << std::endl;
+  std::cout << sum_eigen << std::endl;
 }
