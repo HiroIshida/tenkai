@@ -2,6 +2,22 @@
 
 namespace tenkai {
 
+Vector Vector::Zero(size_t n) {
+  std::vector<Operation::Ptr> elements(n);
+  for (size_t i = 0; i < n; i++) {
+    elements[i] = Operation::make_zero();
+  }
+  return Vector({elements});
+}
+
+Vector Vector::Var(size_t n) {
+  std::vector<Operation::Ptr> elements(n);
+  for (size_t i = 0; i < n; i++) {
+    elements[i] = Operation::make_var();
+  }
+  return Vector({elements});
+}
+
 Operation::Ptr Vector::sum() {
   Operation::Ptr result = Operation::make_zero();
   for (size_t i = 0; i < size(); i++) {
@@ -18,6 +34,14 @@ Operation::Ptr Vector::sqnorm() {
   return result;
 };
 
+Vector Vector::operator-() {
+  std::vector<Operation::Ptr> elements(size());
+  for (size_t i = 0; i < size(); i++) {
+    elements[i] = negate((*this)(i));
+  }
+  return Vector({elements});
+}
+
 Vector Vector::operator+(const Vector& v) {
   std::vector<Operation::Ptr> elements(size());
   for (size_t i = 0; i < size(); i++) {
@@ -32,6 +56,20 @@ Vector Vector::operator*(Operation::Ptr scalar) {
     elements[i] = elements[i] * scalar;
   }
   return Vector({elements});
+}
+
+Matrix Matrix::Identity(size_t n) {
+  std::vector<Operation::Ptr> elements(n * n);
+  for (size_t i = 0; i < n; i++) {
+    for (size_t j = 0; j < n; j++) {
+      if (i == j) {
+        elements[i + j * n] = Operation::make_one();
+      } else {
+        elements[i + j * n] = Operation::make_zero();
+      }
+    }
+  }
+  return Matrix(elements, n, n);
 }
 
 Matrix Matrix::RotX(Operation::Ptr angle) {

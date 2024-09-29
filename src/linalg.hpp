@@ -14,9 +14,12 @@ struct Vector {
 
   // methods
   Vector(std::vector<Operation::Ptr> elements) : elements(elements) {}
+  static Vector Zero(size_t n);
+  static Vector Var(size_t n);
   inline Operation::Ptr operator()(size_t i) const { return elements[i]; }
   Operation::Ptr sum();
   Operation::Ptr sqnorm();
+  Vector operator-();
   Vector operator+(const Vector& v);
   Vector operator*(Operation::Ptr scalar);
 };
@@ -30,6 +33,7 @@ struct Matrix {
   // methods
   Matrix(std::vector<Operation::Ptr> elements, size_t n_rows, size_t n_cols)
       : elements(elements), n_rows(n_rows), n_cols(n_cols) {}
+  static Matrix Identity(size_t n);
   static Matrix RotX(Operation::Ptr angle);
   static Matrix RotY(Operation::Ptr angle);
   static Matrix RotZ(Operation::Ptr angle);
