@@ -4,26 +4,47 @@
 
 namespace tenkai {
 
-struct Vector3 {
-  std::array<Operation::Ptr, 3> elements;
-  Operation::Ptr sum() { return elements[0] + elements[1] + elements[2]; };
-  Operation::Ptr sqnorm() {
-    return elements[0] * elements[0] + elements[1] * elements[1] +
-           elements[2] * elements[2];
+// because these struct are used for code generation, we dont need to support
+// neither static sizes nor static asserts
+
+struct Vector {
+  // variables
+  std::vector<Operation::Ptr> elements;
+  inline size_t size() const { return elements.size(); }
+
+  // methods
+  Vector(std::vector<Operation::Ptr> elements) : elements(elements) {}
+  static Vector Zero(size_t n);
+  static Vector Var(size_t n);
+  inline Operation::Ptr operator()(size_t i) const { return elements[i]; }
+  Operation::Ptr sum();
+  Operation::Ptr sqnorm();
+  Vector operator-();
+  Vector operator+(const Vector& v);
+  Vector operator*(Operation::Ptr scalar);
+};
+
+struct Matrix {
+  // variables
+  std::vector<Operation::Ptr> elements;
+  size_t n_rows;
+  size_t n_cols;
+
+  // methods
+  Matrix(std::vector<Operation::Ptr> elements, size_t n_rows, size_t n_cols)
+      : elements(elements), n_rows(n_rows), n_cols(n_cols) {}
+  static Matrix Identity(size_t n);
+  static Matrix RotX(Operation::Ptr angle);
+  static Matrix RotY(Operation::Ptr angle);
+  static Matrix RotZ(Operation::Ptr angle);
+  static Matrix Var(size_t n_rows, size_t n_cols);
+  Vector operator*(const Vector& v);
+  Matrix operator*(const Matrix& other);
+  Matrix operator*(Operation::Ptr scalar);
+  Matrix transpose();
+  inline Operation::Ptr operator()(size_t i, size_t j) const {
+    return elements[i + j * n_rows];
   };
-  Operation::Ptr get(size_t i) const { return elements[i]; };
-  Vector3 operator+(const Vector3& v);
 };
 
-struct Matrix3 {
-  static Matrix3 identity();
-  static Matrix3 RotX(Operation::Ptr angle);
-  static Matrix3 RotY(Operation::Ptr angle);
-  static Matrix3 RotZ(Operation::Ptr angle);
-  Vector3 operator*(const Vector3& v);
-  Matrix3 operator*(const Matrix3& m);
-  Operation::Ptr get(size_t i, size_t j) const { return elements[i * 3 + j]; };
-  std::array<Operation::Ptr, 9> elements;
-};
-
-}
+}  // namespace tenkai

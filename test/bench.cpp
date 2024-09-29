@@ -14,17 +14,17 @@ auto gen_jit_func() {
   auto inp1 = Operation::make_var();
   auto inp2 = Operation::make_var();
 
-  auto A = Matrix3::RotX(inp0);
-  auto B = Matrix3::RotY(inp1);
-  auto C = Matrix3::RotZ(inp2);
-  auto v = Vector3({inp0, inp1, inp2});
+  auto A = Matrix::RotX(inp0);
+  auto B = Matrix::RotY(inp1);
+  auto C = Matrix::RotZ(inp2);
+  auto v = Vector({inp0, inp1, inp2});
   auto Av = (A * v);
   auto BAv = (B * Av);
   auto CBAv = (C * BAv);
   auto out1 = Av.sum();
   auto out2 = BAv.sum();
   auto out3 = CBAv.sqnorm();
-  auto out4 = CBAv.get(0);
+  auto out4 = CBAv(0);
   auto out5 = (Av + BAv + CBAv).sqnorm();
 
   std::vector<Operation::Ptr> inputs = {inp0, inp1, inp2};

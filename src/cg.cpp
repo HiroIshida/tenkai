@@ -61,6 +61,12 @@ Operation::Ptr Operation::make_one() {
   return one;
 }
 
+Operation::Ptr Operation::make_constant(double value) {
+  Operation::Ptr constant = std::make_shared<Operation>(std::to_string(value));
+  constant->kind = OpKind::CONSTANT;
+  return constant;
+}
+
 std::vector<Operation::Ptr> Operation::get_leafs() {
   std::vector<Operation::Ptr> leafs;
   auto is_added = [&leafs](Operation::Ptr op) {
@@ -127,11 +133,11 @@ Operation::Ptr sin(Operation::Ptr op) {
   }
   return Operation::create(op, nullptr, OpKind::SIN);
 }
-Operation::Ptr negate(Operation::Ptr op) {
+Operation::Ptr operator-(Operation::Ptr op) {
   if (op->kind == OpKind::ZERO) {
     return Operation::make_zero();
   }
   return Operation::create(op, nullptr, OpKind::NEGATE);
 }
 
-};
+};  // namespace tenkai

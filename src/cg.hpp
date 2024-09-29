@@ -9,7 +9,19 @@ namespace tenkai {
 
 std::string generate_random_string(size_t length);
 
-enum class OpKind { NIL, ADD, SUB, MUL, COS, SIN, NEGATE, VALIABLE, ZERO, ONE };
+enum class OpKind {
+  NIL,
+  ADD,
+  SUB,
+  MUL,
+  COS,
+  SIN,
+  NEGATE,
+  VALIABLE,
+  ZERO,
+  ONE,
+  CONSTANT
+};
 
 struct Operation : std::enable_shared_from_this<Operation> {
   using Ptr = std::shared_ptr<Operation>;
@@ -23,6 +35,7 @@ struct Operation : std::enable_shared_from_this<Operation> {
   static Operation::Ptr make_var();
   static Operation::Ptr make_zero();
   static Operation::Ptr make_one();
+  static Operation::Ptr make_constant(double value);
   std::vector<Operation::Ptr> get_leafs();
   inline bool is_nullaryop() const { return lhs == nullptr && rhs == nullptr; }
   inline bool is_unaryop() const { return lhs != nullptr && rhs == nullptr; }
@@ -56,6 +69,6 @@ Operation::Ptr operator*(Operation::Ptr lhs, Operation::Ptr rhs);
 // unary operators
 Operation::Ptr cos(Operation::Ptr op);
 Operation::Ptr sin(Operation::Ptr op);
-Operation::Ptr negate(Operation::Ptr op);
+Operation::Ptr operator-(Operation::Ptr op);
 
 }  // namespace tenkai
