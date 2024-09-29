@@ -60,7 +60,8 @@ using JitFunc = void (*)(T*, T*);
 template <typename T>
 JitFunc<T> jit_compile(const std::vector<Operation::Ptr>& inputs,
                        const std::vector<Operation::Ptr>& outputs,
-                       const std::string& backend = "g++");
+                       const std::string& backend = "g++",
+                       bool disas = false);
 
 Operation::Ptr operator+(Operation::Ptr lhs, Operation::Ptr rhs);
 Operation::Ptr operator-(Operation::Ptr lhs, Operation::Ptr rhs);

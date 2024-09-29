@@ -115,7 +115,8 @@ void flatten(const std::string& func_name,
 template <typename T>
 JitFunc<T> jit_compile(const std::vector<Operation::Ptr>& inputs,
                        const std::vector<Operation::Ptr>& outputs,
-                       const std::string& backend) {
+                       const std::string& backend,
+                       bool disas) {
   std::string type_name;
   if constexpr (std::is_same<T, double>::value) {
     type_name = "double";
@@ -125,7 +126,7 @@ JitFunc<T> jit_compile(const std::vector<Operation::Ptr>& inputs,
     throw std::runtime_error("unsupported type");
   }
 
-  std::string func_name = generate_random_string(16);
+  std::string func_name = "generated_" + generate_random_string(16);
   std::string source_name = "/tmp/" + func_name + ".cpp";
   std::string so_name = "/tmp/" + func_name + ".so";
 
@@ -138,6 +139,13 @@ JitFunc<T> jit_compile(const std::vector<Operation::Ptr>& inputs,
   auto ret = system(cmd.c_str());
   if (ret != 0) {
     throw std::runtime_error("failed to compile");
+  }
+
+  if (disas) {
+    std::string disas_cmd =
+        "objdump --disassemble=" + func_name + " " + so_name;
+    std::cout << disas_cmd << std::endl;
+    system(disas_cmd.c_str());
   }
 
   void* lib = dlopen(so_name.c_str(), RTLD_LAZY);
@@ -157,11 +165,13 @@ JitFunc<T> jit_compile(const std::vector<Operation::Ptr>& inputs,
 template JitFunc<double> jit_compile<double>(
     const std::vector<Operation::Ptr>& inputs,
     const std::vector<Operation::Ptr>& outputs,
-    const std::string& backend);
+    const std::string& backend,
+    bool disas);
 
 template JitFunc<float> jit_compile<float>(
     const std::vector<Operation::Ptr>& inputs,
     const std::vector<Operation::Ptr>& outputs,
-    const std::string& backend);
+    const std::string& backend,
+    bool disas);
 
 }  // namespace tenkai
