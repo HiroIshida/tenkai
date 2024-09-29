@@ -26,6 +26,14 @@ Vector Vector::operator+(const Vector& v) {
   return Vector({elements});
 }
 
+Vector Vector::operator*(Operation::Ptr scalar) {
+  std::vector<Operation::Ptr> elements(size());
+  for (size_t i = 0; i < size(); i++) {
+    elements[i] = elements[i] * scalar;
+  }
+  return Vector({elements});
+}
+
 Matrix Matrix::RotX(Operation::Ptr angle) {
   auto c = cos(angle);
   auto s = sin(angle);
@@ -71,8 +79,16 @@ Matrix Matrix::RotZ(Operation::Ptr angle) {
   return Matrix(elements, 3, 3);
 }
 
+Matrix Matrix::Var(size_t n_rows, size_t n_cols) {
+  std::vector<Operation::Ptr> elements(n_rows * n_cols);
+  for (size_t i = 0; i < n_rows * n_cols; i++) {
+    elements[i] = Operation::make_var();
+  }
+  return Matrix(elements, n_rows, n_cols);
+}
+
 Vector Matrix::operator*(const Vector& v) {
-  std::vector<Operation::Ptr> elements(v.size());
+  std::vector<Operation::Ptr> elements(n_rows);
   for (size_t i = 0; i < n_rows; i++) {
     Operation::Ptr sum = Operation::make_zero();
     for (size_t j = 0; j < n_cols; j++) {
@@ -91,10 +107,30 @@ Matrix Matrix::operator*(const Matrix& other) {
       for (size_t k = 0; k < n_cols; k++) {
         sum = sum + (*this)(i, k) * other(k, j);
       }
-      elements[i * other.n_cols + j] = sum;
+      elements[i + j * n_rows] = sum;
     }
   }
   return Matrix(elements, n_rows, other.n_cols);
+}
+
+Matrix Matrix::operator*(Operation::Ptr scalar) {
+  std::vector<Operation::Ptr> elements(n_rows * n_cols);
+  for (size_t i = 0; i < n_rows; i++) {
+    for (size_t j = 0; j < n_cols; j++) {
+      elements[i + j * n_rows] = (*this)(i, j) * scalar;
+    }
+  }
+  return Matrix(elements, n_rows, n_cols);
+}
+
+Matrix Matrix::transpose() {
+  std::vector<Operation::Ptr> elements(n_rows * n_cols);
+  for (size_t i = 0; i < n_rows; i++) {
+    for (size_t j = 0; j < n_cols; j++) {
+      elements[j + i * n_cols] = (*this)(i, j);
+    }
+  }
+  return Matrix(elements, n_cols, n_rows);
 }
 
 }  // namespace tenkai

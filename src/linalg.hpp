@@ -18,6 +18,7 @@ struct Vector {
   Operation::Ptr sum();
   Operation::Ptr sqnorm();
   Vector operator+(const Vector& v);
+  Vector operator*(Operation::Ptr scalar);
 };
 
 struct Matrix {
@@ -32,10 +33,13 @@ struct Matrix {
   static Matrix RotX(Operation::Ptr angle);
   static Matrix RotY(Operation::Ptr angle);
   static Matrix RotZ(Operation::Ptr angle);
+  static Matrix Var(size_t n_rows, size_t n_cols);
   Vector operator*(const Vector& v);
   Matrix operator*(const Matrix& other);
+  Matrix operator*(Operation::Ptr scalar);
+  Matrix transpose();
   inline Operation::Ptr operator()(size_t i, size_t j) const {
-    return elements[i * n_cols + j];
+    return elements[i + j * n_rows];
   };
 };
 
