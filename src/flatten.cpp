@@ -13,6 +13,16 @@ void flatten(const std::string& func_name,
              const std::vector<Operation::Ptr>& outputs,
              std::ostream& strm,
              const std::string& type_name) {
+  // Currently no overlapping is allowed between inputs and outputs..
+  for (auto& input : inputs) {
+    for (auto& output : outputs) {
+      if (input == output) {
+        throw std::runtime_error(
+            "detected overlapping between inputs and outputs");
+      }
+    }
+  }
+
   std::vector<Operation::Ptr> operations;
   std::stack<Operation::Ptr> opstack;
   for (auto& output : outputs) {
