@@ -69,6 +69,6 @@ Operation::Ptr operator*(Operation::Ptr lhs, Operation::Ptr rhs);
 // unary operators
 Operation::Ptr cos(Operation::Ptr op);
 Operation::Ptr sin(Operation::Ptr op);
-Operation::Ptr negate(Operation::Ptr op);
+Operation::Ptr operator-(Operation::Ptr op);
 
 }  // namespace tenkai

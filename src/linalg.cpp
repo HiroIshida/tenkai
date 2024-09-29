@@ -37,7 +37,7 @@ Operation::Ptr Vector::sqnorm() {
 Vector Vector::operator-() {
   std::vector<Operation::Ptr> elements(size());
   for (size_t i = 0; i < size(); i++) {
-    elements[i] = negate((*this)(i));
+    elements[i] = -(*this)(i);
   }
   return Vector({elements});
 }
@@ -80,7 +80,7 @@ Matrix Matrix::RotX(Operation::Ptr angle) {
                                           Operation::make_zero(),
                                           Operation::make_zero(),
                                           c,
-                                          negate(s),
+                                          -s,
                                           Operation::make_zero(),
                                           s,
                                           c};
@@ -96,7 +96,7 @@ Matrix Matrix::RotY(Operation::Ptr angle) {
                                           Operation::make_zero(),
                                           Operation::make_one(),
                                           Operation::make_zero(),
-                                          negate(s),
+                                          -s,
                                           Operation::make_zero(),
                                           c};
   return Matrix(elements, 3, 3);
@@ -106,7 +106,7 @@ Matrix Matrix::RotZ(Operation::Ptr angle) {
   auto c = cos(angle);
   auto s = sin(angle);
   std::vector<Operation::Ptr> elements = {c,
-                                          negate(s),
+                                          -s,
                                           Operation::make_zero(),
                                           s,
                                           c,

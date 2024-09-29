@@ -133,7 +133,7 @@ Operation::Ptr sin(Operation::Ptr op) {
   }
   return Operation::create(op, nullptr, OpKind::SIN);
 }
-Operation::Ptr negate(Operation::Ptr op) {
+Operation::Ptr operator-(Operation::Ptr op) {
   if (op->kind == OpKind::ZERO) {
     return Operation::make_zero();
   }
