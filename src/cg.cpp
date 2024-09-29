@@ -134,4 +134,4 @@ Operation::Ptr negate(Operation::Ptr op) {
   return Operation::create(op, nullptr, OpKind::NEGATE);
 }
 
-};
+};  // namespace tenkai

@@ -24,7 +24,7 @@ auto gen_jit_func() {
   auto out1 = Av.sum();
   auto out2 = BAv.sum();
   auto out3 = CBAv.sqnorm();
-  auto out4 = CBAv.get(0);
+  auto out4 = CBAv(0);
   auto out5 = (Av + BAv + CBAv).sqnorm();
 
   std::vector<Operation::Ptr> inputs = {inp0, inp1, inp2};
