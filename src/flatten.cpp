@@ -17,8 +17,7 @@ void flatten(const std::string& func_name,
   for (auto& input : inputs) {
     for (auto& output : outputs) {
       if (input == output) {
-        throw std::runtime_error(
-            "detected overlapping between inputs and outputs");
+        throw std::runtime_error("detected overlapping between inputs and outputs");
       }
     }
   }
@@ -60,8 +59,8 @@ void flatten(const std::string& func_name,
   // code generation
   strm << "#include <cmath>" << std::endl;
   strm << "extern \"C\" {" << std::endl;
-  strm << "void " << func_name << "(" << type_name << "* input, " << type_name
-       << "* output) {" << std::endl;
+  strm << "void " << func_name << "(" << type_name << "* input, " << type_name << "* output) {"
+       << std::endl;
   std::unordered_map<std::string, bool> is_evaluated;
   for (auto it = operations.rbegin(); it != operations.rend(); ++it) {
     auto op = *it;
@@ -133,8 +132,7 @@ JitFunc<T> jit_compile(const std::vector<Operation::Ptr>& inputs,
   auto fs = std::ofstream(source_name);
   flatten(func_name, inputs, outputs, fs, type_name);
   fs.close();
-  std::string cmd =
-      backend + " -O3 -shared -fPIC " + source_name + " -o " + so_name;
+  std::string cmd = backend + " -O3 -shared -fPIC " + source_name + " -o " + so_name;
 
   auto ret = system(cmd.c_str());
   if (ret != 0) {
@@ -142,8 +140,7 @@ JitFunc<T> jit_compile(const std::vector<Operation::Ptr>& inputs,
   }
 
   if (disas) {
-    std::string disas_cmd =
-        "objdump --disassemble=" + func_name + " " + so_name;
+    std::string disas_cmd = "objdump --disassemble=" + func_name + " " + so_name;
     std::cout << disas_cmd << std::endl;
     system(disas_cmd.c_str());
   }
@@ -162,16 +159,14 @@ JitFunc<T> jit_compile(const std::vector<Operation::Ptr>& inputs,
   return func;
 }
 
-template JitFunc<double> jit_compile<double>(
-    const std::vector<Operation::Ptr>& inputs,
-    const std::vector<Operation::Ptr>& outputs,
-    const std::string& backend,
-    bool disas);
+template JitFunc<double> jit_compile<double>(const std::vector<Operation::Ptr>& inputs,
+                                             const std::vector<Operation::Ptr>& outputs,
+                                             const std::string& backend,
+                                             bool disas);
 
-template JitFunc<float> jit_compile<float>(
-    const std::vector<Operation::Ptr>& inputs,
-    const std::vector<Operation::Ptr>& outputs,
-    const std::string& backend,
-    bool disas);
+template JitFunc<float> jit_compile<float>(const std::vector<Operation::Ptr>& inputs,
+                                           const std::vector<Operation::Ptr>& outputs,
+                                           const std::string& backend,
+                                           bool disas);
 
 }  // namespace tenkai

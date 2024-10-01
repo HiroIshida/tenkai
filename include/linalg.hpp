@@ -42,9 +42,7 @@ struct Matrix {
   Matrix operator*(const Matrix& other);
   Matrix operator*(Operation::Ptr scalar);
   Matrix transpose();
-  inline Operation::Ptr operator()(size_t i, size_t j) const {
-    return elements[i + j * n_rows];
-  };
+  inline Operation::Ptr operator()(size_t i, size_t j) const { return elements[i + j * n_rows]; };
 };
 
 }  // namespace tenkai

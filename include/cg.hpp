@@ -9,19 +9,7 @@ namespace tenkai {
 
 std::string generate_random_string(size_t length);
 
-enum class OpKind {
-  NIL,
-  ADD,
-  SUB,
-  MUL,
-  COS,
-  SIN,
-  NEGATE,
-  VALIABLE,
-  ZERO,
-  ONE,
-  CONSTANT
-};
+enum class OpKind { NIL, ADD, SUB, MUL, COS, SIN, NEGATE, VALIABLE, ZERO, ONE, CONSTANT };
 
 struct Operation : std::enable_shared_from_this<Operation> {
   using Ptr = std::shared_ptr<Operation>;
@@ -29,9 +17,7 @@ struct Operation : std::enable_shared_from_this<Operation> {
   Operation();
   Operation(const std::string& name);
   Operation(OpKind kind, Operation::Ptr lhs, Operation::Ptr rhs);
-  static Operation::Ptr create(OpKind kind,
-                               Operation::Ptr lhs,
-                               Operation::Ptr rhs);
+  static Operation::Ptr create(OpKind kind, Operation::Ptr lhs, Operation::Ptr rhs);
   static Operation::Ptr make_var();
   static Operation::Ptr make_zero();
   static Operation::Ptr make_one();

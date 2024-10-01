@@ -8,8 +8,7 @@ namespace tenkai {
 
 std::string generate_random_string(size_t length) {
   // c++ does not have a built-in random string generator??
-  const std::string charset =
-      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const std::string charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
   std::random_device rd;
   std::mt19937 generator(rd());
   std::uniform_int_distribution<> distribution(0, charset.size() - 1);
@@ -32,9 +31,7 @@ Operation::Operation(OpKind kind, Operation::Ptr lhs, Operation::Ptr rhs)
   name = generate_random_string(8);
 }
 
-Operation::Ptr Operation::create(OpKind kind,
-                                 Operation::Ptr lhs,
-                                 Operation::Ptr rhs) {
+Operation::Ptr Operation::create(OpKind kind, Operation::Ptr lhs, Operation::Ptr rhs) {
   auto op = std::make_shared<Operation>(kind, lhs, rhs);
   lhs->requireds.push_back(op);
   if (rhs != nullptr) {
@@ -99,8 +96,7 @@ Operation::Ptr operator+(Operation::Ptr lhs, Operation::Ptr rhs) {
     return lhs;
   }
   if (rhs->kind == OpKind::CONSTANT && lhs->kind == OpKind::CONSTANT) {
-    return Operation::make_constant(std::stod(lhs->name) +
-                                    std::stod(rhs->name));
+    return Operation::make_constant(std::stod(lhs->name) + std::stod(rhs->name));
   }
   return Operation::create(OpKind::ADD, lhs, rhs);
 }
@@ -112,8 +108,7 @@ Operation::Ptr operator-(Operation::Ptr lhs, Operation::Ptr rhs) {
     return lhs;
   }
   if (rhs->kind == OpKind::CONSTANT && lhs->kind == OpKind::CONSTANT) {
-    return Operation::make_constant(std::stod(lhs->name) -
-                                    std::stod(rhs->name));
+    return Operation::make_constant(std::stod(lhs->name) - std::stod(rhs->name));
   }
   return Operation::create(OpKind::SUB, lhs, rhs);
 }
@@ -128,8 +123,7 @@ Operation::Ptr operator*(Operation::Ptr lhs, Operation::Ptr rhs) {
     return lhs;
   }
   if (rhs->kind == OpKind::CONSTANT && lhs->kind == OpKind::CONSTANT) {
-    return Operation::make_constant(std::stod(lhs->name) *
-                                    std::stod(rhs->name));
+    return Operation::make_constant(std::stod(lhs->name) * std::stod(rhs->name));
   }
   return Operation::create(OpKind::MUL, lhs, rhs);
 }
