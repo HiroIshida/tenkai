@@ -30,7 +30,7 @@ Operation::Operation(OpKind kind, std::vector<Operation::Ptr> leafs) : kind(kind
   name = generate_random_string(8);
 }
 
-Operation::Ptr Operation::create(OpKind kind, std::vector<Operation::Ptr> leafs) {
+Operation::Ptr Operation::create(OpKind kind, std::vector<Operation::Ptr>&& leafs) {
   return std::make_shared<Operation>(kind, leafs);
 }
 
@@ -50,6 +50,13 @@ Operation::Ptr Operation::make_one() {
   Operation::Ptr one = std::make_shared<Operation>("1.0");
   one->kind = OpKind::ONE;
   return one;
+}
+
+Operation::Ptr Operation::make_ext_func(const std::string& name, Operation::Ptr arg) {
+  Operation::Ptr func = std::make_shared<Operation>(name);
+  func->kind = OpKind::NIL;
+  func->args.push_back(arg);
+  return func;
 }
 
 Operation::Ptr Operation::make_constant(double value) {

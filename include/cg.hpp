@@ -17,10 +17,11 @@ struct Operation : std::enable_shared_from_this<Operation> {
   Operation();
   Operation(const std::string& name);
   Operation(OpKind kind, std::vector<Operation::Ptr> args);
-  static Operation::Ptr create(OpKind kind, std::vector<Operation::Ptr> args);
+  static Operation::Ptr create(OpKind kind, std::vector<Operation::Ptr>&& args);
   static Operation::Ptr make_var();
   static Operation::Ptr make_zero();
   static Operation::Ptr make_one();
+  static Operation::Ptr make_ext_func(const std::string& name, Operation::Ptr arg);
   static Operation::Ptr make_constant(double value);
   std::vector<Operation::Ptr> get_leafs();
   inline bool is_nullaryop() const { return args.size() == 0; }
