@@ -16,20 +16,22 @@ struct Operation : std::enable_shared_from_this<Operation> {
   using WeakPtr = std::weak_ptr<Operation>;
   Operation();
   Operation(const std::string& name);
-  Operation(OpKind kind, Operation::Ptr lhs, Operation::Ptr rhs);
-  static Operation::Ptr create(OpKind kind, Operation::Ptr lhs, Operation::Ptr rhs);
+  Operation(OpKind kind, std::vector<Operation::Ptr> args);
+  static Operation::Ptr create(OpKind kind, std::vector<Operation::Ptr> args);
   static Operation::Ptr make_var();
   static Operation::Ptr make_zero();
   static Operation::Ptr make_one();
   static Operation::Ptr make_constant(double value);
   std::vector<Operation::Ptr> get_leafs();
-  inline bool is_nullaryop() const { return lhs == nullptr && rhs == nullptr; }
-  inline bool is_unaryop() const { return lhs != nullptr && rhs == nullptr; }
+  inline bool is_nullaryop() const { return args.size() == 0; }
+  inline bool is_unaryop() const { return args.size() == 1; }
+  inline Operation::Ptr first() const { return args[0]; }
+  inline Operation::Ptr second() const { return args[1]; }
+  inline Operation::Ptr third() const { return args[2]; }
 
   // member variables
   OpKind kind;
-  Operation::Ptr lhs;
-  Operation::Ptr rhs;
+  std::vector<Operation::Ptr> args;
   std::string name;
 };
 

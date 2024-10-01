@@ -32,12 +32,10 @@ void flatten(const std::string& func_name,
     opstack.pop();
     if (!op->is_nullaryop()) {
       operations.push_back(op);
-
-      if (op->lhs != nullptr) {
-        opstack.push(op->lhs);
-      }
-      if (op->rhs != nullptr) {
-        opstack.push(op->rhs);
+      for (auto& arg : op->args) {
+        if (arg != nullptr) {
+          opstack.push(arg);
+        }
       }
     }
   }
@@ -77,19 +75,19 @@ void flatten(const std::string& func_name,
     } else if (op->is_unaryop()) {
       switch (op->kind) {
         case OpKind::COS:
-          strm << "cos(" << remapped_name(op->lhs) << ");" << std::endl;
+          strm << "cos(" << remapped_name(op->first()) << ");" << std::endl;
           break;
         case OpKind::SIN:
-          strm << "sin(" << remapped_name(op->lhs) << ");" << std::endl;
+          strm << "sin(" << remapped_name(op->first()) << ");" << std::endl;
           break;
         case OpKind::NEGATE:
-          strm << "-" << remapped_name(op->lhs) << ";" << std::endl;
+          strm << "-" << remapped_name(op->first()) << ";" << std::endl;
           break;
         default:
           throw std::runtime_error("unknown operator");
       }
     } else {
-      strm << remapped_name(op->lhs) << " ";
+      strm << remapped_name(op->first()) << " ";
       switch (op->kind) {
         case OpKind::ADD:
           strm << "+";
@@ -103,7 +101,7 @@ void flatten(const std::string& func_name,
         default:
           throw std::runtime_error("unknown operator");
       }
-      strm << " " << remapped_name(op->rhs) << ";" << std::endl;
+      strm << " " << remapped_name(op->second()) << ";" << std::endl;
     }
     is_evaluated[remapped_name(op)] = true;
   }

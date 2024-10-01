@@ -26,13 +26,12 @@ Operation::Operation() : kind(OpKind::NIL) {
 
 Operation::Operation(const std::string& name) : kind(OpKind::NIL), name(name) {}
 
-Operation::Operation(OpKind kind, Operation::Ptr lhs, Operation::Ptr rhs)
-    : lhs(lhs), rhs(rhs), kind(kind) {
+Operation::Operation(OpKind kind, std::vector<Operation::Ptr> leafs) : kind(kind), args(leafs) {
   name = generate_random_string(8);
 }
 
-Operation::Ptr Operation::create(OpKind kind, Operation::Ptr lhs, Operation::Ptr rhs) {
-  return std::make_shared<Operation>(kind, lhs, rhs);
+Operation::Ptr Operation::create(OpKind kind, std::vector<Operation::Ptr> leafs) {
+  return std::make_shared<Operation>(kind, leafs);
 }
 
 Operation::Ptr Operation::make_var() {
@@ -72,11 +71,10 @@ std::vector<Operation::Ptr> Operation::get_leafs() {
     if (op->kind == OpKind::VALIABLE) {
       leafs.push_back(op);
     } else {
-      if (!is_added(op->lhs)) {
-        stack.push(op->lhs);
-      }
-      if (!is_added(op->rhs)) {
-        stack.push(op->rhs);
+      for (auto& arg : op->args) {
+        if (!is_added(arg)) {
+          stack.push(arg);
+        }
       }
     }
   }
@@ -93,7 +91,7 @@ Operation::Ptr operator+(Operation::Ptr lhs, Operation::Ptr rhs) {
   if (rhs->kind == OpKind::CONSTANT && lhs->kind == OpKind::CONSTANT) {
     return Operation::make_constant(std::stod(lhs->name) + std::stod(rhs->name));
   }
-  return Operation::create(OpKind::ADD, lhs, rhs);
+  return Operation::create(OpKind::ADD, {lhs, rhs});
 }
 Operation::Ptr operator-(Operation::Ptr lhs, Operation::Ptr rhs) {
   if (lhs->kind == OpKind::ZERO) {
@@ -105,7 +103,7 @@ Operation::Ptr operator-(Operation::Ptr lhs, Operation::Ptr rhs) {
   if (rhs->kind == OpKind::CONSTANT && lhs->kind == OpKind::CONSTANT) {
     return Operation::make_constant(std::stod(lhs->name) - std::stod(rhs->name));
   }
-  return Operation::create(OpKind::SUB, lhs, rhs);
+  return Operation::create(OpKind::SUB, {lhs, rhs});
 }
 Operation::Ptr operator*(Operation::Ptr lhs, Operation::Ptr rhs) {
   if (lhs->kind == OpKind::ZERO || rhs->kind == OpKind::ZERO) {
@@ -120,25 +118,25 @@ Operation::Ptr operator*(Operation::Ptr lhs, Operation::Ptr rhs) {
   if (rhs->kind == OpKind::CONSTANT && lhs->kind == OpKind::CONSTANT) {
     return Operation::make_constant(std::stod(lhs->name) * std::stod(rhs->name));
   }
-  return Operation::create(OpKind::MUL, lhs, rhs);
+  return Operation::create(OpKind::MUL, {lhs, rhs});
 }
 Operation::Ptr cos(Operation::Ptr op) {
   if (op->kind == OpKind::ZERO) {
     return Operation::make_one();
   }
-  return Operation::create(OpKind::COS, op, nullptr);
+  return Operation::create(OpKind::COS, {op});
 }
 Operation::Ptr sin(Operation::Ptr op) {
   if (op->kind == OpKind::ZERO) {
     return Operation::make_zero();
   }
-  return Operation::create(OpKind::SIN, op, nullptr);
+  return Operation::create(OpKind::SIN, {op});
 }
 Operation::Ptr operator-(Operation::Ptr op) {
   if (op->kind == OpKind::ZERO) {
     return Operation::make_zero();
   }
-  return Operation::create(OpKind::NEGATE, op, nullptr);
+  return Operation::create(OpKind::NEGATE, {op});
 }
 
 };  // namespace tenkai
