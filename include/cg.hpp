@@ -31,7 +31,6 @@ struct Operation : std::enable_shared_from_this<Operation> {
   Operation::Ptr lhs;
   Operation::Ptr rhs;
   std::string name;
-  std::vector<WeakPtr> requireds;
 };
 
 void flatten(const std::string& func_name,

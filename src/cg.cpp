@@ -32,12 +32,7 @@ Operation::Operation(OpKind kind, Operation::Ptr lhs, Operation::Ptr rhs)
 }
 
 Operation::Ptr Operation::create(OpKind kind, Operation::Ptr lhs, Operation::Ptr rhs) {
-  auto op = std::make_shared<Operation>(kind, lhs, rhs);
-  lhs->requireds.push_back(op);
-  if (rhs != nullptr) {
-    rhs->requireds.push_back(op);
-  }
-  return op;
+  return std::make_shared<Operation>(kind, lhs, rhs);
 }
 
 Operation::Ptr Operation::make_var() {
