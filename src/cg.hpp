@@ -28,10 +28,10 @@ struct Operation : std::enable_shared_from_this<Operation> {
   using WeakPtr = std::weak_ptr<Operation>;
   Operation();
   Operation(const std::string& name);
-  Operation(Operation::Ptr lhs, Operation::Ptr rhs, OpKind kind);
-  static Operation::Ptr create(Operation::Ptr lhs,
-                               Operation::Ptr rhs,
-                               OpKind kind);
+  Operation(OpKind kind, Operation::Ptr lhs, Operation::Ptr rhs);
+  static Operation::Ptr create(OpKind kind,
+                               Operation::Ptr lhs,
+                               Operation::Ptr rhs);
   static Operation::Ptr make_var();
   static Operation::Ptr make_zero();
   static Operation::Ptr make_one();
