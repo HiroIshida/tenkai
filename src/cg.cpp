@@ -98,6 +98,10 @@ Operation::Ptr operator+(Operation::Ptr lhs, Operation::Ptr rhs) {
   if (rhs->kind == OpKind::ZERO) {
     return lhs;
   }
+  if (rhs->kind == OpKind::CONSTANT && lhs->kind == OpKind::CONSTANT) {
+    return Operation::make_constant(std::stod(lhs->name) +
+                                    std::stod(rhs->name));
+  }
   return Operation::create(lhs, rhs, OpKind::ADD);
 }
 Operation::Ptr operator-(Operation::Ptr lhs, Operation::Ptr rhs) {
@@ -106,6 +110,10 @@ Operation::Ptr operator-(Operation::Ptr lhs, Operation::Ptr rhs) {
   }
   if (rhs->kind == OpKind::ZERO) {
     return lhs;
+  }
+  if (rhs->kind == OpKind::CONSTANT && lhs->kind == OpKind::CONSTANT) {
+    return Operation::make_constant(std::stod(lhs->name) -
+                                    std::stod(rhs->name));
   }
   return Operation::create(lhs, rhs, OpKind::SUB);
 }
@@ -118,6 +126,10 @@ Operation::Ptr operator*(Operation::Ptr lhs, Operation::Ptr rhs) {
   }
   if (rhs->kind == OpKind::ONE) {
     return lhs;
+  }
+  if (rhs->kind == OpKind::CONSTANT && lhs->kind == OpKind::CONSTANT) {
+    return Operation::make_constant(std::stod(lhs->name) *
+                                    std::stod(rhs->name));
   }
   return Operation::create(lhs, rhs, OpKind::MUL);
 }
