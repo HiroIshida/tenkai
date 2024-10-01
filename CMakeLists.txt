@@ -1,7 +1,7 @@
 FILE(GLOB_RECURSE SRC_FILES src/*.cpp)
 add_library(tenkai ${SRC_FILES})
 add_executable(main main.cpp)
-include_directories(src)
+include_directories(include)
 target_link_libraries(main tenkai ${CMAKE_DL_LIBS})
 
 # bench
