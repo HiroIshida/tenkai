@@ -14,7 +14,7 @@ TEST(LinalgTest, Vector) {
     auto fn = tenkai::jit_compile<double>({var1, var2, var3}, v2.elements);
     double input[3] = {1, 2, 3};
     double output[3];
-    fn(input, output);
+    fn(input, output, nullptr);
     ASSERT_EQ(output[0], 2);
     ASSERT_EQ(output[1], 4);
     ASSERT_EQ(output[2], 6);
@@ -24,7 +24,7 @@ TEST(LinalgTest, Vector) {
     auto fn = tenkai::jit_compile<double>({var1, var2, var3}, {v1.sum()});
     double input[3] = {1, 2, 3};
     double output;
-    fn(input, &output);
+    fn(input, &output, nullptr);
     ASSERT_EQ(output, 6);
   }
 
@@ -32,7 +32,7 @@ TEST(LinalgTest, Vector) {
     auto fn = tenkai::jit_compile<double>({var1, var2, var3}, {v1.sqnorm()});
     double input[3] = {1, 2, 3};
     double output;
-    fn(input, &output);
+    fn(input, &output, nullptr);
     ASSERT_EQ(output, 14.);
   }
 }
@@ -49,7 +49,7 @@ TEST(LinalgTest, Matrix) {
     auto fn = tenkai::jit_compile<double>({var1, var2, var3, var4}, {mat2(0, 0), mat2(0, 1), mat2(1, 0), mat2(1, 1)});
     double input[4] = {1, 2, 3, 4};
     double output[4];
-    fn(input, output);
+    fn(input, output, nullptr);
     ASSERT_EQ(output[0], 1);
     ASSERT_EQ(output[1], 3);
     ASSERT_EQ(output[2], 2);
@@ -64,7 +64,7 @@ TEST(LinalgTest, Matrix) {
     auto fn = tenkai::jit_compile<double>({var1, var2, var3}, {mat2(0, 0), mat2(0, 1), mat2(1, 0), mat2(1, 1), mat2(2, 0), mat2(2, 1)});
     double input[3] = {1, 2, 3};
     double output[6];
-    fn(input, output);
+    fn(input, output, nullptr);
     ASSERT_EQ(output[0], 1);
     ASSERT_EQ(output[1], 2);
     ASSERT_EQ(output[2], 3);
@@ -84,7 +84,7 @@ TEST(LinalgTest, Matrix) {
     auto fn = tenkai::jit_compile<double>(inputs, {mat3(0, 0), mat3(0, 1), mat3(1, 0), mat3(1, 1)});
     double input[12] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
     double output[4];
-    fn(input, output);
+    fn(input, output, nullptr);
     ASSERT_EQ(output[0], 7 + 3 * 8 + 5 * 9);
     ASSERT_EQ(output[1], 10 + 3 * 11 + 5 * 12);
     ASSERT_EQ(output[2], 7 * 2 + 8 * 4 + 9 * 6);

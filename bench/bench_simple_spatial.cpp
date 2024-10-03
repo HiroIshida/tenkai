@@ -96,11 +96,11 @@ int main() {
   for (int i = 0; i < 7; i++) {
     input[i] = dis(gen);
   }
-  f_jit(input.data(), output.data());
+  f_jit(input.data(), output.data(), nullptr);
   auto start = std::chrono::high_resolution_clock::now();
   double sum = 0;
   for(int i = 0; i < n_trials; i++) {
-    f_jit(input.data(), output.data());
+    f_jit(input.data(), output.data(), nullptr);
     sum += output[0];
   }
   auto end = std::chrono::high_resolution_clock::now();

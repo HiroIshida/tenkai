@@ -18,7 +18,7 @@ TEST(SpatialTest, MultInverse) {
   auto fn = tenkai::jit_compile<double>(inputs, {tf2.rot(0, 0), tf2.rot(1, 1), tf2.rot(2, 2), tf2.trans(0), tf2.trans(1), tf2.trans(2)});
   double input[6] = {0.1, 0.2, 0.3, 1, 2, 3};
   double output[6];
-  fn(input, output);
+  fn(input, output, nullptr);
   ASSERT_NEAR(output[0], 1, 1e-6);
   ASSERT_NEAR(output[1], 1, 1e-6);
   ASSERT_NEAR(output[2], 1, 1e-6);

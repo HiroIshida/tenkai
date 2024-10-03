@@ -66,7 +66,7 @@ int main() {
       for (int j = 0; j < 3; ++j) {
           input[j] = dis(gen);
       }
-      jit_func(input.data(), output_jit.data());
+      jit_func(input.data(), output_jit.data(), nullptr);
       eigen_counterpart(input.data(), output_eigen.data());
   }
 
@@ -77,7 +77,7 @@ int main() {
       for (int j = 0; j < 3; ++j) {
           input[j] = dis(gen);
       }
-      jit_func(input.data(), output_jit.data());
+      jit_func(input.data(), output_jit.data(), nullptr);
       out_sum_jit += output_jit[4];
   }
   auto end_jit = std::chrono::high_resolution_clock::now();

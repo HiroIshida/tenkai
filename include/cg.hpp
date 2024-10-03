@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <vector>
@@ -9,7 +10,7 @@ namespace tenkai {
 
 std::string generate_random_string(size_t length);
 
-enum class OpKind { NIL, ADD, SUB, MUL, COS, SIN, NEGATE, VALIABLE, ZERO, ONE, CONSTANT };
+enum class OpKind { NIL, ADD, SUB, MUL, COS, SIN, NEGATE, VALIABLE, ZERO, ONE, CONSTANT, EXTCALL };
 
 struct Operation : std::enable_shared_from_this<Operation> {
   using Ptr = std::shared_ptr<Operation>;
@@ -22,7 +23,7 @@ struct Operation : std::enable_shared_from_this<Operation> {
   static Operation::Ptr make_var();
   static Operation::Ptr make_zero();
   static Operation::Ptr make_one();
-  static Operation::Ptr make_ext_func(const std::string& name, Operation::Ptr arg);
+  static Operation::Ptr make_ext_func(std::string&& name, std::vector<Operation::Ptr>&& args);
   static Operation::Ptr make_constant(double value);
   std::vector<Operation::Ptr> get_leafs();
   inline bool is_nullaryop() const { return args.size() == 0; }
@@ -35,6 +36,7 @@ struct Operation : std::enable_shared_from_this<Operation> {
   OpKind kind;
   std::vector<Operation::Ptr> args;
   std::string name;
+  std::optional<std::string> ext_func_name;  // used only for EXTCALL kind
 };
 
 void flatten(const std::string& func_name,
@@ -44,7 +46,7 @@ void flatten(const std::string& func_name,
              const std::string& type_name);
 
 template <typename T>
-using JitFunc = void (*)(T*, T*);
+using JitFunc = void (*)(T*, T*, void**);
 
 template <typename T>
 JitFunc<T> jit_compile(const std::vector<Operation::Ptr>& inputs,

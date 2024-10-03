@@ -21,6 +21,9 @@ constexpr const char* getTypeString() {
 
 template <typename T>
 constexpr void opkind_to_cppfunc_name(OpKind kind, std::ostream& strm) {
+  if (kind == OpKind::EXTCALL) {
+    throw std::runtime_error("EXTCALL does not have cpp function name");
+  }
   std::string type_name = getTypeString<T>();
   // use std::plus .. to handle these primitive operation as function
   switch (kind) {
@@ -71,12 +74,12 @@ void flatten(const std::string& func_name,
   auto remapped_name = [&](const Operation::Ptr op) -> std::string {
     for (size_t i = 0; i < inputs.size(); ++i) {
       if (inputs[i] == op) {
-        return "input[" + std::to_string(i) + "]";
+        return std::format("input[{}]", i);
       }
     }
     for (size_t i = 0; i < outputs.size(); ++i) {
       if (outputs[i] == op) {
-        return "output[" + std::to_string(i) + "]";
+        return std::format("output[{}]", i);
       }
     }
     return op->name;
@@ -86,8 +89,8 @@ void flatten(const std::string& func_name,
   strm << "#include <cmath>" << std::endl;
   strm << "#include <functional>" << std::endl;
   strm << "extern \"C\" {" << std::endl;
-  strm << "void " << func_name << "(" << type_name << "* input, " << type_name << "* output) {"
-       << std::endl;
+  strm << std::format("void {}(const {}* input, {}* output, void** extfns){{\n", func_name,
+                      type_name, type_name);
   std::unordered_map<std::string, bool> is_evaluated;
   for (auto it = operations.rbegin(); it != operations.rend(); ++it) {
     auto op = *it;
@@ -98,13 +101,30 @@ void flatten(const std::string& func_name,
       throw std::runtime_error("must not reach here");
     }
 
+    if (op->kind == OpKind::EXTCALL) {
+      // require additional cast to function pointer
+      strm << "  auto " << op->ext_func_name.value();
+      strm << " = reinterpret_cast<double (*)(";
+      for (size_t i = 0; i < op->args.size(); ++i) {
+        if (i != 0) {
+          strm << ", ";
+        }
+        strm << "double";
+      }
+      strm << ")>(extfns[0]);" << std::endl;
+    }
+
     strm << "  ";  // for indent
     bool is_intermediate = (remapped_name(op).find("output") == std::string::npos);
     if (is_intermediate) {
       strm << "auto ";
     }
     strm << remapped_name(op) << " = ";
-    opkind_to_cppfunc_name<double>(op->kind, strm);
+    if (op->kind == OpKind::EXTCALL) {
+      strm << op->ext_func_name.value();
+    } else {
+      opkind_to_cppfunc_name<double>(op->kind, strm);
+    }
     strm << "(";
     for (size_t i = 0; i < op->args.size(); ++i) {
       if (i != 0) {

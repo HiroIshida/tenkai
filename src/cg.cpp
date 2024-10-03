@@ -52,10 +52,11 @@ Operation::Ptr Operation::make_one() {
   return one;
 }
 
-Operation::Ptr Operation::make_ext_func(const std::string& name, Operation::Ptr arg) {
+Operation::Ptr Operation::make_ext_func(std::string&& name, std::vector<Operation::Ptr>&& args) {
   Operation::Ptr func = std::make_shared<Operation>(name);
-  func->kind = OpKind::NIL;
-  func->args.push_back(arg);
+  func->kind = OpKind::EXTCALL;
+  func->args = std::move(args);
+  func->ext_func_name = std::move(name);
   return func;
 }
 
