@@ -99,7 +99,7 @@ void flatten(const std::string& func_name,
     }
     auto var_name = std::to_string(op->hash_id);
     std::replace(var_name.begin(), var_name.end(), '-', 'm');
-    return "var" + var_name;
+    return "var_" + var_name;
   };
 
   // code generation
