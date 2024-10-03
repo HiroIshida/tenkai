@@ -8,7 +8,7 @@ TEST(BasicMathTest, ConstantFolding) {
   auto d = a * b + c;
   EXPECT_EQ(d->is_nullaryop(), true);
   EXPECT_EQ(d->kind, tenkai::OpKind::CONSTANT);
-  EXPECT_EQ(std::stod(d->name), 6.0);
+  EXPECT_EQ(*d->constant_value, 6.0);
 }
 
 int main(int argc, char **argv) {

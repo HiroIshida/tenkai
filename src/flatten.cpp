@@ -1,8 +1,10 @@
 #include <dlfcn.h>
+#include <algorithm>
 #include <format>
 #include <fstream>
 #include <iostream>
 #include <stack>
+#include <string>
 #include <typeinfo>
 #include <unordered_map>
 #include "cg.hpp"
@@ -74,15 +76,30 @@ void flatten(const std::string& func_name,
   auto remapped_name = [&](const Operation::Ptr op) -> std::string {
     for (size_t i = 0; i < inputs.size(); ++i) {
       if (inputs[i] == op) {
+        if (op->kind != OpKind::VALIABLE) {
+          throw std::runtime_error("must not reach here");
+        }
         return std::format("input[{}]", i);
       }
     }
+
+    if (op->kind == OpKind::VALIABLE) {
+      throw std::runtime_error("must not reach here");
+    }
+
     for (size_t i = 0; i < outputs.size(); ++i) {
       if (outputs[i] == op) {
         return std::format("output[{}]", i);
       }
     }
-    return op->name;
+
+    // if zero/one/constant, return the value
+    if (op->kind == OpKind::ZERO || op->kind == OpKind::ONE || op->kind == OpKind::CONSTANT) {
+      return std::to_string(*op->constant_value);
+    }
+    auto var_name = std::to_string(op->hash_id);
+    std::replace(var_name.begin(), var_name.end(), '-', 'm');
+    return "var_" + var_name;
   };
 
   // code generation
