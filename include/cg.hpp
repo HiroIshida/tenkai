@@ -35,6 +35,7 @@ struct Operation : std::enable_shared_from_this<Operation> {
   OpKind kind;
   std::vector<Operation::Ptr> args;
   int32_t hash_id;
+  std::vector<WeakPtr> callers;
   std::optional<std::string> ext_func_name;  // used only for EXTCALL kind
   std::optional<double> constant_value;      // used only for zero, one, constant
 };

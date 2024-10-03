@@ -52,7 +52,11 @@ Operation::Operation(OpKind kind, std::vector<Operation::Ptr> leafs, int32_t has
 Operation::Ptr Operation::create(OpKind kind,
                                  std::vector<Operation::Ptr>&& leafs,
                                  int32_t hash_id) {
-  return std::make_shared<Operation>(kind, leafs, hash_id);
+  auto created = std::make_shared<Operation>(kind, leafs, hash_id);
+  for (auto& leaf : leafs) {
+    leaf->callers.push_back(created);
+  }
+  return created;
 }
 
 Operation::Ptr Operation::make_var() {
