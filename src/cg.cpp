@@ -1,5 +1,6 @@
 #include "cg.hpp"
 #include <algorithm>
+#include <cmath>
 #include <random>
 #include <stack>
 #include <stdexcept>
@@ -20,18 +21,36 @@ std::string generate_random_string(size_t length) {
   return result;
 }
 
+int32_t generate_random_int() {
+  std::random_device rd;
+  std::mt19937 generator(rd());
+  std::uniform_int_distribution<> distribution(0, 2147483647);
+  return distribution(generator);
+}
+
+int32_t division_hash(int32_t x) {
+  constexpr int32_t prime = 2147483647;
+  return x % prime;
+}
+
 Operation::Operation() : kind(OpKind::NIL) {
+  hash_id = generate_random_int();
   name = generate_random_string(8);
 }
 
-Operation::Operation(const std::string& name) : kind(OpKind::NIL), name(name) {}
+Operation::Operation(const std::string& name) : kind(OpKind::NIL), name(name) {
+  hash_id = generate_random_int();
+}
 
-Operation::Operation(OpKind kind, std::vector<Operation::Ptr> leafs) : kind(kind), args(leafs) {
+Operation::Operation(OpKind kind, std::vector<Operation::Ptr> leafs, int32_t hash_id)
+    : kind(kind), args(leafs), hash_id(hash_id) {
   name = generate_random_string(8);
 }
 
-Operation::Ptr Operation::create(OpKind kind, std::vector<Operation::Ptr>&& leafs) {
-  return std::make_shared<Operation>(kind, leafs);
+Operation::Ptr Operation::create(OpKind kind,
+                                 std::vector<Operation::Ptr>&& leafs,
+                                 int32_t hash_id) {
+  return std::make_shared<Operation>(kind, leafs, hash_id);
 }
 
 Operation::Ptr Operation::make_var() {
@@ -99,7 +118,8 @@ Operation::Ptr operator+(Operation::Ptr lhs, Operation::Ptr rhs) {
   if (rhs->kind == OpKind::CONSTANT && lhs->kind == OpKind::CONSTANT) {
     return Operation::make_constant(std::stod(lhs->name) + std::stod(rhs->name));
   }
-  return Operation::create(OpKind::ADD, {lhs, rhs});
+  auto this_hash_id = division_hash(lhs->hash_id + rhs->hash_id);
+  return Operation::create(OpKind::ADD, {lhs, rhs}, this_hash_id);
 }
 Operation::Ptr operator-(Operation::Ptr lhs, Operation::Ptr rhs) {
   if (lhs->kind == OpKind::ZERO) {
@@ -111,7 +131,8 @@ Operation::Ptr operator-(Operation::Ptr lhs, Operation::Ptr rhs) {
   if (rhs->kind == OpKind::CONSTANT && lhs->kind == OpKind::CONSTANT) {
     return Operation::make_constant(std::stod(lhs->name) - std::stod(rhs->name));
   }
-  return Operation::create(OpKind::SUB, {lhs, rhs});
+  auto this_hash_id = division_hash(lhs->hash_id - rhs->hash_id);
+  return Operation::create(OpKind::SUB, {lhs, rhs}, this_hash_id);
 }
 Operation::Ptr operator*(Operation::Ptr lhs, Operation::Ptr rhs) {
   if (lhs->kind == OpKind::ZERO || rhs->kind == OpKind::ZERO) {
@@ -126,25 +147,27 @@ Operation::Ptr operator*(Operation::Ptr lhs, Operation::Ptr rhs) {
   if (rhs->kind == OpKind::CONSTANT && lhs->kind == OpKind::CONSTANT) {
     return Operation::make_constant(std::stod(lhs->name) * std::stod(rhs->name));
   }
-  return Operation::create(OpKind::MUL, {lhs, rhs});
+  auto this_hash_id = division_hash(lhs->hash_id * rhs->hash_id);
+  return Operation::create(OpKind::MUL, {lhs, rhs}, this_hash_id);
 }
 Operation::Ptr cos(Operation::Ptr op) {
   if (op->kind == OpKind::ZERO) {
     return Operation::make_one();
   }
-  return Operation::create(OpKind::COS, {op});
+  return Operation::create(OpKind::COS, {op}, 0);
 }
 Operation::Ptr sin(Operation::Ptr op) {
   if (op->kind == OpKind::ZERO) {
     return Operation::make_zero();
   }
-  return Operation::create(OpKind::SIN, {op});
+  return Operation::create(OpKind::SIN, {op}, 0);
 }
 Operation::Ptr operator-(Operation::Ptr op) {
   if (op->kind == OpKind::ZERO) {
     return Operation::make_zero();
   }
-  return Operation::create(OpKind::NEGATE, {op});
+  auto this_hash_id = division_hash(-op->hash_id);
+  return Operation::create(OpKind::NEGATE, {op}, this_hash_id);
 }
 
 };  // namespace tenkai
