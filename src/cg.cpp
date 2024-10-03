@@ -71,12 +71,14 @@ Operation::Ptr Operation::make_var() {
 Operation::Ptr Operation::make_zero() {
   Operation::Ptr zero = std::make_shared<Operation>("0.0");
   zero->kind = OpKind::ZERO;
+  zero->constant_value = 0.0;
   return zero;
 }
 
 Operation::Ptr Operation::make_one() {
   Operation::Ptr one = std::make_shared<Operation>("1.0");
   one->kind = OpKind::ONE;
+  one->constant_value = 1.0;
   return one;
 }
 
@@ -91,6 +93,7 @@ Operation::Ptr Operation::make_ext_func(std::string&& name, std::vector<Operatio
 Operation::Ptr Operation::make_constant(double value) {
   Operation::Ptr constant = std::make_shared<Operation>(std::to_string(value));
   constant->kind = OpKind::CONSTANT;
+  constant->constant_value = value;
   return constant;
 }
 
@@ -125,7 +128,7 @@ Operation::Ptr operator+(Operation::Ptr lhs, Operation::Ptr rhs) {
     return lhs;
   }
   if (rhs->kind == OpKind::CONSTANT && lhs->kind == OpKind::CONSTANT) {
-    return Operation::make_constant(std::stod(lhs->name) + std::stod(rhs->name));
+    return Operation::make_constant(*lhs->constant_value + *rhs->constant_value);
   }
   auto this_hash_id = division_hash(lhs->hash_id + rhs->hash_id);
   return Operation::create(OpKind::ADD, {lhs, rhs}, this_hash_id);
@@ -138,7 +141,7 @@ Operation::Ptr operator-(Operation::Ptr lhs, Operation::Ptr rhs) {
     return lhs;
   }
   if (rhs->kind == OpKind::CONSTANT && lhs->kind == OpKind::CONSTANT) {
-    return Operation::make_constant(std::stod(lhs->name) - std::stod(rhs->name));
+    return Operation::make_constant(*lhs->constant_value - *rhs->constant_value);
   }
   auto this_hash_id = division_hash(lhs->hash_id - rhs->hash_id);
   return Operation::create(OpKind::SUB, {lhs, rhs}, this_hash_id);
@@ -154,7 +157,7 @@ Operation::Ptr operator*(Operation::Ptr lhs, Operation::Ptr rhs) {
     return lhs;
   }
   if (rhs->kind == OpKind::CONSTANT && lhs->kind == OpKind::CONSTANT) {
-    return Operation::make_constant(std::stod(lhs->name) * std::stod(rhs->name));
+    return Operation::make_constant(*lhs->constant_value * *rhs->constant_value);
   }
   auto this_hash_id = division_hash(lhs->hash_id * rhs->hash_id);
   return Operation::create(OpKind::MUL, {lhs, rhs}, this_hash_id);
@@ -163,7 +166,6 @@ Operation::Ptr cos(Operation::Ptr op) {
   if (op->kind == OpKind::ZERO) {
     return Operation::make_one();
   }
-  // int32_t to string
   auto tmp = "(cos)" + std::to_string(op->hash_id);
   auto this_hash_id = djb2_hash(tmp);
   return Operation::create(OpKind::COS, {op}, this_hash_id);

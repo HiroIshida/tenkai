@@ -38,6 +38,7 @@ struct Operation : std::enable_shared_from_this<Operation> {
   std::string name;
   int32_t hash_id;
   std::optional<std::string> ext_func_name;  // used only for EXTCALL kind
+  std::optional<double> constant_value;      // used only for zero, one, constant
 };
 
 void flatten(const std::string& func_name,
