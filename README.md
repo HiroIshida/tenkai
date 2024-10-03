@@ -1,97 +1,81 @@
 ## tenkai
 Given a computation graph, tenkai performs runtime C++ code generation and conducts a super-naive just-in-time (JIT) compilation. The generated 'flattened' C++ code is easily optimizable by C++ compilers because it's fully inlined and all needless operations have been removed. It's super-naive because we call `system("g++ ..")` to create a .so file and load it using `dlopen` and `dlsym` runtime;c. I'm honestly not sure if this qualifies as JIT compilation in the normal sense. An obvious todo is to generate IR code and apply LLVM compilation, but the current implementation is actually sufficient for my research purposes. 
 
-### example
-Create computation graph
+### Internal mechanism of `tenkai::jit_compile`
+Define computation graphs.
 ```cpp
-#include <string>
-#include <vector>
 #include "cg.hpp"
 #include "linalg.hpp"
 
 using namespace tenkai;
 
-int main() {
-  // define computation graph
+int main(){
   auto inp0 = Operation::make_var();
   auto inp1 = Operation::make_var();
   auto inp2 = Operation::make_var();
+  {
+    // check common ubexpression elimination
+    auto A = Matrix::RotX(inp0);
+    auto B = Matrix::RotY(inp1);
+    auto v = Vector({inp0, inp1, inp2});
+    auto out1 = sin((A * B * v)(0));
+    auto out2 = sin((A * B * v)(0));
+    auto out3 = cos((A * B * v)(1));
+    auto v2 = Vector({out1, out2, out3});
+    auto C = Matrix::RotZ(inp2);
+    auto out4 = (C * v2)(0);
+    std::vector<Operation::Ptr> inputs = {inp0, inp1, inp2};
+    std::vector<Operation::Ptr> outputs = {out1, out2, out3, out4};
+    tenkai::flatten("tmp1", inputs, outputs, std::cout, "double");
+  }
+  {
+    // check constant folding
+    auto out1 = (inp0 * Operation::make_constant(2.0) + inp1) * Operation::make_constant(3.0) + inp2 * Operation::make_zero();
+    tenkai::flatten("tmp2", {inp0, inp1, inp2}, {out1}, std::cout, "double");
+  }
 
-  auto A = Matrix3::RotX(inp0);
-  auto B = Matrix3::RotY(inp1);
-  auto C = Matrix3::RotZ(inp2);
-  auto v = Vector3({inp0, inp1, inp2});
-  auto Av = (A * v);
-  auto BAv = (B * Av);
-  auto CBAv = (C * BAv);
-  auto out1 = Av.sum();
-  auto out2 = BAv.sum();
-  auto out3 = CBAv.sqnorm();
-  auto out4 = CBAv.get(0);
-  auto out5 = (Av + BAv + CBAv).sqnorm();
-
-  // define inputs and outputs order
-  std::vector<Operation::Ptr> inputs = {inp0, inp1, inp2};
-  std::vector<Operation::Ptr> outputs = {out1, out2, out3, out4, out5};
-
-  // compile
-  auto f = jit_compile<double>(inputs, outputs, "g++"); // or clang
-
-  // run
-  double input[3] = {0.1, 0.2, 0.3};
-  double output[5];
-  f(input, output);
+}
 ```
-
-Also you can check the intermediate flattend c++ code by calling `tenkai::flatten` function as
+The computation graph then converted into the following flattened form, which are easily be exploited by C++ compilers.
+Although, the most modern c++ compiler can do, but `tenkai` does CSE and constant folding in house (for my fun).
+Then the generated code is compiled and loaded as a shared object file.
 ```cpp
-void example(double* input, double* output) {
-  auto dwbzUTzq = cos(input[0]);
-  auto lwAxgRDg = dwbzUTzq * input[1];
-  auto qNdstjvw = sin(input[0]);
-  auto eXHyTQTO = -qNdstjvw;
-  auto elopaBBm = eXHyTQTO * input[2];
-  auto Bnupuqsp = lwAxgRDg + elopaBBm;
-  auto TSnbJWKU = input[0] + Bnupuqsp;
-  auto hQGcnOKD = qNdstjvw * input[1];
-  auto zfIHkjFV = dwbzUTzq * input[2];
-  auto FSLskBio = hQGcnOKD + zfIHkjFV;
-  output[0] = TSnbJWKU + FSLskBio;
-  auto uJFXGMRH = cos(input[1]);
-  auto eGwvzjyz = uJFXGMRH * input[0];
-  auto EQuNFvMA = sin(input[1]);
-  auto lYsDjtaE = EQuNFvMA * FSLskBio;
-  auto eaxqUlXa = eGwvzjyz + lYsDjtaE;
-  auto CsXNJEPw = eaxqUlXa + Bnupuqsp;
-  auto EXmcHEAE = -EQuNFvMA;
-  auto jeeZzbFM = EXmcHEAE * input[0];
-  auto ptZexfWE = uJFXGMRH * FSLskBio;
-  auto IGPdaMmu = jeeZzbFM + ptZexfWE;
-  output[1] = CsXNJEPw + IGPdaMmu;
-  auto DZkEKwsk = cos(input[2]);
-  auto IrfDMJtL = DZkEKwsk * eaxqUlXa;
-  auto vLdyzOCi = sin(input[2]);
-  auto iTgxlcMO = -vLdyzOCi;
-  auto yuZLwGvJ = iTgxlcMO * Bnupuqsp;
-  output[3] = IrfDMJtL + yuZLwGvJ;
-  auto SSHbGoZS = output[3] * output[3];
-  auto zEQaFNol = vLdyzOCi * eaxqUlXa;
-  auto TYuLmFKd = DZkEKwsk * Bnupuqsp;
-  auto hwboVRFx = zEQaFNol + TYuLmFKd;
-  auto baMuUnQO = hwboVRFx * hwboVRFx;
-  auto DwqCExfX = SSHbGoZS + baMuUnQO;
-  auto ZPXOwIZw = IGPdaMmu * IGPdaMmu;
-  output[2] = DwqCExfX + ZPXOwIZw;
-  auto UpEXHGtz = input[0] + eaxqUlXa;
-  auto NYUkqbFB = UpEXHGtz + output[3];
-  auto FnCMIKDs = NYUkqbFB * NYUkqbFB;
-  auto LcYQePZe = Bnupuqsp + Bnupuqsp;
-  auto fYzyZZFY = LcYQePZe + hwboVRFx;
-  auto TAICPxng = fYzyZZFY * fYzyZZFY;
-  auto TFoMIwyz = FnCMIKDs + TAICPxng;
-  auto JBnLAebQ = FSLskBio + IGPdaMmu;
-  auto keTiCZUh = JBnLAebQ + IGPdaMmu;
-  auto WdNJPUcP = keTiCZUh * keTiCZUh;
-  output[4] = TFoMIwyz + WdNJPUcP;
+#include <cmath>
+#include <functional>
+extern "C" {
+void tmp1(const double* input, double* output, void** extfns){
+  auto var_m1470877065 = cos(input[1]);
+  auto var_m285649023 = std::multiplies<double>()(var_m1470877065, input[0]);
+  auto var_m574550020 = sin(input[1]);
+  auto var_574550020 = std::negate<double>()(var_m574550020);
+  auto var_m217038012 = std::multiplies<double>()(var_574550020, input[2]);
+  auto var_m502687035 = std::plus<double>()(var_m285649023, var_m217038012);
+  output[0] = sin(var_m502687035);
+  output[1] = sin(var_m502687035);
+  auto var_m920328699 = sin(input[0]);
+  auto var_m460212244 = std::multiplies<double>()(var_m920328699, var_m574550020);
+  auto var_m144106380 = std::multiplies<double>()(var_m460212244, input[0]);
+  auto var_m434350112 = cos(input[0]);
+  auto var_m2114739200 = std::multiplies<double>()(var_m434350112, input[1]);
+  auto var_2036121716 = std::plus<double>()(var_m144106380, var_m2114739200);
+  auto var_1991763539 = std::multiplies<double>()(var_m920328699, var_m1470877065);
+  auto var_300680643 = std::multiplies<double>()(var_1991763539, input[2]);
+  auto var_m1958164937 = std::plus<double>()(var_2036121716, var_300680643);
+  output[2] = cos(var_m1958164937);
+  auto var_m1122489541 = cos(input[2]);
+  auto var_m1325945477 = std::multiplies<double>()(var_m1122489541, output[0]);
+  auto var_m1608468128 = sin(input[2]);
+  auto var_m1661828768 = std::multiplies<double>()(var_m1608468128, output[1]);
+  output[3] = std::plus<double>()(var_m1325945477, var_m1661828768);
+}
+}
+#include <cmath>
+#include <functional>
+extern "C" {
+void tmp2(const double* input, double* output, void** extfns){
+  auto var_1284742335 = std::multiplies<double>()(input[0], 2.000000);
+  auto var_1784014751 = std::plus<double>()(var_1284742335, input[1]);
+  output[0] = std::multiplies<double>()(var_1784014751, 3.000000);
+}
 }
 ```
