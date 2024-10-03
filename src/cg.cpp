@@ -44,17 +44,10 @@ int32_t djb2_hash(const std::string& str) {
 
 Operation::Operation() : kind(OpKind::NIL) {
   hash_id = generate_random_int();
-  name = generate_random_string(8);
-}
-
-Operation::Operation(const std::string& name) : kind(OpKind::NIL), name(name) {
-  hash_id = generate_random_int();
 }
 
 Operation::Operation(OpKind kind, std::vector<Operation::Ptr> leafs, int32_t hash_id)
-    : kind(kind), args(leafs), hash_id(hash_id) {
-  name = generate_random_string(8);
-}
+    : kind(kind), args(leafs), hash_id(hash_id) {}
 
 Operation::Ptr Operation::create(OpKind kind,
                                  std::vector<Operation::Ptr>&& leafs,
@@ -69,21 +62,21 @@ Operation::Ptr Operation::make_var() {
 }
 
 Operation::Ptr Operation::make_zero() {
-  Operation::Ptr zero = std::make_shared<Operation>("0.0");
+  Operation::Ptr zero = std::make_shared<Operation>();
   zero->kind = OpKind::ZERO;
   zero->constant_value = 0.0;
   return zero;
 }
 
 Operation::Ptr Operation::make_one() {
-  Operation::Ptr one = std::make_shared<Operation>("1.0");
+  Operation::Ptr one = std::make_shared<Operation>();
   one->kind = OpKind::ONE;
   one->constant_value = 1.0;
   return one;
 }
 
 Operation::Ptr Operation::make_ext_func(std::string&& name, std::vector<Operation::Ptr>&& args) {
-  Operation::Ptr func = std::make_shared<Operation>(name);
+  Operation::Ptr func = std::make_shared<Operation>();
   func->kind = OpKind::EXTCALL;
   func->args = std::move(args);
   func->ext_func_name = std::move(name);
@@ -91,7 +84,7 @@ Operation::Ptr Operation::make_ext_func(std::string&& name, std::vector<Operatio
 }
 
 Operation::Ptr Operation::make_constant(double value) {
-  Operation::Ptr constant = std::make_shared<Operation>(std::to_string(value));
+  Operation::Ptr constant = std::make_shared<Operation>();
   constant->kind = OpKind::CONSTANT;
   constant->constant_value = value;
   return constant;

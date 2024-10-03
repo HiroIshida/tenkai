@@ -16,7 +16,6 @@ struct Operation : std::enable_shared_from_this<Operation> {
   using Ptr = std::shared_ptr<Operation>;
   using WeakPtr = std::weak_ptr<Operation>;
   Operation();
-  Operation(const std::string& name);
   Operation(OpKind kind, std::vector<Operation::Ptr> args, int32_t hash_id);
   void to_cpp_expr(std::ostream& strm) const;
   static Operation::Ptr create(OpKind kind, std::vector<Operation::Ptr>&& args, int32_t hash_id);
@@ -35,7 +34,6 @@ struct Operation : std::enable_shared_from_this<Operation> {
   // member variables
   OpKind kind;
   std::vector<Operation::Ptr> args;
-  std::string name;
   int32_t hash_id;
   std::optional<std::string> ext_func_name;  // used only for EXTCALL kind
   std::optional<double> constant_value;      // used only for zero, one, constant
