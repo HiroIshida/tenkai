@@ -26,6 +26,19 @@ TEST(HashTest, BasicMathTest) {
   }
 }
 
+TEST(HashTest, MathFuncTest) {
+  auto a = tenkai::Operation::make_var();
+  auto b = tenkai::Operation::make_var();
+  auto c = sin(a) + cos(a);
+  auto d = cos(a) + sin(a);
+  EXPECT_EQ(c->hash_id, d->hash_id);
+
+  // nested case
+  auto e = sin(sin((a + b) * c) + cos(a - b));
+  auto f = sin(cos(a - b) + sin(c * (a + b)));
+  EXPECT_EQ(e->hash_id, f->hash_id);
+}
+
 int main(int argc, char **argv) {
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

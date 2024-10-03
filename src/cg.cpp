@@ -4,6 +4,7 @@
 #include <random>
 #include <stack>
 #include <stdexcept>
+#include <string>
 
 namespace tenkai {
 
@@ -31,6 +32,14 @@ int32_t generate_random_int() {
 int32_t division_hash(int32_t x) {
   constexpr int32_t prime = 2147483647;
   return x % prime;
+}
+
+int32_t djb2_hash(const std::string& str) {
+  unsigned long hash = 5381;
+  for (char c : str) {
+    hash = ((hash << 5) + hash) + c;
+  }
+  return hash;
 }
 
 Operation::Operation() : kind(OpKind::NIL) {
@@ -154,13 +163,18 @@ Operation::Ptr cos(Operation::Ptr op) {
   if (op->kind == OpKind::ZERO) {
     return Operation::make_one();
   }
-  return Operation::create(OpKind::COS, {op}, 0);
+  // int32_t to string
+  auto tmp = "(cos)" + std::to_string(op->hash_id);
+  auto this_hash_id = djb2_hash(tmp);
+  return Operation::create(OpKind::COS, {op}, this_hash_id);
 }
 Operation::Ptr sin(Operation::Ptr op) {
   if (op->kind == OpKind::ZERO) {
     return Operation::make_zero();
   }
-  return Operation::create(OpKind::SIN, {op}, 0);
+  auto tmp = "(sin)" + std::to_string(op->hash_id);
+  auto this_hash_id = djb2_hash(tmp);
+  return Operation::create(OpKind::SIN, {op}, this_hash_id);
 }
 Operation::Ptr operator-(Operation::Ptr op) {
   if (op->kind == OpKind::ZERO) {
