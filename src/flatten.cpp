@@ -1,4 +1,5 @@
 #include <dlfcn.h>
+#include <format>
 #include <fstream>
 #include <iostream>
 #include <stack>
@@ -7,6 +8,33 @@
 #include "cg.hpp"
 
 namespace tenkai {
+
+template <typename T>
+constexpr const char* getTypeString() {
+  if constexpr (std::is_same_v<T, double>)
+    return "double";
+  else if constexpr (std::is_same_v<T, float>)
+    return "float";
+  else
+    return "unknown";
+}
+
+template <typename T>
+constexpr void opkind_to_cppfunc_name(OpKind kind, std::ostream& strm) {
+  std::string type_name = getTypeString<T>();
+  // use std::plus .. to handle these primitive operation as function
+  switch (kind) {
+    // clang-format off
+    case OpKind::ADD: strm << std::format("std::plus<{}>()", type_name); break;
+    case OpKind::SUB: strm << std::format("std::minus<{}>()", type_name); break;
+    case OpKind::MUL: strm << std::format("std::multiplies<{}>()", type_name); break;
+    case OpKind::COS: strm << "cos"; break;
+    case OpKind::SIN: strm << "sin"; break;
+    case OpKind::NEGATE: strm << std::format("std::negate<{}>()", type_name); break;
+    default: throw std::runtime_error("unknown operator");
+      // clang-format on
+  }
+}
 
 void flatten(const std::string& func_name,
              const std::vector<Operation::Ptr>& inputs,
@@ -56,6 +84,7 @@ void flatten(const std::string& func_name,
 
   // code generation
   strm << "#include <cmath>" << std::endl;
+  strm << "#include <functional>" << std::endl;
   strm << "extern \"C\" {" << std::endl;
   strm << "void " << func_name << "(" << type_name << "* input, " << type_name << "* output) {"
        << std::endl;
@@ -65,44 +94,25 @@ void flatten(const std::string& func_name,
     if (is_evaluated.find(remapped_name(op)) != is_evaluated.end()) {
       continue;
     }
-    if (remapped_name(op).find("output") == std::string::npos) {
-      strm << "  auto " << remapped_name(op) << " = ";
-    } else {
-      strm << "  " << remapped_name(op) << " = ";
-    }
     if (op->is_nullaryop()) {
       throw std::runtime_error("must not reach here");
-    } else if (op->is_unaryop()) {
-      switch (op->kind) {
-        case OpKind::COS:
-          strm << "cos(" << remapped_name(op->first()) << ");" << std::endl;
-          break;
-        case OpKind::SIN:
-          strm << "sin(" << remapped_name(op->first()) << ");" << std::endl;
-          break;
-        case OpKind::NEGATE:
-          strm << "-" << remapped_name(op->first()) << ";" << std::endl;
-          break;
-        default:
-          throw std::runtime_error("unknown operator");
-      }
-    } else {
-      strm << remapped_name(op->first()) << " ";
-      switch (op->kind) {
-        case OpKind::ADD:
-          strm << "+";
-          break;
-        case OpKind::SUB:
-          strm << "-";
-          break;
-        case OpKind::MUL:
-          strm << "*";
-          break;
-        default:
-          throw std::runtime_error("unknown operator");
-      }
-      strm << " " << remapped_name(op->second()) << ";" << std::endl;
     }
+
+    strm << "  ";  // for indent
+    bool is_intermediate = (remapped_name(op).find("output") == std::string::npos);
+    if (is_intermediate) {
+      strm << "auto ";
+    }
+    strm << remapped_name(op) << " = ";
+    opkind_to_cppfunc_name<double>(op->kind, strm);
+    strm << "(";
+    for (size_t i = 0; i < op->args.size(); ++i) {
+      if (i != 0) {
+        strm << ", ";
+      }
+      strm << remapped_name(op->args[i]);
+    }
+    strm << ");" << std::endl;
     is_evaluated[remapped_name(op)] = true;
   }
   strm << "}" << std::endl;

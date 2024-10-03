@@ -1,4 +1,5 @@
 FILE(GLOB_RECURSE SRC_FILES src/*.cpp)
+set(CMAKE_CXX_STANDARD 20)
 add_library(tenkai ${SRC_FILES})
 target_link_libraries(tenkai ${CMAKE_DL_LIBS})
 include_directories(include)

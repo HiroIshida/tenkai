@@ -17,6 +17,7 @@ struct Operation : std::enable_shared_from_this<Operation> {
   Operation();
   Operation(const std::string& name);
   Operation(OpKind kind, std::vector<Operation::Ptr> args);
+  void to_cpp_expr(std::ostream& strm) const;
   static Operation::Ptr create(OpKind kind, std::vector<Operation::Ptr>&& args);
   static Operation::Ptr make_var();
   static Operation::Ptr make_zero();
