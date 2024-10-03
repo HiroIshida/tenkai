@@ -87,12 +87,6 @@ void flatten(const std::string& func_name,
       throw std::runtime_error("must not reach here");
     }
 
-    for (size_t i = 0; i < outputs.size(); ++i) {
-      if (outputs[i] == op) {
-        return std::format("output[{}]", i);
-      }
-    }
-
     // if zero/one/constant, return the value
     if (op->kind == OpKind::ZERO || op->kind == OpKind::ONE || op->kind == OpKind::CONSTANT) {
       return std::to_string(*op->constant_value);
@@ -150,6 +144,14 @@ void flatten(const std::string& func_name,
       strm << remapped_name(op->args[i]);
     }
     strm << ");" << std::endl;
+
+    // if op is output, assign to output
+    size_t output_idx =
+        std::distance(outputs.begin(), std::find(outputs.begin(), outputs.end(), op));
+    if (output_idx != outputs.size()) {
+      strm << "  output[" << output_idx << "] = " << remapped_name(op) << ";" << std::endl;
+    }
+
     is_evaluated[remapped_name(op)] = true;
   }
   strm << "}" << std::endl;

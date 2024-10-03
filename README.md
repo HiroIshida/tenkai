@@ -19,7 +19,7 @@ int main(){
     auto B = Matrix::RotY(inp1);
     auto v = Vector({inp0, inp1, inp2});
     auto out1 = sin((A * B * v)(0));
-    auto out2 = sin((A * B * v)(0));
+    auto out2 = sin((A * B * v)(0)) + Operation::make_constant(1.0);
     auto out3 = cos((A * B * v)(1));
     auto v2 = Vector({out1, out2, out3});
     auto C = Matrix::RotZ(inp2);
@@ -44,38 +44,43 @@ Then the generated code is compiled and loaded as a shared object file.
 #include <functional>
 extern "C" {
 void tmp1(const double* input, double* output, void** extfns){
-  auto var_m1470877065 = cos(input[1]);
-  auto var_m285649023 = std::multiplies<double>()(var_m1470877065, input[0]);
-  auto var_m574550020 = sin(input[1]);
-  auto var_574550020 = std::negate<double>()(var_m574550020);
-  auto var_m217038012 = std::multiplies<double>()(var_574550020, input[2]);
-  auto var_m502687035 = std::plus<double>()(var_m285649023, var_m217038012);
-  output[0] = sin(var_m502687035);
-  output[1] = sin(var_m502687035);
-  auto var_m920328699 = sin(input[0]);
-  auto var_m460212244 = std::multiplies<double>()(var_m920328699, var_m574550020);
-  auto var_m144106380 = std::multiplies<double>()(var_m460212244, input[0]);
-  auto var_m434350112 = cos(input[0]);
-  auto var_m2114739200 = std::multiplies<double>()(var_m434350112, input[1]);
-  auto var_2036121716 = std::plus<double>()(var_m144106380, var_m2114739200);
-  auto var_1991763539 = std::multiplies<double>()(var_m920328699, var_m1470877065);
-  auto var_300680643 = std::multiplies<double>()(var_1991763539, input[2]);
-  auto var_m1958164937 = std::plus<double>()(var_2036121716, var_300680643);
-  output[2] = cos(var_m1958164937);
-  auto var_m1122489541 = cos(input[2]);
-  auto var_m1325945477 = std::multiplies<double>()(var_m1122489541, output[0]);
-  auto var_m1608468128 = sin(input[2]);
-  auto var_m1661828768 = std::multiplies<double>()(var_m1608468128, output[1]);
-  output[3] = std::plus<double>()(var_m1325945477, var_m1661828768);
+  auto var_m1479264002 = cos(input[1]);
+  auto var_m1916414764 = std::multiplies<double>()(var_m1479264002, input[0]);
+  auto var_m1965242589 = sin(input[1]);
+  auto var_1965242589 = std::negate<double>()(var_m1965242589);
+  auto var_1667816900 = std::multiplies<double>()(var_1965242589, input[2]);
+  auto var_m248597864 = std::plus<double>()(var_m1916414764, var_1667816900);
+  auto var_1989960210 = sin(var_m248597864);
+  output[0] = var_1989960210;
+  auto var_m683411657 = std::plus<double>()(var_1989960210, 1.000000);
+  output[1] = var_m683411657;
+  auto var_m1943809953 = sin(input[0]);
+  auto var_1199789565 = std::multiplies<double>()(var_m1943809953, var_m1965242589);
+  auto var_687540798 = std::multiplies<double>()(var_1199789565, input[0]);
+  auto var_m1457831366 = cos(input[0]);
+  auto var_1932391052 = std::multiplies<double>()(var_m1457831366, input[1]);
+  auto var_m1675035446 = std::plus<double>()(var_687540798, var_1932391052);
+  auto var_1758037570 = std::multiplies<double>()(var_m1943809953, var_m1479264002);
+  auto var_m1094366680 = std::multiplies<double>()(var_1758037570, input[2]);
+  auto var_1525565170 = std::plus<double>()(var_m1675035446, var_m1094366680);
+  auto var_1099533184 = cos(var_1525565170);
+  output[2] = var_1099533184;
+  auto var_m303140554 = cos(input[2]);
+  auto var_m486366772 = std::multiplies<double>()(var_m303140554, var_1989960210);
+  auto var_m789119141 = sin(input[2]);
+  auto var_2000857485 = std::multiplies<double>()(var_m789119141, var_m683411657);
+  auto var_1514490713 = std::plus<double>()(var_m486366772, var_2000857485);
+  output[3] = var_1514490713;
 }
 }
 #include <cmath>
 #include <functional>
 extern "C" {
 void tmp2(const double* input, double* output, void** extfns){
-  auto var_1284742335 = std::multiplies<double>()(input[0], 2.000000);
-  auto var_1784014751 = std::plus<double>()(var_1284742335, input[1]);
-  output[0] = std::multiplies<double>()(var_1784014751, 3.000000);
+  auto var_1705639868 = std::multiplies<double>()(input[0], 2.000000);
+  auto var_m1340616390 = std::plus<double>()(var_1705639868, input[1]);
+  auto var_1199161088 = std::multiplies<double>()(var_m1340616390, 3.000000);
+  output[0] = var_1199161088;
 }
 }
 ```
