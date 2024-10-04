@@ -7,6 +7,7 @@
 #include <string>
 #include <typeinfo>
 #include <unordered_map>
+#include <unordered_set>
 #include "cg.hpp"
 
 namespace tenkai {
@@ -46,13 +47,23 @@ void flatten(const std::string& func_name,
              const std::vector<Operation::Ptr>& outputs,
              std::ostream& strm,
              const std::string& type_name) {
-  // Currently no overlapping is allowed between inputs and outputs..
+  // check if inputs and outputs are unique (in terms of hash_id)
+  // TODO: this requirment is too strict, we should relax this
+  std::unordered_set<int32_t> input_output_set;
   for (auto& input : inputs) {
-    for (auto& output : outputs) {
-      if (input == output) {
-        throw std::runtime_error("detected overlapping between inputs and outputs");
-      }
+    input_output_set.insert(input->hash_id);
+  }
+  for (auto& output : outputs) {
+    input_output_set.insert(output->hash_id);
+  }
+  if (input_output_set.size() != inputs.size() + outputs.size()) {
+    for (auto& input : inputs) {
+      std::cout << "input: " << input->hash_id << std::endl;
     }
+    for (auto& output : outputs) {
+      std::cout << "output: " << output->hash_id << std::endl;
+    }
+    throw std::runtime_error("inputs and outputs must be unique");
   }
 
   std::vector<Operation::Ptr> operations;
