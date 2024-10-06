@@ -5,6 +5,8 @@
 #include <stack>
 #include <stdexcept>
 #include <unordered_map>
+#include <unordered_set>
+#include <variant>
 #include "cg.hpp"
 #include "xbyak.h"
 
@@ -26,9 +28,8 @@ class Compiler {
     bool is_xmm;
   };
 
-  Compiler(const std::vector<Operation::Ptr>& inputs,
-           const std::vector<Operation::Ptr>& outputs,
-           bool avx512) {
+  static std::vector<Operation::Ptr> flatten(const std::vector<Operation::Ptr>& inputs,
+                                             const std::vector<Operation::Ptr>& outputs) {
     std::vector<Operation::Ptr> operations;
     std::stack<Operation::Ptr> opstack;
     for (auto& output : outputs) {
@@ -42,9 +43,31 @@ class Compiler {
         opstack.push(arg);
       }
     }
+
+    // do CSE
+    std::unordered_set<int32_t> visited;
+    std::vector<Operation::Ptr> result;
+    for (auto it = operations.rbegin(); it != operations.rend(); ++it) {
+      if (visited.find((*it)->hash_id) != visited.end()) {
+        continue;
+      }
+      visited.insert((*it)->hash_id);
+      result.push_back(*it);
+    }
+    return result;
+  }
+
+  Compiler(const std::vector<Operation::Ptr>& inputs,
+           const std::vector<Operation::Ptr>& outputs,
+           bool avx512) {
+    operations_ = flatten(inputs, outputs);
+    std::cout << "flattend result:" << std::endl;
+    for (auto& op : operations_) {
+      std::cout << std::format("  op: id {}, kind {}", op->hash_id, to_string(op->kind))
+                << std::endl;
+    }
     inputs_ = inputs;
     outputs_ = outputs;
-    operations_ = std::vector<Operation::Ptr>(operations.rbegin(), operations.rend());
     xmm_usage_ = std::vector<std::optional<int32_t>>((avx512) ? 31 : 15, std::nullopt);
     xmm_survival_period_ = std::vector<std::optional<int32_t>>(xmm_usage_.size(), std::nullopt);
 
