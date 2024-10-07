@@ -11,6 +11,25 @@ namespace tenkai {
 std::string generate_random_string(size_t length);
 
 enum class OpKind { NIL, ADD, SUB, MUL, COS, SIN, NEGATE, VALIABLE, ZERO, ONE, CONSTANT, EXTCALL };
+constexpr std::string to_string(OpKind kind) {  // for debug
+  // clang-format off
+  switch (kind) {
+    case OpKind::NIL: return "NIL";
+    case OpKind::ADD: return "ADD";
+    case OpKind::SUB: return "SUB";
+    case OpKind::MUL: return "MUL";
+    case OpKind::COS: return "COS";
+    case OpKind::SIN: return "SIN";
+    case OpKind::NEGATE: return "NEGATE";
+    case OpKind::VALIABLE: return "VALIABLE";
+    case OpKind::ZERO: return "ZERO";
+    case OpKind::ONE: return "ONE";
+    case OpKind::CONSTANT: return "CONSTANT";
+    case OpKind::EXTCALL: return "EXTCALL";
+    default: throw std::runtime_error("unknown OpKind");
+  }
+  // clang-format on
+}
 
 struct Operation : std::enable_shared_from_this<Operation> {
   using Ptr = std::shared_ptr<Operation>;
