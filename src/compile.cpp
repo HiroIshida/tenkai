@@ -3,6 +3,7 @@
 #include <cmath>
 #include <format>
 #include <iostream>
+#include <sstream>
 #include <stack>
 #include <stdexcept>
 #include <unordered_map>
@@ -62,9 +63,13 @@ class Compiler {
            bool avx512) {
     operations_ = flatten(inputs, outputs);
     std::cout << "flattend result:" << std::endl;
+    // show id, kind, operands ids
     for (auto& op : operations_) {
-      std::cout << std::format("  op: id {}, kind {}", op->hash_id, to_string(op->kind))
-                << std::endl;
+      std::cout << std::format("id: {}, kind: {}, operands: ", op->hash_id, to_string(op->kind));
+      for (auto& arg : op->args) {
+        std::cout << arg->hash_id << " ";
+      }
+      std::cout << std::endl;
     }
     inputs_ = inputs;
     outputs_ = outputs;
@@ -75,6 +80,46 @@ class Compiler {
     size_t stack_size = 16;  // for now
     stack_usage_ = std::vector<std::optional<int32_t>>(stack_size, std::nullopt);
     ophash_to_location_ = std::unordered_map<int32_t, std::optional<Location>>();
+  }
+
+  std::string visualize_state() const {
+    std::ostringstream ss;
+    const int vars_per_line = 8;
+    const int id_width = 9;  // 符号用に1文字増やす
+
+    const std::string green = "\033[32m";
+    const std::string purple = "\033[35m";
+    const std::string gray = "\033[90m";
+    const std::string reset = "\033[0m";
+
+    ss << green << "XMM Registers:\n";
+    for (size_t i = 0; i < xmm_usage_.size(); i += vars_per_line) {
+      for (size_t j = i; j < std::min(i + vars_per_line, xmm_usage_.size()); ++j) {
+        ss << green << std::format("xmm{:<2}:", j);
+        if (xmm_usage_[j].has_value()) {
+          ss << green << std::format("{:{}}", *xmm_usage_[j], id_width) << reset;
+        } else {
+          ss << green << std::string(id_width, '-') << reset;
+        }
+        ss << " ";
+      }
+      ss << "\n";
+    }
+    ss << purple << "Stack:\n";
+    for (size_t i = 0; i < stack_usage_.size(); i += vars_per_line) {
+      for (size_t j = i; j < std::min(i + vars_per_line, stack_usage_.size()); ++j) {
+        ss << purple << std::format("[{:3}]:", (j + 1) * 8);
+        if (stack_usage_[j].has_value()) {
+          ss << purple << std::format("{:{}}", *stack_usage_[j], id_width) << reset;
+        } else {
+          ss << purple << std::string(id_width, '-') << reset;
+        }
+        ss << " ";
+      }
+      ss << "\n";
+    }
+
+    return ss.str();
   }
 
   std::vector<uint8_t> generate_code() {
@@ -105,6 +150,8 @@ class Compiler {
 
     // start
     for (auto& op : operations_) {
+      std::cout << visualize_state();
+
       const auto& location = ophash_to_location_[op->hash_id];
       auto available_xmm_idx = get_available_xmm_index(gen);
       std::cout << std::format("[debug] available xmm idx: {}", available_xmm_idx) << std::endl;
