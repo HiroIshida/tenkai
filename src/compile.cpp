@@ -331,6 +331,7 @@ class Compiler {
 
     // update internal state
     xmm_usage_[xmm_idx] = std::nullopt;
+    xmm_survival_period_[xmm_idx] = std::nullopt;
     stack_usage_[stack_idx] = hash_id;
     auto new_loc = Location{stack_idx, false};
     ophash_to_location_[hash_id] = new_loc;
