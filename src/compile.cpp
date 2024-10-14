@@ -356,15 +356,15 @@ std::vector<uint8_t> get_instructions(const std::vector<Operation::Ptr>& inputs,
   return c.generate_code();
 }
 
-Func compile(const std::vector<Operation::Ptr>& inputs,
-             const std::vector<Operation::Ptr>& outputs) {
+JitFunc<double> compile(const std::vector<Operation::Ptr>& inputs,
+                        const std::vector<Operation::Ptr>& outputs) {
   auto code = get_instructions(inputs, outputs);
   size_t page_size = getpagesize();
   void* mem = mmap(NULL, page_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
   uint8_t* instruction = static_cast<uint8_t*>(mem);
   std::memcpy(instruction, code.data(), code.size());
   mprotect(mem, page_size, PROT_READ | PROT_EXEC) == -1;
-  Func add_func = reinterpret_cast<Func>(instruction);
+  auto add_func = reinterpret_cast<JitFunc<double>>(instruction);
   return add_func;
 }
 }  // namespace tenkai

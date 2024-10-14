@@ -1,3 +1,4 @@
+#include "cg.hpp"
 #include "compile.hpp"
 #include <iostream>
 
@@ -22,19 +23,19 @@ int main() {
   auto ret = i5 + i3 + i6 + i7;
 
   // custom compiler
-  auto func = compile({x, y, z, w}, {ret, i5, i3, i6, i7});
+  tenkai::JitFunc<double> func = compile({x, y, z, w}, {ret, i5, i3, i6, i7});
   double input[4] = {1.0, 2.0, 3.0, 4.0};
   double output[5];
   std::cout << "start calling => " << std::endl;
-  func(input, output);
+  func(input, output, nullptr);
   for(int i = 0; i < 5; i++) {
     std::cout << output[i] << std::endl;
   }
 
   // gcc
-  auto fjit = jit_compile<double>({x, y, z, w}, {ret, i5, i3, i6, i7});
+  func = jit_compile<double>({x, y, z, w}, {ret, i5, i3, i6, i7});
   std::cout << "jit => " << std::endl;
-  fjit(input, output, {});
+  func(input, output, {});
   for(int i = 0; i < 5; i++) {
     std::cout << output[i] << std::endl;
   }
