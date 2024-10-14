@@ -26,6 +26,10 @@ std::optional<size_t> find_index(T elem, const std::vector<T>& vec) {
   return std::distance(vec.begin(), it);
 }
 
+// this value must be multiply of page size (4096)?
+// must be shared both xbyak constructor and mmap (why? really)
+constexpr size_t max_code_size = 4096 * 8;
+
 class Compiler {
  public:
   struct Location {
@@ -81,7 +85,7 @@ class Compiler {
     xmm_survival_period_ = std::vector<std::optional<int32_t>>(xmm_usage_.size(), std::nullopt);
 
     // auto stack_size = std::max(operations.size() - xmm_usage_.size(), static_cast<size_t>(0));
-    size_t stack_size = 64;  // for now
+    size_t stack_size = 1024;  // for now
     stack_usage_ = std::vector<std::optional<int32_t>>(stack_size, std::nullopt);
     ophash_to_location_ = std::unordered_map<int32_t, std::optional<Location>>();
   }
@@ -132,7 +136,7 @@ class Compiler {
     double (*cos_ptr)(double) = std::cos;
     void* cos_vptr = reinterpret_cast<void*>(cos_ptr);
 
-    auto gen = Xbyak::CodeGenerator();
+    auto gen = Xbyak::CodeGenerator(max_code_size);
     gen.endbr64();
     std::cout << "endbr64" << std::endl;
     gen.push(gen.r12);
@@ -359,11 +363,11 @@ std::vector<uint8_t> get_instructions(const std::vector<Operation::Ptr>& inputs,
 JitFunc<double> compile(const std::vector<Operation::Ptr>& inputs,
                         const std::vector<Operation::Ptr>& outputs) {
   auto code = get_instructions(inputs, outputs);
-  size_t page_size = getpagesize();
-  void* mem = mmap(NULL, page_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  std::cout << std::format("code size: {}", code.size()) << std::endl;
+  void* mem = mmap(NULL, max_code_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
   uint8_t* instruction = static_cast<uint8_t*>(mem);
   std::memcpy(instruction, code.data(), code.size());
-  mprotect(mem, page_size, PROT_READ | PROT_EXEC) == -1;
+  mprotect(mem, max_code_size, PROT_READ | PROT_EXEC) == -1;
   auto add_func = reinterpret_cast<JitFunc<double>>(instruction);
   return add_func;
 }
