@@ -1,10 +1,11 @@
 #include "cg.hpp"
 #include "compile.hpp"
 #include <iostream>
+#include <gtest/gtest.h>
 
 using namespace tenkai;
 
-int main() {
+TEST(Compiler, Basic) {
   auto x = Operation::make_var();
   auto y = Operation::make_var();
   auto z = Operation::make_var();
@@ -25,18 +26,21 @@ int main() {
   // custom compiler
   tenkai::JitFunc<double> func = compile({x, y, z, w}, {ret, i5, i3, i6, i7});
   double input[4] = {1.0, 2.0, 3.0, 4.0};
-  double output[5];
-  std::cout << "start calling => " << std::endl;
-  func(input, output, nullptr);
-  for(int i = 0; i < 5; i++) {
-    std::cout << output[i] << std::endl;
-  }
+  double output_custom[5];
+  func(input, output_custom, {});
 
   // gcc
+  double output_gcc[5];
   func = jit_compile<double>({x, y, z, w}, {ret, i5, i3, i6, i7});
-  std::cout << "jit => " << std::endl;
-  func(input, output, {});
-  for(int i = 0; i < 5; i++) {
-    std::cout << output[i] << std::endl;
+  func(input, output_gcc, {});
+
+  // compare
+  for (int i = 0; i < 5; i++) {
+    ASSERT_NEAR(output_custom[i], output_gcc[i], 1e-6);
   }
+}
+
+int main(int argc, char **argv) {
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }
