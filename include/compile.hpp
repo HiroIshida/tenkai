@@ -3,7 +3,10 @@
 
 namespace tenkai {
 
-std::vector<uint8_t> compile(const std::vector<Operation::Ptr>& inputs,
-                             const std::vector<Operation::Ptr>& outputs);
+std::vector<uint8_t> get_instructions(const std::vector<Operation::Ptr>& inputs,
+                                      const std::vector<Operation::Ptr>& outputs);
 
-}
+using Func = void (*)(double*, double*);
+Func compile(const std::vector<Operation::Ptr>& inputs, const std::vector<Operation::Ptr>& outputs);
+
+}  // namespace tenkai

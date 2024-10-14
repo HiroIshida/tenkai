@@ -1,6 +1,10 @@
 #include "compile.hpp"
+#include <sys/mman.h>
+#include <unistd.h>
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
+#include <cstring>
 #include <format>
 #include <iostream>
 #include <sstream>
@@ -77,7 +81,7 @@ class Compiler {
     xmm_survival_period_ = std::vector<std::optional<int32_t>>(xmm_usage_.size(), std::nullopt);
 
     // auto stack_size = std::max(operations.size() - xmm_usage_.size(), static_cast<size_t>(0));
-    size_t stack_size = 16;  // for now
+    size_t stack_size = 64;  // for now
     stack_usage_ = std::vector<std::optional<int32_t>>(stack_size, std::nullopt);
     ophash_to_location_ = std::unordered_map<int32_t, std::optional<Location>>();
   }
@@ -346,9 +350,21 @@ class Compiler {
   std::unordered_map<int32_t, std::optional<Location>> ophash_to_location_;
 };
 
-std::vector<uint8_t> compile(const std::vector<Operation::Ptr>& inputs,
-                             const std::vector<Operation::Ptr>& outputs) {
+std::vector<uint8_t> get_instructions(const std::vector<Operation::Ptr>& inputs,
+                                      const std::vector<Operation::Ptr>& outputs) {
   Compiler c(inputs, outputs, false);
   return c.generate_code();
+}
+
+Func compile(const std::vector<Operation::Ptr>& inputs,
+             const std::vector<Operation::Ptr>& outputs) {
+  auto code = get_instructions(inputs, outputs);
+  size_t page_size = getpagesize();
+  void* mem = mmap(NULL, page_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  uint8_t* instruction = static_cast<uint8_t*>(mem);
+  std::memcpy(instruction, code.data(), code.size());
+  mprotect(mem, page_size, PROT_READ | PROT_EXEC) == -1;
+  Func add_func = reinterpret_cast<Func>(instruction);
+  return add_func;
 }
 }  // namespace tenkai
