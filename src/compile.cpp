@@ -66,6 +66,18 @@ std::vector<Operation::Ptr> Compiler::flatten(const std::vector<Operation::Ptr>&
     visited.insert((*it)->hash_id);
     result.push_back(*it);
   }
+  // std::cout << "flatten operations:\n";
+  // for(size_t t = 0; t <result.size(); ++t){
+  //   auto op = result[t];
+  //   std::cout << std::format("  t: {}, hashid: {}, kind: {}", t, op->hash_id,
+  //   to_string(op->kind)); if (op->args.size() > 0) {
+  //     std::cout << ", args: ";
+  //     for(auto& arg : op->args) {
+  //       std::cout << std::format("{}, ", arg->hash_id);
+  //     }
+  //   }
+  //   std::cout << "\n";
+  // }
   return result;
 }
 
@@ -73,14 +85,23 @@ std::vector<std::vector<int32_t>> Compiler::compute_disappear_hashid_table(
     const std::vector<Operation::Ptr>& operations) {
   std::vector<std::vector<int32_t>> table(operations.size());
   std::unordered_set<int32_t> visited;
-  for (auto it = operations.rbegin(); it != operations.rend(); ++it) {
-    bool unappended = visited.find((*it)->hash_id) == visited.end();
-    if (unappended) {
-      size_t dist_from_last = std::distance(it, operations.rend());
-      size_t dist_from_first = operations.size() - dist_from_last;
-      table[dist_from_first].push_back((*it)->hash_id);
+  for (int i = operations.size() - 1; i >= 0; --i) {
+    for (auto& arg_op : operations[i]->args) {
+      bool unappended = visited.find(arg_op->hash_id) == visited.end();
+      if (unappended) {
+        table[i].push_back(arg_op->hash_id);
+        visited.insert(arg_op->hash_id);
+      }
     }
   }
+  // std::cout << "disappear hashid table:\n";
+  // for (size_t i = 0; i < table.size(); ++i) {
+  //   std::cout << std::format("  t={}: ", i);
+  //   for (auto hash_id : table[i]) {
+  //     std::cout << std::format("{}, ", hash_id);
+  //   }
+  //   std::cout << "\n";
+  // }
   return table;
 }
 
@@ -155,6 +176,7 @@ std::vector<uint8_t> Compiler::generate_code() {
     if (output_idx.has_value()) {
       gen.vmovsd(gen.ptr[gen.r13 + output_idx.value() * 8], xmm_result);
     }
+    untrack_disappear_hashid(t);
     update_xmm_suvival_period();
   }
 
@@ -199,7 +221,8 @@ uint8_t Compiler::get_xmm_register_idx(int32_t hash_id,
                                        Xbyak::CodeGenerator& gen) {
   auto location = ophash_to_location_[hash_id];
   if (!location.has_value()) {
-    throw std::runtime_error("location not found. cannot get xmm register");
+    throw std::runtime_error(
+        std::format("{} location not found. cannot get xmm register", hash_id));
   }
   if (location->is_xmm) {
     return location->idx;
@@ -208,6 +231,22 @@ uint8_t Compiler::get_xmm_register_idx(int32_t hash_id,
   spill_register(xmm_spill, gen);
   gen.vmovsd(Xbyak::Xmm(xmm_spill), gen.ptr[gen.rbp - (location->idx + 1) * 8]);
   return xmm_spill;
+}
+
+void Compiler::untrack_disappear_hashid(size_t t) {
+  for (int32_t hash_id : disappear_hashid_table_[t]) {
+    auto location = ophash_to_location_[hash_id];
+    if (location.has_value() && location->is_xmm) {
+      xmm_usage_[location->idx] = std::nullopt;
+      xmm_survival_period_[location->idx] = std::nullopt;
+    } else {
+      if (!location.has_value()) {
+        throw std::runtime_error("location not found. cannot untrack disappear hashid");
+      }
+      stack_usage_[location->idx] = std::nullopt;
+    }
+    ophash_to_location_[hash_id] = std::nullopt;
+  }
 }
 
 void Compiler::update_xmm_suvival_period() {

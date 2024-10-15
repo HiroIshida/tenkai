@@ -29,6 +29,7 @@ class Compiler {
   uint8_t get_xmm_register_idx(int32_t hash_id,
                                std::vector<uint32_t>&& dont_spill_xmm,
                                Xbyak::CodeGenerator& gen);
+  void untrack_disappear_hashid(size_t t);
   void update_xmm_suvival_period();
   size_t find_most_unused_xmm_idx(std::vector<uint32_t>&& exclude = {});
   uint8_t get_avaialble_stack_index();
@@ -39,6 +40,8 @@ class Compiler {
   std::vector<Operation::Ptr> outputs_;
   std::vector<Operation::Ptr> operations_;
   std::vector<std::vector<int32_t>> disappear_hashid_table_;
+
+  // internal state
   std::vector<std::optional<int32_t>> xmm_usage_;
   std::vector<std::optional<int32_t>> xmm_survival_period_;
   std::vector<std::optional<int32_t>> stack_usage_;
