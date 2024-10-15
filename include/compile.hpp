@@ -11,11 +11,16 @@ class Compiler {
     bool is_xmm;
   };
 
-  static std::vector<Operation::Ptr> flatten(const std::vector<Operation::Ptr>& inputs,
-                                             const std::vector<Operation::Ptr>& outputs);
+  // used in constructor >>
   Compiler(const std::vector<Operation::Ptr>& inputs,
            const std::vector<Operation::Ptr>& outputs,
            bool avx512);
+  static std::vector<Operation::Ptr> flatten(const std::vector<Operation::Ptr>& inputs,
+                                             const std::vector<Operation::Ptr>& outputs);
+  std::vector<std::vector<int32_t>> static compute_disappear_hashid_table(
+      const std::vector<Operation::Ptr>& operations);
+  // << used in constructor
+
   std::vector<uint8_t> generate_code();
   JitFunc<double> compile();
 
@@ -33,6 +38,7 @@ class Compiler {
   std::vector<Operation::Ptr> inputs_;
   std::vector<Operation::Ptr> outputs_;
   std::vector<Operation::Ptr> operations_;
+  std::vector<std::vector<int32_t>> disappear_hashid_table_;
   std::vector<std::optional<int32_t>> xmm_usage_;
   std::vector<std::optional<int32_t>> xmm_survival_period_;
   std::vector<std::optional<int32_t>> stack_usage_;

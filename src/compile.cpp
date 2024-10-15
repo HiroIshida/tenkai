@@ -10,7 +10,6 @@
 #include <sstream>
 #include <stack>
 #include <stdexcept>
-#include <unordered_map>
 #include <unordered_set>
 #include "cg.hpp"
 
@@ -31,18 +30,15 @@ constexpr size_t max_code_size = 4096 * 8;
 
 Compiler::Compiler(const std::vector<Operation::Ptr>& inputs,
                    const std::vector<Operation::Ptr>& outputs,
-                   bool avx512) {
-  operations_ = flatten(inputs, outputs);
-  inputs_ = inputs;
-  outputs_ = outputs;
-  xmm_usage_ = std::vector<std::optional<int32_t>>((avx512) ? 31 : 15, std::nullopt);
-  xmm_survival_period_ = std::vector<std::optional<int32_t>>(xmm_usage_.size(), std::nullopt);
-
-  // auto stack_size = std::max(operations.size() - xmm_usage_.size(), static_cast<size_t>(0));
-  size_t stack_size = 1024;  // for now
-  stack_usage_ = std::vector<std::optional<int32_t>>(stack_size, std::nullopt);
-  ophash_to_location_ = std::unordered_map<int32_t, std::optional<Location>>();
-}
+                   bool avx512)
+    : inputs_(inputs),
+      outputs_(outputs),
+      operations_(flatten(inputs, outputs)),
+      disappear_hashid_table_(compute_disappear_hashid_table(operations_)),
+      xmm_usage_((avx512) ? 31 : 15, std::nullopt),
+      xmm_survival_period_(xmm_usage_.size(), std::nullopt),
+      stack_usage_(1024, std::nullopt),
+      ophash_to_location_() {}
 
 std::vector<Operation::Ptr> Compiler::flatten(const std::vector<Operation::Ptr>& inputs,
                                               const std::vector<Operation::Ptr>& outputs) {
@@ -73,6 +69,21 @@ std::vector<Operation::Ptr> Compiler::flatten(const std::vector<Operation::Ptr>&
   return result;
 }
 
+std::vector<std::vector<int32_t>> Compiler::compute_disappear_hashid_table(
+    const std::vector<Operation::Ptr>& operations) {
+  std::vector<std::vector<int32_t>> table(operations.size());
+  std::unordered_set<int32_t> visited;
+  for (auto it = operations.rbegin(); it != operations.rend(); ++it) {
+    bool unappended = visited.find((*it)->hash_id) == visited.end();
+    if (unappended) {
+      size_t dist_from_last = std::distance(it, operations.rend());
+      size_t dist_from_first = operations.size() - dist_from_last;
+      table[dist_from_first].push_back((*it)->hash_id);
+    }
+  }
+  return table;
+}
+
 std::vector<uint8_t> Compiler::generate_code() {
   double (*sin_ptr)(double) = std::sin;
   void* sin_vptr = reinterpret_cast<void*>(sin_ptr);
@@ -90,7 +101,8 @@ std::vector<uint8_t> Compiler::generate_code() {
   gen.mov(gen.r12, gen.rdi);
   gen.mov(gen.r13, gen.rsi);
 
-  for (auto& op : operations_) {
+  for (size_t t = 0; t < operations_.size(); ++t) {
+    const auto& op = operations_[t];
     const auto& location = ophash_to_location_[op->hash_id];
     auto available_xmm_idx = get_available_xmm_index(gen);
     auto xmm_result = Xbyak::Xmm(available_xmm_idx);
