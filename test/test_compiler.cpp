@@ -24,7 +24,8 @@ TEST(Compiler, Basic) {
   auto ret = i5 + i3 + i6 + i7;
 
   // custom compiler
-  tenkai::JitFunc<double> func = compile({x, y, z, w}, {ret, i5, i3, i6, i7});
+  Compiler compiler({x, y, z, w}, {ret, i5, i3, i6, i7}, true);
+  tenkai::JitFunc<double> func = compiler.compile();
   double input[4] = {1.0, 2.0, 3.0, 4.0};
   double output_custom[5];
   func(input, output_custom, {});
