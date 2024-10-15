@@ -227,22 +227,25 @@ uint8_t Compiler::get_xmm_register_idx(int32_t hash_id,
   if (location->is_xmm) {
     return location->idx;
   }
-  auto xmm_spill = find_most_unused_xmm_idx(std::move(dont_spill_xmm));
-  spill_register(xmm_spill, gen);
-  gen.vmovsd(Xbyak::Xmm(xmm_spill), gen.ptr[gen.rbp - (location->idx + 1) * 8]);
-  return xmm_spill;
+  auto xmm_available_idx = get_available_xmm_index(gen);
+  gen.vmovsd(Xbyak::Xmm(xmm_available_idx), gen.ptr[gen.rbp - (location->idx + 1) * 8]);
+  std::cout << std::format("vmovsd xmm{}, [rbp - {} * 8]\n", xmm_available_idx, location->idx);
+  ophash_to_location_[hash_id] = Location{xmm_available_idx, true};
+  xmm_usage_[xmm_available_idx] = hash_id;
+  stack_usage_[location->idx] = std::nullopt;
+  return xmm_available_idx;
 }
 
 void Compiler::untrack_disappear_hashid(size_t t) {
   for (int32_t hash_id : disappear_hashid_table_[t]) {
     auto location = ophash_to_location_[hash_id];
+    if (!location.has_value()) {
+      throw std::runtime_error("location not found. cannot untrack disappear hashid");
+    }
     if (location.has_value() && location->is_xmm) {
       xmm_usage_[location->idx] = std::nullopt;
       xmm_survival_period_[location->idx] = std::nullopt;
     } else {
-      if (!location.has_value()) {
-        throw std::runtime_error("location not found. cannot untrack disappear hashid");
-      }
       stack_usage_[location->idx] = std::nullopt;
     }
     ophash_to_location_[hash_id] = std::nullopt;
