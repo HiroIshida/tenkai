@@ -33,16 +33,16 @@ class AllocState {
   std::optional<size_t> get_available_xmm() const;
 
   // only accept read-only access
-  inline const auto& get_xmm_usage() const { return xmm_usage; }
-  inline const auto& get_stack_usage() const { return stack_usage; }
-  inline const auto& get_xmm_age() const { return xmm_age; }
-  inline const auto& get_location() const { return location; }
+  inline const auto& get_xmm_usages() const { return xmm_usages_; }
+  inline const auto& get_stack_usages() const { return stack_usages_; }
+  inline const auto& get_xmm_ages() const { return xmm_ages_; }
+  inline const auto& get_locations() const { return locations_; }
 
  private:
-  std::vector<std::optional<HashType>> xmm_usage;
-  std::vector<std::optional<HashType>> stack_usage;
-  std::vector<std::optional<size_t>> xmm_age;
-  std::unordered_map<HashType, Location> location;
+  std::vector<std::optional<HashType>> xmm_usages_;
+  std::vector<std::optional<HashType>> stack_usages_;
+  std::vector<std::optional<size_t>> xmm_ages_;
+  std::unordered_map<HashType, Location> locations_;
 };
 
 /* for each time step, compute the hashid that will disappear */

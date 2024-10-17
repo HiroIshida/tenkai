@@ -9,63 +9,67 @@ namespace register_alloc {
 AllocState::AllocState(const std::vector<Operation::Ptr>& opseq,
                        const std::vector<Operation::Ptr>& inputs,
                        size_t n_xmm)
-    : xmm_usage(n_xmm, std::nullopt),
-      stack_usage(opseq.size(), std::nullopt),
-      xmm_age(n_xmm, std::nullopt) {
+    : xmm_usages_(n_xmm, std::nullopt),
+      stack_usages_(opseq.size(), std::nullopt),
+      xmm_ages_(n_xmm, std::nullopt) {
   for (auto& op : opseq) {
     if (op->kind == OpKind::VALIABLE) {
       auto it = std::find_if(inputs.begin(), inputs.end(), [&](const Operation::Ptr& input) {
         return input->hash_id == op->hash_id;
       });
       size_t idx = std::distance(inputs.begin(), it);
-      location[op->hash_id] = Location{LocationType::INPUT, idx};
+      locations_[op->hash_id] = Location{LocationType::INPUT, idx};
     }
   }
 }
 
 void AllocState::tell_xmm_assigned(HashType hash_id, size_t xmm_idx) {
-  xmm_usage[xmm_idx] = hash_id;
-  xmm_age[xmm_idx] = 0;
-  location[hash_id] = Location{LocationType::REGISTER, xmm_idx};
+  xmm_usages_[xmm_idx] = hash_id;
+  xmm_ages_[xmm_idx] = 0;
+  locations_[hash_id] = Location{LocationType::REGISTER, xmm_idx};
 }
 
 void AllocState::spill_away_register(size_t xmm_idx, std::optional<size_t> stack_idx) {
-  if (xmm_usage[xmm_idx] == std::nullopt) {
+  if (xmm_usages_[xmm_idx] == std::nullopt) {
     throw std::runtime_error("xmm_idx is not used");
   }
   if (stack_idx == std::nullopt) {
-    auto it = std::find(stack_usage.begin(), stack_usage.end(), std::nullopt);
-    if (it == stack_usage.end()) {
+    auto it = std::find(stack_usages_.begin(), stack_usages_.end(), std::nullopt);
+    if (it == stack_usages_.end()) {
       throw std::runtime_error("no stack is available");
     }
-    stack_idx = std::distance(stack_usage.begin(), it);
+    stack_idx = std::distance(stack_usages_.begin(), it);
   }
 
-  stack_usage[*stack_idx] = xmm_usage[xmm_idx];
-  xmm_usage[xmm_idx] = std::nullopt;
-  location[*xmm_usage[xmm_idx]] = Location{LocationType::STACK, *stack_idx};
-  xmm_age[xmm_idx] = std::nullopt;
+  HashType hash_id = *xmm_usages_[xmm_idx];
+  locations_[hash_id] = Location{LocationType::STACK, *stack_idx};
+
+  stack_usages_[*stack_idx] = xmm_usages_[xmm_idx];
+  xmm_usages_[xmm_idx] = std::nullopt;
+  xmm_ages_[xmm_idx] = std::nullopt;
 }
 
 void AllocState::load_to_register(size_t stack_idx, size_t xmm_idx) {
-  if (stack_usage[stack_idx] == std::nullopt) {
+  if (stack_usages_[stack_idx] == std::nullopt) {
     throw std::runtime_error("anyting is not stored in the stack");
   }
-  xmm_usage[xmm_idx] = stack_usage[stack_idx];
-  stack_usage[stack_idx] = std::nullopt;
-  location[*xmm_usage[xmm_idx]] = Location{LocationType::REGISTER, xmm_idx};
-  xmm_age[xmm_idx] = 0;
+  HashType hash_id = *stack_usages_[stack_idx];
+  locations_[hash_id] = Location{LocationType::REGISTER, xmm_idx};
+
+  xmm_usages_[xmm_idx] = stack_usages_[stack_idx];
+  stack_usages_[stack_idx] = std::nullopt;
+  xmm_ages_[xmm_idx] = 0;
 }
 
 size_t AllocState::most_unused_xmm() const {
   size_t max_age = 0;
   std::optional<size_t> max_age_idx = std::nullopt;
-  for (size_t i = 0; i < xmm_age.size(); ++i) {
-    if (xmm_age[i] == std::nullopt) {
+  for (size_t i = 0; i < xmm_ages_.size(); ++i) {
+    if (xmm_ages_[i] == std::nullopt) {
       return i;
     }
-    if (*xmm_age[i] > max_age) {
-      max_age = *xmm_age[i];
+    if (*xmm_ages_[i] > max_age) {
+      max_age = *xmm_ages_[i];
       max_age_idx = i;
     }
   }
@@ -73,11 +77,11 @@ size_t AllocState::most_unused_xmm() const {
 }
 
 std::optional<size_t> AllocState::get_available_xmm() const {
-  auto it = std::find(xmm_usage.begin(), xmm_usage.end(), std::nullopt);
-  if (it == xmm_usage.end()) {
+  auto it = std::find(xmm_usages_.begin(), xmm_usages_.end(), std::nullopt);
+  if (it == xmm_usages_.end()) {
     return std::nullopt;
   }
-  return std::distance(xmm_usage.begin(), it);
+  return std::distance(xmm_usages_.begin(), it);
 }
 
 std::vector<std::unordered_set<HashType>> compute_disappear_hashid_table(
@@ -128,7 +132,7 @@ std::vector<TransitionSet> RegisterAllocator::allocate(const std::vector<Operati
 }
 
 size_t RegisterAllocator::load_to_xmm(AllocState& as, HashType hash_id) {
-  const auto& locations = as.get_location();
+  const auto& locations = as.get_locations();
   auto it = locations.find(hash_id);
   bool location_not_found = it == locations.end();
   if (location_not_found) {
@@ -140,7 +144,7 @@ size_t RegisterAllocator::load_to_xmm(AllocState& as, HashType hash_id) {
     return loc.idx;
   }
   size_t xmm_idx = as.most_unused_xmm();
-  if (as.get_xmm_usage()[xmm_idx] != std::nullopt) {
+  if (as.get_xmm_usages()[xmm_idx] != std::nullopt) {
     as.spill_away_register(xmm_idx, std::nullopt);
     as.load_to_register(loc.idx, xmm_idx);
   }
