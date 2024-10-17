@@ -34,7 +34,14 @@ void AllocState::step() {
   ++t_;
 }
 
-void AllocState::tell_xmm_assigned(HashType hash_id, size_t xmm_idx) {
+void AllocState::tell_xmm_assigned_as_op_result(HashType hash_id, size_t xmm_idx) {
+  // update history
+  auto&& loc_src = std::nullopt;
+  auto&& loc_dest = Location{LocationType::REGISTER, xmm_idx};
+  Transition&& transition = std::make_tuple(hash_id, loc_src, loc_dest);
+  history_[t_].emplace_back(transition);
+
+  // update current state
   xmm_usages_[xmm_idx] = hash_id;
   xmm_ages_[xmm_idx] = 0;
   locations_[hash_id] = Location{LocationType::REGISTER, xmm_idx};
@@ -51,7 +58,13 @@ void AllocState::spill_away_register(size_t xmm_idx, std::optional<size_t> stack
     }
     stack_idx = std::distance(stack_usages_.begin(), it);
   }
+  // update history
+  auto&& loc_src = Location{LocationType::REGISTER, xmm_idx};
+  auto&& loc_dest = Location{LocationType::STACK, *stack_idx};
+  Transition&& transition = std::make_tuple(*xmm_usages_[xmm_idx], loc_src, loc_dest);
+  history_[t_].emplace_back(transition);
 
+  // update current state
   HashType hash_id = *xmm_usages_[xmm_idx];
   locations_[hash_id] = Location{LocationType::STACK, *stack_idx};
 
@@ -64,9 +77,15 @@ void AllocState::load_to_register(size_t stack_idx, size_t xmm_idx) {
   if (stack_usages_[stack_idx] == std::nullopt) {
     throw std::runtime_error("anyting is not stored in the stack");
   }
+  // update history
+  auto&& loc_src = Location{LocationType::STACK, stack_idx};
+  auto&& loc_dest = Location{LocationType::REGISTER, xmm_idx};
+  Transition&& transition = std::make_tuple(*stack_usages_[stack_idx], loc_src, loc_dest);
+  history_[t_].emplace_back(transition);
+
+  // update current state
   HashType hash_id = *stack_usages_[stack_idx];
   locations_[hash_id] = Location{LocationType::REGISTER, xmm_idx};
-
   xmm_usages_[xmm_idx] = stack_usages_[stack_idx];
   stack_usages_[stack_idx] = std::nullopt;
   xmm_ages_[xmm_idx] = 0;
