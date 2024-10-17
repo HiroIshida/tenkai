@@ -28,12 +28,16 @@ class AllocState {
 
   void step();
 
-  // some operations
+  // some destructive operations
+  void load_from_input(HashType hash_id, size_t xmm_idx);
   void tell_xmm_assigned_as_op_result(HashType hash_id, size_t xmm_idx);
   void spill_away_register(size_t xmm_idx, std::optional<size_t> stack_idx);
   void load_to_register(size_t stack_idx, size_t xmm_idx);
+
+  // some queries
   size_t most_unused_xmm() const;
   std::optional<size_t> get_available_xmm() const;
+  std::vector<TransitionSet> get_history() const { return history_; }
 
   // only accept read-only access
   inline const auto& get_xmm_usages() const { return xmm_usages_; }
@@ -49,7 +53,7 @@ class AllocState {
   std::unordered_map<HashType, Location> locations_;
 
   // history stuff
-  size_t t_;
+  std::optional<size_t> t_;
   std::vector<TransitionSet> history_;
 };
 

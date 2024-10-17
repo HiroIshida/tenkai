@@ -1,5 +1,7 @@
 #include "register_alloc.hpp"
 #include <algorithm>
+#include <format>
+#include <iostream>
 #include "cg.hpp"
 
 namespace tenkai {
@@ -13,7 +15,7 @@ AllocState::AllocState(const std::vector<Operation::Ptr>& opseq,
       stack_usages_(opseq.size(), std::nullopt),
       xmm_ages_(n_xmm, std::nullopt),
       history_(opseq.size(), std::vector<Transition>()),
-      t_(0) {
+      t_(std::nullopt) {
   for (auto& op : opseq) {
     if (op->kind == OpKind::VALIABLE) {
       auto it = std::find_if(inputs.begin(), inputs.end(), [&](const Operation::Ptr& input) {
@@ -31,7 +33,28 @@ void AllocState::step() {
       ++*xmm_ages_[i];
     }
   }
-  ++t_;
+  if (t_ == std::nullopt) {
+    t_ = 0;
+  } else {
+    ++*t_;
+  }
+}
+
+void AllocState::load_from_input(HashType hash_id, size_t xmm_idx) {
+  // update history
+  auto&& loc_src = locations_[hash_id];  // must exist
+  auto loc_dest = Location{LocationType::REGISTER, xmm_idx};
+  Transition&& transition = std::make_tuple(hash_id, loc_src, loc_dest);
+  history_[*t_].emplace_back(transition);
+
+  // update current state
+  xmm_usages_[xmm_idx] = hash_id;
+  xmm_ages_[xmm_idx] = 0;
+  locations_[hash_id] = std::move(loc_dest);
+
+  // debug print
+  std::cout << std::format("load_from_input: hash_id: {}, xmm_idx: {}", hash_id, xmm_idx)
+            << std::endl;
 }
 
 void AllocState::tell_xmm_assigned_as_op_result(HashType hash_id, size_t xmm_idx) {
@@ -39,12 +62,17 @@ void AllocState::tell_xmm_assigned_as_op_result(HashType hash_id, size_t xmm_idx
   auto&& loc_src = std::nullopt;
   auto&& loc_dest = Location{LocationType::REGISTER, xmm_idx};
   Transition&& transition = std::make_tuple(hash_id, loc_src, loc_dest);
-  history_[t_].emplace_back(transition);
+  history_[*t_].emplace_back(transition);
 
   // update current state
   xmm_usages_[xmm_idx] = hash_id;
   xmm_ages_[xmm_idx] = 0;
   locations_[hash_id] = Location{LocationType::REGISTER, xmm_idx};
+
+  // debug print
+  std::cout << std::format("tell_xmm_assigned_as_op_result: hash_id: {}, xmm_idx: {}", hash_id,
+                           xmm_idx)
+            << std::endl;
 }
 
 void AllocState::spill_away_register(size_t xmm_idx, std::optional<size_t> stack_idx) {
@@ -62,7 +90,7 @@ void AllocState::spill_away_register(size_t xmm_idx, std::optional<size_t> stack
   auto&& loc_src = Location{LocationType::REGISTER, xmm_idx};
   auto&& loc_dest = Location{LocationType::STACK, *stack_idx};
   Transition&& transition = std::make_tuple(*xmm_usages_[xmm_idx], loc_src, loc_dest);
-  history_[t_].emplace_back(transition);
+  history_[*t_].emplace_back(transition);
 
   // update current state
   HashType hash_id = *xmm_usages_[xmm_idx];
@@ -71,6 +99,11 @@ void AllocState::spill_away_register(size_t xmm_idx, std::optional<size_t> stack
   stack_usages_[*stack_idx] = xmm_usages_[xmm_idx];
   xmm_usages_[xmm_idx] = std::nullopt;
   xmm_ages_[xmm_idx] = std::nullopt;
+
+  // debug print
+  std::cout << std::format("spill_away_register: hash_id: {}, xmm_idx: {}, stack_idx: {}", hash_id,
+                           xmm_idx, *stack_idx)
+            << std::endl;
 }
 
 void AllocState::load_to_register(size_t stack_idx, size_t xmm_idx) {
@@ -81,7 +114,7 @@ void AllocState::load_to_register(size_t stack_idx, size_t xmm_idx) {
   auto&& loc_src = Location{LocationType::STACK, stack_idx};
   auto&& loc_dest = Location{LocationType::REGISTER, xmm_idx};
   Transition&& transition = std::make_tuple(*stack_usages_[stack_idx], loc_src, loc_dest);
-  history_[t_].emplace_back(transition);
+  history_[*t_].emplace_back(transition);
 
   // update current state
   HashType hash_id = *stack_usages_[stack_idx];
@@ -89,6 +122,11 @@ void AllocState::load_to_register(size_t stack_idx, size_t xmm_idx) {
   xmm_usages_[xmm_idx] = stack_usages_[stack_idx];
   stack_usages_[stack_idx] = std::nullopt;
   xmm_ages_[xmm_idx] = 0;
+
+  // debug print
+  std::cout << std::format("load_to_register: hash_id: {}, stack_idx: {}, xmm_idx: {}", hash_id,
+                           stack_idx, xmm_idx)
+            << std::endl;
 }
 
 size_t AllocState::most_unused_xmm() const {
@@ -116,7 +154,7 @@ std::optional<size_t> AllocState::get_available_xmm() const {
 
 std::vector<std::unordered_set<HashType>> compute_disappear_hashid_table(
     const std::vector<Operation::Ptr>& opseq) {
-  std::vector<std::unordered_set<HashType>> table;
+  std::vector<std::unordered_set<HashType>> table(opseq.size());
   std::unordered_set<int32_t> visited;
   for (int i = opseq.size() - 1; i >= 0; --i) {
     for (auto& arg_op : opseq[i]->args) {
@@ -138,29 +176,38 @@ std::vector<TransitionSet> RegisterAllocator::allocate(const std::vector<Operati
 
   for (size_t t = 0; t < opseq.size(); ++t) {
     alloc_state.step();
+    std::cout << std::format("current t is {}", t) << std::endl;
 
     auto& op = opseq[t];
-    // operand register preparation
-    std::vector<size_t> operand_xmm_indices(op->args.size());
-    for (auto& operand : op->args) {
-      operand_xmm_indices.push_back(load_to_xmm(alloc_state, operand->hash_id));
-    }
-
-    // result register preparation
-    std::optional<size_t> opt_result_xmm_idx = std::nullopt;
-    auto& disappear_hashids = disappear_table[t];
-    for (auto& operand : op->args) {
-      auto it = disappear_hashids.find(operand->hash_id);
-      if (it != disappear_hashids.end()) {  // if the operand is going to disappear
-        opt_result_xmm_idx = load_to_xmm(alloc_state, operand->hash_id);
-        break;
+    if (op->args.size() == 0) {
+      if (op->kind != OpKind::VALIABLE) {
+        throw std::runtime_error("kind is not VALIABLE");
       }
+      size_t dest_xmm_idx = get_available_xmm(alloc_state);
+      alloc_state.load_from_input(op->hash_id, dest_xmm_idx);
+    } else {
+      // operand register preparation
+      for (auto& operand : op->args) {
+        load_to_xmm(alloc_state, operand->hash_id);
+      }
+
+      // result register preparation
+      std::optional<size_t> result_xmm_idx = std::nullopt;
+      auto& disappear_hashids = disappear_table[t];
+      for (auto& operand : op->args) {
+        auto it = disappear_hashids.find(operand->hash_id);
+        if (it != disappear_hashids.end()) {  // if the operand is going to disappear
+          result_xmm_idx = load_to_xmm(alloc_state, operand->hash_id);
+          break;
+        }
+      }
+      if (result_xmm_idx == std::nullopt) {
+        result_xmm_idx = get_available_xmm(alloc_state);
+      }
+      alloc_state.tell_xmm_assigned_as_op_result(op->hash_id, *result_xmm_idx);
     }
-    if (opt_result_xmm_idx == std::nullopt) {
-      opt_result_xmm_idx = get_available_xmm(alloc_state);
-    }
-    size_t result_xmm_idx = *opt_result_xmm_idx;
   }
+  return alloc_state.get_history();
 }
 
 size_t RegisterAllocator::load_to_xmm(AllocState& as, HashType hash_id) {
