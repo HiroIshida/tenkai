@@ -40,7 +40,7 @@ void AllocState::step() {
   }
 }
 
-void AllocState::load_from_input(HashType hash_id, size_t xmm_idx) {
+void AllocState::record_load_from_input(HashType hash_id, size_t xmm_idx) {
   // update history
   auto&& loc_src = locations_[hash_id];  // must exist
   auto loc_dest = Location{LocationType::REGISTER, xmm_idx};
@@ -57,7 +57,7 @@ void AllocState::load_from_input(HashType hash_id, size_t xmm_idx) {
             << std::endl;
 }
 
-void AllocState::tell_xmm_assigned_as_op_result(HashType hash_id, size_t xmm_idx) {
+void AllocState::recored_xmm_assigned_as_op_result(HashType hash_id, size_t xmm_idx) {
   // update history
   auto&& loc_src = std::nullopt;
   auto&& loc_dest = Location{LocationType::REGISTER, xmm_idx};
@@ -75,7 +75,7 @@ void AllocState::tell_xmm_assigned_as_op_result(HashType hash_id, size_t xmm_idx
             << std::endl;
 }
 
-void AllocState::spill_away_register(size_t xmm_idx, std::optional<size_t> stack_idx) {
+void AllocState::record_away_register(size_t xmm_idx, std::optional<size_t> stack_idx) {
   if (xmm_usages_[xmm_idx] == std::nullopt) {
     throw std::runtime_error("xmm_idx is not used");
   }
@@ -106,7 +106,7 @@ void AllocState::spill_away_register(size_t xmm_idx, std::optional<size_t> stack
             << std::endl;
 }
 
-void AllocState::load_to_register(size_t stack_idx, size_t xmm_idx) {
+void AllocState::record_load_to_register(size_t stack_idx, size_t xmm_idx) {
   if (stack_usages_[stack_idx] == std::nullopt) {
     throw std::runtime_error("anyting is not stored in the stack");
   }
@@ -184,7 +184,7 @@ std::vector<TransitionSet> RegisterAllocator::allocate(const std::vector<Operati
         throw std::runtime_error("kind is not VALIABLE");
       }
       size_t dest_xmm_idx = get_available_xmm(alloc_state);
-      alloc_state.load_from_input(op->hash_id, dest_xmm_idx);
+      alloc_state.record_load_from_input(op->hash_id, dest_xmm_idx);
     } else {
       // operand register preparation
       for (auto& operand : op->args) {
@@ -204,7 +204,7 @@ std::vector<TransitionSet> RegisterAllocator::allocate(const std::vector<Operati
       if (result_xmm_idx == std::nullopt) {
         result_xmm_idx = get_available_xmm(alloc_state);
       }
-      alloc_state.tell_xmm_assigned_as_op_result(op->hash_id, *result_xmm_idx);
+      alloc_state.recored_xmm_assigned_as_op_result(op->hash_id, *result_xmm_idx);
     }
   }
   return alloc_state.get_history();
@@ -224,8 +224,8 @@ size_t RegisterAllocator::load_to_xmm(AllocState& as, HashType hash_id) {
   }
   size_t xmm_idx = as.most_unused_xmm();
   if (as.get_xmm_usages()[xmm_idx] != std::nullopt) {
-    as.spill_away_register(xmm_idx, std::nullopt);
-    as.load_to_register(loc.idx, xmm_idx);
+    as.record_away_register(xmm_idx, std::nullopt);
+    as.record_load_to_register(loc.idx, xmm_idx);
   }
   return xmm_idx;
 }
@@ -234,7 +234,7 @@ size_t RegisterAllocator::get_available_xmm(AllocState& as) {
   auto xmm_idx_cand = as.get_available_xmm();
   if (xmm_idx_cand == std::nullopt) {
     size_t xmm_idx = as.most_unused_xmm();
-    as.spill_away_register(xmm_idx, std::nullopt);
+    as.record_away_register(xmm_idx, std::nullopt);
     return xmm_idx;
   }
   return *xmm_idx_cand;

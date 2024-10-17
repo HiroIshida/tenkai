@@ -29,10 +29,10 @@ class AllocState {
   void step();
 
   // some destructive operations
-  void load_from_input(HashType hash_id, size_t xmm_idx);
-  void tell_xmm_assigned_as_op_result(HashType hash_id, size_t xmm_idx);
-  void spill_away_register(size_t xmm_idx, std::optional<size_t> stack_idx);
-  void load_to_register(size_t stack_idx, size_t xmm_idx);
+  void record_load_from_input(HashType hash_id, size_t xmm_idx);
+  void recored_xmm_assigned_as_op_result(HashType hash_id, size_t xmm_idx);
+  void record_away_register(size_t xmm_idx, std::optional<size_t> stack_idx);
+  void record_load_to_register(size_t stack_idx, size_t xmm_idx);
 
   // some queries
   size_t most_unused_xmm() const;
