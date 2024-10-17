@@ -26,6 +26,9 @@ class AllocState {
              const std::vector<Operation::Ptr>& inputs,
              size_t n_xmm);
 
+  void step();
+
+  // some operations
   void tell_xmm_assigned(HashType hash_id, size_t xmm_idx);
   void spill_away_register(size_t xmm_idx, std::optional<size_t> stack_idx);
   void load_to_register(size_t stack_idx, size_t xmm_idx);
@@ -39,10 +42,15 @@ class AllocState {
   inline const auto& get_locations() const { return locations_; }
 
  private:
+  // current states
   std::vector<std::optional<HashType>> xmm_usages_;
   std::vector<std::optional<HashType>> stack_usages_;
   std::vector<std::optional<size_t>> xmm_ages_;
   std::unordered_map<HashType, Location> locations_;
+
+  // history stuff
+  size_t t_;
+  std::vector<TransitionSet> history_;
 };
 
 /* for each time step, compute the hashid that will disappear */

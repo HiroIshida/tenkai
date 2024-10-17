@@ -11,7 +11,9 @@ AllocState::AllocState(const std::vector<Operation::Ptr>& opseq,
                        size_t n_xmm)
     : xmm_usages_(n_xmm, std::nullopt),
       stack_usages_(opseq.size(), std::nullopt),
-      xmm_ages_(n_xmm, std::nullopt) {
+      xmm_ages_(n_xmm, std::nullopt),
+      history_(opseq.size(), std::vector<Transition>()),
+      t_(0) {
   for (auto& op : opseq) {
     if (op->kind == OpKind::VALIABLE) {
       auto it = std::find_if(inputs.begin(), inputs.end(), [&](const Operation::Ptr& input) {
@@ -21,6 +23,15 @@ AllocState::AllocState(const std::vector<Operation::Ptr>& opseq,
       locations_[op->hash_id] = Location{LocationType::INPUT, idx};
     }
   }
+}
+
+void AllocState::step() {
+  for (size_t i = 0; i < xmm_ages_.size(); ++i) {
+    if (xmm_ages_[i] != std::nullopt) {
+      ++*xmm_ages_[i];
+    }
+  }
+  ++t_;
 }
 
 void AllocState::tell_xmm_assigned(HashType hash_id, size_t xmm_idx) {
@@ -107,6 +118,8 @@ std::vector<TransitionSet> RegisterAllocator::allocate(const std::vector<Operati
   auto alloc_state = AllocState(opseq, inputs, 16);
 
   for (size_t t = 0; t < opseq.size(); ++t) {
+    alloc_state.step();
+
     auto& op = opseq[t];
     // operand register preparation
     std::vector<size_t> operand_xmm_indices(op->args.size());
