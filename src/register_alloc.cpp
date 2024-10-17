@@ -128,18 +128,19 @@ std::vector<TransitionSet> RegisterAllocator::allocate(const std::vector<Operati
 }
 
 size_t RegisterAllocator::load_to_xmm(AllocState& as, HashType hash_id) {
-  auto it = as.location.find(hash_id);
-  bool location_not_found = it == as.location.end();
+  const auto& locations = as.get_location();
+  auto it = locations.find(hash_id);
+  bool location_not_found = it == locations.end();
   if (location_not_found) {
     throw std::runtime_error("hash_id is not found");
   }
-  Location& loc = it->second;
+  const Location& loc = it->second;
   bool already_on_register = loc.type == LocationType::REGISTER;
   if (already_on_register) {
     return loc.idx;
   }
   size_t xmm_idx = as.most_unused_xmm();
-  if (as.xmm_usage[xmm_idx] != std::nullopt) {
+  if (as.get_xmm_usage()[xmm_idx] != std::nullopt) {
     as.spill_away_register(xmm_idx, std::nullopt);
     as.load_to_register(loc.idx, xmm_idx);
   }

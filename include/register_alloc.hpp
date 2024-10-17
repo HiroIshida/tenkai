@@ -20,7 +20,8 @@ using Transition =
                                                               // the result of the operation
 using TransitionSet = std::vector<Transition>;
 
-struct AllocState {
+class AllocState {
+ public:
   AllocState(const std::vector<Operation::Ptr>& opseq,
              const std::vector<Operation::Ptr>& inputs,
              size_t n_xmm);
@@ -30,6 +31,14 @@ struct AllocState {
   void load_to_register(size_t stack_idx, size_t xmm_idx);
   size_t most_unused_xmm() const;
   std::optional<size_t> get_available_xmm() const;
+
+  // only accept read-only access
+  inline const auto& get_xmm_usage() const { return xmm_usage; }
+  inline const auto& get_stack_usage() const { return stack_usage; }
+  inline const auto& get_xmm_age() const { return xmm_age; }
+  inline const auto& get_location() const { return location; }
+
+ private:
   std::vector<std::optional<HashType>> xmm_usage;
   std::vector<std::optional<HashType>> stack_usage;
   std::vector<std::optional<size_t>> xmm_age;
