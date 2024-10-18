@@ -32,6 +32,7 @@ AllocState::AllocState(const std::vector<Operation::Ptr>& opseq,
     : xmm_usages_(n_xmm, std::nullopt),
       stack_usages_(opseq.size(), std::nullopt),
       xmm_ages_(n_xmm, std::nullopt),
+      max_stack_usage_(0),
       history_(opseq.size(), std::vector<Transition>()),
       t_(std::nullopt) {
   for (auto& op : opseq) {
@@ -84,7 +85,7 @@ void AllocState::recored_xmm_assigned_as_op_result(HashType hash_id, size_t xmm_
   locations_[hash_id] = Location{LocationType::REGISTER, xmm_idx};
 }
 
-void AllocState::record_away_register(size_t xmm_idx, std::optional<size_t> stack_idx) {
+void AllocState::record_spill_away_register(size_t xmm_idx, std::optional<size_t> stack_idx) {
   if (xmm_usages_[xmm_idx] == std::nullopt) {
     throw std::runtime_error("xmm_idx is not used");
   }
@@ -108,6 +109,11 @@ void AllocState::record_away_register(size_t xmm_idx, std::optional<size_t> stac
   stack_usages_[*stack_idx] = xmm_usages_[xmm_idx];
   xmm_usages_[xmm_idx] = std::nullopt;
   xmm_ages_[xmm_idx] = std::nullopt;
+
+  // increment max stack usage
+  if ((*stack_idx + 1) > max_stack_usage_) {
+    max_stack_usage_ = *stack_idx + 1;
+  }
 }
 
 void AllocState::record_load_to_register(size_t stack_idx, size_t xmm_idx) {
@@ -152,6 +158,7 @@ std::optional<size_t> AllocState::get_available_xmm() const {
 }
 
 void AllocState::print_history() const {
+  size_t total_spill = 0;
   for (size_t i_step = 0; i_step < history_.size(); ++i_step) {
     std::cout << std::format("step {}", i_step) << std::endl;
     const auto& transitions = history_[i_step];
@@ -166,8 +173,13 @@ void AllocState::print_history() const {
         std::cout << *source;
       }
       std::cout << " -> " << dest << std::endl;
+      if (dest.type == LocationType::STACK) {
+        ++total_spill;
+      }
     }
   }
+  std::cout << std::format("total spill: {}", total_spill) << std::endl;
+  std::cout << std::format("max stack usage: {}", max_stack_usage_) << std::endl;
 };
 
 std::vector<std::unordered_set<HashType>> compute_disappear_hashid_table(
@@ -241,7 +253,7 @@ size_t RegisterAllocator::load_to_xmm(AllocState& as, HashType hash_id) {
   }
   size_t xmm_idx = as.most_unused_xmm();
   if (as.get_xmm_usages()[xmm_idx] != std::nullopt) {
-    as.record_away_register(xmm_idx, std::nullopt);
+    as.record_spill_away_register(xmm_idx, std::nullopt);
     as.record_load_to_register(loc.idx, xmm_idx);
   }
   return xmm_idx;
@@ -251,7 +263,7 @@ size_t RegisterAllocator::get_available_xmm(AllocState& as) {
   auto xmm_idx_cand = as.get_available_xmm();
   if (xmm_idx_cand == std::nullopt) {
     size_t xmm_idx = as.most_unused_xmm();
-    as.record_away_register(xmm_idx, std::nullopt);
+    as.record_spill_away_register(xmm_idx, std::nullopt);
     return xmm_idx;
   }
   return *xmm_idx_cand;

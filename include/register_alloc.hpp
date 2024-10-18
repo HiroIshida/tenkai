@@ -35,7 +35,7 @@ class AllocState {
   // some destructive operations
   void record_load_from_input(HashType hash_id, size_t xmm_idx);
   void recored_xmm_assigned_as_op_result(HashType hash_id, size_t xmm_idx);
-  void record_away_register(size_t xmm_idx, std::optional<size_t> stack_idx);
+  void record_spill_away_register(size_t xmm_idx, std::optional<size_t> stack_idx);
   void record_load_to_register(size_t stack_idx, size_t xmm_idx);
 
   // some queries
@@ -43,8 +43,9 @@ class AllocState {
   std::optional<size_t> get_available_xmm() const;
   std::vector<TransitionSet> get_history() const { return history_; }
 
-  // some debug utils
+  // some info utils
   void print_history() const;
+  size_t required_stack_size() const;
 
   // only accept read-only access
   inline const auto& get_xmm_usages() const { return xmm_usages_; }
@@ -58,6 +59,7 @@ class AllocState {
   std::vector<std::optional<HashType>> stack_usages_;
   std::vector<std::optional<size_t>> xmm_ages_;
   std::unordered_map<HashType, Location> locations_;
+  size_t max_stack_usage_;
 
   // history stuff
   std::optional<size_t> t_;
