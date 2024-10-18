@@ -26,23 +26,20 @@ std::ostream& operator<<(std::ostream& os, const Location& loc) {
   return os;
 }
 
-AllocState::AllocState(const std::vector<Operation::Ptr>& opseq,
-                       const std::vector<Operation::Ptr>& inputs,
-                       size_t n_xmm)
+// T is temporary. Actuall stack size is determined by the max_stack_usage_
+AllocState::AllocState(const std::vector<Operation::Ptr>& inputs, size_t T, size_t n_xmm)
     : xmm_usages_(n_xmm, std::nullopt),
-      stack_usages_(opseq.size(), std::nullopt),
+      stack_usages_(T, std::nullopt),
       xmm_ages_(n_xmm, std::nullopt),
       max_stack_usage_(0),
-      history_(opseq.size(), std::vector<Transition>()),
+      history_(T, std::vector<Transition>()),
       t_(std::nullopt) {
-  for (auto& op : opseq) {
-    if (op->kind == OpKind::VALIABLE) {
-      auto it = std::find_if(inputs.begin(), inputs.end(), [&](const Operation::Ptr& input) {
-        return input->hash_id == op->hash_id;
-      });
-      size_t idx = std::distance(inputs.begin(), it);
-      locations_[op->hash_id] = Location{LocationType::INPUT, idx};
+  for (size_t i = 0; i < inputs.size(); ++i) {
+    auto& op = inputs[i];
+    if (op->kind != OpKind::VALIABLE) {
+      throw std::runtime_error("kind is not VALIABLE");
     }
+    locations_[op->hash_id] = Location{LocationType::INPUT, i};
   }
 }
 
@@ -202,7 +199,7 @@ std::vector<TransitionSet> RegisterAllocator::allocate(const std::vector<Operati
                                                        const std::vector<Operation::Ptr>& inputs,
                                                        const std::vector<Operation::Ptr>& outputs) {
   auto disappear_table = compute_disappear_hashid_table(opseq);
-  auto alloc_state = AllocState(opseq, inputs, 16);
+  auto alloc_state = AllocState(inputs, opseq.size(), 6);
 
   for (size_t t = 0; t < opseq.size(); ++t) {
     alloc_state.step();

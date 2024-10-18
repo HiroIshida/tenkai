@@ -26,10 +26,7 @@ using TransitionSet = std::vector<Transition>;
 
 class AllocState {
  public:
-  AllocState(const std::vector<Operation::Ptr>& opseq,
-             const std::vector<Operation::Ptr>& inputs,
-             size_t n_xmm);
-
+  AllocState(const std::vector<Operation::Ptr>& inputs, size_t T, size_t n_xmm);
   void step();
 
   // some destructive operations
