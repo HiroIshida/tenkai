@@ -15,9 +15,13 @@ struct Location {
   LocationType type;
   size_t idx;
 };
+
+std::ostream& operator<<(std::ostream& os, const Location& loc);
+
 using Transition =
     std::tuple<HashType, std::optional<Location>, Location>;  // optional<Location> is to express
                                                               // the result of the operation
+
 using TransitionSet = std::vector<Transition>;
 
 class AllocState {
@@ -38,6 +42,9 @@ class AllocState {
   size_t most_unused_xmm() const;
   std::optional<size_t> get_available_xmm() const;
   std::vector<TransitionSet> get_history() const { return history_; }
+
+  // some debug utils
+  void print_history() const;
 
   // only accept read-only access
   inline const auto& get_xmm_usages() const { return xmm_usages_; }

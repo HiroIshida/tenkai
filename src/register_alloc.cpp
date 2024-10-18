@@ -8,6 +8,24 @@ namespace tenkai {
 
 namespace register_alloc {
 
+std::ostream& operator<<(std::ostream& os, const Location& loc) {
+  switch (loc.type) {
+    case LocationType::REGISTER:
+      os << std::format("xmm({})", loc.idx);
+      break;
+    case LocationType::STACK:
+      os << std::format("stack({})", loc.idx);
+      break;
+    case LocationType::INPUT:
+      os << std::format("input({})", loc.idx);
+      break;
+    case LocationType::OUTPUT:
+      os << std::format("output({})", loc.idx);
+      break;
+  }
+  return os;
+}
+
 AllocState::AllocState(const std::vector<Operation::Ptr>& opseq,
                        const std::vector<Operation::Ptr>& inputs,
                        size_t n_xmm)
@@ -51,10 +69,6 @@ void AllocState::record_load_from_input(HashType hash_id, size_t xmm_idx) {
   xmm_usages_[xmm_idx] = hash_id;
   xmm_ages_[xmm_idx] = 0;
   locations_[hash_id] = std::move(loc_dest);
-
-  // debug print
-  std::cout << std::format("load_from_input: hash_id: {}, xmm_idx: {}", hash_id, xmm_idx)
-            << std::endl;
 }
 
 void AllocState::recored_xmm_assigned_as_op_result(HashType hash_id, size_t xmm_idx) {
@@ -68,11 +82,6 @@ void AllocState::recored_xmm_assigned_as_op_result(HashType hash_id, size_t xmm_
   xmm_usages_[xmm_idx] = hash_id;
   xmm_ages_[xmm_idx] = 0;
   locations_[hash_id] = Location{LocationType::REGISTER, xmm_idx};
-
-  // debug print
-  std::cout << std::format("tell_xmm_assigned_as_op_result: hash_id: {}, xmm_idx: {}", hash_id,
-                           xmm_idx)
-            << std::endl;
 }
 
 void AllocState::record_away_register(size_t xmm_idx, std::optional<size_t> stack_idx) {
@@ -99,11 +108,6 @@ void AllocState::record_away_register(size_t xmm_idx, std::optional<size_t> stac
   stack_usages_[*stack_idx] = xmm_usages_[xmm_idx];
   xmm_usages_[xmm_idx] = std::nullopt;
   xmm_ages_[xmm_idx] = std::nullopt;
-
-  // debug print
-  std::cout << std::format("spill_away_register: hash_id: {}, xmm_idx: {}, stack_idx: {}", hash_id,
-                           xmm_idx, *stack_idx)
-            << std::endl;
 }
 
 void AllocState::record_load_to_register(size_t stack_idx, size_t xmm_idx) {
@@ -122,11 +126,6 @@ void AllocState::record_load_to_register(size_t stack_idx, size_t xmm_idx) {
   xmm_usages_[xmm_idx] = stack_usages_[stack_idx];
   stack_usages_[stack_idx] = std::nullopt;
   xmm_ages_[xmm_idx] = 0;
-
-  // debug print
-  std::cout << std::format("load_to_register: hash_id: {}, stack_idx: {}, xmm_idx: {}", hash_id,
-                           stack_idx, xmm_idx)
-            << std::endl;
 }
 
 size_t AllocState::most_unused_xmm() const {
@@ -152,6 +151,25 @@ std::optional<size_t> AllocState::get_available_xmm() const {
   return std::distance(xmm_usages_.begin(), it);
 }
 
+void AllocState::print_history() const {
+  for (size_t i_step = 0; i_step < history_.size(); ++i_step) {
+    std::cout << std::format("step {}", i_step) << std::endl;
+    const auto& transitions = history_[i_step];
+    for (const auto& transition : transitions) {
+      const HashType& hash_id = std::get<0>(transition);
+      const std::optional<Location>& source = std::get<1>(transition);
+      const Location& dest = std::get<2>(transition);
+      std::cout << std::format("{}: ", hash_id);
+      if (source == std::nullopt) {
+        std::cout << "OpResult";
+      } else {
+        std::cout << *source;
+      }
+      std::cout << " -> " << dest << std::endl;
+    }
+  }
+};
+
 std::vector<std::unordered_set<HashType>> compute_disappear_hashid_table(
     const std::vector<Operation::Ptr>& opseq) {
   std::vector<std::unordered_set<HashType>> table(opseq.size());
@@ -176,8 +194,6 @@ std::vector<TransitionSet> RegisterAllocator::allocate(const std::vector<Operati
 
   for (size_t t = 0; t < opseq.size(); ++t) {
     alloc_state.step();
-    std::cout << std::format("current t is {}", t) << std::endl;
-
     auto& op = opseq[t];
     if (op->args.size() == 0) {
       if (op->kind != OpKind::VALIABLE) {
@@ -207,6 +223,7 @@ std::vector<TransitionSet> RegisterAllocator::allocate(const std::vector<Operati
       alloc_state.recored_xmm_assigned_as_op_result(op->hash_id, *result_xmm_idx);
     }
   }
+  alloc_state.print_history();
   return alloc_state.get_history();
 }
 
