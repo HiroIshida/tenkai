@@ -30,6 +30,7 @@ struct AllocState {
   // query
   size_t most_unused_xmm() const;
   std::optional<size_t> get_available_xmm() const;
+  size_t get_available_stack() const;
 
   // udpate
   void update_xmm_ages();
@@ -39,7 +40,6 @@ struct AllocState {
   std::vector<std::optional<HashType>> stack_usages_;
   std::vector<std::optional<size_t>> xmm_ages_;
   std::unordered_map<HashType, Location> locations_;
-  size_t max_stack_usage_;
 };
 
 /* for each time step, compute the hashid that will disappear */

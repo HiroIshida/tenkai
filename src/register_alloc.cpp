@@ -71,6 +71,14 @@ std::optional<size_t> AllocState::get_available_xmm() const {
   return std::distance(xmm_usages_.begin(), it);
 }
 
+size_t AllocState::get_available_stack() const {
+  auto it = std::find(stack_usages_.begin(), stack_usages_.end(), std::nullopt);
+  if (it == stack_usages_.end()) {
+    throw std::runtime_error("stack is full");
+  }
+  return std::distance(stack_usages_.begin(), it);
+}
+
 std::vector<std::unordered_set<HashType>> compute_disappear_hashid_table(
     const std::vector<Operation::Ptr>& opseq) {
   std::vector<std::unordered_set<HashType>> table(opseq.size());
@@ -94,18 +102,52 @@ std::vector<TransitionSet> RegisterAllocator::allocate(const std::vector<Operati
   auto alloc_state = AllocState(inputs, opseq.size(), 6);
 
   for (size_t t = 0; t < opseq.size(); ++t) {
+    TransitionSet tset;
     auto& op = opseq[t];
+
     if (op->args.size() == 0) {
       if (op->kind != OpKind::VALIABLE) {
         throw std::runtime_error("kind is not VALIABLE");
       }
-      // record_load_from_input(hash_id)
-    } else {
-      for (auto& operand : op->args) {
-        // call record_prepare_operand_on_register(hash_id, disappera_hashids)
-        // disappear hash _id can be reused
+      // determine source location
+      auto it_inp_idx =
+          std::find_if(inputs.begin(), inputs.end(),
+                       [op](const Operation::Ptr& input) { return input->hash_id == op->hash_id; });
+      auto inp_idx = std::distance(inputs.begin(), it_inp_idx);
+      Location loc_src{LocationType::INPUT, inp_idx};
+
+      // determine destination location
+      auto xmm_idx = alloc_state.get_available_xmm();
+      if (xmm_idx == std::nullopt) {
+        // determine the xmm to be spilled
+        auto spill_xmm_idx = alloc_state.most_unused_xmm();
+        auto spill_hash_id = alloc_state.xmm_usages_[spill_xmm_idx];
+        auto& stash_loc_src = alloc_state.locations_[*spill_hash_id];
+
+        // determine the stack to fill
+        auto spill_dst_stack_idx = alloc_state.get_available_stack();
+        Location loc_spill_dst{LocationType::STACK, spill_dst_stack_idx};
+
+        // update alloc_state
+        alloc_state.xmm_usages_[spill_xmm_idx].reset();
+        alloc_state.xmm_ages_[spill_xmm_idx].reset();
+        alloc_state.stack_usages_[spill_dst_stack_idx] = spill_hash_id;
+        alloc_state.locations_[*spill_hash_id] = loc_spill_dst;
+
+        // record
+        tset.push_back({*spill_hash_id, stash_loc_src, loc_spill_dst});
+
+        // now that we have a free xmm so determine loc_dst
+        xmm_idx = spill_xmm_idx;
       }
-      // record_prepare_result_on_register(hash_id, disappera_hashids)
+      Location loc_dst = Location{LocationType::REGISTER, *xmm_idx};
+      tset.push_back({op->hash_id, loc_src, loc_dst});
+    } else {
+      auto disappear_hash_ids =
+          disappear_table[t];  // these are used as operands but will no longer be used
+      // load operands to xmm
+      for (auto& operand : op->args) {
+      }
     }
   }
   return {};
