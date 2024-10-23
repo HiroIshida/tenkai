@@ -30,7 +30,8 @@ std::ostream& operator<<(std::ostream& os, const Transition& trans) {
   auto [hash_id, loc_src, loc_dst] = trans;
   os << std::format("var({}): ", hash_id);
   if (loc_dst == std::nullopt) {
-    os << "null";
+    os << "\033[90m"
+       << "null";
   } else {
     os << *loc_dst;
   }
@@ -40,7 +41,7 @@ std::ostream& operator<<(std::ostream& os, const Transition& trans) {
   } else {
     os << *loc_src;
   }
-  os << std::endl;
+  os << "\033[0m" << std::endl;
   return os;
 }
 
@@ -203,6 +204,20 @@ std::vector<TransitionSet> RegisterAllocator::allocate() {
 
       // record
       transition_sets_[t_].push_back({op->hash_id, std::nullopt, loc_dst});
+
+      // if the result will be output, then copy it to the output location
+      // find output index
+      auto it_out_idx = std::find_if(
+          outputs_.begin(), outputs_.end(),
+          [op](const Operation::Ptr& output) { return output->hash_id == op->hash_id; });
+      if (it_out_idx != outputs_.end()) {
+        auto out_idx = std::distance(outputs_.begin(), it_out_idx);
+        Location loc_src = loc_dst;
+        Location loc_dst{LocationType::OUTPUT, out_idx};
+        transition_sets_[t_].push_back({op->hash_id, loc_src, loc_dst});
+        // bit strange but update alloc_state_ is not needed
+        // as it will anyway treated as disappeared in the next step
+      }
     }
     step();
   }
