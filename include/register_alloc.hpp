@@ -48,9 +48,24 @@ std::vector<std::unordered_set<HashType>> compute_disappear_hashid_table(
 
 class RegisterAllocator {
  public:
-  std::vector<TransitionSet> allocate(const std::vector<Operation::Ptr>& opseq,
-                                      const std::vector<Operation::Ptr>& inputs,
-                                      const std::vector<Operation::Ptr>& outputs);
+  RegisterAllocator(const std::vector<Operation::Ptr>& opseq,
+                    const std::vector<Operation::Ptr>& inputs,
+                    const std::vector<Operation::Ptr>& outputs)
+      : opseq_(opseq),
+        inputs_(inputs),
+        outputs_(outputs),
+        disappear_hashid_table_(compute_disappear_hashid_table(opseq)),
+        alloc_state_(inputs, opseq.size(), 16) {}
+
+  std::vector<TransitionSet> allocate();
+
+ private:
+  std::vector<Operation::Ptr> opseq_;
+  std::vector<Operation::Ptr> inputs_;
+  std::vector<Operation::Ptr> outputs_;
+  std::vector<std::unordered_set<HashType>> disappear_hashid_table_;
+  AllocState alloc_state_;
+  std::vector<TransitionSet> transition_sets_;
 };
 
 }  // namespace register_alloc

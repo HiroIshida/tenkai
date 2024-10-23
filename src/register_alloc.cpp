@@ -95,15 +95,10 @@ std::vector<std::unordered_set<HashType>> compute_disappear_hashid_table(
   return table;
 }
 
-std::vector<TransitionSet> RegisterAllocator::allocate(const std::vector<Operation::Ptr>& opseq,
-                                                       const std::vector<Operation::Ptr>& inputs,
-                                                       const std::vector<Operation::Ptr>& outputs) {
-  auto disappear_table = compute_disappear_hashid_table(opseq);
-  auto alloc_state = AllocState(inputs, opseq.size(), 6);
-
-  for (size_t t = 0; t < opseq.size(); ++t) {
+std::vector<TransitionSet> RegisterAllocator::allocate() {
+  for (size_t t = 0; t < opseq_.size(); ++t) {
     TransitionSet tset;
-    auto& op = opseq[t];
+    auto& op = opseq_[t];
 
     if (op->args.size() == 0) {
       if (op->kind != OpKind::VALIABLE) {
@@ -111,28 +106,28 @@ std::vector<TransitionSet> RegisterAllocator::allocate(const std::vector<Operati
       }
       // determine source location
       auto it_inp_idx =
-          std::find_if(inputs.begin(), inputs.end(),
+          std::find_if(inputs_.begin(), inputs_.end(),
                        [op](const Operation::Ptr& input) { return input->hash_id == op->hash_id; });
-      auto inp_idx = std::distance(inputs.begin(), it_inp_idx);
+      auto inp_idx = std::distance(inputs_.begin(), it_inp_idx);
       Location loc_src{LocationType::INPUT, inp_idx};
 
       // determine destination location
-      size_t xmm_idx = alloc_state.get_available_xmm();
+      auto xmm_idx = alloc_state_.get_available_xmm();
       if (xmm_idx == std::nullopt) {
         // determine the xmm to be spilled
-        auto spill_xmm_idx = alloc_state.most_unused_xmm();
-        auto spill_hash_id = alloc_state.xmm_usages_[spill_xmm_idx];
-        auto& stash_loc_src = alloc_state.locations_[*spill_hash_id];
+        auto spill_xmm_idx = alloc_state_.most_unused_xmm();
+        auto spill_hash_id = alloc_state_.xmm_usages_[spill_xmm_idx];
+        auto& stash_loc_src = alloc_state_.locations_[*spill_hash_id];
 
         // determine the stack to fill
-        auto spill_dst_stack_idx = alloc_state.get_available_stack();
+        auto spill_dst_stack_idx = alloc_state_.get_available_stack();
         Location loc_spill_dst{LocationType::STACK, spill_dst_stack_idx};
 
-        // update alloc_state
-        alloc_state.xmm_usages_[spill_xmm_idx].reset();
-        alloc_state.xmm_ages_[spill_xmm_idx].reset();
-        alloc_state.stack_usages_[spill_dst_stack_idx] = spill_hash_id;
-        alloc_state.locations_[*spill_hash_id] = loc_spill_dst;
+        // update alloc_state_
+        alloc_state_.xmm_usages_[spill_xmm_idx].reset();
+        alloc_state_.xmm_ages_[spill_xmm_idx].reset();
+        alloc_state_.stack_usages_[spill_dst_stack_idx] = spill_hash_id;
+        alloc_state_.locations_[*spill_hash_id] = loc_spill_dst;
 
         // record
         tset.push_back({*spill_hash_id, stash_loc_src, loc_spill_dst});
@@ -143,37 +138,35 @@ std::vector<TransitionSet> RegisterAllocator::allocate(const std::vector<Operati
 
       Location loc_dst = Location{LocationType::REGISTER, *xmm_idx};
 
-      // update alloc_state
-      alloc_state.xmm_usages_[*xmm_idx] = op->hash_id;
-      alloc_state.xmm_ages_[*xmm_idx] = 0;
-      alloc_state.locations_[op->hash_id] = loc_dst;
+      // tate_update alloc_state_
+      alloc_state_.xmm_usages_[*xmm_idx] = op->hash_id;
+      alloc_state_.xmm_ages_[*xmm_idx] = 0;
+      alloc_state_.locations_[op->hash_id] = loc_dst;
 
       // record
       tset.push_back({op->hash_id, loc_src, loc_dst});
     } else {
       for (auto& operand : op->args) {
-        const auto& op_loc_now = alloc_state.locations_[operand->hash_id];
+        const auto& op_loc_now = alloc_state_.locations_[operand->hash_id];
         if (op_loc_now.type != LocationType::REGISTER) {
           // do the same as above
         }
         // move operand to xmm
       }
 
-      auto disappear_hash_ids =
-          disappear_table[t];  // these are used as operands but will no longer be used
-      // remove the hash_ids from the alloc_state
+      const auto& disappear_hash_ids = disappear_hashid_table_[t];
       for (auto hash_id : disappear_hash_ids) {
-        auto& loc = alloc_state.locations_[hash_id];
+        auto& loc = alloc_state_.locations_[hash_id];
         if (loc.type == LocationType::REGISTER) {
           auto xmm_idx = loc.idx;
-          alloc_state.xmm_usages_[xmm_idx].reset();
-          alloc_state.xmm_ages_[xmm_idx].reset();
+          alloc_state_.xmm_usages_[xmm_idx].reset();
+          alloc_state_.xmm_ages_[xmm_idx].reset();
         } else if (loc.type == LocationType::STACK) {
           auto stack_idx = loc.idx;
-          alloc_state.stack_usages_[stack_idx].reset();
+          alloc_state_.stack_usages_[stack_idx].reset();
         } else {
         }
-        alloc_state.locations_.erase(hash_id);
+        alloc_state_.locations_.erase(hash_id);
       }
 
       // now allocate the result! (same as above)
