@@ -97,7 +97,6 @@ std::vector<std::unordered_set<HashType>> compute_disappear_hashid_table(
 
 std::vector<TransitionSet> RegisterAllocator::allocate() {
   for (size_t t = 0; t < opseq_.size(); ++t) {
-    TransitionSet tset;
     auto& op = opseq_[t];
 
     if (op->args.size() == 0) {
@@ -114,28 +113,8 @@ std::vector<TransitionSet> RegisterAllocator::allocate() {
       // determine destination location
       auto xmm_idx = alloc_state_.get_available_xmm();
       if (xmm_idx == std::nullopt) {
-        // determine the xmm to be spilled
-        auto spill_xmm_idx = alloc_state_.most_unused_xmm();
-        auto spill_hash_id = alloc_state_.xmm_usages_[spill_xmm_idx];
-        auto& stash_loc_src = alloc_state_.locations_[*spill_hash_id];
-
-        // determine the stack to fill
-        auto spill_dst_stack_idx = alloc_state_.get_available_stack();
-        Location loc_spill_dst{LocationType::STACK, spill_dst_stack_idx};
-
-        // update alloc_state_
-        alloc_state_.xmm_usages_[spill_xmm_idx].reset();
-        alloc_state_.xmm_ages_[spill_xmm_idx].reset();
-        alloc_state_.stack_usages_[spill_dst_stack_idx] = spill_hash_id;
-        alloc_state_.locations_[*spill_hash_id] = loc_spill_dst;
-
-        // record
-        tset.push_back({*spill_hash_id, stash_loc_src, loc_spill_dst});
-
-        // now that we have a free xmm so determine loc_dst
-        xmm_idx = spill_xmm_idx;
+        xmm_idx = spill_and_prepare_xmm();
       }
-
       Location loc_dst = Location{LocationType::REGISTER, *xmm_idx};
 
       // tate_update alloc_state_
@@ -144,7 +123,7 @@ std::vector<TransitionSet> RegisterAllocator::allocate() {
       alloc_state_.locations_[op->hash_id] = loc_dst;
 
       // record
-      tset.push_back({op->hash_id, loc_src, loc_dst});
+      transition_sets_[t_].push_back({op->hash_id, loc_src, loc_dst});
     } else {
       for (auto& operand : op->args) {
         const auto& op_loc_now = alloc_state_.locations_[operand->hash_id];
@@ -171,8 +150,30 @@ std::vector<TransitionSet> RegisterAllocator::allocate() {
 
       // now allocate the result! (same as above)
     }
+    step();
   }
   return {};
+}
+
+size_t RegisterAllocator::spill_and_prepare_xmm() {
+  // determine the xmm to be spilled
+  auto spill_xmm_idx = alloc_state_.most_unused_xmm();
+  auto spill_hash_id = alloc_state_.xmm_usages_[spill_xmm_idx];
+  auto& stash_loc_src = alloc_state_.locations_[*spill_hash_id];
+
+  // determine the stack to fill
+  auto spill_dst_stack_idx = alloc_state_.get_available_stack();
+  Location loc_spill_dst{LocationType::STACK, spill_dst_stack_idx};
+
+  // update alloc_state_
+  alloc_state_.xmm_usages_[spill_xmm_idx].reset();
+  alloc_state_.xmm_ages_[spill_xmm_idx].reset();
+  alloc_state_.stack_usages_[spill_dst_stack_idx] = spill_hash_id;
+  alloc_state_.locations_[*spill_hash_id] = loc_spill_dst;
+
+  // record
+  transition_sets_[t_].push_back({*spill_hash_id, stash_loc_src, loc_spill_dst});
+  return spill_xmm_idx;
 }
 
 }  // namespace register_alloc

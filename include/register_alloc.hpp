@@ -55,17 +55,25 @@ class RegisterAllocator {
         inputs_(inputs),
         outputs_(outputs),
         disappear_hashid_table_(compute_disappear_hashid_table(opseq)),
-        alloc_state_(inputs, opseq.size(), 16) {}
+        alloc_state_(inputs, opseq.size(), 16),
+        t_(0) {}
 
   std::vector<TransitionSet> allocate();
 
  private:
+  size_t spill_and_prepare_xmm();
+  void step() {
+    ++t_;
+    alloc_state_.update_xmm_ages();
+  }
+
   std::vector<Operation::Ptr> opseq_;
   std::vector<Operation::Ptr> inputs_;
   std::vector<Operation::Ptr> outputs_;
   std::vector<std::unordered_set<HashType>> disappear_hashid_table_;
   AllocState alloc_state_;
   std::vector<TransitionSet> transition_sets_;
+  size_t t_;
 };
 
 }  // namespace register_alloc
