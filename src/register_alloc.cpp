@@ -117,7 +117,7 @@ std::vector<TransitionSet> RegisterAllocator::allocate(const std::vector<Operati
       Location loc_src{LocationType::INPUT, inp_idx};
 
       // determine destination location
-      auto xmm_idx = alloc_state.get_available_xmm();
+      size_t xmm_idx = alloc_state.get_available_xmm();
       if (xmm_idx == std::nullopt) {
         // determine the xmm to be spilled
         auto spill_xmm_idx = alloc_state.most_unused_xmm();
@@ -140,14 +140,43 @@ std::vector<TransitionSet> RegisterAllocator::allocate(const std::vector<Operati
         // now that we have a free xmm so determine loc_dst
         xmm_idx = spill_xmm_idx;
       }
+
       Location loc_dst = Location{LocationType::REGISTER, *xmm_idx};
+
+      // update alloc_state
+      alloc_state.xmm_usages_[*xmm_idx] = op->hash_id;
+      alloc_state.xmm_ages_[*xmm_idx] = 0;
+      alloc_state.locations_[op->hash_id] = loc_dst;
+
+      // record
       tset.push_back({op->hash_id, loc_src, loc_dst});
     } else {
+      for (auto& operand : op->args) {
+        const auto& op_loc_now = alloc_state.locations_[operand->hash_id];
+        if (op_loc_now.type != LocationType::REGISTER) {
+          // do the same as above
+        }
+        // move operand to xmm
+      }
+
       auto disappear_hash_ids =
           disappear_table[t];  // these are used as operands but will no longer be used
-      // load operands to xmm
-      for (auto& operand : op->args) {
+      // remove the hash_ids from the alloc_state
+      for (auto hash_id : disappear_hash_ids) {
+        auto& loc = alloc_state.locations_[hash_id];
+        if (loc.type == LocationType::REGISTER) {
+          auto xmm_idx = loc.idx;
+          alloc_state.xmm_usages_[xmm_idx].reset();
+          alloc_state.xmm_ages_[xmm_idx].reset();
+        } else if (loc.type == LocationType::STACK) {
+          auto stack_idx = loc.idx;
+          alloc_state.stack_usages_[stack_idx].reset();
+        } else {
+        }
+        alloc_state.locations_.erase(hash_id);
       }
+
+      // now allocate the result! (same as above)
     }
   }
   return {};
