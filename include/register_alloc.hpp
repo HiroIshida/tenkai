@@ -18,9 +18,9 @@ struct Location {
 
 std::ostream& operator<<(std::ostream& os, const Location& loc);
 
-using Transition =
-    std::tuple<HashType, std::optional<Location>, Location>;  // optional<Location> is to express
-                                                              // the result of the operation
+using Transition = std::tuple<HashType, std::optional<Location>, std::optional<Location>>;
+
+std::ostream& operator<<(std::ostream& os, const Transition& trans);
 
 using TransitionSet = std::vector<Transition>;
 
@@ -50,12 +50,14 @@ class RegisterAllocator {
  public:
   RegisterAllocator(const std::vector<Operation::Ptr>& opseq,
                     const std::vector<Operation::Ptr>& inputs,
-                    const std::vector<Operation::Ptr>& outputs)
+                    const std::vector<Operation::Ptr>& outputs,
+                    size_t n_xmm = 16)
       : opseq_(opseq),
         inputs_(inputs),
         outputs_(outputs),
         disappear_hashid_table_(compute_disappear_hashid_table(opseq)),
-        alloc_state_(inputs, opseq.size(), 16),
+        alloc_state_(inputs, opseq.size(), n_xmm),
+        transition_sets_(opseq.size()),
         t_(0) {}
 
   std::vector<TransitionSet> allocate();

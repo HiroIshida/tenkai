@@ -26,6 +26,24 @@ std::ostream& operator<<(std::ostream& os, const Location& loc) {
   return os;
 }
 
+std::ostream& operator<<(std::ostream& os, const Transition& trans) {
+  auto [hash_id, loc_src, loc_dst] = trans;
+  os << std::format("var({}): ", hash_id);
+  if (loc_dst == std::nullopt) {
+    os << "null";
+  } else {
+    os << *loc_dst;
+  }
+  os << " <- ";
+  if (loc_src == std::nullopt) {
+    os << "op-result";
+  } else {
+    os << *loc_src;
+  }
+  os << std::endl;
+  return os;
+}
+
 // T is temporary. Actuall stack size is determined by the max_stack_usage_
 AllocState::AllocState(const std::vector<Operation::Ptr>& inputs, size_t T, size_t n_xmm)
     : xmm_usages_(n_xmm, std::nullopt),
@@ -117,7 +135,7 @@ std::vector<TransitionSet> RegisterAllocator::allocate() {
       }
       Location loc_dst = Location{LocationType::REGISTER, *xmm_idx};
 
-      // tate_update alloc_state_
+      // update alloc_state_
       alloc_state_.xmm_usages_[*xmm_idx] = op->hash_id;
       alloc_state_.xmm_ages_[*xmm_idx] = 0;
       alloc_state_.locations_[op->hash_id] = loc_dst;
@@ -125,12 +143,33 @@ std::vector<TransitionSet> RegisterAllocator::allocate() {
       // record
       transition_sets_[t_].push_back({op->hash_id, loc_src, loc_dst});
     } else {
+      // set the age of registers whereon the operands are stored to 0
+      for (auto& operand : op->args) {
+        const auto& op_loc_now = alloc_state_.locations_[operand->hash_id];
+        if (op_loc_now.type == LocationType::REGISTER) {
+          alloc_state_.xmm_ages_[op_loc_now.idx] = 0;
+        }
+      }
+
       for (auto& operand : op->args) {
         const auto& op_loc_now = alloc_state_.locations_[operand->hash_id];
         if (op_loc_now.type != LocationType::REGISTER) {
-          // do the same as above
+          std::optional<size_t> xmm_idx = alloc_state_.get_available_xmm();
+          if (xmm_idx == std::nullopt) {
+            xmm_idx = spill_and_prepare_xmm();
+          }
+          Location loc_src = op_loc_now;
+          Location loc_dst = Location{LocationType::REGISTER, *xmm_idx};
+
+          // update alloc_state_
+          alloc_state_.xmm_usages_[*xmm_idx] = operand->hash_id;
+          alloc_state_.xmm_ages_[*xmm_idx] = 0;
+          alloc_state_.stack_usages_[op_loc_now.idx].reset();
+          alloc_state_.locations_[operand->hash_id] = loc_dst;
+
+          // record
+          transition_sets_[t_].push_back({operand->hash_id, loc_src, loc_dst});
         }
-        // move operand to xmm
       }
 
       const auto& disappear_hash_ids = disappear_hashid_table_[t];
@@ -140,26 +179,41 @@ std::vector<TransitionSet> RegisterAllocator::allocate() {
           auto xmm_idx = loc.idx;
           alloc_state_.xmm_usages_[xmm_idx].reset();
           alloc_state_.xmm_ages_[xmm_idx].reset();
+          alloc_state_.locations_.erase(hash_id);
         } else if (loc.type == LocationType::STACK) {
           auto stack_idx = loc.idx;
           alloc_state_.stack_usages_[stack_idx].reset();
+          alloc_state_.locations_.erase(hash_id);
         } else {
         }
-        alloc_state_.locations_.erase(hash_id);
+        transition_sets_[t_].push_back({hash_id, loc, std::nullopt});
       }
 
       // now allocate the result! (same as above)
+      std::optional<size_t> result_xmm_idx = alloc_state_.get_available_xmm();
+      if (result_xmm_idx == std::nullopt) {
+        result_xmm_idx = spill_and_prepare_xmm();
+      }
+      Location loc_dst = Location{LocationType::REGISTER, *result_xmm_idx};
+
+      // update alloc_state_
+      alloc_state_.xmm_usages_[*result_xmm_idx] = op->hash_id;
+      alloc_state_.xmm_ages_[*result_xmm_idx] = 0;
+      alloc_state_.locations_[op->hash_id] = loc_dst;
+
+      // record
+      transition_sets_[t_].push_back({op->hash_id, std::nullopt, loc_dst});
     }
     step();
   }
-  return {};
+  return transition_sets_;
 }
 
 size_t RegisterAllocator::spill_and_prepare_xmm() {
   // determine the xmm to be spilled
   auto spill_xmm_idx = alloc_state_.most_unused_xmm();
   auto spill_hash_id = alloc_state_.xmm_usages_[spill_xmm_idx];
-  auto& stash_loc_src = alloc_state_.locations_[*spill_hash_id];
+  auto stash_loc_src = alloc_state_.locations_[*spill_hash_id];
 
   // determine the stack to fill
   auto spill_dst_stack_idx = alloc_state_.get_available_stack();
