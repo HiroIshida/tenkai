@@ -29,12 +29,7 @@ std::ostream& operator<<(std::ostream& os, const Location& loc) {
 std::ostream& operator<<(std::ostream& os, const Transition& trans) {
   auto [hash_id, loc_src, loc_dst] = trans;
   os << std::format("var({}): ", hash_id);
-  if (loc_dst == std::nullopt) {
-    os << "\033[90m"
-       << "null";
-  } else {
-    os << *loc_dst;
-  }
+  os << loc_dst;
   os << " <- ";
   if (loc_src == std::nullopt) {
     os << "op-result";
@@ -173,6 +168,8 @@ std::vector<TransitionSet> RegisterAllocator::allocate() {
         }
       }
 
+      // untrack the hashids that will disappear
+      // and free the registers and stack locations
       const auto& disappear_hash_ids = disappear_hashid_table_[t];
       for (auto hash_id : disappear_hash_ids) {
         auto& loc = alloc_state_.locations_[hash_id];
@@ -187,7 +184,6 @@ std::vector<TransitionSet> RegisterAllocator::allocate() {
           alloc_state_.locations_.erase(hash_id);
         } else {
         }
-        transition_sets_[t_].push_back({hash_id, loc, std::nullopt});
       }
 
       // now allocate the result! (same as above)
