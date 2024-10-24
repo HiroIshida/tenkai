@@ -27,17 +27,23 @@ std::ostream& operator<<(std::ostream& os, const Location& loc) {
 }
 
 std::ostream& operator<<(std::ostream& os, const Transition& trans) {
-  auto [hash_id, loc_src, loc_dst] = trans;
-  os << std::format("var({}): ", hash_id);
-  os << loc_dst;
-  os << " <- ";
-  if (loc_src == std::nullopt) {
-    os << "op-result";
+  if (std::holds_alternative<RawTransition>(trans)) {
+    const auto& raw_trans = std::get<RawTransition>(trans);
+    auto [hash_id, loc_src, loc_dst] = raw_trans;
+    os << std::format("Var(id={}): ", hash_id);
+    os << loc_dst << " <- " << loc_src << std::endl;
+    return os;
   } else {
-    os << *loc_src;
+    const auto op_trans = std::get<OpTransition>(trans);
+    auto [hash_id, xmms_src, loc_dst] = op_trans;
+    os << std::format("Var(id={}): ", hash_id);
+    os << loc_dst << " <- Operation(";
+    for (size_t i = 0; i < xmms_src.size() - 1; ++i) {
+      os << std::format("xmm({}), ", xmms_src[i]);
+    }
+    os << std::format("xmm({}))", xmms_src.back()) << std::endl;
+    return os;
   }
-  os << "\033[0m" << std::endl;
-  return os;
 }
 
 // T is temporary. Actuall stack size is determined by the max_stack_usage_
@@ -137,7 +143,7 @@ std::vector<TransitionSet> RegisterAllocator::allocate() {
       alloc_state_.locations_[op->hash_id] = loc_dst;
 
       // record
-      transition_sets_[t_].push_back({op->hash_id, loc_src, loc_dst});
+      transition_sets_[t_].emplace_back(RawTransition{op->hash_id, loc_src, loc_dst});
     } else {
       // set the age of registers whereon the operands are stored to 0
       for (auto& operand : op->args) {
@@ -164,8 +170,15 @@ std::vector<TransitionSet> RegisterAllocator::allocate() {
           alloc_state_.locations_[operand->hash_id] = loc_dst;
 
           // record
-          transition_sets_[t_].push_back({operand->hash_id, loc_src, loc_dst});
+          transition_sets_[t_].emplace_back(RawTransition{operand->hash_id, loc_src, loc_dst});
         }
+      }
+
+      // now that we know that all operands are on xmm,
+      std::vector<size_t> xmms_src;
+      for (auto& operand : op->args) {
+        const auto& loc = alloc_state_.locations_[operand->hash_id];
+        xmms_src.push_back(loc.idx);
       }
 
       // untrack the hashids that will disappear
@@ -199,7 +212,7 @@ std::vector<TransitionSet> RegisterAllocator::allocate() {
       alloc_state_.locations_[op->hash_id] = loc_dst;
 
       // record
-      transition_sets_[t_].push_back({op->hash_id, std::nullopt, loc_dst});
+      transition_sets_[t_].push_back(OpTransition{op->hash_id, xmms_src, loc_dst});
 
       // if the result will be output, then copy it to the output location
       // find output index
@@ -210,7 +223,7 @@ std::vector<TransitionSet> RegisterAllocator::allocate() {
         auto out_idx = std::distance(outputs_.begin(), it_out_idx);
         Location loc_src = loc_dst;
         Location loc_dst{LocationType::OUTPUT, out_idx};
-        transition_sets_[t_].push_back({op->hash_id, loc_src, loc_dst});
+        transition_sets_[t_].emplace_back(RawTransition{op->hash_id, loc_src, loc_dst});
         // bit strange but update alloc_state_ is not needed
         // as it will anyway treated as disappeared in the next step
       }
@@ -237,7 +250,7 @@ size_t RegisterAllocator::spill_and_prepare_xmm() {
   alloc_state_.locations_[*spill_hash_id] = loc_spill_dst;
 
   // record
-  transition_sets_[t_].push_back({*spill_hash_id, stash_loc_src, loc_spill_dst});
+  transition_sets_[t_].emplace_back(RawTransition{*spill_hash_id, stash_loc_src, loc_spill_dst});
   return spill_xmm_idx;
 }
 

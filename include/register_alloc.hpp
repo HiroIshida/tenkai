@@ -2,6 +2,7 @@
 #include <tuple>
 #include <unordered_map>
 #include <unordered_set>
+#include <variant>
 #include <vector>
 #include "cg.hpp"
 
@@ -18,11 +19,19 @@ struct Location {
 
 std::ostream& operator<<(std::ostream& os, const Location& loc);
 
-struct Transition {
+struct RawTransition {
   HashType hash_id;
-  std::optional<Location> src;
+  Location src;
   Location dst;
 };
+
+struct OpTransition {
+  HashType hash_id;
+  std::vector<size_t> xmms_src;  // operands must be on xmm
+  Location dst;
+};
+
+using Transition = std::variant<RawTransition, OpTransition>;
 
 std::ostream& operator<<(std::ostream& os, const Transition& trans);
 
