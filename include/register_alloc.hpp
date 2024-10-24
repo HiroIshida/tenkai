@@ -18,7 +18,11 @@ struct Location {
 
 std::ostream& operator<<(std::ostream& os, const Location& loc);
 
-using Transition = std::tuple<HashType, std::optional<Location>, Location>;
+struct Transition {
+  HashType hash_id;
+  std::optional<Location> src;
+  Location dst;
+};
 
 std::ostream& operator<<(std::ostream& os, const Transition& trans);
 
