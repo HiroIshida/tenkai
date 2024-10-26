@@ -38,10 +38,14 @@ std::ostream& operator<<(std::ostream& os, const Transition& trans) {
     auto [hash_id, xmms_src, loc_dst] = op_trans;
     os << std::format("Var(id={}): ", hash_id);
     os << loc_dst << " <- Operation(";
-    for (size_t i = 0; i < xmms_src.size() - 1; ++i) {
-      os << std::format("xmm({}), ", xmms_src[i]);
+    if (xmms_src.size() == 0) {
+      os << ")" << std::endl;
+    } else {
+      for (size_t i = 0; i < xmms_src.size() - 1; ++i) {
+        os << std::format("xmm({}), ", xmms_src[i]);
+      }
+      os << std::format("xmm({}))", xmms_src.back()) << std::endl;
     }
-    os << std::format("xmm({}))", xmms_src.back()) << std::endl;
     return os;
   }
 }
@@ -144,6 +148,31 @@ std::vector<TransitionSet> RegisterAllocator::allocate() {
 
       // record
       transition_sets_[t_].emplace_back(RawTransition{op->hash_id, loc_src, loc_dst});
+    } else if (op->kind == OpKind::SIN ||
+               op->kind == OpKind::COS) {  // when calling exeternal functions
+      // in this case we must move the operands to xmm0 and stash all the xmm registers to stack
+      // and the result will be stored in xmm0
+      if (op->args.size() != 1) {
+        throw std::runtime_error("SIN or COS must have only one operand");
+      }
+      const auto& opr_loc_now = alloc_state_.locations_[op->args[0]->hash_id];
+      prepare_value_on_xmm(op->args[0]->hash_id, 0);
+
+      // following x86-64 nasm calling convention
+      for (size_t i = 0; i < alloc_state_.xmm_usages_.size(); ++i) {
+        if (alloc_state_.xmm_usages_[i] != std::nullopt) {
+          spill_xmm(i);
+        }
+      }
+
+      auto loc_dst = Location{LocationType::REGISTER, 0};
+      // update alloc_state_
+      alloc_state_.xmm_usages_[0] = op->hash_id;
+      alloc_state_.xmm_ages_[0] = 0;
+      alloc_state_.locations_[op->hash_id] = loc_dst;
+
+      // record
+      transition_sets_[t_].emplace_back(OpTransition{op->hash_id, {}, loc_dst});
     } else {
       // set the age of registers whereon the operands are stored to 0
       for (auto& operand : op->args) {

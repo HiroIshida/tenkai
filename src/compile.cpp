@@ -126,32 +126,54 @@ std::vector<uint8_t> generate_code(const std::vector<Operation::Ptr>& inputs,
         } else if (std::holds_alternative<Xbyak::Xmm>(src) &&
                    std::holds_alternative<Xbyak::Address>(dst)) {
           gen.movsd(std::get<Xbyak::Address>(dst), std::get<Xbyak::Xmm>(src));
+        } else if (std::holds_alternative<Xbyak::Xmm>(src) &&
+                   std::holds_alternative<Xbyak::Xmm>(dst)) {
+          gen.movsd(std::get<Xbyak::Xmm>(dst), std::get<Xbyak::Xmm>(src));
         } else {
           throw std::runtime_error("not implemented");
         }
       } else if (std::holds_alternative<register_alloc::OpTransition>(trans)) {
         const auto& op_trans = std::get<register_alloc::OpTransition>(trans);
         auto dst = Xbyak::Xmm(op_trans.dst.idx);
-        auto arg0 = Xbyak::Xmm(op_trans.xmms_src[0]);
 
-        if (op->kind == OpKind::NEGATE) {
-          throw std::runtime_error("not implemented");
-        }
-
-        Xbyak::Xmm arg1 = Xbyak::Xmm(op_trans.xmms_src[1]);
-        switch (op->kind) {
-          case OpKind::ADD:
-            gen.vaddsd(dst, arg0, arg1);
-            break;
-          case OpKind::SUB:
-            gen.vsubsd(dst, arg0, arg1);
-            break;
-          case OpKind::MUL:
-            gen.vmulsd(dst, arg0, arg1);
-            break;
-          default:
-            throw std::runtime_error(
-                std::format("not implemented operation name: {}", to_string(op->kind)));
+        auto instr_operand_xmm_size = op_trans.xmms_src.size();  // different from op.args.size()
+        if (instr_operand_xmm_size == 0) {
+          switch (op->kind) {
+            case OpKind::SIN:
+              gen.call(sin_vptr);
+              break;
+            case OpKind::COS:
+              gen.call(cos_vptr);
+              break;
+            default:
+              throw std::runtime_error("not implemented");
+          }
+        } else if (instr_operand_xmm_size == 1) {
+          auto arg0 = Xbyak::Xmm(op_trans.xmms_src[0]);
+          switch (op->kind) {
+            case OpKind::NEGATE:
+              throw std::runtime_error("not implemented");
+              break;
+            default:
+              throw std::runtime_error("not implemented");
+          }
+        } else if (instr_operand_xmm_size == 2) {
+          auto arg0 = Xbyak::Xmm(op_trans.xmms_src[0]);
+          auto arg1 = Xbyak::Xmm(op_trans.xmms_src[1]);
+          switch (op->kind) {
+            case OpKind::ADD:
+              gen.vaddsd(dst, arg0, arg1);
+              break;
+            case OpKind::SUB:
+              gen.vsubsd(dst, arg0, arg1);
+              break;
+            case OpKind::MUL:
+              gen.vmulsd(dst, arg0, arg1);
+              break;
+            default:
+              throw std::runtime_error(
+                  std::format("not implemented operation name: {}", to_string(op->kind)));
+          }
         }
       } else {
         throw std::runtime_error("not implemented");
