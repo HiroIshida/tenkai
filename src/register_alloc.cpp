@@ -158,19 +158,9 @@ std::vector<TransitionSet> RegisterAllocator::allocate() {
         if (op_loc_now.type != LocationType::REGISTER) {
           std::optional<size_t> xmm_idx = alloc_state_.get_available_xmm();
           if (xmm_idx == std::nullopt) {
-            xmm_idx = spill_and_prepare_xmm();
+            xmm_idx = alloc_state_.most_unused_xmm();
           }
-          Location loc_src = op_loc_now;
-          Location loc_dst = Location{LocationType::REGISTER, *xmm_idx};
-
-          // update alloc_state_
-          alloc_state_.xmm_usages_[*xmm_idx] = operand->hash_id;
-          alloc_state_.xmm_ages_[*xmm_idx] = 0;
-          alloc_state_.stack_usages_[op_loc_now.idx].reset();
-          alloc_state_.locations_[operand->hash_id] = loc_dst;
-
-          // record
-          transition_sets_[t_].emplace_back(RawTransition{operand->hash_id, loc_src, loc_dst});
+          prepare_value_on_xmm(operand->hash_id, *xmm_idx);
         }
       }
 
@@ -247,6 +237,37 @@ void RegisterAllocator::spill_xmm(size_t idx) {
 
   // record
   transition_sets_[t_].emplace_back(RawTransition{*hash_id, loc_src, loc_dst});
+}
+
+void RegisterAllocator::prepare_value_on_xmm(HashType hash_id, size_t dst_xmm_idx) {
+  // if the target xmm idx is already used by other value,
+  // then spill it out to stack always
+  if (alloc_state_.xmm_usages_[dst_xmm_idx] == hash_id) {
+    return;
+  }
+
+  if (alloc_state_.xmm_usages_[dst_xmm_idx] != std::nullopt) {
+    spill_xmm(dst_xmm_idx);
+  }
+
+  const auto dst = Location{LocationType::REGISTER, dst_xmm_idx};
+  const auto src = alloc_state_.locations_[hash_id];
+
+  // update alloc state_
+  if (src.type == LocationType::REGISTER) {
+    alloc_state_.xmm_usages_[src.idx] = std::nullopt;
+    alloc_state_.xmm_ages_[src.idx] = std::nullopt;
+  } else if (src.type == LocationType::STACK) {
+    alloc_state_.stack_usages_[src.idx] = std::nullopt;
+  } else {
+    throw std::runtime_error("unexpected location type");
+  }
+  alloc_state_.xmm_usages_[dst_xmm_idx] = hash_id;
+  alloc_state_.xmm_ages_[dst_xmm_idx] = 0;
+  alloc_state_.locations_[hash_id] = dst;
+
+  // record
+  transition_sets_[t_].emplace_back(RawTransition{hash_id, src, dst});
 }
 
 size_t RegisterAllocator::spill_and_prepare_xmm() {
