@@ -216,6 +216,10 @@ std::vector<TransitionSet> RegisterAllocator::allocate() {
         const auto& loc = alloc_state_.locations_[operand->hash_id];
         xmms_src.push_back(loc.idx);
       }
+      if (op->kind == OpKind::NEGATE) {
+        // use special xmm register to store bit mask for negation
+        xmms_src.push_back(temp_xmm_idx_);
+      }
 
       // untrack the hashids that will disappear
       // and free the registers and stack locations

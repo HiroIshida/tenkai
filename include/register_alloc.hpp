@@ -75,9 +75,10 @@ class RegisterAllocator {
         inputs_(inputs),
         outputs_(outputs),
         disappear_hashid_table_(compute_disappear_hashid_table(opseq)),
-        alloc_state_(inputs, opseq.size(), n_xmm),
+        alloc_state_(inputs, opseq.size(), n_xmm - 1),
         transition_sets_(opseq.size()),
-        t_(0) {}
+        t_(0),
+        temp_xmm_idx_(n_xmm - 1) {}
 
   std::vector<TransitionSet> allocate();
 
@@ -97,6 +98,7 @@ class RegisterAllocator {
   AllocState alloc_state_;
   std::vector<TransitionSet> transition_sets_;
   size_t t_;
+  size_t temp_xmm_idx_;  // used for temporary xmm e.g. bit mask in negation
 };
 
 }  // namespace register_alloc

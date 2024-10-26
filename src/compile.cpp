@@ -70,7 +70,7 @@ std::vector<uint8_t> generate_code(const std::vector<Operation::Ptr>& inputs,
 
   const auto& opseq_flatten = flatten(inputs, outputs);
   const auto& transset_seq =
-      register_alloc::RegisterAllocator(opseq_flatten, inputs, outputs, 3).allocate();
+      register_alloc::RegisterAllocator(opseq_flatten, inputs, outputs, 32).allocate();
 
   auto gen = Xbyak::CodeGenerator(max_code_size);
   gen.endbr64();
@@ -122,13 +122,13 @@ std::vector<uint8_t> generate_code(const std::vector<Operation::Ptr>& inputs,
 
         if (std::holds_alternative<Xbyak::Address>(src) &&
             std::holds_alternative<Xbyak::Xmm>(dst)) {
-          gen.movsd(std::get<Xbyak::Xmm>(dst), std::get<Xbyak::Address>(src));
+          gen.vmovsd(std::get<Xbyak::Xmm>(dst), std::get<Xbyak::Address>(src));
         } else if (std::holds_alternative<Xbyak::Xmm>(src) &&
                    std::holds_alternative<Xbyak::Address>(dst)) {
-          gen.movsd(std::get<Xbyak::Address>(dst), std::get<Xbyak::Xmm>(src));
+          gen.vmovsd(std::get<Xbyak::Address>(dst), std::get<Xbyak::Xmm>(src));
         } else if (std::holds_alternative<Xbyak::Xmm>(src) &&
                    std::holds_alternative<Xbyak::Xmm>(dst)) {
-          gen.movsd(std::get<Xbyak::Xmm>(dst), std::get<Xbyak::Xmm>(src));
+          gen.vmovsd(std::get<Xbyak::Xmm>(dst), std::get<Xbyak::Xmm>(src));
         } else {
           throw std::runtime_error("not implemented");
         }
@@ -156,18 +156,17 @@ std::vector<uint8_t> generate_code(const std::vector<Operation::Ptr>& inputs,
               throw std::runtime_error("not implemented");
           }
         } else if (instr_operand_xmm_size == 1) {
-          auto arg0 = Xbyak::Xmm(op_trans.xmms_src[0]);
-          switch (op->kind) {
-            case OpKind::NEGATE:
-              throw std::runtime_error("not implemented");
-              break;
-            default:
-              throw std::runtime_error("not implemented");
-          }
+          throw std::runtime_error("not implemented");
         } else if (instr_operand_xmm_size == 2) {
           auto arg0 = Xbyak::Xmm(op_trans.xmms_src[0]);
           auto arg1 = Xbyak::Xmm(op_trans.xmms_src[1]);
           switch (op->kind) {
+            case OpKind::NEGATE: {
+              gen.mov(gen.rax, 0x8000000000000000);
+              gen.movq(arg1, gen.rax);
+              gen.vxorpd(dst, arg0, arg1);
+              break;
+            }
             case OpKind::ADD:
               gen.vaddsd(dst, arg0, arg1);
               break;
