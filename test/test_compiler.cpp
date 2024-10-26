@@ -22,9 +22,10 @@ TEST(Compiler, Basic) {
   auto i6 = (i1_sq * i2_sq) + i3_sq;
   auto i7 = i1 + sin(i2 * i3);
   auto ret = i5 + i3 + i6 + i7;
+  auto ret2 = -ret;
 
   // custom compiler
-  std::vector<Operation::Ptr> output = {i7, ret};
+  std::vector<Operation::Ptr> output = {i7, ret, ret2};
   tenkai::JitFunc<double> func = compiler::compile({x, y, z, w}, output);
   double input[4] = {1.0, 2.0, 3.0, 4.0};
   double output_custom[5];
@@ -36,7 +37,7 @@ TEST(Compiler, Basic) {
   func(input, output_gcc, {});
 
   // compare
-  for (int i = 0; i < 2; i++) {
+  for (int i = 0; i < 3; i++) {
     // print
     std::cout << "output_custom[" << i << "] = " << output_custom[i] << std::endl;
     std::cout << "output_gcc[" << i << "] = " << output_gcc[i] << std::endl;

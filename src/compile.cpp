@@ -70,7 +70,7 @@ std::vector<uint8_t> generate_code(const std::vector<Operation::Ptr>& inputs,
 
   const auto& opseq_flatten = flatten(inputs, outputs);
   const auto& transset_seq =
-      register_alloc::RegisterAllocator(opseq_flatten, inputs, outputs, 32).allocate();
+      register_alloc::RegisterAllocator(opseq_flatten, inputs, outputs, 16).allocate();
 
   auto gen = Xbyak::CodeGenerator(max_code_size);
   gen.endbr64();
