@@ -78,8 +78,8 @@ std::vector<uint8_t> generate_code(const std::vector<Operation::Ptr>& inputs,
   gen.push(gen.r13);
   gen.push(gen.rbp);
   gen.mov(gen.rbp, gen.rsp);
-  // size_t sub_size = 8 * stack_usage_.size() + 8;  // +8 for x86_64 ABI (16 byte alignment)
-  // gen.sub(gen.rsp, sub_size);
+  size_t sub_size = 1024;  // temporary
+  gen.sub(gen.rsp, sub_size);
   gen.mov(gen.r12, gen.rdi);
   gen.mov(gen.r13, gen.rsi);
 
@@ -101,7 +101,7 @@ std::vector<uint8_t> generate_code(const std::vector<Operation::Ptr>& inputs,
             src = Xbyak::Xmm(raw_trans.src.idx);
             break;
           case register_alloc::LocationType::STACK:
-            src = gen.ptr[gen.rbp - raw_trans.src.idx * 8];
+            src = gen.ptr[gen.rbp - (raw_trans.src.idx + 1) * 8];
             break;
           default:
             throw std::runtime_error("not implemented");
@@ -111,7 +111,7 @@ std::vector<uint8_t> generate_code(const std::vector<Operation::Ptr>& inputs,
             dst = Xbyak::Xmm(raw_trans.dst.idx);
             break;
           case register_alloc::LocationType::STACK:
-            dst = gen.ptr[gen.rbp - raw_trans.dst.idx * 8];
+            dst = gen.ptr[gen.rbp - (raw_trans.dst.idx + 1) * 8];
             break;
           case register_alloc::LocationType::OUTPUT:
             dst = gen.ptr[gen.r13 + raw_trans.dst.idx * 8];
