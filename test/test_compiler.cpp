@@ -18,7 +18,7 @@ TEST(Compiler, Basic) {
   auto i2_sq = i2 * i2;
   auto i3_sq = i3 * i3;
   auto i4 = cos(i1_sq) + i2_sq + i3_sq;
-  auto i5 = i4 + i2;
+  auto i5 = i4 + i2 + Operation::make_constant(0.3);
   auto i6 = (i1_sq * i2_sq) + i3_sq;
   auto i7 = i1 + sin(i2 * i3);
   auto ret = i5 + i3 + i6 + i7;

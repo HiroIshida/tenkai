@@ -132,6 +132,13 @@ std::vector<uint8_t> generate_code(const std::vector<Operation::Ptr>& inputs,
         } else {
           throw std::runtime_error("not implemented");
         }
+      } else if (std::holds_alternative<register_alloc::ConstantSubstitution>(trans)) {
+        // TODO: shoule I prepare data section? but I guess just directly mov is
+        // faster becuase no need to load from memory
+        const auto& sub_trans = std::get<register_alloc::ConstantSubstitution>(trans);
+        uint64_t value_as_uint64 = std::bit_cast<uint64_t>(sub_trans.value);
+        gen.mov(gen.rax, value_as_uint64);
+        gen.movq(Xbyak::Xmm(sub_trans.dst.idx), gen.rax);
       } else if (std::holds_alternative<register_alloc::OpTransition>(trans)) {
         const auto& op_trans = std::get<register_alloc::OpTransition>(trans);
         auto dst = Xbyak::Xmm(op_trans.dst.idx);

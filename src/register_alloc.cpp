@@ -33,7 +33,7 @@ std::ostream& operator<<(std::ostream& os, const Transition& trans) {
     os << std::format("Var(id={}): ", hash_id);
     os << loc_dst << " <- " << loc_src << std::endl;
     return os;
-  } else {
+  } else if (std::holds_alternative<OpTransition>(trans)) {
     const auto op_trans = std::get<OpTransition>(trans);
     auto [hash_id, xmms_src, loc_dst] = op_trans;
     os << std::format("Var(id={}): ", hash_id);
@@ -47,6 +47,14 @@ std::ostream& operator<<(std::ostream& os, const Transition& trans) {
       os << std::format("xmm({}))", xmms_src.back()) << std::endl;
     }
     return os;
+  } else if (std::holds_alternative<ConstantSubstitution>(trans)) {
+    const auto sub_trans = std::get<ConstantSubstitution>(trans);
+    auto [hash_id, value, loc_dst] = sub_trans;
+    os << std::format("Var(id={}): ", hash_id);
+    os << loc_dst << " <- " << value << std::endl;
+    return os;
+  } else {
+    throw std::runtime_error("not implemented");
   }
 }
 
@@ -123,16 +131,19 @@ std::vector<TransitionSet> RegisterAllocator::allocate() {
   for (size_t t = 0; t < opseq_.size(); ++t) {
     auto& op = opseq_[t];
 
-    if (op->args.size() == 0) {
-      if (op->kind != OpKind::VALIABLE) {
-        throw std::runtime_error("kind is not VALIABLE");
+    if (op->kind == OpKind::VALIABLE || op->kind == OpKind::CONSTANT) {
+      std::variant<double, Location> loc_src;  // double for constant
+
+      if (op->kind == OpKind::VALIABLE) {
+        // determine source location
+        auto it_inp_idx = std::find_if(
+            inputs_.begin(), inputs_.end(),
+            [op](const Operation::Ptr& input) { return input->hash_id == op->hash_id; });
+        auto inp_idx = std::distance(inputs_.begin(), it_inp_idx);
+        loc_src = Location{LocationType::INPUT, inp_idx};
+      } else if (op->kind == OpKind::CONSTANT) {
+        loc_src = op->constant_value.value();
       }
-      // determine source location
-      auto it_inp_idx =
-          std::find_if(inputs_.begin(), inputs_.end(),
-                       [op](const Operation::Ptr& input) { return input->hash_id == op->hash_id; });
-      auto inp_idx = std::distance(inputs_.begin(), it_inp_idx);
-      Location loc_src{LocationType::INPUT, inp_idx};
 
       // determine destination location
       auto xmm_idx = alloc_state_.get_available_xmm();
@@ -147,7 +158,13 @@ std::vector<TransitionSet> RegisterAllocator::allocate() {
       alloc_state_.locations_[op->hash_id] = loc_dst;
 
       // record
-      transition_sets_[t_].emplace_back(RawTransition{op->hash_id, loc_src, loc_dst});
+      if (op->kind == OpKind::VALIABLE) {
+        transition_sets_[t].emplace_back(
+            RawTransition{op->hash_id, std::get<Location>(loc_src), loc_dst});
+      } else if (op->kind == OpKind::CONSTANT) {
+        transition_sets_[t].emplace_back(
+            ConstantSubstitution{op->hash_id, std::get<double>(loc_src), loc_dst});
+      }
     } else if (op->kind == OpKind::SIN ||
                op->kind == OpKind::COS) {  // when calling exeternal functions
       // in this case we must move the operands to xmm0 and stash all the xmm registers to stack

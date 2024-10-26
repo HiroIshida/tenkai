@@ -19,6 +19,12 @@ struct Location {
 
 std::ostream& operator<<(std::ostream& os, const Location& loc);
 
+struct ConstantSubstitution {
+  HashType hash_id;
+  double value;
+  Location dst;
+};
+
 struct RawTransition {
   HashType hash_id;
   Location src;
@@ -31,7 +37,7 @@ struct OpTransition {
   Location dst;
 };
 
-using Transition = std::variant<RawTransition, OpTransition>;
+using Transition = std::variant<RawTransition, OpTransition, ConstantSubstitution>;
 
 std::ostream& operator<<(std::ostream& os, const Transition& trans);
 
