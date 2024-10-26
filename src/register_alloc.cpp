@@ -233,24 +233,25 @@ std::vector<TransitionSet> RegisterAllocator::allocate() {
   return transition_sets_;
 }
 
-size_t RegisterAllocator::spill_and_prepare_xmm() {
-  // determine the xmm to be spilled
-  auto spill_xmm_idx = alloc_state_.most_unused_xmm();
-  auto spill_hash_id = alloc_state_.xmm_usages_[spill_xmm_idx];
-  auto stash_loc_src = alloc_state_.locations_[*spill_hash_id];
-
-  // determine the stack to fill
-  auto spill_dst_stack_idx = alloc_state_.get_available_stack();
-  Location loc_spill_dst{LocationType::STACK, spill_dst_stack_idx};
+void RegisterAllocator::spill_xmm(size_t idx) {
+  auto hash_id = alloc_state_.xmm_usages_[idx];
+  auto loc_src = alloc_state_.locations_[*hash_id];
+  auto stack_idx = alloc_state_.get_available_stack();
+  Location loc_dst{LocationType::STACK, stack_idx};
 
   // update alloc_state_
-  alloc_state_.xmm_usages_[spill_xmm_idx].reset();
-  alloc_state_.xmm_ages_[spill_xmm_idx].reset();
-  alloc_state_.stack_usages_[spill_dst_stack_idx] = spill_hash_id;
-  alloc_state_.locations_[*spill_hash_id] = loc_spill_dst;
+  alloc_state_.xmm_usages_[idx].reset();
+  alloc_state_.xmm_ages_[idx].reset();
+  alloc_state_.stack_usages_[stack_idx] = hash_id;
+  alloc_state_.locations_[*hash_id] = loc_dst;
 
   // record
-  transition_sets_[t_].emplace_back(RawTransition{*spill_hash_id, stash_loc_src, loc_spill_dst});
+  transition_sets_[t_].emplace_back(RawTransition{*hash_id, loc_src, loc_dst});
+}
+
+size_t RegisterAllocator::spill_and_prepare_xmm() {
+  auto spill_xmm_idx = alloc_state_.most_unused_xmm();
+  spill_xmm(spill_xmm_idx);
   return spill_xmm_idx;
 }
 

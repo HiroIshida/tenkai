@@ -76,6 +76,7 @@ class RegisterAllocator {
   std::vector<TransitionSet> allocate();
 
  private:
+  void spill_xmm(size_t idx);
   size_t spill_and_prepare_xmm();
   void step() {
     ++t_;
