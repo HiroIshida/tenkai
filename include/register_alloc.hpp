@@ -19,6 +19,12 @@ struct Location {
 
 std::ostream& operator<<(std::ostream& os, const Location& loc);
 
+struct ConstantSubstitution {
+  HashType hash_id;
+  double value;
+  Location dst;
+};
+
 struct RawTransition {
   HashType hash_id;
   Location src;
@@ -31,7 +37,7 @@ struct OpTransition {
   Location dst;
 };
 
-using Transition = std::variant<RawTransition, OpTransition>;
+using Transition = std::variant<RawTransition, OpTransition, ConstantSubstitution>;
 
 std::ostream& operator<<(std::ostream& os, const Transition& trans);
 
@@ -69,13 +75,16 @@ class RegisterAllocator {
         inputs_(inputs),
         outputs_(outputs),
         disappear_hashid_table_(compute_disappear_hashid_table(opseq)),
-        alloc_state_(inputs, opseq.size(), n_xmm),
+        alloc_state_(inputs, opseq.size(), n_xmm - 1),
         transition_sets_(opseq.size()),
-        t_(0) {}
+        t_(0),
+        temp_xmm_idx_(n_xmm - 1) {}
 
   std::vector<TransitionSet> allocate();
 
  private:
+  void spill_xmm(size_t idx);
+  void prepare_value_on_xmm(HashType hash_id, size_t dst_xmm_idx);
   size_t spill_and_prepare_xmm();
   void step() {
     ++t_;
@@ -89,6 +98,7 @@ class RegisterAllocator {
   AllocState alloc_state_;
   std::vector<TransitionSet> transition_sets_;
   size_t t_;
+  size_t temp_xmm_idx_;  // used for temporary xmm e.g. bit mask in negation
 };
 
 }  // namespace register_alloc

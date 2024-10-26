@@ -23,7 +23,7 @@ int main() {
   auto i7 = i1 + sin(i2 * i3);
   auto ret = i5 + i3 + i6 + i7;
 
-  auto opseq = Compiler::flatten({x, y, z, w}, {ret});
+  auto opseq = compiler::flatten({x, y, z, w}, {ret});
   register_alloc::RegisterAllocator regalloc(opseq, {x, y, z, w}, {ret}, 8);
   auto result = regalloc.allocate();
   for(auto& ss : result) {
@@ -39,7 +39,7 @@ int _main() {
   auto c = a + b; 
   auto d = a - b;
   std::vector<Operation::Ptr> inputs = {a, b};
-  auto opseq = Compiler::flatten(inputs, {c, d});
+  auto opseq = compiler::flatten(inputs, {c, d});
   register_alloc::RegisterAllocator regalloc(opseq, inputs, {c, d}, 2);
   auto result = regalloc.allocate();
 }

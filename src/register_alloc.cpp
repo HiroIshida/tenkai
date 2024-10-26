@@ -33,16 +33,28 @@ std::ostream& operator<<(std::ostream& os, const Transition& trans) {
     os << std::format("Var(id={}): ", hash_id);
     os << loc_dst << " <- " << loc_src << std::endl;
     return os;
-  } else {
+  } else if (std::holds_alternative<OpTransition>(trans)) {
     const auto op_trans = std::get<OpTransition>(trans);
     auto [hash_id, xmms_src, loc_dst] = op_trans;
     os << std::format("Var(id={}): ", hash_id);
     os << loc_dst << " <- Operation(";
-    for (size_t i = 0; i < xmms_src.size() - 1; ++i) {
-      os << std::format("xmm({}), ", xmms_src[i]);
+    if (xmms_src.size() == 0) {
+      os << ")" << std::endl;
+    } else {
+      for (size_t i = 0; i < xmms_src.size() - 1; ++i) {
+        os << std::format("xmm({}), ", xmms_src[i]);
+      }
+      os << std::format("xmm({}))", xmms_src.back()) << std::endl;
     }
-    os << std::format("xmm({}))", xmms_src.back()) << std::endl;
     return os;
+  } else if (std::holds_alternative<ConstantSubstitution>(trans)) {
+    const auto sub_trans = std::get<ConstantSubstitution>(trans);
+    auto [hash_id, value, loc_dst] = sub_trans;
+    os << std::format("Var(id={}): ", hash_id);
+    os << loc_dst << " <- " << value << std::endl;
+    return os;
+  } else {
+    throw std::runtime_error("not implemented");
   }
 }
 
@@ -119,16 +131,19 @@ std::vector<TransitionSet> RegisterAllocator::allocate() {
   for (size_t t = 0; t < opseq_.size(); ++t) {
     auto& op = opseq_[t];
 
-    if (op->args.size() == 0) {
-      if (op->kind != OpKind::VALIABLE) {
-        throw std::runtime_error("kind is not VALIABLE");
+    if (op->kind == OpKind::VALIABLE || op->kind == OpKind::CONSTANT) {
+      std::variant<double, Location> loc_src;  // double for constant
+
+      if (op->kind == OpKind::VALIABLE) {
+        // determine source location
+        auto it_inp_idx = std::find_if(
+            inputs_.begin(), inputs_.end(),
+            [op](const Operation::Ptr& input) { return input->hash_id == op->hash_id; });
+        auto inp_idx = std::distance(inputs_.begin(), it_inp_idx);
+        loc_src = Location{LocationType::INPUT, inp_idx};
+      } else if (op->kind == OpKind::CONSTANT) {
+        loc_src = op->constant_value.value();
       }
-      // determine source location
-      auto it_inp_idx =
-          std::find_if(inputs_.begin(), inputs_.end(),
-                       [op](const Operation::Ptr& input) { return input->hash_id == op->hash_id; });
-      auto inp_idx = std::distance(inputs_.begin(), it_inp_idx);
-      Location loc_src{LocationType::INPUT, inp_idx};
 
       // determine destination location
       auto xmm_idx = alloc_state_.get_available_xmm();
@@ -143,7 +158,38 @@ std::vector<TransitionSet> RegisterAllocator::allocate() {
       alloc_state_.locations_[op->hash_id] = loc_dst;
 
       // record
-      transition_sets_[t_].emplace_back(RawTransition{op->hash_id, loc_src, loc_dst});
+      if (op->kind == OpKind::VALIABLE) {
+        transition_sets_[t].emplace_back(
+            RawTransition{op->hash_id, std::get<Location>(loc_src), loc_dst});
+      } else if (op->kind == OpKind::CONSTANT) {
+        transition_sets_[t].emplace_back(
+            ConstantSubstitution{op->hash_id, std::get<double>(loc_src), loc_dst});
+      }
+    } else if (op->kind == OpKind::SIN ||
+               op->kind == OpKind::COS) {  // when calling exeternal functions
+      // in this case we must move the operands to xmm0 and stash all the xmm registers to stack
+      // and the result will be stored in xmm0
+      if (op->args.size() != 1) {
+        throw std::runtime_error("SIN or COS must have only one operand");
+      }
+      const auto& opr_loc_now = alloc_state_.locations_[op->args[0]->hash_id];
+      prepare_value_on_xmm(op->args[0]->hash_id, 0);
+
+      // following x86-64 nasm calling convention
+      for (size_t i = 0; i < alloc_state_.xmm_usages_.size(); ++i) {
+        if (alloc_state_.xmm_usages_[i] != std::nullopt) {
+          spill_xmm(i);
+        }
+      }
+
+      auto loc_dst = Location{LocationType::REGISTER, 0};
+      // update alloc_state_
+      alloc_state_.xmm_usages_[0] = op->hash_id;
+      alloc_state_.xmm_ages_[0] = 0;
+      alloc_state_.locations_[op->hash_id] = loc_dst;
+
+      // record
+      transition_sets_[t_].emplace_back(OpTransition{op->hash_id, {}, loc_dst});
     } else {
       // set the age of registers whereon the operands are stored to 0
       for (auto& operand : op->args) {
@@ -158,19 +204,9 @@ std::vector<TransitionSet> RegisterAllocator::allocate() {
         if (op_loc_now.type != LocationType::REGISTER) {
           std::optional<size_t> xmm_idx = alloc_state_.get_available_xmm();
           if (xmm_idx == std::nullopt) {
-            xmm_idx = spill_and_prepare_xmm();
+            xmm_idx = alloc_state_.most_unused_xmm();
           }
-          Location loc_src = op_loc_now;
-          Location loc_dst = Location{LocationType::REGISTER, *xmm_idx};
-
-          // update alloc_state_
-          alloc_state_.xmm_usages_[*xmm_idx] = operand->hash_id;
-          alloc_state_.xmm_ages_[*xmm_idx] = 0;
-          alloc_state_.stack_usages_[op_loc_now.idx].reset();
-          alloc_state_.locations_[operand->hash_id] = loc_dst;
-
-          // record
-          transition_sets_[t_].emplace_back(RawTransition{operand->hash_id, loc_src, loc_dst});
+          prepare_value_on_xmm(operand->hash_id, *xmm_idx);
         }
       }
 
@@ -179,6 +215,10 @@ std::vector<TransitionSet> RegisterAllocator::allocate() {
       for (auto& operand : op->args) {
         const auto& loc = alloc_state_.locations_[operand->hash_id];
         xmms_src.push_back(loc.idx);
+      }
+      if (op->kind == OpKind::NEGATE) {
+        // use special xmm register to store bit mask for negation
+        xmms_src.push_back(temp_xmm_idx_);
       }
 
       // untrack the hashids that will disappear
@@ -233,24 +273,56 @@ std::vector<TransitionSet> RegisterAllocator::allocate() {
   return transition_sets_;
 }
 
-size_t RegisterAllocator::spill_and_prepare_xmm() {
-  // determine the xmm to be spilled
-  auto spill_xmm_idx = alloc_state_.most_unused_xmm();
-  auto spill_hash_id = alloc_state_.xmm_usages_[spill_xmm_idx];
-  auto stash_loc_src = alloc_state_.locations_[*spill_hash_id];
-
-  // determine the stack to fill
-  auto spill_dst_stack_idx = alloc_state_.get_available_stack();
-  Location loc_spill_dst{LocationType::STACK, spill_dst_stack_idx};
+void RegisterAllocator::spill_xmm(size_t idx) {
+  auto hash_id = alloc_state_.xmm_usages_[idx];
+  auto loc_src = alloc_state_.locations_[*hash_id];
+  auto stack_idx = alloc_state_.get_available_stack();
+  Location loc_dst{LocationType::STACK, stack_idx};
 
   // update alloc_state_
-  alloc_state_.xmm_usages_[spill_xmm_idx].reset();
-  alloc_state_.xmm_ages_[spill_xmm_idx].reset();
-  alloc_state_.stack_usages_[spill_dst_stack_idx] = spill_hash_id;
-  alloc_state_.locations_[*spill_hash_id] = loc_spill_dst;
+  alloc_state_.xmm_usages_[idx].reset();
+  alloc_state_.xmm_ages_[idx].reset();
+  alloc_state_.stack_usages_[stack_idx] = hash_id;
+  alloc_state_.locations_[*hash_id] = loc_dst;
 
   // record
-  transition_sets_[t_].emplace_back(RawTransition{*spill_hash_id, stash_loc_src, loc_spill_dst});
+  transition_sets_[t_].emplace_back(RawTransition{*hash_id, loc_src, loc_dst});
+}
+
+void RegisterAllocator::prepare_value_on_xmm(HashType hash_id, size_t dst_xmm_idx) {
+  // if the target xmm idx is already used by other value,
+  // then spill it out to stack always
+  if (alloc_state_.xmm_usages_[dst_xmm_idx] == hash_id) {
+    return;
+  }
+
+  if (alloc_state_.xmm_usages_[dst_xmm_idx] != std::nullopt) {
+    spill_xmm(dst_xmm_idx);
+  }
+
+  const auto dst = Location{LocationType::REGISTER, dst_xmm_idx};
+  const auto src = alloc_state_.locations_[hash_id];
+
+  // update alloc state_
+  if (src.type == LocationType::REGISTER) {
+    alloc_state_.xmm_usages_[src.idx] = std::nullopt;
+    alloc_state_.xmm_ages_[src.idx] = std::nullopt;
+  } else if (src.type == LocationType::STACK) {
+    alloc_state_.stack_usages_[src.idx] = std::nullopt;
+  } else {
+    throw std::runtime_error("unexpected location type");
+  }
+  alloc_state_.xmm_usages_[dst_xmm_idx] = hash_id;
+  alloc_state_.xmm_ages_[dst_xmm_idx] = 0;
+  alloc_state_.locations_[hash_id] = dst;
+
+  // record
+  transition_sets_[t_].emplace_back(RawTransition{hash_id, src, dst});
+}
+
+size_t RegisterAllocator::spill_and_prepare_xmm() {
+  auto spill_xmm_idx = alloc_state_.most_unused_xmm();
+  spill_xmm(spill_xmm_idx);
   return spill_xmm_idx;
 }
 
