@@ -35,6 +35,10 @@ constexpr size_t max_code_size = 4096 * 8;
 std::vector<Operation::Ptr> flatten(const std::vector<Operation::Ptr>& inputs,
                                     const std::vector<Operation::Ptr>& outputs) {
   std::vector<Operation::Ptr> operations;
+
+  // Order the operation using depth-first search
+  // DFS is better than BFS because the operation is likely to be used immediately
+  // after it is calculated, and will consume less xmm register
   std::stack<Operation::Ptr> opstack;
   for (auto& output : outputs) {
     opstack.push(output);
@@ -48,7 +52,7 @@ std::vector<Operation::Ptr> flatten(const std::vector<Operation::Ptr>& inputs,
     }
   }
 
-  // do CSE
+  // Do common subexpression elimination
   std::unordered_set<int32_t> visited;
   std::vector<Operation::Ptr> result;
   for (auto it = operations.rbegin(); it != operations.rend(); ++it) {
