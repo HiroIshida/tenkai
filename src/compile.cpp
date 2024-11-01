@@ -13,6 +13,7 @@
 #include <unordered_set>
 #include <variant>
 #include "cg.hpp"
+#include "operation_scheduler.hpp"
 #include "register_alloc.hpp"
 #include "xbyak.h"
 
@@ -32,39 +33,6 @@ std::optional<size_t> find_index(T elem, const std::vector<T>& vec) {
 // must be shared both xbyak constructor and mmap (why? really)
 constexpr size_t max_code_size = 4096 * 8;
 
-std::vector<Operation::Ptr> flatten(const std::vector<Operation::Ptr>& inputs,
-                                    const std::vector<Operation::Ptr>& outputs) {
-  std::vector<Operation::Ptr> operations;
-
-  // Order the operation using depth-first search
-  // DFS is better than BFS because the operation is likely to be used immediately
-  // after it is calculated, and will consume less xmm register
-  std::stack<Operation::Ptr> opstack;
-  for (auto& output : outputs) {
-    opstack.push(output);
-  }
-  while (!opstack.empty()) {
-    auto op = opstack.top();
-    opstack.pop();
-    operations.push_back(op);
-    for (auto& arg : op->args) {
-      opstack.push(arg);
-    }
-  }
-
-  // Do common subexpression elimination
-  std::unordered_set<int32_t> visited;
-  std::vector<Operation::Ptr> result;
-  for (auto it = operations.rbegin(); it != operations.rend(); ++it) {
-    if (visited.find((*it)->hash_id) != visited.end()) {
-      continue;
-    }
-    visited.insert((*it)->hash_id);
-    result.push_back(*it);
-  }
-  return result;
-}
-
 std::vector<uint8_t> generate_code(const std::vector<Operation::Ptr>& inputs,
                                    const std::vector<Operation::Ptr>& outputs) {
   double (*sin_ptr)(double) = std::sin;
@@ -72,7 +40,7 @@ std::vector<uint8_t> generate_code(const std::vector<Operation::Ptr>& inputs,
   double (*cos_ptr)(double) = std::cos;
   void* cos_vptr = reinterpret_cast<void*>(cos_ptr);
 
-  const auto& opseq_flatten = flatten(inputs, outputs);
+  const auto& opseq_flatten = DepthFirstScheduler().flatten(inputs, outputs);
   const auto& transset_seq =
       register_alloc::RegisterAllocator(opseq_flatten, inputs, outputs, 16).allocate();
 
