@@ -53,6 +53,14 @@ std::ostream& operator<<(std::ostream& os, const Transition& trans) {
     os << std::format("Var(id={}): ", hash_id);
     os << loc_dst << " <- " << value << std::endl;
     return os;
+  } else if (std::holds_alternative<RawPackedSpill>(trans)) {
+    const auto packed_spill = std::get<RawPackedSpill>(trans);
+    os << "[packed] "
+       << std::format("Var(id={}, id={}): ", packed_spill.hash_id1, packed_spill.hash_id2);
+    os << std::format("stack({}, {}) <- PackedSpill(xmm({}), xmm({}))", packed_spill.stack_head_idx,
+                      packed_spill.stack_head_idx + 1, packed_spill.xmm_idx1, packed_spill.xmm_idx2)
+       << std::endl;
+    return os;
   } else {
     throw std::runtime_error("not implemented");
   }
@@ -109,6 +117,18 @@ size_t AllocState::get_available_stack() const {
     throw std::runtime_error("stack is full");
   }
   return std::distance(stack_usages_.begin(), it);
+}
+
+size_t AllocState::get_available_stack_aligned_128bit() const {
+  // NOTE: we search for stack idx head whic is odd number
+  // because stack actually is rbp and the first element is filled
+  // with rsp.
+  for (size_t i = 1; i < stack_usages_.size(); i += 2) {
+    if (stack_usages_[i] == std::nullopt && stack_usages_[i + 1] == std::nullopt) {
+      return i;
+    }
+  }
+  throw std::runtime_error("stack is full");
 }
 
 std::vector<std::unordered_set<HashType>> compute_disappear_hashid_table(
@@ -175,14 +195,25 @@ std::vector<TransitionSet> RegisterAllocator::allocate() {
       const auto& opr_loc_now = alloc_state_.locations_[op->args[0]->hash_id];
       prepare_value_on_xmm(op->args[0]->hash_id, 0);
 
-      // following x86-64 nasm calling convention
+      // we must spill all following x86-64 nasm calling convention
+      // NOTE: although xmm0 is spilled here, the value is not lost
+      // because movsd (or whatever) instruction actually copies the value
+      // not move.
+      std::vector<size_t> xmm_filled_idxs;
       for (size_t i = 0; i < alloc_state_.xmm_usages_.size(); ++i) {
         if (alloc_state_.xmm_usages_[i] != std::nullopt) {
-          spill_xmm(i);
+          xmm_filled_idxs.push_back(i);
         }
+      }
+      for (size_t i = 0; i < xmm_filled_idxs.size() / 2; i += 2) {
+        spill_xmm_packed(xmm_filled_idxs[i], xmm_filled_idxs[i + 1]);
+      }
+      if (xmm_filled_idxs.size() % 2 == 1) {
+        spill_xmm(xmm_filled_idxs.back());
       }
 
       auto loc_dst = Location{LocationType::REGISTER, 0};
+
       // update alloc_state_
       alloc_state_.xmm_usages_[0] = op->hash_id;
       alloc_state_.xmm_ages_[0] = 0;
@@ -287,6 +318,25 @@ void RegisterAllocator::spill_xmm(size_t idx) {
 
   // record
   transition_sets_[t_].emplace_back(RawTransition{*hash_id, loc_src, loc_dst});
+}
+
+void RegisterAllocator::spill_xmm_packed(size_t idx1, size_t idx2) {
+  auto hash_id1 = alloc_state_.xmm_usages_[idx1];
+  auto hash_id2 = alloc_state_.xmm_usages_[idx2];
+  auto loc_src1 = alloc_state_.locations_[*hash_id1];
+  auto loc_src2 = alloc_state_.locations_[*hash_id2];
+  auto stack_idx = alloc_state_.get_available_stack_aligned_128bit();
+
+  // update alloc_state_
+  alloc_state_.xmm_usages_[idx1].reset();
+  alloc_state_.xmm_usages_[idx2].reset();
+  alloc_state_.stack_usages_[stack_idx] = hash_id1;
+  alloc_state_.stack_usages_[stack_idx + 1] = hash_id2;
+  alloc_state_.locations_[*hash_id1] = Location{LocationType::STACK, stack_idx};
+  alloc_state_.locations_[*hash_id2] = Location{LocationType::STACK, stack_idx + 1};
+
+  // record
+  transition_sets_[t_].emplace_back(RawPackedSpill{*hash_id1, *hash_id2, idx1, idx2, stack_idx});
 }
 
 void RegisterAllocator::prepare_value_on_xmm(HashType hash_id, size_t dst_xmm_idx) {
