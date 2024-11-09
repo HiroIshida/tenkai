@@ -16,5 +16,11 @@ class DepthFirstScheduler : public SchedulerInterface {
                                       const std::vector<Operation::Ptr>& outputs) override;
 };
 
+class ExtCallFirstScheduler : public SchedulerInterface {
+ public:
+  std::vector<Operation::Ptr> flatten(const std::vector<Operation::Ptr>& inputs,
+                                      const std::vector<Operation::Ptr>& outputs) override;
+};
+
 }  // namespace compiler
 }  // namespace tenkai

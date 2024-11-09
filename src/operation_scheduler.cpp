@@ -1,6 +1,7 @@
 #include "operation_scheduler.hpp"
 #include <stack>
 #include <unordered_set>
+#include "cg.hpp"
 
 namespace tenkai {
 
@@ -27,9 +28,23 @@ std::vector<Operation::Ptr> DepthFirstScheduler::flatten(
     }
   }
 
-  // Do common subexpression elimination
   std::unordered_set<int32_t> visited;
   std::vector<Operation::Ptr> result;
+
+  // extcall-first optimization
+  for (const auto& inp : inputs) {
+    for (const auto& caller_wptr : inp->callers) {
+      auto caller = caller_wptr.lock();
+      if (caller->kind == OpKind::SIN || caller->kind == OpKind::COS) {
+        result.push_back(caller->args[0]);
+        result.push_back(caller);
+        visited.insert(caller->hash_id);
+        visited.insert(caller->args[0]->hash_id);
+      }
+    }
+  }
+
+  // Do common subexpression elimination
   for (auto it = operations.rbegin(); it != operations.rend(); ++it) {
     if (visited.find((*it)->hash_id) != visited.end()) {
       continue;
@@ -38,6 +53,25 @@ std::vector<Operation::Ptr> DepthFirstScheduler::flatten(
     result.push_back(*it);
   }
   return result;
+}
+
+std::vector<Operation::Ptr> ExtCallFirstScheduler::flatten(
+    const std::vector<Operation::Ptr>& inputs,
+    const std::vector<Operation::Ptr>& outputs) {
+  std::unordered_set<int32_t> visited;
+  std::vector<Operation::Ptr> ext_evals;
+
+  for (const auto& inp : inputs) {
+    for (const auto& caller_wptr : inp->callers) {
+      auto caller = caller_wptr.lock();
+      if (caller->kind == OpKind::SIN || caller->kind == OpKind::COS) {
+        ext_evals.push_back(caller);
+        ext_evals.push_back(caller->args[0]);
+        visited.insert(caller->hash_id);
+        visited.insert(caller->args[0]->hash_id);
+      }
+    }
+  }
 }
 
 }  // namespace compiler
