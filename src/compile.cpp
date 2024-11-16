@@ -108,17 +108,16 @@ std::vector<uint8_t> generate_code(const std::vector<Operation::Ptr>& inputs,
         const auto& packed_spill = std::get<register_alloc::RawPackedSpill>(trans);
         auto xmm1 = Xbyak::Xmm(packed_spill.xmm_idx1);
         auto xmm2 = Xbyak::Xmm(packed_spill.xmm_idx2);
-        // gen.vunpcklpd(xmm1, xmm1, xmm2);
-        gen.vunpcklpd(xmm1, xmm2, xmm1);
-        gen.vmovapd(gen.ptr[gen.rbp - (packed_spill.stack_head_idx + 1) * 8], xmm1);
-
-        // intentiallay cause segfault
-        // gen.mov(gen.rax, 0);
-        // gen.mov(gen.rcx, gen.ptr[gen.rax]);
+        gen.vunpcklpd(Xbyak::Xmm(31), xmm2, xmm1);
+        gen.vmovapd(gen.ptr[gen.rbp - (packed_spill.stack_head_idx + 1 + 1) * 8], Xbyak::Xmm(31));
 
         // debug (use two vmovsd instead of vunpcklpd)
         // gen.vmovsd(gen.ptr[gen.rbp - (packed_spill.stack_head_idx + 1) * 8], xmm1);
         // gen.vmovsd(gen.ptr[gen.rbp - (packed_spill.stack_head_idx + 2) * 8], xmm2);
+
+        // intentiallay cause segfault
+        // gen.mov(gen.rax, 0);
+        // gen.mov(gen.rcx, gen.ptr[gen.rax]);
       } else if (std::holds_alternative<register_alloc::ConstantSubstitution>(trans)) {
         // TODO: shoule I prepare data section? but I guess just directly mov is
         // faster becuase no need to load from memory

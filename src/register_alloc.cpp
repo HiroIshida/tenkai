@@ -120,10 +120,7 @@ size_t AllocState::get_available_stack() const {
 }
 
 size_t AllocState::get_available_stack_aligned_128bit() const {
-  // NOTE: we search for stack idx head whic is odd number
-  // because stack actually is rbp and the first element is filled
-  // with rsp.
-  for (size_t i = 1; i < stack_usages_.size(); i += 2) {
+  for (size_t i = 0; i < stack_usages_.size(); i += 2) {
     if (stack_usages_[i] == std::nullopt && stack_usages_[i + 1] == std::nullopt) {
       return i;
     }
