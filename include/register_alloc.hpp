@@ -31,13 +31,21 @@ struct RawTransition {
   Location dst;
 };
 
+struct RawPackedSpill {
+  HashType hash_id1;
+  HashType hash_id2;
+  size_t xmm_idx1;
+  size_t xmm_idx2;
+  size_t stack_head_idx;
+};
+
 struct OpTransition {
   HashType hash_id;
   std::vector<size_t> xmms_src;  // operands must be on xmm
   Location dst;
 };
 
-using Transition = std::variant<RawTransition, OpTransition, ConstantSubstitution>;
+using Transition = std::variant<RawTransition, OpTransition, ConstantSubstitution, RawPackedSpill>;
 
 std::ostream& operator<<(std::ostream& os, const Transition& trans);
 
@@ -50,6 +58,7 @@ struct AllocState {
   size_t most_unused_xmm() const;
   std::optional<size_t> get_available_xmm() const;
   size_t get_available_stack() const;
+  size_t get_available_stack_aligned_128bit() const;
 
   // udpate
   void update_xmm_ages();
@@ -84,6 +93,7 @@ class RegisterAllocator {
 
  private:
   void spill_xmm(size_t idx);
+  void spill_xmm_packed(size_t idx1, size_t idx2);
   void prepare_value_on_xmm(HashType hash_id, size_t dst_xmm_idx);
   size_t spill_and_prepare_xmm();
   void step() {
