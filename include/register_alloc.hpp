@@ -89,8 +89,8 @@ class RegisterAllocator {
  private:
   void spill_xmm(size_t idx);
   void prepare_value_on_xmm(HashType hash_id, size_t dst_xmm_idx);
-  size_t spill_and_prepare_xmm(size_t t_now);
-  size_t determine_spill_xmm(size_t t_now) const;
+  size_t spill_and_prepare_xmm();
+  size_t determine_spill_xmm() const;
   void step() { ++t_; }
 
   std::vector<Operation::Ptr> opseq_;

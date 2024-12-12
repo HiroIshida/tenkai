@@ -136,7 +136,7 @@ std::vector<TransitionSet> RegisterAllocator::allocate() {
       // determine destination location
       auto xmm_idx = alloc_state_.get_available_xmm();
       if (xmm_idx == std::nullopt) {
-        xmm_idx = spill_and_prepare_xmm(t);
+        xmm_idx = spill_and_prepare_xmm();
       }
       Location loc_dst = Location{LocationType::REGISTER, *xmm_idx};
 
@@ -182,7 +182,7 @@ std::vector<TransitionSet> RegisterAllocator::allocate() {
         if (op_loc_now.type != LocationType::REGISTER) {
           std::optional<size_t> xmm_idx = alloc_state_.get_available_xmm();
           if (xmm_idx == std::nullopt) {
-            xmm_idx = determine_spill_xmm(t);
+            xmm_idx = determine_spill_xmm();
           }
           prepare_value_on_xmm(operand->hash_id, *xmm_idx);
         }
@@ -219,7 +219,7 @@ std::vector<TransitionSet> RegisterAllocator::allocate() {
       // now allocate the result! (same as above)
       std::optional<size_t> result_xmm_idx = alloc_state_.get_available_xmm();
       if (result_xmm_idx == std::nullopt) {
-        result_xmm_idx = spill_and_prepare_xmm(t);
+        result_xmm_idx = spill_and_prepare_xmm();
       }
       Location loc_dst = Location{LocationType::REGISTER, *result_xmm_idx};
 
@@ -293,13 +293,13 @@ void RegisterAllocator::prepare_value_on_xmm(HashType hash_id, size_t dst_xmm_id
   transition_sets_[t_].emplace_back(RawTransition{hash_id, src, dst});
 }
 
-size_t RegisterAllocator::spill_and_prepare_xmm(size_t t_now) {
-  const auto spill_xmm_idx = determine_spill_xmm(t_now);
+size_t RegisterAllocator::spill_and_prepare_xmm() {
+  const auto spill_xmm_idx = determine_spill_xmm();
   spill_xmm(spill_xmm_idx);
   return spill_xmm_idx;
 }
 
-size_t RegisterAllocator::determine_spill_xmm(size_t t_now) const {
+size_t RegisterAllocator::determine_spill_xmm() const {
   size_t max_life_time = 0;
   std::optional<size_t> most_obstructive_xmm_idx;
   for (size_t i = 0; i < alloc_state_.xmm_usages_.size(); ++i) {
@@ -308,7 +308,7 @@ size_t RegisterAllocator::determine_spill_xmm(size_t t_now) const {
     }
     auto hash_id = *alloc_state_.xmm_usages_[i];
     const auto& live_range = live_ranges_.at(hash_id);
-    size_t life_time = live_range.disappear - t_now;
+    size_t life_time = live_range.disappear - t_;
     if (life_time > max_life_time) {
       max_life_time = life_time;
       most_obstructive_xmm_idx = i;
