@@ -61,6 +61,14 @@ struct AllocState {
   std::unordered_map<HashType, Location> locations_;
 };
 
+struct LiveRange {
+  size_t appear;
+  size_t disappear;
+};
+
+std::unordered_map<HashType, LiveRange> compute_live_ranges(
+    const std::vector<Operation::Ptr>& opseq);
+
 /* for each time step, compute the hashid that will disappear */
 std::vector<std::unordered_set<HashType>> compute_disappear_hashid_table(
     const std::vector<Operation::Ptr>& opseq);
@@ -72,6 +80,7 @@ class RegisterAllocator {
                     const std::vector<Operation::Ptr>& outputs,
                     size_t n_xmm = 16)
       : opseq_(opseq),
+        live_ranges_(compute_live_ranges(opseq)),
         inputs_(inputs),
         outputs_(outputs),
         disappear_hashid_table_(compute_disappear_hashid_table(opseq)),
@@ -92,6 +101,7 @@ class RegisterAllocator {
   }
 
   std::vector<Operation::Ptr> opseq_;
+  std::unordered_map<HashType, LiveRange> live_ranges_;
   std::vector<Operation::Ptr> inputs_;
   std::vector<Operation::Ptr> outputs_;
   std::vector<std::unordered_set<HashType>> disappear_hashid_table_;

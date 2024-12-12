@@ -127,6 +127,19 @@ std::vector<std::unordered_set<HashType>> compute_disappear_hashid_table(
   return table;
 }
 
+std::unordered_map<HashType, LiveRange> compute_live_ranges(
+    const std::vector<Operation::Ptr>& opseq) {
+  std::unordered_map<HashType, LiveRange> live_ranges;
+  for (size_t t = 0; t < opseq.size(); ++t) {
+    const auto& op = opseq[t];
+    live_ranges[op->hash_id] = {t, std::numeric_limits<size_t>::max()};
+    for (const auto& arg_op : op->args) {
+      live_ranges[arg_op->hash_id].disappear = t;
+    }
+  }
+  return live_ranges;
+}
+
 std::vector<TransitionSet> RegisterAllocator::allocate() {
   for (size_t t = 0; t < opseq_.size(); ++t) {
     auto& op = opseq_[t];
