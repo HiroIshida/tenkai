@@ -60,9 +60,7 @@ std::ostream& operator<<(std::ostream& os, const Transition& trans) {
 
 // T is temporary. Actuall stack size is determined by the max_stack_usage_
 AllocState::AllocState(const std::vector<Operation::Ptr>& inputs, size_t T, size_t n_xmm)
-    : xmm_usages_(n_xmm, std::nullopt),
-      stack_usages_(T, std::nullopt),
-      xmm_ages_(n_xmm, std::nullopt) {
+    : xmm_usages_(n_xmm, std::nullopt), stack_usages_(T, std::nullopt) {
   for (size_t i = 0; i < inputs.size(); ++i) {
     auto& op = inputs[i];
     if (op->kind != OpKind::VALIABLE) {
@@ -70,29 +68,6 @@ AllocState::AllocState(const std::vector<Operation::Ptr>& inputs, size_t T, size
     }
     locations_[op->hash_id] = Location{LocationType::INPUT, i};
   }
-}
-
-void AllocState::update_xmm_ages() {
-  for (size_t i = 0; i < xmm_ages_.size(); ++i) {
-    if (xmm_ages_[i] != std::nullopt) {
-      ++*xmm_ages_[i];
-    }
-  }
-}
-
-size_t AllocState::most_unused_xmm() const {
-  size_t max_age = 0;
-  std::optional<size_t> max_age_idx = std::nullopt;
-  for (size_t i = 0; i < xmm_ages_.size(); ++i) {
-    if (xmm_ages_[i] == std::nullopt) {
-      return i;
-    }
-    if (*xmm_ages_[i] > max_age) {
-      max_age = *xmm_ages_[i];
-      max_age_idx = i;
-    }
-  }
-  return *max_age_idx;
 }
 
 std::optional<size_t> AllocState::get_available_xmm() const {
@@ -167,7 +142,6 @@ std::vector<TransitionSet> RegisterAllocator::allocate() {
 
       // update alloc_state_
       alloc_state_.xmm_usages_[*xmm_idx] = op->hash_id;
-      alloc_state_.xmm_ages_[*xmm_idx] = 0;
       alloc_state_.locations_[op->hash_id] = loc_dst;
 
       // record
@@ -198,20 +172,11 @@ std::vector<TransitionSet> RegisterAllocator::allocate() {
       auto loc_dst = Location{LocationType::REGISTER, 0};
       // update alloc_state_
       alloc_state_.xmm_usages_[0] = op->hash_id;
-      alloc_state_.xmm_ages_[0] = 0;
       alloc_state_.locations_[op->hash_id] = loc_dst;
 
       // record
       transition_sets_[t_].emplace_back(OpTransition{op->hash_id, {}, loc_dst});
     } else {
-      // set the age of registers whereon the operands are stored to 0
-      for (auto& operand : op->args) {
-        const auto& op_loc_now = alloc_state_.locations_[operand->hash_id];
-        if (op_loc_now.type == LocationType::REGISTER) {
-          alloc_state_.xmm_ages_[op_loc_now.idx] = 0;
-        }
-      }
-
       for (auto& operand : op->args) {
         const auto& op_loc_now = alloc_state_.locations_[operand->hash_id];
         if (op_loc_now.type != LocationType::REGISTER) {
@@ -242,7 +207,6 @@ std::vector<TransitionSet> RegisterAllocator::allocate() {
         if (loc.type == LocationType::REGISTER) {
           auto xmm_idx = loc.idx;
           alloc_state_.xmm_usages_[xmm_idx].reset();
-          alloc_state_.xmm_ages_[xmm_idx].reset();
           alloc_state_.locations_.erase(hash_id);
         } else if (loc.type == LocationType::STACK) {
           auto stack_idx = loc.idx;
@@ -261,7 +225,6 @@ std::vector<TransitionSet> RegisterAllocator::allocate() {
 
       // update alloc_state_
       alloc_state_.xmm_usages_[*result_xmm_idx] = op->hash_id;
-      alloc_state_.xmm_ages_[*result_xmm_idx] = 0;
       alloc_state_.locations_[op->hash_id] = loc_dst;
 
       // record
@@ -294,7 +257,6 @@ void RegisterAllocator::spill_xmm(size_t idx) {
 
   // update alloc_state_
   alloc_state_.xmm_usages_[idx].reset();
-  alloc_state_.xmm_ages_[idx].reset();
   alloc_state_.stack_usages_[stack_idx] = hash_id;
   alloc_state_.locations_[*hash_id] = loc_dst;
 
@@ -319,14 +281,12 @@ void RegisterAllocator::prepare_value_on_xmm(HashType hash_id, size_t dst_xmm_id
   // update alloc state_
   if (src.type == LocationType::REGISTER) {
     alloc_state_.xmm_usages_[src.idx] = std::nullopt;
-    alloc_state_.xmm_ages_[src.idx] = std::nullopt;
   } else if (src.type == LocationType::STACK) {
     alloc_state_.stack_usages_[src.idx] = std::nullopt;
   } else {
     throw std::runtime_error("unexpected location type");
   }
   alloc_state_.xmm_usages_[dst_xmm_idx] = hash_id;
-  alloc_state_.xmm_ages_[dst_xmm_idx] = 0;
   alloc_state_.locations_[hash_id] = dst;
 
   // record

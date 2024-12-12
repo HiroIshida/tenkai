@@ -47,17 +47,12 @@ struct AllocState {
   AllocState(const std::vector<Operation::Ptr>& inputs, size_t T, size_t n_xmm);
 
   // query
-  size_t most_unused_xmm() const;
   std::optional<size_t> get_available_xmm() const;
   size_t get_available_stack() const;
-
-  // udpate
-  void update_xmm_ages();
 
   // members
   std::vector<std::optional<HashType>> xmm_usages_;
   std::vector<std::optional<HashType>> stack_usages_;
-  std::vector<std::optional<size_t>> xmm_ages_;
   std::unordered_map<HashType, Location> locations_;
 };
 
@@ -96,10 +91,7 @@ class RegisterAllocator {
   void prepare_value_on_xmm(HashType hash_id, size_t dst_xmm_idx);
   size_t spill_and_prepare_xmm(size_t t_now);
   size_t determine_spill_xmm(size_t t_now) const;
-  void step() {
-    ++t_;
-    alloc_state_.update_xmm_ages();
-  }
+  void step() { ++t_; }
 
   std::vector<Operation::Ptr> opseq_;
   std::unordered_map<HashType, LiveRange> live_ranges_;
