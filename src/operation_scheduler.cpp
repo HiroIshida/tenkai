@@ -30,19 +30,19 @@ std::vector<Operation::Ptr> DepthFirstScheduler::flatten(
 
   std::unordered_set<int32_t> visited;
   std::vector<Operation::Ptr> result;
-
-  // extcall-first optimization
-  for (const auto& inp : inputs) {
-    for (const auto& caller_wptr : inp->callers) {
-      auto caller = caller_wptr.lock();
-      if (caller->kind == OpKind::SIN || caller->kind == OpKind::COS) {
-        result.push_back(caller->args[0]);
-        result.push_back(caller);
-        visited.insert(caller->hash_id);
-        visited.insert(caller->args[0]->hash_id);
-      }
-    }
-  }
+  // The below is commented out because it is rather making the code slower
+  // extcall-priotized optimization
+  // for (const auto& inp : inputs) {
+  //   for (const auto& caller_wptr : inp->callers) {
+  //     auto caller = caller_wptr.lock();
+  //     if (caller->kind == OpKind::SIN || caller->kind == OpKind::COS) {
+  //       result.push_back(caller->args[0]);
+  //       result.push_back(caller);
+  //       visited.insert(caller->hash_id);
+  //       visited.insert(caller->args[0]->hash_id);
+  //     }
+  //   }
+  // }
 
   // Do common subexpression elimination
   for (auto it = operations.rbegin(); it != operations.rend(); ++it) {
