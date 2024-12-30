@@ -63,7 +63,7 @@ AllocState::AllocState(const std::vector<Operation::Ptr>& inputs, size_t T, size
     : xmm_usages_(n_xmm, std::nullopt), stack_usages_(T, std::nullopt) {
   for (size_t i = 0; i < inputs.size(); ++i) {
     auto& op = inputs[i];
-    if (op->kind != OpKind::VALIABLE) {
+    if (op->kind != OpKind::LOAD) {
       throw std::runtime_error("kind is not VALIABLE");
     }
     locations_[op->hash_id] = Location{LocationType::INPUT, i};
@@ -119,10 +119,10 @@ std::vector<TransitionSet> RegisterAllocator::allocate() {
   for (size_t t = 0; t < opseq_.size(); ++t) {
     auto& op = opseq_[t];
 
-    if (op->kind == OpKind::VALIABLE || op->kind == OpKind::CONSTANT) {
+    if (op->kind == OpKind::LOAD || op->kind == OpKind::CONSTANT) {
       std::variant<double, Location> loc_src;  // double for constant
 
-      if (op->kind == OpKind::VALIABLE) {
+      if (op->kind == OpKind::LOAD) {
         // determine source location
         auto it_inp_idx = std::find_if(
             inputs_.begin(), inputs_.end(),
@@ -145,7 +145,7 @@ std::vector<TransitionSet> RegisterAllocator::allocate() {
       alloc_state_.locations_[op->hash_id] = loc_dst;
 
       // record
-      if (op->kind == OpKind::VALIABLE) {
+      if (op->kind == OpKind::LOAD) {
         transition_sets_[t].emplace_back(
             RawTransition{op->hash_id, std::get<Location>(loc_src), loc_dst});
       } else if (op->kind == OpKind::CONSTANT) {

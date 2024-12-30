@@ -10,7 +10,7 @@ namespace tenkai {
 
 std::string generate_random_string(size_t length);
 
-enum class OpKind { NIL, ADD, SUB, MUL, COS, SIN, NEGATE, VALIABLE, ZERO, ONE, CONSTANT, EXTCALL };
+enum class OpKind { NIL, ADD, SUB, MUL, COS, SIN, NEGATE, LOAD, ZERO, ONE, CONSTANT, EXTCALL };
 constexpr std::string to_string(OpKind kind) {  // for debug
   // clang-format off
   switch (kind) {
@@ -21,7 +21,7 @@ constexpr std::string to_string(OpKind kind) {  // for debug
     case OpKind::COS: return "COS";
     case OpKind::SIN: return "SIN";
     case OpKind::NEGATE: return "NEGATE";
-    case OpKind::VALIABLE: return "VALIABLE";
+    case OpKind::LOAD: return "LOAD";
     case OpKind::ZERO: return "ZERO";
     case OpKind::ONE: return "ONE";
     case OpKind::CONSTANT: return "CONSTANT";

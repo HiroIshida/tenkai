@@ -61,7 +61,7 @@ Operation::Ptr Operation::create(OpKind kind,
 
 Operation::Ptr Operation::make_var() {
   Operation::Ptr value = std::make_shared<Operation>();
-  value->kind = OpKind::VALIABLE;
+  value->kind = OpKind::LOAD;
   return value;
 }
 
@@ -104,7 +104,7 @@ std::vector<Operation::Ptr> Operation::get_leafs() {
   while (!stack.empty()) {
     auto op = stack.top();
     stack.pop();
-    if (op->kind == OpKind::VALIABLE) {
+    if (op->kind == OpKind::LOAD) {
       leafs.push_back(op);
     } else {
       for (auto& arg : op->args) {

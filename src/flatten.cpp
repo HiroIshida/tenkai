@@ -87,14 +87,14 @@ void flatten(const std::string& func_name,
   auto remapped_name = [&](const Operation::Ptr op) -> std::string {
     for (size_t i = 0; i < inputs.size(); ++i) {
       if (inputs[i] == op) {
-        if (op->kind != OpKind::VALIABLE) {
+        if (op->kind != OpKind::LOAD) {
           throw std::runtime_error("must not reach here");
         }
         return std::format("input[{}]", i);
       }
     }
 
-    if (op->kind == OpKind::VALIABLE) {
+    if (op->kind == OpKind::LOAD) {
       throw std::runtime_error("must not reach here");
     }
 
