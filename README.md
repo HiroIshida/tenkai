@@ -1,86 +1,59 @@
-## tenkai
-Given a computation graph, tenkai performs runtime C++ code generation and conducts a super-naive just-in-time (JIT) compilation. The generated 'flattened' C++ code is easily optimizable by C++ compilers because it's fully inlined and all needless operations have been removed. It's super-naive because we call `system("g++ ..")` to create a .so file and load it using `dlopen` and `dlsym` runtime;c. I'm honestly not sure if this qualifies as JIT compilation in the normal sense. An obvious todo is to generate IR code and apply LLVM compilation, but the current implementation is actually sufficient for my research purposes. 
+# Tenkai
+A toy and WIP math-expr JIT compiler for x86-64.
+Implements linear-scan like register allocation, basic hash-based CSE, and operation ordering via depth-first traversal.
+Compilation is done for just a single basic block, with no control flow.
+Native code generation with Xbyak assembler.
+Support for basic arithmetic. 3D vector operations. Matrix computation. Spatial transformations.
 
-### Internal mechanism of `tenkai::jit_compile`
-Define computation graphs.
+## Usage
 ```cpp
 #include "cg.hpp"
 #include "linalg.hpp"
+#include "spatial.hpp"
+#include <iostream>
 
 using namespace tenkai;
 
-int main(){
-  auto inp0 = Operation::make_var();
-  auto inp1 = Operation::make_var();
-  auto inp2 = Operation::make_var();
-  {
-    // check common ubexpression elimination
-    auto A = Matrix::RotX(inp0);
-    auto B = Matrix::RotY(inp1);
-    auto v = Vector({inp0, inp1, inp2});
-    auto out1 = sin((A * B * v)(0));
-    auto out2 = sin((A * B * v)(0)) + Operation::make_constant(1.0);
-    auto out3 = cos((A * B * v)(1));
-    auto v2 = Vector({out1, out2, out3});
-    auto C = Matrix::RotZ(inp2);
-    auto out4 = (C * v2)(0);
-    std::vector<Operation::Ptr> inputs = {inp0, inp1, inp2};
-    std::vector<Operation::Ptr> outputs = {out1, out2, out3, out4};
-    tenkai::flatten("tmp1", inputs, outputs, std::cout, "double");
-  }
-  {
-    // check constant folding
-    auto out1 = (inp0 * Operation::make_constant(2.0) + inp1) * Operation::make_constant(3.0) + inp2 * Operation::make_zero();
-    tenkai::flatten("tmp2", {inp0, inp1, inp2}, {out1}, std::cout, "double");
-  }
+int main() {
+    // Basic arithmetic and trigonometry
+    auto x = Operation::make_var();
+    auto y = Operation::make_var();
+    auto expr1 = (x + y) * cos(x) - sin(y);
+    auto fn1 = jit_compile<double>({x, y}, {expr1});
 
-}
-```
-The computation graph then converted into the following flattened form, which are easily be exploited by C++ compilers.
-Although, the most modern c++ compiler can do, but `tenkai` does CSE and constant folding in house (for my fun).
-Then the generated code is compiled and loaded as a shared object file.
-```cpp
-#include <cmath>
-#include <functional>
-extern "C" {
-void tmp1(const double* input, double* output, void** extfns){
-  auto var_m1479264002 = cos(input[1]);
-  auto var_m1916414764 = std::multiplies<double>()(var_m1479264002, input[0]);
-  auto var_m1965242589 = sin(input[1]);
-  auto var_1965242589 = std::negate<double>()(var_m1965242589);
-  auto var_1667816900 = std::multiplies<double>()(var_1965242589, input[2]);
-  auto var_m248597864 = std::plus<double>()(var_m1916414764, var_1667816900);
-  auto var_1989960210 = sin(var_m248597864);
-  output[0] = var_1989960210;
-  auto var_m683411657 = std::plus<double>()(var_1989960210, 1.000000);
-  output[1] = var_m683411657;
-  auto var_m1943809953 = sin(input[0]);
-  auto var_1199789565 = std::multiplies<double>()(var_m1943809953, var_m1965242589);
-  auto var_687540798 = std::multiplies<double>()(var_1199789565, input[0]);
-  auto var_m1457831366 = cos(input[0]);
-  auto var_1932391052 = std::multiplies<double>()(var_m1457831366, input[1]);
-  auto var_m1675035446 = std::plus<double>()(var_687540798, var_1932391052);
-  auto var_1758037570 = std::multiplies<double>()(var_m1943809953, var_m1479264002);
-  auto var_m1094366680 = std::multiplies<double>()(var_1758037570, input[2]);
-  auto var_1525565170 = std::plus<double>()(var_m1675035446, var_m1094366680);
-  auto var_1099533184 = cos(var_1525565170);
-  output[2] = var_1099533184;
-  auto var_m303140554 = cos(input[2]);
-  auto var_m486366772 = std::multiplies<double>()(var_m303140554, var_1989960210);
-  auto var_m789119141 = sin(input[2]);
-  auto var_2000857485 = std::multiplies<double>()(var_m789119141, var_m683411657);
-  auto var_1514490713 = std::plus<double>()(var_m486366772, var_2000857485);
-  output[3] = var_1514490713;
-}
-}
-#include <cmath>
-#include <functional>
-extern "C" {
-void tmp2(const double* input, double* output, void** extfns){
-  auto var_1705639868 = std::multiplies<double>()(input[0], 2.000000);
-  auto var_m1340616390 = std::plus<double>()(var_1705639868, input[1]);
-  auto var_1199161088 = std::multiplies<double>()(var_m1340616390, 3.000000);
-  output[0] = var_1199161088;
-}
+    double input1[2] = {1.0, 0.5};
+    double output1;
+    fn1(input1, &output1, nullptr);
+    std::cout << "Output of expr1: " << output1 << std::endl; // Output: 0.331028
+
+    // Vector operations
+    auto v1 = Vector::Var(3);  // 3D variable vector
+    auto v2 = Vector::Zero(3); // Zero vector
+    auto v_sum = v1 + v2;
+    auto dot_product = v1.sqnorm();
+    auto fn2 = jit_compile<double>(v1.elements, {dot_product, v_sum.sum()});
+
+    double input2[3] = {1.0, 2.0, 3.0};
+    double output2[2];
+    fn2(input2, output2, nullptr);
+    std::cout <<  "Output of v1 operations: " << output2[0] << ", " << output2[1] << std::endl; // Output: 14.0, 6.0
+
+    // Matrix operations
+    auto angle = Operation::make_var();
+    auto rot_x = Matrix::RotX(angle);
+    auto rot_y = Matrix::RotY(angle);
+    auto rot_z = Matrix::RotZ(angle);
+    auto combined_rot = rot_z * rot_y * rot_x;
+    auto point = Vector::Var(3);
+    auto rotated_point = combined_rot * point;
+    std::vector<Operation::Ptr> inp_ops = {angle, point.elements[0], point.elements[1], point.elements[2]};
+    auto fn3 = jit_compile<double>(inp_ops, rotated_point.elements);
+
+    double input3[4] = {M_PI / 4, 1.0, 0.0, 0.0}; // Rotate 45 degrees around Z-axis
+    double output3[3];
+    fn3(input3, output3, nullptr);
+    std::cout << "Rotated point: (" << output3[0] << ", " << output3[1] << ", " << output3[2] << ")" << std::endl;  // Output: (0.5, -0.5, 0.707107)
+
+    // + spatial transformations (see spatial.hpp)
 }
 ```
