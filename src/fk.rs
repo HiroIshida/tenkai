@@ -271,7 +271,7 @@ fn quaternion_product(dag: &mut Dag, a: [NodeId; 4], b: [NodeId; 4]) -> [NodeId;
     [x, y, z, w]
 }
 
-fn rotate_vector(dag: &mut Dag, q: [NodeId; 4], v: [NodeId; 3]) -> [NodeId; 3] {
+pub(crate) fn rotate_vector(dag: &mut Dag, q: [NodeId; 4], v: [NodeId; 3]) -> [NodeId; 3] {
     let imaginary = [q[0], q[1], q[2]];
     let two = dag.constant(2.0);
     let twice_cross = cross(dag, imaginary, v).map(|value| dag.mul(two, value));

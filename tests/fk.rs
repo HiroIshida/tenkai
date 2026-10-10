@@ -1,37 +1,16 @@
 use std::f64::consts::FRAC_PI_2;
 
-use rkern::dag::{Node, NodeId};
 use rkern::fk::FkDag;
 use rkern::urdf::{self, JointType};
+
+mod common;
+use common::evaluate;
 
 const CHAIN: &str = include_str!("fixtures/fk_chain.urdf");
 const IDENTITY: [[f64; 3]; 3] = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]];
 const RX90: [[f64; 3]; 3] = [[1.0, 0.0, 0.0], [0.0, 0.0, -1.0], [0.0, 1.0, 0.0]];
 const RY90: [[f64; 3]; 3] = [[0.0, 0.0, 1.0], [0.0, 1.0, 0.0], [-1.0, 0.0, 0.0]];
 const RZ90: [[f64; 3]; 3] = [[0.0, -1.0, 0.0], [1.0, 0.0, 0.0], [0.0, 0.0, 1.0]];
-
-fn evaluate(fk: &FkDag, inputs: &[f64]) -> Vec<f64> {
-    assert_eq!(inputs.len(), fk.joint_names().len());
-    let mut values: Vec<f64> = Vec::with_capacity(fk.dag().nodes().len());
-    for (index, node) in fk.dag().nodes().iter().enumerate() {
-        let get = |id: NodeId| {
-            assert!(id.index() < index, "operand must precede its user");
-            values[id.index()]
-        };
-        let value = match *node {
-            Node::Constant(value) => value,
-            Node::Input(index) => inputs[index],
-            Node::Add(a, b) => get(a) + get(b),
-            Node::Sub(a, b) => get(a) - get(b),
-            Node::Mul(a, b) => get(a) * get(b),
-            Node::Sin(angle) => get(angle).sin(),
-            Node::Cos(angle) => get(angle).cos(),
-        };
-        assert!(value.is_finite());
-        values.push(value);
-    }
-    values
-}
 
 fn evaluate_chain(fk: &FkDag, [yaw, pitch, roll, slide]: [f64; 4]) -> Vec<f64> {
     let inputs: Vec<_> = fk

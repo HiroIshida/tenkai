@@ -3,6 +3,8 @@
 Code should explain how. Tests should specify what. Commit messages should explain why. Code comments should explain why not.
 Unless explicitly requested, avoid unnecessary explanations or extra content.
 
+Treat questions about reasons (e.g., "Why did you do X?") as requests for explanation only. Do not modify code or files in response unless the user explicitly requests a change.
+
 # Rust guidelines
 
 - Prefer straightforward, idiomatic Rust and concrete types. Add traits, generics, macros, or wrapper types only when they serve a concrete need; avoid speculative abstractions.

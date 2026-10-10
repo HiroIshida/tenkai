@@ -19,7 +19,7 @@ pub enum Node {
     Cos(NodeId),
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Dag {
     nodes: Vec<Node>,
 }
