@@ -18,16 +18,25 @@ const DEMO: &str = r#"
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = std::env::args_os().skip(1).peekable();
-    let precision = match args.peek().and_then(|arg| arg.to_str()) {
-        Some("--float") => {
-            args.next();
-            cuda::Precision::F32
+    let mut precision = cuda::Precision::default();
+    let mut sfu = None;
+    loop {
+        match args.peek().and_then(|arg| arg.to_str()) {
+            Some("--float") => precision = cuda::Precision::F32,
+            Some("--double") => precision = cuda::Precision::F64,
+            Some("--sfu") => sfu = Some(true),
+            Some("--no-sfu") => sfu = Some(false),
+            _ => break,
         }
-        Some("--double") => {
-            args.next();
-            cuda::Precision::F64
+        args.next();
+    }
+    let math = match (precision, sfu.unwrap_or(precision == cuda::Precision::F32)) {
+        (cuda::Precision::F64, true) => {
+            return Err("--sfu requires float; CUDA has no double sin/cos intrinsics".into());
         }
-        _ => cuda::Precision::default(),
+        (cuda::Precision::F32, true) => cuda::MathMode::F32Sfu,
+        (cuda::Precision::F32, false) => cuda::MathMode::F32,
+        (cuda::Precision::F64, false) => cuda::MathMode::F64,
     };
     let robot = match args.next() {
         Some(path) => urdf::read_file(path)?,
@@ -35,7 +44,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     if args.next().is_some() {
         return Err(
-            "usage: cargo run --example generate_centers_cuda -- [--float|--double] [sphere_robot.urdf]".into(),
+            "usage: cargo run --example generate_centers_cuda -- [--float|--double] [--sfu|--no-sfu] [sphere_robot.urdf]".into(),
         );
     }
     let fk = FkDag::from_robot(&robot)?;
@@ -69,7 +78,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if spheres.is_empty() {
         return Err("URDF contains no collision spheres".into());
     }
-    let source = cuda::generate_centers_kernel_with_precision(&fk, &spheres, precision)?;
+    let source = cuda::generate_centers_kernel_with_math(&fk, &spheres, math)?;
+    eprintln!("Math: {math:?}");
     eprintln!("Input joints: {:?}", fk.joint_names());
     eprintln!("Output: [count][{}][3] {precision:?}", spheres.len());
     io::stdout().lock().write_all(source.as_bytes())?;

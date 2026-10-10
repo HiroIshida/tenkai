@@ -27,6 +27,45 @@ impl Precision {
     }
 }
 
+/// Scalar precision and runtime trigonometry used by generated kernels.
+/// Defaults to float arithmetic with SFU intrinsics.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum MathMode {
+    F32,
+    F64,
+    /// Float arithmetic with CUDA's `__sinf` / `__cosf` intrinsics.
+    /// Accuracy degrades for large angles and subnormal results are flushed to zero.
+    /// This selects fast intrinsics; the standard modes may also use SFU instructions internally.
+    #[default]
+    F32Sfu,
+}
+
+impl From<Precision> for MathMode {
+    fn from(precision: Precision) -> Self {
+        match precision {
+            Precision::F32 => Self::F32Sfu,
+            Precision::F64 => Self::F64,
+        }
+    }
+}
+
+impl MathMode {
+    fn precision(self) -> Precision {
+        match self {
+            Self::F32 | Self::F32Sfu => Precision::F32,
+            Self::F64 => Precision::F64,
+        }
+    }
+
+    fn trig_functions(self) -> (&'static str, &'static str) {
+        match self {
+            Self::F32 => ("sinf", "cosf"),
+            Self::F64 => ("sin", "cos"),
+            Self::F32Sfu => ("__sinf", "__cosf"),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct InvalidLinkIndex {
     pub index: usize,
@@ -82,6 +121,7 @@ impl std::error::Error for CentersError {}
 
 /// Generates `rkern_fk(configurations, poses, count)` for `link_poses()[link_index]`.
 ///
+/// Trigonometry uses SFU intrinsics by default.
 /// Both buffers contain contiguous floats (f32): inputs are `[count][joint_names().len()]`
 /// and outputs are `[count][7]` in `[x, y, z, qx, qy, qz, qw]` order. Input joints
 /// follow `joint_names()`. Use separate input/output buffers and a one-dimensional
@@ -91,10 +131,20 @@ pub fn generate_fk_kernel(fk: &FkDag, link_index: usize) -> Result<String, Inval
 }
 
 /// Like [`generate_fk_kernel`], with input/output buffers and arithmetic in `precision`.
+/// Float uses SFU intrinsics; double uses standard trigonometry.
 pub fn generate_fk_kernel_with_precision(
     fk: &FkDag,
     link_index: usize,
     precision: Precision,
+) -> Result<String, InvalidLinkIndex> {
+    generate_fk_kernel_with_math(fk, link_index, precision.into())
+}
+
+/// Like [`generate_fk_kernel`], with scalar precision and trigonometry selected by `math`.
+pub fn generate_fk_kernel_with_math(
+    fk: &FkDag,
+    link_index: usize,
+    math: MathMode,
 ) -> Result<String, InvalidLinkIndex> {
     let pose = fk.link_poses().get(link_index).ok_or(InvalidLinkIndex {
         index: link_index,
@@ -114,13 +164,14 @@ pub fn generate_fk_kernel_with_precision(
         dag: fk.dag(),
         dof: fk.joint_names().len(),
         outputs: &outputs,
-        precision,
+        math,
     }
     .source())
 }
 
 /// Generates `rkern_centers(configurations, centers, count)` for debugging sphere positions.
 ///
+/// Trigonometry uses SFU intrinsics by default.
 /// Both buffers contain contiguous floats (f32): inputs are `[count][joint_names().len()]`
 /// and outputs are `[count][spheres.len()][3]`, in input sphere order and xyz order.
 /// Centers are relative to the robot root frame, with no additional base transform.
@@ -135,10 +186,20 @@ pub fn generate_centers_kernel(
 }
 
 /// Like [`generate_centers_kernel`], with input/output buffers and arithmetic in `precision`.
+/// Float uses SFU intrinsics; double uses standard trigonometry.
 pub fn generate_centers_kernel_with_precision(
     fk: &FkDag,
     spheres: &[SphereCenter],
     precision: Precision,
+) -> Result<String, CentersError> {
+    generate_centers_kernel_with_math(fk, spheres, precision.into())
+}
+
+/// Like [`generate_centers_kernel`], with scalar precision and trigonometry selected by `math`.
+pub fn generate_centers_kernel_with_math(
+    fk: &FkDag,
+    spheres: &[SphereCenter],
+    math: MathMode,
 ) -> Result<String, CentersError> {
     let (dag, outputs) = center_expressions(fk, spheres)?;
     Ok(Kernel {
@@ -146,7 +207,7 @@ pub fn generate_centers_kernel_with_precision(
         dag: &dag,
         dof: fk.joint_names().len(),
         outputs: &outputs,
-        precision,
+        math,
     }
     .source())
 }

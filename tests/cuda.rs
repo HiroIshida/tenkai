@@ -1,5 +1,5 @@
 use rkern::{
-    cuda::{self, Precision, SphereCenter},
+    cuda::{self, MathMode, Precision, SphereCenter},
     fk::FkDag,
     urdf,
 };
@@ -65,15 +65,18 @@ fn invalid_kernel_inputs_return_errors() {
 #[test]
 #[ignore = "requires a C++ compiler; set CXX if needed"]
 fn generated_batch_arithmetic_matches_the_reference() {
-    for precision in PRECISIONS {
-        harness::check_arithmetic(&cases::suite(precision), precision);
+    for (math, precision) in [
+        (MathMode::F32, Precision::F32),
+        (MathMode::F64, Precision::F64),
+    ] {
+        harness::check_arithmetic(&cases::suite(math), precision);
     }
 }
 
 #[test]
 #[ignore = "requires the CUDA toolkit; set NVCC and CXX if needed"]
 fn generated_source_compiles_with_nvcc() {
-    for precision in PRECISIONS {
-        harness::check_compilation(&cases::suite(precision), precision);
+    for math in [MathMode::F32, MathMode::F64, MathMode::F32Sfu] {
+        harness::check_compilation(&cases::suite(math), math);
     }
 }

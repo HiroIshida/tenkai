@@ -1,6 +1,6 @@
 use std::fmt::Write;
 
-use super::Precision;
+use super::MathMode;
 use crate::dag::{Dag, Node, NodeId};
 
 pub(super) struct Kernel<'a> {
@@ -8,7 +8,7 @@ pub(super) struct Kernel<'a> {
     pub(super) dag: &'a Dag,
     pub(super) dof: usize,
     pub(super) outputs: &'a [NodeId],
-    pub(super) precision: Precision,
+    pub(super) math: MathMode,
 }
 
 impl Kernel<'_> {
@@ -23,7 +23,7 @@ impl Kernel<'_> {
 
     fn header(&self) -> String {
         let name = self.name;
-        let (scalar, _) = self.precision.cuda_spelling();
+        let (scalar, _) = self.math.precision().cuda_spelling();
         format!(
             r#"#include <stddef.h>
 #include <math.h>
@@ -37,8 +37,9 @@ extern "C" __global__ void {name}(
     }
 
     fn write_nodes(&self, source: &mut String, needed: &[bool]) {
-        let (scalar, suffix) = self.precision.cuda_spelling();
+        let (scalar, suffix) = self.math.precision().cuda_spelling();
         let dof = self.dof;
+        let (sin, cos) = self.math.trig_functions();
         for (index, node) in self.dag.nodes().iter().enumerate() {
             if !needed[index] {
                 continue;
@@ -51,8 +52,8 @@ extern "C" __global__ void {name}(
                 Node::Add(a, b) => writeln!(source, "v{} + v{};", a.index(), b.index()),
                 Node::Sub(a, b) => writeln!(source, "v{} - v{};", a.index(), b.index()),
                 Node::Mul(a, b) => writeln!(source, "v{} * v{};", a.index(), b.index()),
-                Node::Sin(a) => writeln!(source, "sin{suffix}(v{});", a.index()),
-                Node::Cos(a) => writeln!(source, "cos{suffix}(v{});", a.index()),
+                Node::Sin(a) => writeln!(source, "{sin}(v{});", a.index()),
+                Node::Cos(a) => writeln!(source, "{cos}(v{});", a.index()),
             }
             .expect("writing to String is infallible");
         }

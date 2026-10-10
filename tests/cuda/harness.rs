@@ -1,5 +1,5 @@
 use super::cases::Case;
-use rkern::cuda::Precision;
+use rkern::cuda::{MathMode, Precision};
 use std::fmt::Write;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -25,13 +25,13 @@ pub(super) fn check_arithmetic(cases: &[Case], precision: Precision) {
     run(&mut Command::new(executable));
 }
 
-pub(super) fn check_compilation(cases: &[Case], precision: Precision) {
-    let directory = test_directory(&format!("nvcc-{precision:?}"));
+pub(super) fn check_compilation(cases: &[Case], math: MathMode) {
+    let directory = test_directory(&format!("nvcc-{math:?}"));
     let path = directory.join("kernels.cu");
     fs::write(&path, kernel_source(cases)).unwrap();
     let nvcc = std::env::var_os("NVCC").unwrap_or_else(|| "nvcc".into());
     let mut command = Command::new(nvcc);
-    command.args(["--ptx", "-std=c++11"]);
+    command.args(["--ptx", "--gpu-architecture=compute_75", "-std=c++11"]);
     if let Some(compiler) = std::env::var_os("CXX") {
         command.arg("-ccbin").arg(compiler);
     }
@@ -39,6 +39,16 @@ pub(super) fn check_compilation(cases: &[Case], precision: Precision) {
         .arg(path)
         .arg("-o")
         .arg(directory.join("kernels.ptx")));
+    if math == MathMode::F32Sfu {
+        let ptx = fs::read_to_string(directory.join("kernels.ptx")).unwrap();
+        for operation in ["sin", "cos"] {
+            assert!(
+                ptx.contains(&format!("{operation}.approx.f32"))
+                    || ptx.contains(&format!("{operation}.approx.ftz.f32")),
+                "missing SFU {operation} instruction",
+            );
+        }
+    }
 }
 
 fn reference_data(cases: &[Case], precision: Precision) -> String {

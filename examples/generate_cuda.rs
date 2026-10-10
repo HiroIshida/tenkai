@@ -4,20 +4,29 @@ use rkern::{cuda, fk::FkDag, urdf};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = std::env::args_os().skip(1).peekable();
-    let precision = match args.peek().and_then(|arg| arg.to_str()) {
-        Some("--float") => {
-            args.next();
-            cuda::Precision::F32
+    let mut precision = cuda::Precision::default();
+    let mut sfu = None;
+    loop {
+        match args.peek().and_then(|arg| arg.to_str()) {
+            Some("--float") => precision = cuda::Precision::F32,
+            Some("--double") => precision = cuda::Precision::F64,
+            Some("--sfu") => sfu = Some(true),
+            Some("--no-sfu") => sfu = Some(false),
+            _ => break,
         }
-        Some("--double") => {
-            args.next();
-            cuda::Precision::F64
+        args.next();
+    }
+    let math = match (precision, sfu.unwrap_or(precision == cuda::Precision::F32)) {
+        (cuda::Precision::F64, true) => {
+            return Err("--sfu requires float; CUDA has no double sin/cos intrinsics".into());
         }
-        _ => cuda::Precision::default(),
+        (cuda::Precision::F32, true) => cuda::MathMode::F32Sfu,
+        (cuda::Precision::F32, false) => cuda::MathMode::F32,
+        (cuda::Precision::F64, false) => cuda::MathMode::F64,
     };
     let selection = args
         .next()
-        .ok_or("usage: cargo run --example generate_cuda -- [--float|--double] <link-index|--list> [robot.urdf]")?;
+        .ok_or("usage: cargo run --example generate_cuda -- [--float|--double] [--sfu|--no-sfu] <link-index|--list> [robot.urdf]")?;
     let robot = match args.next() {
         Some(path) => urdf::read_file(path)?,
         None => urdf::read_from_string(include_str!("../assets/fetch/fetch.urdf"))?,
@@ -37,8 +46,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .to_str()
         .ok_or("link index must be an integer")?
         .parse()?;
-    let source = cuda::generate_fk_kernel_with_precision(&fk, link_index, precision)?;
+    let source = cuda::generate_fk_kernel_with_math(&fk, link_index, math)?;
     eprintln!("Link {link_index}: {}", fk.link_poses()[link_index].name);
+    eprintln!("Math: {math:?}");
     eprintln!("Input joints: {:?}", fk.joint_names());
     io::stdout().lock().write_all(source.as_bytes())?;
     Ok(())

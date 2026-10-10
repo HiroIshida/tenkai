@@ -1,6 +1,6 @@
 use super::common;
 use rkern::{
-    cuda::{self, Precision, SphereCenter},
+    cuda::{self, MathMode, SphereCenter},
     fk::FkDag,
     urdf,
 };
@@ -29,17 +29,17 @@ impl Case {
         fk: &FkDag,
         output: Output,
         configurations: &[Vec<f64>],
-        precision: Precision,
+        math: MathMode,
     ) -> Self {
         let (entry, source, components) = match &output {
             Output::Link(link) => (
                 "rkern_fk",
-                cuda::generate_fk_kernel_with_precision(fk, *link, precision).unwrap(),
+                cuda::generate_fk_kernel_with_math(fk, *link, math).unwrap(),
                 7,
             ),
             Output::Centers(spheres) => (
                 "rkern_centers",
-                cuda::generate_centers_kernel_with_precision(fk, spheres, precision).unwrap(),
+                cuda::generate_centers_kernel_with_math(fk, spheres, math).unwrap(),
                 3 * spheres.len(),
             ),
         };
@@ -48,9 +48,9 @@ impl Case {
         for configuration in configurations {
             let q: Vec<_> = configuration
                 .iter()
-                .map(|&v| match precision {
-                    Precision::F32 => f64::from(v as f32),
-                    Precision::F64 => v,
+                .map(|&v| match math {
+                    MathMode::F32 | MathMode::F32Sfu => f64::from(v as f32),
+                    MathMode::F64 => v,
                 })
                 .collect();
             let values = common::evaluate(fk, &q);
@@ -84,7 +84,7 @@ impl Case {
     }
 }
 
-pub(super) fn suite(precision: Precision) -> Vec<Case> {
+pub(super) fn suite(math: MathMode) -> Vec<Case> {
     let chain = FkDag::from_robot(&urdf::read_from_string(CHAIN).unwrap()).unwrap();
     let configurations = [
         vec![0.0, 0.0, 0.0, 0.0],
@@ -100,7 +100,7 @@ pub(super) fn suite(precision: Precision) -> Vec<Case> {
             &chain,
             Output::Link(link),
             &configurations,
-            precision,
+            math,
         ));
     }
     let spheres = (0..chain.link_poses().len())
@@ -117,14 +117,14 @@ pub(super) fn suite(precision: Precision) -> Vec<Case> {
         &chain,
         Output::Centers(spheres),
         &configurations,
-        precision,
+        math,
     ));
     cases.push(Case::new(
         "empty_centers".into(),
         &chain,
         Output::Centers(vec![]),
         &configurations,
-        precision,
+        math,
     ));
 
     let root = FkDag::from_robot(
@@ -137,7 +137,7 @@ pub(super) fn suite(precision: Precision) -> Vec<Case> {
         &root,
         Output::Link(0),
         &no_inputs,
-        precision,
+        math,
     ));
     cases.push(Case::new(
         "root_centers".into(),
@@ -147,7 +147,7 @@ pub(super) fn suite(precision: Precision) -> Vec<Case> {
             position: [0.25, -0.5, 1.0],
         }]),
         &no_inputs,
-        precision,
+        math,
     ));
 
     let fetch = FkDag::from_robot(
@@ -171,7 +171,7 @@ pub(super) fn suite(precision: Precision) -> Vec<Case> {
         &fetch,
         Output::Link(gripper),
         &inputs,
-        precision,
+        math,
     ));
     cases
 }
