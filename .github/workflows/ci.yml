@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Rust and CUDA compilation (CPU only)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CARGO_TERM_COLOR: always
+      RUSTUP_TOOLCHAIN: stable
+      CXX: g++-13
+      NVCC: /usr/local/cuda-12.9/bin/nvcc
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Install Rust
+        id: rust
+        run: |
+          rustup toolchain install stable --profile minimal --component rustfmt --component clippy
+          echo "version=$(rustc --version | cut -d ' ' -f 2)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Cargo dependencies and builds
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ubuntu-24.04-rust-${{ steps.rust.outputs.version }}-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            ubuntu-24.04-rust-${{ steps.rust.outputs.version }}-${{ hashFiles('Cargo.lock') }}-
+
+      - name: Check formatting
+        run: cargo fmt --check
+
+      - name: Clippy
+        run: cargo clippy --locked --all-targets -- -D warnings
+
+      - name: Install CUDA compiler
+        run: |
+          curl --fail --location --retry 3 \
+            https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb \
+            --output "$RUNNER_TEMP/cuda-keyring.deb"
+          sudo dpkg -i "$RUNNER_TEMP/cuda-keyring.deb"
+          sudo apt-get update
+          # The tests compile PTX; no GPU driver or runtime execution is needed.
+          sudo apt-get install --yes --no-install-recommends cuda-nvcc-12-9 g++-13
+          "$NVCC" --version
+          "$CXX" --version
+
+      - name: Test including CPU arithmetic and PTX compilation
+        run: cargo test --locked --all-targets -- --include-ignored
+
+      - name: Test documentation
+        run: cargo test --locked --doc
