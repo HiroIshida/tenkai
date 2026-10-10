@@ -29,17 +29,17 @@ impl Case {
         fk: &FkDag,
         output: Output,
         configurations: &[Vec<f64>],
-        math: MathMode,
+        options: cuda::Options,
     ) -> Self {
         let (entry, source, components) = match &output {
             Output::Link(link) => (
                 "rkern_fk",
-                cuda::generate_fk_kernel_with_math(fk, *link, math).unwrap(),
+                cuda::generate_fk_kernel_with_options(fk, *link, options).unwrap(),
                 7,
             ),
             Output::Centers(spheres) => (
                 "rkern_centers",
-                cuda::generate_centers_kernel_with_math(fk, spheres, math).unwrap(),
+                cuda::generate_centers_kernel_with_options(fk, spheres, options).unwrap(),
                 3 * spheres.len(),
             ),
         };
@@ -48,7 +48,7 @@ impl Case {
         for configuration in configurations {
             let q: Vec<_> = configuration
                 .iter()
-                .map(|&v| match math {
+                .map(|&v| match options.math {
                     MathMode::F32 | MathMode::F32Sfu => f64::from(v as f32),
                     MathMode::F64 => v,
                 })
@@ -84,7 +84,7 @@ impl Case {
     }
 }
 
-pub(super) fn suite(math: MathMode) -> Vec<Case> {
+pub(super) fn suite(options: cuda::Options) -> Vec<Case> {
     let chain = FkDag::from_robot(&urdf::read_from_string(CHAIN).unwrap()).unwrap();
     let configurations = [
         vec![0.0, 0.0, 0.0, 0.0],
@@ -100,7 +100,7 @@ pub(super) fn suite(math: MathMode) -> Vec<Case> {
             &chain,
             Output::Link(link),
             &configurations,
-            math,
+            options,
         ));
     }
     let spheres = (0..chain.link_poses().len())
@@ -117,14 +117,14 @@ pub(super) fn suite(math: MathMode) -> Vec<Case> {
         &chain,
         Output::Centers(spheres),
         &configurations,
-        math,
+        options,
     ));
     cases.push(Case::new(
         "empty_centers".into(),
         &chain,
         Output::Centers(vec![]),
         &configurations,
-        math,
+        options,
     ));
 
     let root = FkDag::from_robot(
@@ -137,7 +137,7 @@ pub(super) fn suite(math: MathMode) -> Vec<Case> {
         &root,
         Output::Link(0),
         &no_inputs,
-        math,
+        options,
     ));
     cases.push(Case::new(
         "root_centers".into(),
@@ -147,7 +147,7 @@ pub(super) fn suite(math: MathMode) -> Vec<Case> {
             position: [0.25, -0.5, 1.0],
         }]),
         &no_inputs,
-        math,
+        options,
     ));
 
     let fetch = FkDag::from_robot(
@@ -171,7 +171,7 @@ pub(super) fn suite(math: MathMode) -> Vec<Case> {
         &fetch,
         Output::Link(gripper),
         &inputs,
-        math,
+        options,
     ));
     cases
 }

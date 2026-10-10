@@ -1,5 +1,5 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct NodeId(usize);
+pub struct NodeId(pub(crate) usize);
 
 impl NodeId {
     pub fn index(self) -> usize {
@@ -17,6 +17,19 @@ pub enum Node {
     Mul(NodeId, NodeId),
     Sin(NodeId),
     Cos(NodeId),
+}
+
+impl Node {
+    /// Distinct dependencies; using the same operand twice is still one consumer.
+    pub(crate) fn dependencies(self) -> impl Iterator<Item = NodeId> {
+        match self {
+            Self::Constant(_) | Self::Input(_) => [None, None],
+            Self::Sin(a) | Self::Cos(a) => [Some(a), None],
+            Self::Add(a, b) | Self::Sub(a, b) | Self::Mul(a, b) => [Some(a), (a != b).then_some(b)],
+        }
+        .into_iter()
+        .flatten()
+    }
 }
 
 #[derive(Debug, Default, Clone)]
@@ -40,13 +53,8 @@ impl Dag {
             if !needed[index] {
                 continue;
             }
-            match *node {
-                Node::Constant(_) | Node::Input(_) => {}
-                Node::Add(a, b) | Node::Sub(a, b) | Node::Mul(a, b) => {
-                    needed[a.index()] = true;
-                    needed[b.index()] = true;
-                }
-                Node::Sin(a) | Node::Cos(a) => needed[a.index()] = true,
+            for dependency in node.dependencies() {
+                needed[dependency.index()] = true;
             }
         }
 

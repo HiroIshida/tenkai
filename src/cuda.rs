@@ -4,10 +4,18 @@ use std::fmt;
 
 use crate::dag::{Dag, NodeId};
 use crate::fk::FkDag;
+use crate::scheduling::{self, Schedule};
 use crate::transform::PoseNodes;
 
 mod kernel;
 use kernel::Kernel;
+
+/// Math and scheduling choices for either CUDA kernel.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Options {
+    pub math: MathMode,
+    pub scheduling: scheduling::Mode,
+}
 
 /// Scalar type used for kernel buffers, intermediates, and trigonometric functions.
 /// The source FK DAG retains its f64 constants.
@@ -146,6 +154,22 @@ pub fn generate_fk_kernel_with_math(
     link_index: usize,
     math: MathMode,
 ) -> Result<String, InvalidLinkIndex> {
+    generate_fk_kernel_with_options(
+        fk,
+        link_index,
+        Options {
+            math,
+            ..Options::default()
+        },
+    )
+}
+
+/// Like [`generate_fk_kernel`], with explicit math and scheduling choices.
+pub fn generate_fk_kernel_with_options(
+    fk: &FkDag,
+    link_index: usize,
+    options: Options,
+) -> Result<String, InvalidLinkIndex> {
     let pose = fk.link_poses().get(link_index).ok_or(InvalidLinkIndex {
         index: link_index,
         link_count: fk.link_poses().len(),
@@ -163,8 +187,9 @@ pub fn generate_fk_kernel_with_math(
         name: "rkern_fk",
         dag: fk.dag(),
         dof: fk.joint_names().len(),
-        outputs: &outputs,
-        math,
+        schedule: Schedule::with_mode(fk.dag(), &outputs, options.scheduling)
+            .expect("FK outputs belong to the FK DAG"),
+        math: options.math,
     }
     .source())
 }
@@ -201,13 +226,30 @@ pub fn generate_centers_kernel_with_math(
     spheres: &[SphereCenter],
     math: MathMode,
 ) -> Result<String, CentersError> {
+    generate_centers_kernel_with_options(
+        fk,
+        spheres,
+        Options {
+            math,
+            ..Options::default()
+        },
+    )
+}
+
+/// Like [`generate_centers_kernel`], with explicit math and scheduling choices.
+pub fn generate_centers_kernel_with_options(
+    fk: &FkDag,
+    spheres: &[SphereCenter],
+    options: Options,
+) -> Result<String, CentersError> {
     let (dag, outputs) = center_expressions(fk, spheres)?;
     Ok(Kernel {
         name: "rkern_centers",
         dag: &dag,
         dof: fk.joint_names().len(),
-        outputs: &outputs,
-        math,
+        schedule: Schedule::with_mode(&dag, &outputs, options.scheduling)
+            .expect("center outputs belong to the extended FK DAG"),
+        math: options.math,
     }
     .source())
 }

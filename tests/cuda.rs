@@ -1,7 +1,7 @@
 use rkern::{
     cuda::{self, MathMode, Precision, SphereCenter},
     fk::FkDag,
-    urdf,
+    scheduling, urdf,
 };
 
 #[path = "cuda/cases.rs"]
@@ -69,7 +69,12 @@ fn generated_batch_arithmetic_matches_the_reference() {
         (MathMode::F32, Precision::F32),
         (MathMode::F64, Precision::F64),
     ] {
-        harness::check_arithmetic(&cases::suite(math), precision);
+        for scheduling in [
+            scheduling::Mode::Live(scheduling::Options::default()),
+            scheduling::Mode::DagOrder,
+        ] {
+            harness::check_arithmetic(&cases::suite(cuda::Options { math, scheduling }), precision);
+        }
     }
 }
 
@@ -77,6 +82,11 @@ fn generated_batch_arithmetic_matches_the_reference() {
 #[ignore = "requires the CUDA toolkit; set NVCC and CXX if needed"]
 fn generated_source_compiles_with_nvcc() {
     for math in [MathMode::F32, MathMode::F64, MathMode::F32Sfu] {
-        harness::check_compilation(&cases::suite(math), math);
+        for scheduling in [
+            scheduling::Mode::Live(scheduling::Options::default()),
+            scheduling::Mode::DagOrder,
+        ] {
+            harness::check_compilation(&cases::suite(cuda::Options { math, scheduling }), math);
+        }
     }
 }

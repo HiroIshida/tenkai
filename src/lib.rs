@@ -4,6 +4,7 @@
 pub mod cuda;
 pub mod dag;
 pub mod fk;
+pub mod scheduling;
 pub mod urdf;
 
 mod transform;
