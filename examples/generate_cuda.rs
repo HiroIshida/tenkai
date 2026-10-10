@@ -58,8 +58,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .to_str()
         .ok_or("link index must be an integer")?
         .parse()?;
-    let source =
-        cuda::generate_fk_kernel_with_options(&fk, link_index, cuda::Options { math, scheduling })?;
+    let source = cuda::generate_fk_kernel(&fk, link_index, cuda::Options { math, scheduling })?;
     eprintln!("Link {link_index}: {}", fk.link_poses()[link_index].name);
     eprintln!("Math: {math:?}");
     eprintln!("Scheduling: {scheduling:?}");

@@ -34,12 +34,12 @@ impl Case {
         let (entry, source, components) = match &output {
             Output::Link(link) => (
                 "rkern_fk",
-                cuda::generate_fk_kernel_with_options(fk, *link, options).unwrap(),
+                cuda::generate_fk_kernel(fk, *link, options).unwrap(),
                 7,
             ),
             Output::Centers(spheres) => (
                 "rkern_centers",
-                cuda::generate_centers_kernel_with_options(fk, spheres, options).unwrap(),
+                cuda::generate_centers_kernel(fk, spheres, options).unwrap(),
                 3 * spheres.len(),
             ),
         };

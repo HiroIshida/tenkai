@@ -18,13 +18,17 @@ fn invalid_kernel_inputs_return_errors() {
         FkDag::from_robot(&urdf::read_from_string(include_str!("fixtures/fk_chain.urdf")).unwrap())
             .unwrap();
     for precision in PRECISIONS {
+        let options = cuda::Options {
+            math: precision.into(),
+            ..cuda::Options::default()
+        };
         for index in [fk.link_poses().len(), usize::MAX] {
             let error = cuda::InvalidLinkIndex {
                 index,
                 link_count: fk.link_poses().len(),
             };
             assert_eq!(
-                cuda::generate_fk_kernel_with_precision(&fk, index, precision).unwrap_err(),
+                cuda::generate_fk_kernel(&fk, index, options).unwrap_err(),
                 error
             );
             let spheres = [
@@ -38,7 +42,7 @@ fn invalid_kernel_inputs_return_errors() {
                 },
             ];
             assert_eq!(
-                cuda::generate_centers_kernel_with_precision(&fk, &spheres, precision).unwrap_err(),
+                cuda::generate_centers_kernel(&fk, &spheres, options).unwrap_err(),
                 cuda::CentersError::InvalidLink {
                     sphere_index: 1,
                     source: error
@@ -53,8 +57,7 @@ fn invalid_kernel_inputs_return_errors() {
                 }; 2];
                 spheres[1].position[coordinate] = value;
                 assert_eq!(
-                    cuda::generate_centers_kernel_with_precision(&fk, &spheres, precision)
-                        .unwrap_err(),
+                    cuda::generate_centers_kernel(&fk, &spheres, options).unwrap_err(),
                     cuda::CentersError::NonFinitePosition { sphere_index: 1 }
                 );
             }

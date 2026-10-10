@@ -90,11 +90,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if spheres.is_empty() {
         return Err("URDF contains no collision spheres".into());
     }
-    let source = cuda::generate_centers_kernel_with_options(
-        &fk,
-        &spheres,
-        cuda::Options { math, scheduling },
-    )?;
+    let source = cuda::generate_centers_kernel(&fk, &spheres, cuda::Options { math, scheduling })?;
     eprintln!("Math: {math:?}");
     eprintln!("Scheduling: {scheduling:?}");
     eprintln!("Input joints: {:?}", fk.joint_names());

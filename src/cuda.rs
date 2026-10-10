@@ -11,6 +11,7 @@ mod kernel;
 use kernel::Kernel;
 
 /// Math and scheduling choices for either CUDA kernel.
+/// Defaults to FP32 with SFU trigonometry and DAG-order evaluation (scheduling OFF).
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Options {
     pub math: MathMode,
@@ -129,43 +130,12 @@ impl std::error::Error for CentersError {}
 
 /// Generates `rkern_fk(configurations, poses, count)` for `link_poses()[link_index]`.
 ///
-/// Trigonometry uses SFU intrinsics by default.
-/// Both buffers contain contiguous floats (f32): inputs are `[count][joint_names().len()]`
+/// Buffer elements use the scalar type selected by `options.math` (f32 by default).
+/// Inputs are `[count][joint_names().len()]`
 /// and outputs are `[count][7]` in `[x, y, z, qx, qy, qz, qw]` order. Input joints
 /// follow `joint_names()`. Use separate input/output buffers and a one-dimensional
 /// CUDA launch with at least `count` threads. Excess threads do no work.
-pub fn generate_fk_kernel(fk: &FkDag, link_index: usize) -> Result<String, InvalidLinkIndex> {
-    generate_fk_kernel_with_precision(fk, link_index, Precision::default())
-}
-
-/// Like [`generate_fk_kernel`], with input/output buffers and arithmetic in `precision`.
-/// Float uses SFU intrinsics; double uses standard trigonometry.
-pub fn generate_fk_kernel_with_precision(
-    fk: &FkDag,
-    link_index: usize,
-    precision: Precision,
-) -> Result<String, InvalidLinkIndex> {
-    generate_fk_kernel_with_math(fk, link_index, precision.into())
-}
-
-/// Like [`generate_fk_kernel`], with scalar precision and trigonometry selected by `math`.
-pub fn generate_fk_kernel_with_math(
-    fk: &FkDag,
-    link_index: usize,
-    math: MathMode,
-) -> Result<String, InvalidLinkIndex> {
-    generate_fk_kernel_with_options(
-        fk,
-        link_index,
-        Options {
-            math,
-            ..Options::default()
-        },
-    )
-}
-
-/// Like [`generate_fk_kernel`], with explicit math and scheduling choices.
-pub fn generate_fk_kernel_with_options(
+pub fn generate_fk_kernel(
     fk: &FkDag,
     link_index: usize,
     options: Options,
@@ -196,48 +166,14 @@ pub fn generate_fk_kernel_with_options(
 
 /// Generates `rkern_centers(configurations, centers, count)` for debugging sphere positions.
 ///
-/// Trigonometry uses SFU intrinsics by default.
-/// Both buffers contain contiguous floats (f32): inputs are `[count][joint_names().len()]`
+/// Buffer elements use the scalar type selected by `options.math` (f32 by default).
+/// Inputs are `[count][joint_names().len()]`
 /// and outputs are `[count][spheres.len()][3]`, in input sphere order and xyz order.
 /// Centers are relative to the robot root frame, with no additional base transform.
 /// Each center is `link_translation + link_rotation * sphere.position`.
 /// Use separate buffers and a one-dimensional launch with at least `count` threads.
 /// An empty sphere slice produces a kernel that writes nothing.
 pub fn generate_centers_kernel(
-    fk: &FkDag,
-    spheres: &[SphereCenter],
-) -> Result<String, CentersError> {
-    generate_centers_kernel_with_precision(fk, spheres, Precision::default())
-}
-
-/// Like [`generate_centers_kernel`], with input/output buffers and arithmetic in `precision`.
-/// Float uses SFU intrinsics; double uses standard trigonometry.
-pub fn generate_centers_kernel_with_precision(
-    fk: &FkDag,
-    spheres: &[SphereCenter],
-    precision: Precision,
-) -> Result<String, CentersError> {
-    generate_centers_kernel_with_math(fk, spheres, precision.into())
-}
-
-/// Like [`generate_centers_kernel`], with scalar precision and trigonometry selected by `math`.
-pub fn generate_centers_kernel_with_math(
-    fk: &FkDag,
-    spheres: &[SphereCenter],
-    math: MathMode,
-) -> Result<String, CentersError> {
-    generate_centers_kernel_with_options(
-        fk,
-        spheres,
-        Options {
-            math,
-            ..Options::default()
-        },
-    )
-}
-
-/// Like [`generate_centers_kernel`], with explicit math and scheduling choices.
-pub fn generate_centers_kernel_with_options(
     fk: &FkDag,
     spheres: &[SphereCenter],
     options: Options,
