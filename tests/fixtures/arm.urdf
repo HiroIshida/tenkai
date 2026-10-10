@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<robot name="arm">
+  <link name="base">
+    <collision>
+      <geometry><sphere radius="0.2"/></geometry>
+    </collision>
+    <visual>
+      <geometry><mesh filename="package://arm/base.stl"/></geometry>
+    </visual>
+  </link>
+  <link name="arm"/>
+  <link name="tool"/>
+  <link name="finger"/>
+  <joint name="shoulder" type="revolute">
+    <parent link="base"/>
+    <child link="arm"/>
+    <origin xyz="0.1 0.2 0.3" rpy="0.4 0.5 0.6"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-1.5" upper="1.5" effort="10" velocity="2"/>
+  </joint>
+  <joint name="mount" type="fixed">
+    <parent link="arm"/>
+    <child link="tool"/>
+  </joint>
+  <joint name="follower" type="revolute">
+    <parent link="tool"/>
+    <child link="finger"/>
+    <limit lower="-2" upper="2" effort="5" velocity="1"/>
+    <mimic joint="shoulder" multiplier="-1" offset="0.1"/>
+  </joint>
+</robot>

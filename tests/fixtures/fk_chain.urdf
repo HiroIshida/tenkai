@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<robot name="fk_chain">
+  <link name="base"/>
+  <link name="yaw_link"/>
+  <link name="pitch_link"/>
+  <link name="roll_link"/>
+  <link name="slide_link"/>
+  <link name="tool"/>
+  <link name="sensor"/>
+  <joint name="yaw" type="revolute">
+    <parent link="base"/>
+    <child link="yaw_link"/>
+    <origin xyz="1 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.2" upper="3.2" effort="10" velocity="2"/>
+  </joint>
+  <joint name="pitch" type="revolute">
+    <parent link="yaw_link"/>
+    <child link="pitch_link"/>
+    <origin xyz="2 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-3.2" upper="3.2" effort="10" velocity="2"/>
+  </joint>
+  <joint name="roll" type="continuous">
+    <parent link="pitch_link"/>
+    <child link="roll_link"/>
+    <origin xyz="3 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit effort="10" velocity="2"/>
+  </joint>
+  <joint name="slide" type="prismatic">
+    <parent link="roll_link"/>
+    <child link="slide_link"/>
+    <axis xyz="2 0 0"/>
+    <limit lower="-1" upper="1" effort="10" velocity="1"/>
+  </joint>
+  <joint name="tool_mount" type="fixed">
+    <parent link="slide_link"/>
+    <child link="tool"/>
+    <origin xyz="0 1 0" rpy="0 0 1.5707963267948966"/>
+  </joint>
+  <joint name="sensor_mount" type="fixed">
+    <parent link="base"/>
+    <child link="sensor"/>
+    <origin xyz="0 0 2" rpy="1.5707963267948966 0 0"/>
+  </joint>
+</robot>
