@@ -1,9 +1,13 @@
 //! CUDA C++ generation for batched FK with one thread per configuration.
 
-use std::fmt::{self, Write};
+use std::fmt;
 
-use crate::dag::{Dag, Node, NodeId};
-use crate::fk::{FkDag, rotate_vector};
+use crate::dag::{Dag, NodeId};
+use crate::fk::FkDag;
+use crate::transform::PoseNodes;
+
+mod kernel;
+use kernel::Kernel;
 
 /// Scalar type used for kernel buffers, intermediates, and trigonometric functions.
 /// The source FK DAG retains its f64 constants.
@@ -12,6 +16,15 @@ pub enum Precision {
     #[default]
     F32,
     F64,
+}
+
+impl Precision {
+    fn cuda_spelling(self) -> (&'static str, &'static str) {
+        match self {
+            Self::F32 => ("float", "f"),
+            Self::F64 => ("double", ""),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -31,44 +44,6 @@ impl fmt::Display for InvalidLinkIndex {
 }
 
 impl std::error::Error for InvalidLinkIndex {}
-
-/// Generates `rkern_fk(configurations, poses, count)` for `link_poses()[link_index]`.
-///
-/// Both buffers contain contiguous floats (f32): inputs are `[count][joint_names().len()]`
-/// and outputs are `[count][7]` in `[x, y, z, qx, qy, qz, qw]` order. Input joints
-/// follow `joint_names()`. Use separate input/output buffers and a one-dimensional
-/// CUDA launch with at least `count` threads. Excess threads do no work.
-pub fn generate_fk_kernel(fk: &FkDag, link_index: usize) -> Result<String, InvalidLinkIndex> {
-    generate_fk_kernel_with_precision(fk, link_index, Precision::default())
-}
-
-/// Like [`generate_fk_kernel`], with input/output buffers and arithmetic in `precision`.
-pub fn generate_fk_kernel_with_precision(
-    fk: &FkDag,
-    link_index: usize,
-    precision: Precision,
-) -> Result<String, InvalidLinkIndex> {
-    let pose = fk.link_poses().get(link_index).ok_or(InvalidLinkIndex {
-        index: link_index,
-        link_count: fk.link_poses().len(),
-    })?;
-    let outputs = [
-        pose.translation[0],
-        pose.translation[1],
-        pose.translation[2],
-        pose.rotation[0],
-        pose.rotation[1],
-        pose.rotation[2],
-        pose.rotation[3],
-    ];
-    Ok(generate_kernel(
-        fk.dag(),
-        fk.joint_names().len(),
-        &outputs,
-        "rkern_fk",
-        precision,
-    ))
-}
 
 /// A collision sphere center in the coordinate frame of `link_poses()[link_index]`.
 /// Radius is unnecessary for computing centers.
@@ -105,6 +80,45 @@ impl fmt::Display for CentersError {
 
 impl std::error::Error for CentersError {}
 
+/// Generates `rkern_fk(configurations, poses, count)` for `link_poses()[link_index]`.
+///
+/// Both buffers contain contiguous floats (f32): inputs are `[count][joint_names().len()]`
+/// and outputs are `[count][7]` in `[x, y, z, qx, qy, qz, qw]` order. Input joints
+/// follow `joint_names()`. Use separate input/output buffers and a one-dimensional
+/// CUDA launch with at least `count` threads. Excess threads do no work.
+pub fn generate_fk_kernel(fk: &FkDag, link_index: usize) -> Result<String, InvalidLinkIndex> {
+    generate_fk_kernel_with_precision(fk, link_index, Precision::default())
+}
+
+/// Like [`generate_fk_kernel`], with input/output buffers and arithmetic in `precision`.
+pub fn generate_fk_kernel_with_precision(
+    fk: &FkDag,
+    link_index: usize,
+    precision: Precision,
+) -> Result<String, InvalidLinkIndex> {
+    let pose = fk.link_poses().get(link_index).ok_or(InvalidLinkIndex {
+        index: link_index,
+        link_count: fk.link_poses().len(),
+    })?;
+    let outputs = [
+        pose.translation[0],
+        pose.translation[1],
+        pose.translation[2],
+        pose.rotation[0],
+        pose.rotation[1],
+        pose.rotation[2],
+        pose.rotation[3],
+    ];
+    Ok(Kernel {
+        name: "rkern_fk",
+        dag: fk.dag(),
+        dof: fk.joint_names().len(),
+        outputs: &outputs,
+        precision,
+    }
+    .source())
+}
+
 /// Generates `rkern_centers(configurations, centers, count)` for debugging sphere positions.
 ///
 /// Both buffers contain contiguous floats (f32): inputs are `[count][joint_names().len()]`
@@ -126,6 +140,21 @@ pub fn generate_centers_kernel_with_precision(
     spheres: &[SphereCenter],
     precision: Precision,
 ) -> Result<String, CentersError> {
+    let (dag, outputs) = center_expressions(fk, spheres)?;
+    Ok(Kernel {
+        name: "rkern_centers",
+        dag: &dag,
+        dof: fk.joint_names().len(),
+        outputs: &outputs,
+        precision,
+    }
+    .source())
+}
+
+fn center_expressions(
+    fk: &FkDag,
+    spheres: &[SphereCenter],
+) -> Result<(Dag, Vec<NodeId>), CentersError> {
     for (sphere_index, sphere) in spheres.iter().enumerate() {
         if sphere.link_index >= fk.link_poses().len() {
             return Err(CentersError::InvalidLink {
@@ -145,83 +174,11 @@ pub fn generate_centers_kernel_with_precision(
     for sphere in spheres {
         let pose = &fk.link_poses()[sphere.link_index];
         let local = sphere.position.map(|value| dag.constant(value));
-        let offset = rotate_vector(&mut dag, pose.rotation, local);
-        outputs.extend((0..3).map(|i| dag.add(pose.translation[i], offset[i])));
+        let transform = PoseNodes {
+            translation: pose.translation,
+            rotation: pose.rotation,
+        };
+        outputs.extend(transform.transform_point(&mut dag, local));
     }
-    Ok(generate_kernel(
-        &dag,
-        fk.joint_names().len(),
-        &outputs,
-        "rkern_centers",
-        precision,
-    ))
-}
-
-fn generate_kernel(
-    dag: &Dag,
-    dof: usize,
-    outputs: &[NodeId],
-    name: &str,
-    precision: Precision,
-) -> String {
-    let nodes = dag.nodes();
-    let mut needed = vec![false; nodes.len()];
-    for output in outputs {
-        needed[output.index()] = true;
-    }
-    for (index, node) in nodes.iter().enumerate().rev() {
-        if !needed[index] {
-            continue;
-        }
-        match *node {
-            Node::Constant(_) | Node::Input(_) => {}
-            Node::Add(a, b) | Node::Sub(a, b) | Node::Mul(a, b) => {
-                needed[a.index()] = true;
-                needed[b.index()] = true;
-            }
-            Node::Sin(a) | Node::Cos(a) => needed[a.index()] = true,
-        }
-    }
-
-    let (scalar, suffix) = match precision {
-        Precision::F32 => ("float", "f"),
-        Precision::F64 => ("double", ""),
-    };
-    let mut source = format!(
-        r#"#include <stddef.h>
-#include <math.h>
-
-extern "C" __global__ void {name}(
-    const {scalar}* configurations, {scalar}* output, size_t count) {{
-    const size_t batch = static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
-    if (batch >= count) return;
-"#,
-    );
-    for (index, node) in nodes.iter().enumerate() {
-        if !needed[index] {
-            continue;
-        }
-        write!(source, "    const {scalar} v{index} = ").expect("writing to String is infallible");
-        match *node {
-            Node::Constant(value) => writeln!(source, "{value:.17e}{suffix};"),
-            Node::Input(input) => writeln!(source, "configurations[batch * {dof} + {input}];"),
-            Node::Add(a, b) => writeln!(source, "v{} + v{};", a.index(), b.index()),
-            Node::Sub(a, b) => writeln!(source, "v{} - v{};", a.index(), b.index()),
-            Node::Mul(a, b) => writeln!(source, "v{} * v{};", a.index(), b.index()),
-            Node::Sin(a) => writeln!(source, "sin{suffix}(v{});", a.index()),
-            Node::Cos(a) => writeln!(source, "cos{suffix}(v{});", a.index()),
-        }
-        .expect("writing to String is infallible");
-    }
-    let components = outputs.len();
-    for (component, output) in outputs.iter().enumerate() {
-        writeln!(
-            source,
-            "    output[batch * {components} + {component}] = v{};",
-            output.index()
-        )
-        .expect("writing to String is infallible");
-    }
-    source.push_str("}\n");
-    source
+    Ok((dag, outputs))
 }

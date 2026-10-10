@@ -17,3 +17,10 @@ Treat questions about reasons (e.g., "Why did you do X?") as requests for explan
 - Keep visibility and mutable state as narrow as practical. Do not introduce async execution, shared state, or locks without a requirement that justifies them.
 - Add dependencies only when they meaningfully simplify the solution. Follow the project's Rust edition, minimum supported Rust version, and existing conventions.
 - After relevant changes, run `cargo fmt`, the applicable tests, and `cargo clippy` with the project's supported features and targets. Fix warnings at their cause; do not add broad lint suppressions to make checks pass.
+
+# Structure and testing
+
+- Organize code around cohesive responsibilities. Make high-level control flow, data flow, and dependencies clear without requiring every implementation detail to be read.
+- Use modules, types, methods, and free functions where they naturally fit. Prefer clarity over brevity; avoid excessive fragmentation, indirection, and object-oriented abstractions without a concrete need.
+- When refactoring, preserve behavior and public APIs unless a change is requested. Add concise comments for non-obvious design choices and invariants.
+- Cover each kernel and supported precision. Reuse test cases and execution harnesses instead of duplicating setup, compilation, and comparison logic; keep test intent separate from execution mechanics.

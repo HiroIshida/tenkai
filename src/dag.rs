@@ -29,6 +29,30 @@ impl Dag {
         &self.nodes
     }
 
+    pub(crate) fn required_nodes(&self, outputs: &[NodeId]) -> Vec<bool> {
+        let nodes = self.nodes();
+        let mut needed = vec![false; nodes.len()];
+        for output in outputs {
+            needed[output.index()] = true;
+        }
+        // Operands precede their users, so no fixed-point iteration is needed.
+        for (index, node) in nodes.iter().enumerate().rev() {
+            if !needed[index] {
+                continue;
+            }
+            match *node {
+                Node::Constant(_) | Node::Input(_) => {}
+                Node::Add(a, b) | Node::Sub(a, b) | Node::Mul(a, b) => {
+                    needed[a.index()] = true;
+                    needed[b.index()] = true;
+                }
+                Node::Sin(a) | Node::Cos(a) => needed[a.index()] = true,
+            }
+        }
+
+        needed
+    }
+
     fn push(&mut self, node: Node) -> NodeId {
         let id = NodeId(self.nodes.len());
         self.nodes.push(node);
