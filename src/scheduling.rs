@@ -68,6 +68,32 @@ impl Schedule {
         Ok(Scheduler::new(dag, outputs).run(mode))
     }
 
+    /// Consumes each output group before evaluating work needed only by later groups.
+    /// Shared nodes are evaluated once; within each group, the selected mode's
+    /// evaluation order is retained. Stores follow the flattened group order.
+    pub(crate) fn for_output_groups(
+        dag: &Dag,
+        groups: &[&[NodeId]],
+        mode: Mode,
+    ) -> Result<Self, InvalidOutput> {
+        let outputs = groups.concat();
+        let order = Self::with_mode(dag, &outputs, mode)?;
+        let mut scheduler = Scheduler::new(dag, &outputs);
+        for group in groups {
+            let needed = dag.required_nodes(group);
+            for &step in order.steps() {
+                if let Step::Evaluate(id) = step
+                    && needed[id.index()]
+                    && !scheduler.defined[id.index()]
+                {
+                    scheduler.evaluate(id);
+                }
+            }
+            scheduler.store_ready_outputs(scheduler.next_output + group.len());
+        }
+        Ok(scheduler.finish())
+    }
+
     pub fn steps(&self) -> &[Step] {
         &self.steps
     }
@@ -175,10 +201,14 @@ impl<'a> Scheduler<'a> {
                         self.evaluate(NodeId(index));
                     }
                 }
-                self.store_ready_outputs();
+                self.store_ready_outputs(self.outputs.len());
             }
             Mode::Live(options) => self.schedule_live(options.live_budget),
         }
+        self.finish()
+    }
+
+    fn finish(self) -> Schedule {
         debug_assert_eq!(self.next_output, self.outputs.len());
         debug_assert_eq!(self.live, 0);
         debug_assert!(self.remaining.iter().all(|&count| count == 0));
@@ -196,7 +226,7 @@ impl<'a> Scheduler<'a> {
                     self.ready.push(user);
                 }
             }
-            self.store_ready_outputs();
+            self.store_ready_outputs(self.outputs.len());
         }
     }
 
@@ -244,8 +274,9 @@ impl<'a> Scheduler<'a> {
         needed
     }
 
-    fn store_ready_outputs(&mut self) {
-        while let Some(&value) = self.outputs.get(self.next_output) {
+    fn store_ready_outputs(&mut self, end: usize) {
+        while self.next_output < end {
+            let value = self.outputs[self.next_output];
             if !self.defined[value.index()] {
                 break;
             }

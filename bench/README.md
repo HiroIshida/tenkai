@@ -40,6 +40,8 @@ normally made available by `Python.h` in the bindings.
   The eight control joints use URDF bounds; continuous joints use `[-2π, 2π)`.
   Other joint inputs are zero. All modes use the same pool in the FK input order.
 - Default codegen: float, SFU on, scheduler off; block size 128.
+  Collision kernels interleave each sphere's FK with its environment check,
+  reuse shared FK values, and evaluate every sphere without early exit.
 - Two-second warmup for each backend, plus two untimed repetitions before each measurement.
   Seven rounds with fixed job order and input offsets. Repetitions per measurement
   are `max(2, min(1024, ceil(1048576 / batch)))`; there is no timing-based calibration.

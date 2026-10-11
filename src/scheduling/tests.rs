@@ -18,6 +18,10 @@ fn check(dag: &Dag, outputs: &[NodeId], inputs: &[f64], live_budget: usize) -> S
 
 fn check_mode(dag: &Dag, outputs: &[NodeId], inputs: &[f64], mode: Mode) -> Schedule {
     let schedule = Schedule::with_mode(dag, outputs, mode).unwrap();
+    check_schedule(dag, outputs, inputs, schedule)
+}
+
+fn check_schedule(dag: &Dag, outputs: &[NodeId], inputs: &[f64], schedule: Schedule) -> Schedule {
     let mut reference = Vec::new();
     for &node in dag.nodes() {
         reference.push(evaluate(node, inputs, |id| reference[id.index()]));
@@ -178,6 +182,68 @@ fn out_of_range_outputs_are_rejected() {
             node_count: 1
         }
     );
+    assert_eq!(
+        Schedule::for_output_groups(
+            &dag,
+            &[&[], &[value], &[NodeId(usize::MAX)]],
+            Mode::DagOrder
+        )
+        .unwrap_err(),
+        error
+    );
+}
+
+#[test]
+fn output_groups_finish_before_unrelated_work_and_reuse_shared_values() {
+    let mut dag = Dag::default();
+    let inputs: Vec<_> = (0..8).map(|index| dag.input(index)).collect();
+    let shared = dag.sin(inputs[0]);
+    let mut groups = vec![vec![]];
+    for &input in &inputs[1..] {
+        let sin = dag.sin(input);
+        let sum = dag.add(sin, shared);
+        groups.push(vec![sum, sin, sum]);
+    }
+    groups.push(groups[1].clone());
+    groups.push(vec![]);
+    let groups: Vec<_> = groups.iter().map(Vec::as_slice).collect();
+    let outputs = groups.concat();
+    let q = [0.3; 8];
+    let original = check_mode(&dag, &outputs, &q, Mode::DagOrder);
+    for mode in std::iter::once(Mode::DagOrder)
+        .chain([0, 1, 64, usize::MAX].map(|live_budget| Mode::Live(Options { live_budget })))
+    {
+        let schedule = check_schedule(
+            &dag,
+            &outputs,
+            &q,
+            Schedule::for_output_groups(&dag, &groups, mode).unwrap(),
+        );
+        assert!(schedule.peak_live_values() < original.peak_live_values());
+        let mut stored = 0;
+        for &step in schedule.steps() {
+            match step {
+                Step::Evaluate(id) => {
+                    let group = &outputs[stored / 3 * 3..stored / 3 * 3 + 3];
+                    assert!(dag.required_nodes(group)[id.index()]);
+                }
+                Step::StoreOutput { .. } => stored += 1,
+            }
+        }
+        assert_eq!(
+            schedule.steps(),
+            Schedule::for_output_groups(&dag, &groups, mode)
+                .unwrap()
+                .steps(),
+            "grouped scheduling is deterministic"
+        );
+        assert!(
+            Schedule::for_output_groups(&dag, &[&[], &[]], mode)
+                .unwrap()
+                .steps()
+                .is_empty()
+        );
+    }
 }
 
 #[test]

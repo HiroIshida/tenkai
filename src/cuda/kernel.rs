@@ -12,32 +12,32 @@ pub(super) struct Kernel<'a> {
     pub(super) math: MathMode,
 }
 
-pub(super) enum Output {
-    Batched,
-    LocalCenters,
-}
-
 impl Kernel<'_> {
     pub(super) fn source(&self) -> String {
         let mut source = self.header();
-        self.write_body(&mut source, Output::Batched);
+        self.write_body(&mut source, |source, index, value| {
+            writeln!(
+                source,
+                "    output[batch * {} + {index}] = v{};",
+                self.schedule.output_count(),
+                value.index()
+            )
+            .expect("writing to String is infallible");
+        });
         source.push_str("}\n");
         source
     }
 
-    pub(super) fn write_body(&self, source: &mut String, output: Output) {
+    pub(super) fn write_body(
+        &self,
+        source: &mut String,
+        mut store: impl FnMut(&mut String, usize, NodeId),
+    ) {
         for &step in self.schedule.steps() {
             match step {
                 Step::Evaluate(id) => self.write_node(source, id),
                 Step::StoreOutput { index, value } => {
-                    let target = match output {
-                        Output::Batched => {
-                            format!("output[batch * {} + {index}]", self.schedule.output_count())
-                        }
-                        Output::LocalCenters => format!("centers[{index}]"),
-                    };
-                    writeln!(source, "    {target} = v{};", value.index())
-                        .expect("writing to String is infallible");
+                    store(source, index, value);
                 }
             }
         }

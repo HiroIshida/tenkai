@@ -1,6 +1,6 @@
 use std::fmt::Write;
 
-use super::kernel::{Kernel, Output};
+use super::kernel::Kernel;
 use super::{Options, Precision};
 use crate::collision::{Error, Sphere};
 use crate::fk::{FkDag, center_expressions};
@@ -8,8 +8,9 @@ use crate::scheduling::Schedule;
 
 /// Generates `rkern_collision(configurations, environment_ids, scene, output, count)`.
 ///
-/// One thread checks one configuration against its selected environment. All sphere
-/// centers are computed before checking every sphere/obstacle pair, without early exit.
+/// One thread checks one configuration against its selected environment. Each sphere
+/// is checked as its center is computed, reusing shared FK values across spheres.
+/// Every sphere/obstacle pair is evaluated, without early exit.
 /// Output is `[count]` bytes: 1 for collision (including touching), 0 otherwise.
 /// An empty environment or empty robot sphere list produces 0.
 ///
@@ -40,11 +41,12 @@ pub fn generate_collision_kernel(
     }
     let centers: Vec<_> = spheres.iter().map(|sphere| sphere.center).collect();
     let (dag, outputs) = center_expressions(fk, &centers).map_err(Error::Center)?;
+    let groups: Vec<_> = outputs.chunks(3).collect();
     let kernel = Kernel {
         name: "rkern_collision",
         dag: &dag,
         dof: fk.joint_names().len(),
-        schedule: Schedule::with_mode(&dag, &outputs, options.scheduling)
+        schedule: Schedule::for_output_groups(&dag, &groups, options.scheduling)
             .expect("center outputs belong to the extended FK DAG"),
         math: options.math,
     };
@@ -72,27 +74,24 @@ extern "C" __global__ void rkern_collision(
         source.push_str("    output[batch] = 0;\n}\n");
         return Ok(source);
     }
-    writeln!(source, "    {scalar} centers[{}];", outputs.len())
-        .expect("writing to String is infallible");
-    kernel.write_body(&mut source, Output::LocalCenters);
-    write!(source, "    const {scalar} radii[] = {{").expect("writing to String is infallible");
-    for sphere in spheres {
-        write!(source, "{:.17e}{suffix},", sphere.radius).expect("writing to String is infallible");
-    }
-    let sphere_count = spheres.len();
     write!(
         source,
-        r#"}};
-    const {namespace}::Environment environment = scene.environments[environment_ids[batch]];
+        r#"    const {namespace}::Environment environment = scene.environments[environment_ids[batch]];
     {scalar} clearance = INFINITY;
-    for (size_t sphere = 0; sphere < {sphere_count}; ++sphere) {{
-        const {namespace}::Vec3 center = {{centers[3 * sphere], centers[3 * sphere + 1], centers[3 * sphere + 2]}};
-        clearance = fmin{suffix}(clearance, {namespace}::distance(scene, environment, center) - radii[sphere]);
-    }}
-    output[batch] = static_cast<unsigned char>(clearance <= 0);
-}}
+    {namespace}::Vec3 center;
 "#,
     )
     .expect("writing to String is infallible");
+    kernel.write_body(&mut source, |source, index, value| {
+        let axis = ["x", "y", "z"][index % 3];
+        writeln!(source, "    center.{axis} = v{};", value.index())
+            .expect("writing to String is infallible");
+        if index % 3 == 2 {
+            let radius = spheres[index / 3].radius;
+            writeln!(source, "    clearance = fmin{suffix}(clearance, {namespace}::distance(scene, environment, center) - {radius:.17e}{suffix});")
+                .expect("writing to String is infallible");
+        }
+    });
+    source.push_str("    output[batch] = static_cast<unsigned char>(clearance <= 0);\n}\n");
     Ok(source)
 }
