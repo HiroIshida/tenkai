@@ -1,4 +1,4 @@
-//! CUDA C++ generation for batched FK and environment collision checks.
+//! CUDA C++ generation for FK, environment collision checks, and batched RRT.
 
 pub use crate::dag::{Optimization, Precision};
 pub use crate::fk::{CentersError, InvalidLinkIndex, SphereCenter};
@@ -7,8 +7,10 @@ use crate::scheduling::{self, Schedule};
 
 mod collision;
 mod kernel;
-pub use collision::generate_collision_kernel;
+pub use collision::{generate_collision_function, generate_collision_kernel};
+mod rrt;
 use kernel::Kernel;
+pub use rrt::{RrtError, generate_rrt_kernel};
 
 /// Math, optimization and scheduling choices for CUDA kernels.
 /// Defaults to FP32 with SFU trigonometry, algebraic CSE and DAG-order evaluation.

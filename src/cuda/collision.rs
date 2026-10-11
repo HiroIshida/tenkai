@@ -39,6 +39,51 @@ pub fn generate_collision_kernel(
     spheres: &[Sphere],
     options: Options,
 ) -> Result<String, Error> {
+    let mut source = generate_collision_function(fk, spheres, options)?;
+    let (scalar, _) = options.math.precision().cuda_spelling();
+    let namespace = namespace(options.math.precision());
+    let dof = fk.joint_names().len();
+    let configuration = if dof == 0 {
+        "configurations".to_owned()
+    } else {
+        format!("configurations + batch * {dof}")
+    };
+    let collision = if spheres.is_empty() {
+        "false".to_owned()
+    } else {
+        format!("rkern_collision_one({configuration}, scene, environment_ids[batch])")
+    };
+    write!(
+        source,
+        r#"
+extern "C" __global__ void rkern_collision(
+    const {scalar}* configurations, const uint32_t* environment_ids,
+    {namespace}::Scene scene, unsigned char* output, size_t count) {{
+    const size_t batch = static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
+    if (batch >= count) return;
+    output[batch] = static_cast<unsigned char>({collision});
+}}
+"#,
+    )
+    .expect("writing to String is infallible");
+    Ok(source)
+}
+
+pub(super) fn namespace(precision: Precision) -> &'static str {
+    match precision {
+        Precision::F32 => "rkern_f32",
+        Precision::F64 => "rkern_f64",
+    }
+}
+
+/// Generates `bool rkern_collision_one(q, scene, environment_id)` and scene types.
+/// The predicate is callable by CUDA device code without launching a kernel.
+/// Inputs and collision semantics match [`generate_collision_kernel`].
+pub fn generate_collision_function(
+    fk: &FkDag,
+    spheres: &[Sphere],
+    options: Options,
+) -> Result<String, Error> {
     for (index, sphere) in spheres.iter().enumerate() {
         sphere.validate(fk, index)?;
     }
@@ -55,10 +100,7 @@ pub fn generate_collision_kernel(
         math: options.math,
     };
     let (scalar, suffix) = options.math.precision().cuda_spelling();
-    let namespace = match options.math.precision() {
-        Precision::F32 => "rkern_f32",
-        Precision::F64 => "rkern_f64",
-    };
+    let namespace = namespace(options.math.precision());
     let mut source = include_str!("sdf.cuh")
         .replace("@NAMESPACE@", namespace)
         .replace("@SCALAR@", scalar)
@@ -66,27 +108,24 @@ pub fn generate_collision_kernel(
     write!(
         source,
         r#"
-extern "C" __global__ void rkern_collision(
-    const {scalar}* configurations, const uint32_t* environment_ids,
-    {namespace}::Scene scene, unsigned char* output, size_t count) {{
-    const size_t batch = static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
-    if (batch >= count) return;
+__device__ inline bool rkern_collision_one(
+    const {scalar}* q, {namespace}::Scene scene, uint32_t environment_id) {{
 "#,
     )
     .expect("writing to String is infallible");
     if spheres.is_empty() {
-        source.push_str("    output[batch] = 0;\n}\n");
+        source.push_str("    return false;\n}\n");
         return Ok(source);
     }
     write!(
         source,
-        r#"    const {namespace}::Environment environment = scene.environments[environment_ids[batch]];
+        r#"    const {namespace}::Environment environment = scene.environments[environment_id];
     bool collision = false;
     {namespace}::Vec3 center;
 "#,
     )
     .expect("writing to String is infallible");
-    kernel.write_body(&mut source, |source, index, value| {
+    kernel.write_body(&mut source, "q", |source, index, value| {
         let axis = ["x", "y", "z"][index % 3];
         writeln!(source, "    center.{axis} = v{};", value.index())
             .expect("writing to String is infallible");
@@ -104,7 +143,7 @@ extern "C" __global__ void rkern_collision(
             }
         }
     });
-    source.push_str("    output[batch] = static_cast<unsigned char>(collision);\n}\n");
+    source.push_str("    return collision;\n}\n");
     Ok(source)
 }
 

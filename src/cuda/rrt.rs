@@ -1,0 +1,100 @@
+use std::fmt;
+
+use super::{Options, collision};
+use crate::{collision::Sphere, fk::FkDag};
+
+#[derive(Debug)]
+pub enum RrtError {
+    EmptyControls,
+    InvalidControl { index: usize, joint_count: usize },
+    DuplicateControl(usize),
+    Collision(crate::collision::Error),
+}
+
+impl fmt::Display for RrtError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::EmptyControls => write!(f, "RRT requires at least one controlled joint"),
+            Self::InvalidControl { index, joint_count } => {
+                write!(
+                    f,
+                    "RRT control index {index} exceeds FK joint count {joint_count}"
+                )
+            }
+            Self::DuplicateControl(index) => write!(f, "duplicate RRT control index {index}"),
+            Self::Collision(error) => error.fmt(f),
+        }
+    }
+}
+
+impl std::error::Error for RrtError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Collision(error) => Some(error),
+            _ => None,
+        }
+    }
+}
+
+/// Generates a single-tree, goal-biased batched RRT and its collision predicate.
+///
+/// `controls` indexes the FK inputs in planning-coordinate order. Other joints
+/// take their values from `RrtSpace::reference`. The generated namespace contains
+/// `RrtSpace`, `RrtProblem`, `RrtCandidate`, and `validate_rrt`. Backend-independent
+/// config/result types live in `rkern`. See `src/cuda/rrt.cuh` for buffer layouts.
+///
+/// Launch `rkern_rrt` with one block per problem and `32 * warps_per_problem`
+/// threads. Each round samples against a snapshot of the tree, checks all edge
+/// points in parallel, then attempts direct goal connections from valid endpoints.
+/// The final goal edge can exceed `step_size` but uses the same collision resolution.
+/// Valid endpoints are inserted in candidate order. This is not sequential RRT or
+/// RRTConnect. Parent chains are returned as node indices, with a native `RrtPlanner`
+/// wrapper for allocation, launches and path extraction.
+///
+/// The caller owns device buffers, validates config/space with `validate_rrt`,
+/// checks device launch/storage limits, and supplies valid scene ranges and IDs.
+/// Like the collision kernel, only environment collisions are checked.
+pub fn generate_rrt_kernel(
+    fk: &FkDag,
+    spheres: &[Sphere],
+    controls: &[usize],
+    options: Options,
+) -> Result<String, RrtError> {
+    if controls.is_empty() {
+        return Err(RrtError::EmptyControls);
+    }
+    for (position, &index) in controls.iter().enumerate() {
+        if index >= fk.joint_names().len() {
+            return Err(RrtError::InvalidControl {
+                index,
+                joint_count: fk.joint_names().len(),
+            });
+        }
+        if controls[..position].contains(&index) {
+            return Err(RrtError::DuplicateControl(index));
+        }
+    }
+    let mut source =
+        collision::generate_collision_kernel(fk, spheres, options).map_err(RrtError::Collision)?;
+    source.push_str(include_str!("../planning/rrt.hpp"));
+    let indices = controls
+        .iter()
+        .map(usize::to_string)
+        .collect::<Vec<_>>()
+        .join(", ");
+    source.push_str(
+        &include_str!("rrt.cuh")
+            .replace(
+                "@NAMESPACE@",
+                collision::namespace(options.math.precision()),
+            )
+            .replace("@DIMENSION@", &controls.len().to_string())
+            .replace("@FK_DOF@", &fk.joint_names().len().to_string())
+            .replace("@CONTROLS@", &indices),
+    );
+    source.push_str(&include_str!("rrt_runtime.cuh").replace(
+        "@NAMESPACE@",
+        collision::namespace(options.math.precision()),
+    ));
+    Ok(source)
+}

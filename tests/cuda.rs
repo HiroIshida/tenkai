@@ -9,6 +9,8 @@ mod cases;
 #[path = "cuda/collision_cases.rs"]
 mod collision_cases;
 mod common;
+#[path = "common/compile.rs"]
+mod compile;
 #[path = "cuda/harness.rs"]
 mod harness;
 

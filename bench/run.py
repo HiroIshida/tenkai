@@ -18,6 +18,8 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
 import numpy as np
 
+from common import toolchain
+
 BENCH = Path(__file__).resolve().parent
 ROOT = BENCH.parent
 PLAINMP = BENCH / "plainmp"
@@ -72,22 +74,6 @@ def sha256(path):
         for block in iter(lambda: source.read(1024 * 1024), b""):
             digest.update(block)
     return digest.hexdigest()
-
-
-def toolchain():
-    nvcc = shutil.which(os.environ.get("NVCC", "nvcc"))
-    if nvcc is None:
-        raise RuntimeError("nvcc not found; install the CUDA toolkit or set NVCC")
-    version = subprocess.check_output([nvcc, "--version"], text=True)
-    release = re.search(r"release (\d+)\.", version)
-    compiler = os.environ.get("CXX")
-    # CUDA 10 rejects the newer default GCC shipped on this benchmark's original host.
-    if compiler is None:
-        compiler = "g++-8" if release and int(release[1]) == 10 else "c++"
-    compiler = shutil.which(compiler)
-    if compiler is None:
-        raise RuntimeError("CUDA host compiler not found; set CXX to a compiler supported by nvcc")
-    return nvcc, compiler, version
 
 
 def plainmp_revision():

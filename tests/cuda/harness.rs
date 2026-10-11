@@ -1,13 +1,13 @@
 use super::cases::Case;
+use super::compile::{cuda_compiler, directory, run};
 use rkern::cuda::{MathMode, Precision};
 use std::fmt::Write;
 use std::fs;
-use std::path::{Path, PathBuf};
 use std::process::Command;
 
 pub(super) fn check_arithmetic(cases: &[Case], precision: Precision) {
     let data = reference_data(cases, precision);
-    let directory = test_directory(&format!("host-{precision:?}"));
+    let directory = directory(&format!("cuda-host-{precision:?}"));
     fs::write(directory.join("kernels.cuh"), kernel_source(cases)).unwrap();
     fs::write(directory.join("expected.h"), data).unwrap();
     fs::write(
@@ -31,15 +31,11 @@ pub(super) fn check_arithmetic(cases: &[Case], precision: Precision) {
 }
 
 pub(super) fn check_compilation(cases: &[Case], math: MathMode) {
-    let directory = test_directory(&format!("nvcc-{math:?}"));
+    let directory = directory(&format!("cuda-nvcc-{math:?}"));
     let path = directory.join("kernels.cu");
     fs::write(&path, kernel_source(cases)).unwrap();
-    let nvcc = std::env::var_os("NVCC").unwrap_or_else(|| "nvcc".into());
-    let mut command = Command::new(nvcc);
-    command.args(["--ptx", "--gpu-architecture=compute_75", "-std=c++11"]);
-    if let Some(compiler) = std::env::var_os("CXX") {
-        command.arg("-ccbin").arg(compiler);
-    }
+    let mut command = cuda_compiler("c++11");
+    command.arg("--ptx");
     run(command
         .arg(path)
         .arg("-o")
@@ -117,7 +113,9 @@ fn kernel_source(cases: &[Case]) -> String {
     let mut source = String::new();
     for (i, case) in cases.iter().enumerate() {
         writeln!(source, "#define {} kernel_{i}", case.entry).unwrap();
+        writeln!(source, "#define rkern_collision_one collision_one_{i}").unwrap();
         source.push_str(&case.source);
+        source.push_str("#undef rkern_collision_one\n");
         writeln!(source, "#undef {}", case.entry).unwrap();
     }
     source
@@ -132,22 +130,4 @@ fn cpp_array(values: &[f64]) -> String {
         .map(|value| format!("{value:.17e}"))
         .collect::<Vec<_>>()
         .join(", ")
-}
-
-fn test_directory(name: &str) -> PathBuf {
-    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("target")
-        .join(format!("cuda-{name}-{}", std::process::id()));
-    fs::create_dir_all(&path).unwrap();
-    path
-}
-
-fn run(command: &mut Command) {
-    let output = command.output().expect("failed to execute test command");
-    assert!(
-        output.status.success(),
-        "{command:?}\n{}\n{}",
-        String::from_utf8_lossy(&output.stdout),
-        String::from_utf8_lossy(&output.stderr)
-    );
 }

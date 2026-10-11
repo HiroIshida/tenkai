@@ -19,15 +19,20 @@ find_package(Eigen3 REQUIRED)
 find_package(yaml-cpp REQUIRED)
 set(PLAINMP_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/plainmp")
 add_subdirectory("${PLAINMP_ROOT}/third/urdf_parser" urdf_parser)
-add_executable(plainmp_bench plainmp_bench.cpp
+add_library(plainmp_bench_support STATIC
     "${PLAINMP_ROOT}/cpp/plainmp/kinematics/kinematics.cpp"
     "${PLAINMP_ROOT}/cpp/plainmp/kinematics/algorithm.cpp"
     "${PLAINMP_ROOT}/cpp/plainmp/kinematics/kinematic_model_wrapper.cpp"
     "${PLAINMP_ROOT}/cpp/plainmp/constraints/primitive_sphere_collision.cpp"
     "${PLAINMP_ROOT}/cpp/plainmp/collision/kdtree.cpp")
-target_include_directories(plainmp_bench PRIVATE "${PLAINMP_ROOT}/cpp" "${WORKLOAD_DIR}")
-target_link_libraries(plainmp_bench PRIVATE Eigen3::Eigen urdfdom_model yaml-cpp)
+target_include_directories(plainmp_bench_support PUBLIC "${PLAINMP_ROOT}/cpp")
+target_link_libraries(plainmp_bench_support PUBLIC Eigen3::Eigen urdfdom_model yaml-cpp)
 
 # Python.h normally supplies floating-point abs overloads; without them the
 # unqualified abs in plainmp's SDF header can bind to the integer overload.
-target_compile_options(plainmp_bench PRIVATE -include math.h)
+target_compile_options(plainmp_bench_support PUBLIC -include math.h)
+add_executable(plainmp_bench plainmp_bench.cpp)
+target_include_directories(plainmp_bench PRIVATE "${WORKLOAD_DIR}")
+target_link_libraries(plainmp_bench PRIVATE plainmp_bench_support)
+add_executable(rrt_validate rrt_validate.cpp)
+target_link_libraries(rrt_validate PRIVATE plainmp_bench_support)

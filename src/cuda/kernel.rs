@@ -15,7 +15,8 @@ pub(super) struct Kernel<'a> {
 impl Kernel<'_> {
     pub(super) fn source(&self) -> String {
         let mut source = self.header();
-        self.write_body(&mut source, |source, index, value| {
+        let input = format!("(configurations + batch * {})", self.dof);
+        self.write_body(&mut source, &input, |source, index, value| {
             writeln!(
                 source,
                 "    output[batch * {} + {index}] = v{};",
@@ -31,11 +32,12 @@ impl Kernel<'_> {
     pub(super) fn write_body(
         &self,
         source: &mut String,
+        input: &str,
         mut store: impl FnMut(&mut String, usize, NodeId),
     ) {
         for &step in self.schedule.steps() {
             match step {
-                Step::Evaluate(id) => self.write_node(source, id),
+                Step::Evaluate(id) => self.write_node(source, input, id),
                 Step::StoreOutput { index, value } => {
                     store(source, index, value);
                 }
@@ -58,16 +60,15 @@ extern "C" __global__ void {name}(
         )
     }
 
-    fn write_node(&self, source: &mut String, id: NodeId) {
+    fn write_node(&self, source: &mut String, input: &str, id: NodeId) {
         let (scalar, suffix) = self.math.precision().cuda_spelling();
-        let dof = self.dof;
         let (sin, cos) = self.math.trig_functions();
         let index = id.index();
         let node = self.dag.nodes()[index];
         write!(source, "    const {scalar} v{index} = ").expect("writing to String is infallible");
         match node {
             Node::Constant(value) => writeln!(source, "{value:.17e}{suffix};"),
-            Node::Input(input) => writeln!(source, "configurations[batch * {dof} + {input}];"),
+            Node::Input(index) => writeln!(source, "{input}[{index}];"),
             Node::Add(a, b) => writeln!(source, "v{} + v{};", a.index(), b.index()),
             Node::Sub(a, b) => writeln!(source, "v{} - v{};", a.index(), b.index()),
             Node::Mul(a, b) => writeln!(source, "v{} * v{};", a.index(), b.index()),

@@ -32,6 +32,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let controls: Controls = serde_saphyr::from_str(yaml)?;
     let mut bounds = Vec::new();
+    let mut control_indices = Vec::new();
     for name in &controls.control_joint_names {
         let index = fk
             .joint_names()
@@ -52,7 +53,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             return Err(format!("invalid sampling bounds for {name}").into());
         }
         bounds.push(json!({"name": name, "index": index, "lower": lower, "upper": upper}));
+        control_indices.push(index);
     }
+    fs::write(
+        directory.join("rrt.cuh"),
+        cuda::generate_rrt_kernel(&fk, &spheres, &control_indices, options)?,
+    )?;
     let model = json!({
         "input_joint_names": fk.joint_names(),
         "control_joints": bounds,

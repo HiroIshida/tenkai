@@ -117,3 +117,71 @@ with the same names; use a separate `--output` directory to retain comparisons.
 `plainmp_bench.cpp` own GPU/CPU execution and timers; `workload.hpp` shares the
 sampling schedule and binary input handling; `run.py` coordinates preparation,
 execution, validation, and aggregation.
+
+## Batched CUDA RRT
+
+```sh
+python3 bench/rrt.py
+python3 bench/rrt.py --problems 32 --environments 2 --warps-per-problem 4
+python3 bench/rrt.py --math f64 --output bench/results/rrt-f64
+```
+
+Uses the same CUDA/C++ toolchains and plainmp build dependencies as the collision
+benchmark, plus NumPy. `NVCC`, `CXX`, `CPU_CXX`, and `--arch` have the same meaning.
+Python constructs an `RRTConfig` dataclass and calls an opaque native planner
+through `build/librrt.so`; sampling, nearest-neighbor search, interpolation,
+collision checking, tree updates, and path tracing execute inside CUDA.
+
+One problem owns one block for the entire solve. `--warps-per-problem` fixes its
+thread count to `32 * warps` at launch; the default is four. Environments and
+problems have separate IDs, so many problems can share a scene. Environment zero
+is the ground/table case above; additional environments shift the table by 0.02 m
+along Y per environment. The planner keeps its allocated device buffers across
+solves. Its scene buffers are owned by the benchmark's native handle.
+
+The start/goal are copied from `plainmp/example/bench/fetch_plan.py`, using the
+eight control joints and per-joint resolution 0.05. Bounds and collision geometry
+match the collision benchmark: all 69 spheres, uncontrolled joints at zero,
+environment collisions only, no self-collision. The full collision setup therefore
+differs from `FetchSpec.create_collision_const()` in that example.
+
+This is a single-tree batched RRT with direct goal connections, not RRTConnect.
+Each round samples 32 targets against the same tree snapshot, finds Euclidean
+nearest neighbors by linear scan, steers by at most `step_size` (default 1.0), and
+distributes the edge's configuration checks across the block. An edge uses
+`ceil(max(abs(delta) / resolution))` equal intervals, including the destination;
+its source is already known valid. After validating candidate edges, the block
+also checks direct connections from valid endpoints to the goal. This final goal
+edge may exceed `step_size`, and is checked at the same resolution. Candidates
+are inserted in fixed order after validation. No intermediate nodes or path
+smoothing are added. A collision rejects the entire edge.
+
+Defaults are 8,192 nodes, 1,024 rounds, goal sampling probability 0.1, and 32
+problems with different seeds. The seed, round, and candidate index determine
+sampling independently of warp count. Failure results distinguish invalid start,
+invalid goal, node capacity, and round limit. `--help` lists all settings.
+
+`summary.json` reports per-problem results and whole-batch wall times for repeated
+solves, including input/result copies. Construction, compilation/JIT, warmup,
+path extraction, and validation are excluded. The repetitions use identical seeds
+to check replay; they are timing repetitions, not additional independent trials.
+`paths.json` contains control-joint waypoints and their joint names. The benchmark
+checks bounds/endpoints and rechecks both the planning grid and a five-times finer
+grid with CUDA and independently with plainmp. These remain discrete checks,
+not a continuous collision certificate. Validation arrays and build logs are saved
+alongside the results. The command fails if any problem fails or any checked path
+point collides.
+
+CUDA integration tests (FP32, FP64, and FP32 SFU) cover reachable/blocked problems,
+invalid endpoints/configs, shared and distinct environments, control ordering and
+fixed joints, repeated solves, and identical paths with one/four/eight warps:
+
+```sh
+CXX=g++-8 cargo test --test rrt -- --include-ignored
+```
+
+Use the host compiler supported by the installed CUDA toolkit; `g++-8` above is
+for the original CUDA 10 host. `cuda::generate_collision_function` exposes the
+single-configuration device predicate. `cuda::generate_rrt_kernel` emits the
+specialized kernel and native `RrtPlanner`; common planner config/result types are
+in `src/planning/rrt.hpp`, separate from CUDA execution configuration and storage.
