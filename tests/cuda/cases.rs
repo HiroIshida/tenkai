@@ -21,6 +21,7 @@ pub(super) struct Case {
     pub(super) count: usize,
     pub(super) inputs: Vec<f64>,
     pub(super) expected: Vec<f64>,
+    pub(super) collision_setup: Option<String>,
 }
 
 impl Case {
@@ -80,6 +81,7 @@ impl Case {
             count: configurations.len(),
             inputs,
             expected,
+            collision_setup: None,
         }
     }
 }
@@ -173,10 +175,11 @@ pub(super) fn suite(options: cuda::Options) -> Vec<Case> {
         &inputs,
         options,
     ));
+    cases.extend(super::collision_cases::suite(options));
     cases
 }
 
-fn sphere_center(fk: &FkDag, values: &[f64], sphere: &SphereCenter) -> [f64; 3] {
+pub(super) fn sphere_center(fk: &FkDag, values: &[f64], sphere: &SphereCenter) -> [f64; 3] {
     let pose = &fk.link_poses()[sphere.link_index];
     let [x, y, z, w] = pose.rotation.map(|id| values[id.index()]);
     // Use a matrix so the reference does not repeat the codegen quaternion-vector formula.

@@ -11,6 +11,11 @@ pub(super) fn check_arithmetic(cases: &[Case], precision: Precision) {
     fs::write(directory.join("kernels.cuh"), kernel_source(cases)).unwrap();
     fs::write(directory.join("expected.h"), data).unwrap();
     fs::write(
+        directory.join("sdf_checks.h"),
+        include_str!("../fixtures/sdf_checks.h"),
+    )
+    .unwrap();
+    fs::write(
         directory.join("main.cpp"),
         include_str!("../fixtures/cuda_host.cpp"),
     )
@@ -57,6 +62,11 @@ fn reference_data(cases: &[Case], precision: Precision) -> String {
         Precision::F64 => ("double", "1e-12"),
     };
     let mut data = format!("using Scalar = {scalar};\nconst double tolerance = {tolerance};\n");
+    let namespace = match precision {
+        Precision::F32 => "rkern_f32",
+        Precision::F64 => "rkern_f64",
+    };
+    writeln!(data, "namespace sdf = {namespace};").unwrap();
     for (i, case) in cases.iter().enumerate() {
         writeln!(
             data,
@@ -70,13 +80,32 @@ fn reference_data(cases: &[Case], precision: Precision) -> String {
             cpp_array(&case.expected)
         )
         .unwrap();
+        writeln!(
+            data,
+            "void invoke_{i}(const Scalar* inputs, void* output, size_t count) {{"
+        )
+        .unwrap();
+        if let Some(setup) = &case.collision_setup {
+            data.push_str(setup);
+            writeln!(data, "kernel_{i}(inputs, environment_ids, scene, static_cast<unsigned char*>(output), count);").unwrap();
+        } else {
+            writeln!(
+                data,
+                "kernel_{i}(inputs, static_cast<Scalar*>(output), count);"
+            )
+            .unwrap();
+        }
+        data.push_str("}\n");
     }
-    data.push_str("using Kernel = void (*)(const Scalar*, Scalar*, size_t);\nstruct Case { const char* name; Kernel kernel; size_t components; size_t count; const Scalar* inputs; const double* expected; };\nconst Case cases[] = {\n");
+    data.push_str("using Kernel = void (*)(const Scalar*, void*, size_t);\nstruct Case { const char* name; Kernel kernel; size_t components; size_t count; const Scalar* inputs; const double* expected; bool collision; };\nconst Case cases[] = {\n");
     for (i, case) in cases.iter().enumerate() {
         writeln!(
             data,
-            "{{\"{}\", kernel_{i}, {}, {}, inputs_{i}, expected_{i}}},",
-            case.name, case.components, case.count
+            "{{\"{}\", invoke_{i}, {}, {}, inputs_{i}, expected_{i}, {}}},",
+            case.name,
+            case.components,
+            case.count,
+            case.collision_setup.is_some()
         )
         .unwrap();
     }

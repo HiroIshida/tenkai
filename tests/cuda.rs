@@ -6,6 +6,8 @@ use rkern::{
 
 #[path = "cuda/cases.rs"]
 mod cases;
+#[path = "cuda/collision_cases.rs"]
+mod collision_cases;
 mod common;
 #[path = "cuda/harness.rs"]
 mod harness;

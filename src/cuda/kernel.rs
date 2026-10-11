@@ -12,17 +12,35 @@ pub(super) struct Kernel<'a> {
     pub(super) math: MathMode,
 }
 
+pub(super) enum Output {
+    Batched,
+    LocalCenters,
+}
+
 impl Kernel<'_> {
     pub(super) fn source(&self) -> String {
         let mut source = self.header();
-        for &step in self.schedule.steps() {
-            match step {
-                Step::Evaluate(id) => self.write_node(&mut source, id),
-                Step::StoreOutput { index, value } => self.write_output(&mut source, index, value),
-            }
-        }
+        self.write_body(&mut source, Output::Batched);
         source.push_str("}\n");
         source
+    }
+
+    pub(super) fn write_body(&self, source: &mut String, output: Output) {
+        for &step in self.schedule.steps() {
+            match step {
+                Step::Evaluate(id) => self.write_node(source, id),
+                Step::StoreOutput { index, value } => {
+                    let target = match output {
+                        Output::Batched => {
+                            format!("output[batch * {} + {index}]", self.schedule.output_count())
+                        }
+                        Output::LocalCenters => format!("centers[{index}]"),
+                    };
+                    writeln!(source, "    {target} = v{};", value.index())
+                        .expect("writing to String is infallible");
+                }
+            }
+        }
     }
 
     fn header(&self) -> String {
@@ -56,16 +74,6 @@ extern "C" __global__ void {name}(
             Node::Sin(a) => writeln!(source, "{sin}(v{});", a.index()),
             Node::Cos(a) => writeln!(source, "{cos}(v{});", a.index()),
         }
-        .expect("writing to String is infallible");
-    }
-
-    fn write_output(&self, source: &mut String, component: usize, output: NodeId) {
-        let components = self.schedule.output_count();
-        writeln!(
-            source,
-            "    output[batch * {components} + {component}] = v{};",
-            output.index()
-        )
         .expect("writing to String is infallible");
     }
 }

@@ -12,6 +12,10 @@ use crate::dag::{Dag, NodeId};
 use crate::transform::{PoseNodes, quaternion_product};
 use crate::urdf::{Joint, JointType, Robot};
 
+mod centers;
+pub(crate) use centers::center_expressions;
+pub use centers::{CentersError, InvalidLinkIndex, SphereCenter};
+
 mod tree;
 use tree::LinkTree;
 
