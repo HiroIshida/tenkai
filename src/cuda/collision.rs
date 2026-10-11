@@ -6,10 +6,13 @@ use crate::collision::{Error, Sphere};
 use crate::fk::{FkDag, center_expressions};
 use crate::scheduling::Schedule;
 
+const SPHERES_PER_GROUP: usize = 16;
+
 /// Generates `rkern_collision(configurations, environment_ids, scene, output, count)`.
 ///
-/// One thread checks one configuration against its selected environment. Each sphere
-/// is checked as its center is computed, reusing shared FK values across spheres.
+/// One thread checks one configuration against its selected environment. Centers
+/// are computed in groups of up to 16 spheres, reusing shared FK values. Each group
+/// traverses the runtime obstacles once and checks all its spheres against each one.
 /// Every sphere/obstacle pair is evaluated, without early exit.
 /// Output is `[count]` bytes: 1 for collision (including touching), 0 otherwise.
 /// An empty environment or empty robot sphere list produces 0.
@@ -87,11 +90,57 @@ extern "C" __global__ void rkern_collision(
         writeln!(source, "    center.{axis} = v{};", value.index())
             .expect("writing to String is infallible");
         if index % 3 == 2 {
-            let radius = spheres[index / 3].radius;
-            writeln!(source, "    clearance = fmin{suffix}(clearance, {namespace}::distance(scene, environment, center) - {radius:.17e}{suffix});")
-                .expect("writing to String is infallible");
+            let sphere_index = index / 3;
+            writeln!(
+                source,
+                "    const {namespace}::Vec3 point{sphere_index} = center;"
+            )
+            .expect("writing to String is infallible");
+            let end = sphere_index + 1;
+            if end % SPHERES_PER_GROUP == 0 || end == spheres.len() {
+                let start = sphere_index / SPHERES_PER_GROUP * SPHERES_PER_GROUP;
+                write_collision_group(source, &spheres[start..end], start, namespace, suffix);
+            }
         }
     });
     source.push_str("    output[batch] = static_cast<unsigned char>(clearance <= 0);\n}\n");
     Ok(source)
+}
+
+fn write_collision_group(
+    source: &mut String,
+    spheres: &[Sphere],
+    start: usize,
+    namespace: &str,
+    suffix: &str,
+) {
+    for (primitive, field) in [
+        ("Box", "boxes"),
+        ("Sphere", "spheres"),
+        ("Cylinder", "cylinders"),
+        ("Ground", "grounds"),
+    ] {
+        // Only the small, fixed sphere group is expanded; unrolling runtime obstacle
+        // loops duplicates every primitive's arithmetic and bloats the kernel.
+        write!(
+            source,
+            r#"#ifdef __CUDACC__
+    #pragma unroll 1
+#endif
+    for (size_t i = 0; i < environment.{field}.count; ++i) {{
+        const {namespace}::{primitive}& obstacle = scene.{field}[environment.{field}.offset + i];
+"#,
+        )
+        .expect("writing to String is infallible");
+        for (offset, sphere) in spheres.iter().enumerate() {
+            let index = start + offset;
+            let radius = sphere.radius;
+            writeln!(
+                source,
+                "        clearance = fmin{suffix}(clearance, {namespace}::distance(obstacle, point{index}) - {radius:.17e}{suffix});"
+            )
+            .expect("writing to String is infallible");
+        }
+        source.push_str("    }\n");
+    }
 }

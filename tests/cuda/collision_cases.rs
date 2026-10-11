@@ -104,6 +104,9 @@ const sdf::Scene scene = {envs, nullptr, nullptr, nullptr, shapes};
             "const uint32_t* environment_ids = nullptr; const sdf::Scene scene = {};\n".into(),
         ),
     });
+    for count in [15, 16, 17, 32, 33] {
+        cases.push(group_boundary_case(&root, count, options));
+    }
 
     let chain = FkDag::from_robot(
         &urdf::read_from_string(include_str!("../fixtures/fk_chain.urdf")).unwrap(),
@@ -127,6 +130,56 @@ const sdf::Scene scene = {envs, nullptr, nullptr, nullptr, shapes};
         collision::read_spheres(include_str!("../../assets/fetch/collision.yaml"), &fetch).unwrap();
     cases.push(fk_case("fetch", &fetch, &spheres, options));
     cases
+}
+
+fn group_boundary_case(fk: &FkDag, count: usize, options: cuda::Options) -> Case {
+    let spheres: Vec<_> = (0..count)
+        .map(|index| Sphere {
+            center: SphereCenter {
+                link_index: 0,
+                position: [4.0 * index as f64, 0.0, 10.0],
+            },
+            radius: (index % 3) as f64 * 0.125,
+        })
+        .collect();
+    let contact_x = |index: usize| {
+        let sphere = spheres[index.min(count - 1)];
+        sphere.center.position[0] + sphere.radius + 0.25
+    };
+    let setup = r#"
+const sdf::Pose pose = {{0,0,10},{1,0,0,0,1,0,0,0,1}};
+sdf::Box boxes[] = {{pose,{0.5,0.5,0.5}}, {pose,{0.5,0.5,0.5}}, {pose,{0.5,0.5,0.5}}};
+boxes[1].pose.position.x = 1000;
+boxes[2].pose.position.x = @BOX_X@;
+const sdf::Sphere obstacles[] = {{{0,0,10},0.25}, {{1000,0,10},0.25}, {{@SPHERE_X@,0,10},0.25}};
+sdf::Cylinder cylinders[] = {{pose,0.25,2}, {pose,0.25,2}, {pose,0.25,2}};
+cylinders[1].pose.position.x = 1000;
+cylinders[2].pose.position.x = @CYLINDER_X@;
+const sdf::Ground grounds[] = {{-10},{100},{-10}};
+const sdf::Environment envs[] = {
+    {},
+    {{1,1},{1,1},{1,1},{1,1}},
+    {{1,2},{1,1},{1,1},{1,1}},
+    {{1,1},{1,2},{1,1},{1,1}},
+    {{1,1},{1,1},{1,2},{1,1}},
+    {{1,1},{1,1},{1,1},{1,2}}
+};
+const sdf::Scene scene = {envs, boxes, obstacles, cylinders, grounds};
+const uint32_t environment_ids[] = {0,1,2,3,4,5,1};
+"#
+    .replace("@BOX_X@", &contact_x(15).to_string())
+    .replace("@SPHERE_X@", &contact_x(16).to_string())
+    .replace("@CYLINDER_X@", &contact_x(count - 1).to_string());
+    Case {
+        name: format!("collision_group_boundary_{count}"),
+        source: cuda::generate_collision_kernel(fk, &spheres, options).unwrap(),
+        entry: "rkern_collision",
+        components: 1,
+        count: 7,
+        inputs: vec![],
+        expected: vec![0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0],
+        collision_setup: Some(setup),
+    }
 }
 
 fn fk_case(name: &str, fk: &FkDag, spheres: &[Sphere], options: cuda::Options) -> Case {
