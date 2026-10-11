@@ -42,8 +42,8 @@ normally made available by `Python.h` in the bindings.
 - Default codegen: float, SFU on, scheduler off; block size 128.
   Collision kernels compute up to 16 sphere centers at a time, then traverse the
   runtime obstacles once for that group. They reuse shared FK values and evaluate
-  every sphere/obstacle pair without early exit. Environment changes require no
-  recompilation.
+  every sphere/obstacle pair without early exit. Box and sphere checks use squared
+  distances. Environment changes require no recompilation.
 - Two-second warmup for each backend, plus two untimed repetitions before each measurement.
   Seven rounds with fixed job order and input offsets. Repetitions per measurement
   are `max(2, min(1024, ceil(1048576 / batch)))`; there is no timing-based calibration.

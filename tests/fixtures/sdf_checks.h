@@ -1,3 +1,5 @@
+#include <limits>
+
 bool check_sdfs() {
     const sdf::Pose identity = {{0,0,0}, {1,0,0,0,1,0,0,0,1}};
     const sdf::Box box = {identity, {2,4,6}};
@@ -33,5 +35,34 @@ bool check_sdfs() {
     const sdf::Scene empty = {};
     const sdf::Environment no_obstacles = {};
     if (sdf::distance(empty, no_obstacles, {0,0,0}) != INFINITY) return false;
+    const Scalar large = Scalar(4) * std::sqrt(std::numeric_limits<Scalar>::max());
+    const sdf::Sphere large_sphere = {{0,0,0},large};
+    const bool intersections[][2] = {
+        {sdf::intersects(box, {0,0,0}, 0), true},
+        {sdf::intersects(box, {1,2,3}, 0), true},
+        {sdf::intersects(box, {Scalar(1.25),2,3}, 0), false},
+        {sdf::intersects(box, {4,6,3}, 5), true},
+        {sdf::intersects(box, {4,6,3}, Scalar(4.75)), false},
+        {sdf::intersects(rotated_box, {7,6,6}, 5), true},
+        {sdf::intersects(rotated_box, {7,6,6}, Scalar(4.75)), false},
+        {sdf::intersects(sphere, {1,2,3}, 0), true},
+        {sdf::intersects(sphere, {1,4,3}, 0), true},
+        {sdf::intersects(sphere, {4,6,3}, 3), true},
+        {sdf::intersects(sphere, {4,6,3}, Scalar(2.75)), false},
+        {sdf::intersects(rotated_cylinder, {7,2,7}, 5), true},
+        {sdf::intersects(rotated_cylinder, {7,2,7}, Scalar(4.75)), false},
+        {sdf::intersects(ground, {10,20,-2}, 0), true},
+        {sdf::intersects(ground, {10,20,0}, 2), true},
+        {sdf::intersects(ground, {10,20,0}, Scalar(1.75)), false},
+        {sdf::intersects(box, {4*large,0,0}, large), false},
+        {sdf::intersects(large_sphere, {4*large,0,0}, large), false},
+    };
+    for (size_t i = 0; i < sizeof(intersections)/sizeof(intersections[0]); ++i) {
+        if (intersections[i][0] != intersections[i][1]) {
+            std::fprintf(stderr, "intersection check %zu: %d != %d\n", i,
+                         int(intersections[i][0]), int(intersections[i][1]));
+            return false;
+        }
+    }
     return true;
 }

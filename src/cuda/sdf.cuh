@@ -39,21 +39,33 @@ __device__ inline Vec3 local_point(const Pose& pose, Vec3 point) {
             r[6]*x + r[7]*y + r[8]*z};
 }
 
-__device__ inline Scalar distance(const Box& box, Vec3 point) {
+__device__ inline Vec3 box_face_distances(const Box& box, Vec3 point) {
     const Vec3 p = local_point(box.pose, point);
-    const Scalar x = fabs@SUFFIX@(p.x) - box.extents.x * Scalar(0.5);
-    const Scalar y = fabs@SUFFIX@(p.y) - box.extents.y * Scalar(0.5);
-    const Scalar z = fabs@SUFFIX@(p.z) - box.extents.z * Scalar(0.5);
-    const Scalar ox = fmax@SUFFIX@(x, Scalar(0)), oy = fmax@SUFFIX@(y, Scalar(0)), oz = fmax@SUFFIX@(z, Scalar(0));
-    return sqrt@SUFFIX@(ox*ox + oy*oy + oz*oz)
-        + fmin@SUFFIX@(fmax@SUFFIX@(x, fmax@SUFFIX@(y, z)), Scalar(0));
+    return {fabs@SUFFIX@(p.x) - box.extents.x * Scalar(0.5),
+            fabs@SUFFIX@(p.y) - box.extents.y * Scalar(0.5),
+            fabs@SUFFIX@(p.z) - box.extents.z * Scalar(0.5)};
+}
+
+__device__ inline Scalar squared_outside_distance(Vec3 face_distances) {
+    const Scalar x = fmax@SUFFIX@(face_distances.x, Scalar(0));
+    const Scalar y = fmax@SUFFIX@(face_distances.y, Scalar(0));
+    const Scalar z = fmax@SUFFIX@(face_distances.z, Scalar(0));
+    return x*x + y*y + z*z;
+}
+
+__device__ inline Scalar squared_distance(Vec3 a, Vec3 b) {
+    const Scalar x = a.x - b.x, y = a.y - b.y, z = a.z - b.z;
+    return x*x + y*y + z*z;
+}
+
+__device__ inline Scalar distance(const Box& box, Vec3 point) {
+    const Vec3 d = box_face_distances(box, point);
+    return sqrt@SUFFIX@(squared_outside_distance(d))
+        + fmin@SUFFIX@(fmax@SUFFIX@(d.x, fmax@SUFFIX@(d.y, d.z)), Scalar(0));
 }
 
 __device__ inline Scalar distance(const Sphere& sphere, Vec3 point) {
-    const Scalar x = point.x - sphere.position.x;
-    const Scalar y = point.y - sphere.position.y;
-    const Scalar z = point.z - sphere.position.z;
-    return sqrt@SUFFIX@(x*x + y*y + z*z) - sphere.radius;
+    return sqrt@SUFFIX@(squared_distance(point, sphere.position)) - sphere.radius;
 }
 
 __device__ inline Scalar distance(const Cylinder& cylinder, Vec3 point) {
@@ -66,6 +78,28 @@ __device__ inline Scalar distance(const Cylinder& cylinder, Vec3 point) {
 
 __device__ inline Scalar distance(const Ground& ground, Vec3 point) {
     return point.z + ground.height;
+}
+
+__device__ inline bool intersects(const Box& box, Vec3 point, Scalar radius) {
+    const Scalar squared_radius = radius * radius;
+    // Finite radii can overflow when squared; infinity <= infinity would report a hit.
+    if (isinf(squared_radius)) return distance(box, point) <= radius;
+    return squared_outside_distance(box_face_distances(box, point)) <= squared_radius;
+}
+
+__device__ inline bool intersects(const Sphere& sphere, Vec3 point, Scalar radius) {
+    const Scalar sum = sphere.radius + radius;
+    const Scalar squared_radius = sum * sum;
+    if (isinf(squared_radius)) return distance(sphere, point) <= radius;
+    return squared_distance(point, sphere.position) <= squared_radius;
+}
+
+__device__ inline bool intersects(const Cylinder& cylinder, Vec3 point, Scalar radius) {
+    return distance(cylinder, point) <= radius;
+}
+
+__device__ inline bool intersects(const Ground& ground, Vec3 point, Scalar radius) {
+    return distance(ground, point) <= radius;
 }
 
 __device__ inline Scalar distance(const Scene& scene, const Environment& env, Vec3 point) {

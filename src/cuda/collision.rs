@@ -80,7 +80,7 @@ extern "C" __global__ void rkern_collision(
     write!(
         source,
         r#"    const {namespace}::Environment environment = scene.environments[environment_ids[batch]];
-    {scalar} clearance = INFINITY;
+    bool collision = false;
     {namespace}::Vec3 center;
 "#,
     )
@@ -103,7 +103,7 @@ extern "C" __global__ void rkern_collision(
             }
         }
     });
-    source.push_str("    output[batch] = static_cast<unsigned char>(clearance <= 0);\n}\n");
+    source.push_str("    output[batch] = static_cast<unsigned char>(collision);\n}\n");
     Ok(source)
 }
 
@@ -137,7 +137,7 @@ fn write_collision_group(
             let radius = sphere.radius;
             writeln!(
                 source,
-                "        clearance = fmin{suffix}(clearance, {namespace}::distance(obstacle, point{index}) - {radius:.17e}{suffix});"
+                "        collision |= {namespace}::intersects(obstacle, point{index}, {radius:.17e}{suffix});"
             )
             .expect("writing to String is infallible");
         }
