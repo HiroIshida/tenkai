@@ -30,6 +30,7 @@ def arguments():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=BENCH / "results")
     parser.add_argument("--math", choices=["f32-sfu", "f32", "f64"], default="f32-sfu")
+    parser.add_argument("--optimization", choices=["none", "basic", "algebraic"], default="algebraic")
     parser.add_argument("--live-budget", type=int, help="enable liveness scheduling with this budget")
     parser.add_argument("--seed", type=int, default=20261011)
     parser.add_argument("--pool", type=int, default=2**20)
@@ -151,6 +152,7 @@ def prepare(args):
         "f32": ["--float", "--no-sfu"],
         "f64": ["--double"],
     }[args.math]
+    codegen_options += ["--optimization", args.optimization]
     if args.live_budget is not None:
         codegen_options += ["--live-budget", str(args.live_budget)]
     command = ["cargo", "run", "--locked", "--quiet", "--release", "--example", "bench_generate",

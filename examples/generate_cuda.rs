@@ -9,7 +9,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (options, _) = common::options(&mut args)?;
     let selection = args
         .next()
-        .ok_or("usage: cargo run --example generate_cuda -- [--float|--double] [--sfu|--no-sfu] [--scheduling|--no-scheduling|--live-budget N] <link-index|--list> [robot.urdf]")?;
+        .ok_or("usage: cargo run --example generate_cuda -- [--float|--double] [--sfu|--no-sfu] [--optimization none|basic|algebraic] [--scheduling|--no-scheduling|--live-budget N] <link-index|--list> [robot.urdf]")?;
     let robot = match args.next() {
         Some(path) => urdf::read_file(path)?,
         None => urdf::read_from_string(include_str!("../assets/fetch/fetch.urdf"))?,
@@ -32,6 +32,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let source = cuda::generate_fk_kernel(&fk, link_index, options)?;
     eprintln!("Link {link_index}: {}", fk.link_poses()[link_index].name);
     eprintln!("Math: {:?}", options.math);
+    eprintln!("Optimization: {:?}", options.optimization);
     eprintln!("Scheduling: {:?}", options.scheduling);
     eprintln!("Input joints: {:?}", fk.joint_names());
     io::stdout().lock().write_all(source.as_bytes())?;

@@ -44,6 +44,7 @@ pub fn generate_collision_kernel(
     }
     let centers: Vec<_> = spheres.iter().map(|sphere| sphere.center).collect();
     let (dag, outputs) = center_expressions(fk, &centers).map_err(Error::Center)?;
+    let (dag, outputs) = dag.optimize(&outputs, options.math.precision(), options.optimization);
     let groups: Vec<_> = outputs.chunks(3).collect();
     let kernel = Kernel {
         name: "rkern_collision",

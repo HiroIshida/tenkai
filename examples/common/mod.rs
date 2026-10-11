@@ -8,6 +8,7 @@ pub fn options(
 ) -> Result<(cuda::Options, cuda::Precision), Box<dyn std::error::Error>> {
     let mut precision = cuda::Precision::default();
     let mut sfu = None;
+    let mut optimization = cuda::Optimization::default();
     let mut scheduling = scheduling::Mode::default();
     loop {
         match args.peek().and_then(|arg| arg.to_str()) {
@@ -15,6 +16,19 @@ pub fn options(
             Some("--double") => precision = cuda::Precision::F64,
             Some("--sfu") => sfu = Some(true),
             Some("--no-sfu") => sfu = Some(false),
+            Some("--optimization") => {
+                args.next();
+                let value = args
+                    .next()
+                    .ok_or("--optimization requires none, basic or algebraic")?;
+                optimization = match value.to_str() {
+                    Some("none") => cuda::Optimization::None,
+                    Some("basic") => cuda::Optimization::Basic,
+                    Some("algebraic") => cuda::Optimization::Algebraic,
+                    _ => return Err("--optimization requires none, basic or algebraic".into()),
+                };
+                continue;
+            }
             Some("--scheduling") => {
                 scheduling = scheduling::Mode::Live(scheduling::Options::default());
             }
@@ -38,5 +52,12 @@ pub fn options(
         (cuda::Precision::F32, false) => cuda::MathMode::F32,
         (cuda::Precision::F64, false) => cuda::MathMode::F64,
     };
-    Ok((cuda::Options { math, scheduling }, precision))
+    Ok((
+        cuda::Options {
+            math,
+            optimization,
+            scheduling,
+        },
+        precision,
+    ))
 }

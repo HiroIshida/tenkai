@@ -1,3 +1,18 @@
+mod cse;
+pub use cse::Optimization;
+
+#[cfg(test)]
+mod tests;
+
+/// Scalar precision for lowering expressions and folding constants.
+/// The source DAG retains its f64 constants.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Precision {
+    #[default]
+    F32,
+    F64,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct NodeId(pub(crate) usize);
 

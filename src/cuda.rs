@@ -1,5 +1,6 @@
 //! CUDA C++ generation for batched FK and environment collision checks.
 
+pub use crate::dag::{Optimization, Precision};
 pub use crate::fk::{CentersError, InvalidLinkIndex, SphereCenter};
 use crate::fk::{FkDag, center_expressions};
 use crate::scheduling::{self, Schedule};
@@ -9,21 +10,13 @@ mod kernel;
 pub use collision::generate_collision_kernel;
 use kernel::Kernel;
 
-/// Math and scheduling choices for CUDA kernels.
-/// Defaults to FP32 with SFU trigonometry and DAG-order evaluation (scheduling OFF).
+/// Math, optimization and scheduling choices for CUDA kernels.
+/// Defaults to FP32 with SFU trigonometry, algebraic CSE and DAG-order evaluation.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Options {
     pub math: MathMode,
+    pub optimization: Optimization,
     pub scheduling: scheduling::Mode,
-}
-
-/// Scalar type used for kernel buffers, intermediates, and trigonometric functions.
-/// The source FK DAG retains its f64 constants.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub enum Precision {
-    #[default]
-    F32,
-    F64,
 }
 
 impl Precision {
@@ -99,11 +92,14 @@ pub fn generate_fk_kernel(
         pose.rotation[2],
         pose.rotation[3],
     ];
+    let (dag, outputs) =
+        fk.dag()
+            .optimize(&outputs, options.math.precision(), options.optimization);
     Ok(Kernel {
         name: "rkern_fk",
-        dag: fk.dag(),
+        dag: &dag,
         dof: fk.joint_names().len(),
-        schedule: Schedule::with_mode(fk.dag(), &outputs, options.scheduling)
+        schedule: Schedule::with_mode(&dag, &outputs, options.scheduling)
             .expect("FK outputs belong to the FK DAG"),
         math: options.math,
     }
@@ -125,6 +121,7 @@ pub fn generate_centers_kernel(
     options: Options,
 ) -> Result<String, CentersError> {
     let (dag, outputs) = center_expressions(fk, spheres)?;
+    let (dag, outputs) = dag.optimize(&outputs, options.math.precision(), options.optimization);
     Ok(Kernel {
         name: "rkern_centers",
         dag: &dag,

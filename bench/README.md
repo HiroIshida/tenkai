@@ -39,7 +39,8 @@ normally made available by `Python.h` in the bindings.
 - 1,048,576 configurations sampled uniformly with NumPy PCG64, seed `20261011`.
   The eight control joints use URDF bounds; continuous joints use `[-2π, 2π)`.
   Other joint inputs are zero. All modes use the same pool in the FK input order.
-- Default codegen: float, SFU on, scheduler off; block size 128.
+- Default codegen: float, SFU on, algebraic CSE, scheduler off; block size 128.
+  Use `--optimization none|basic|algebraic` to select DAG optimization.
   Collision kernels compute up to 16 sphere centers at a time, then traverse the
   runtime obstacles once for that group. They reuse shared FK values and evaluate
   every sphere/obstacle pair without early exit. Box and sphere checks use squared

@@ -19,14 +19,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         _ => return Err("provide both robot.urdf and collision.yaml, or neither".into()),
     };
     if args.next().is_some() {
-        return Err("usage: cargo run --example generate_collision_cuda -- [--float|--double] [--sfu|--no-sfu] [--scheduling|--no-scheduling|--live-budget N] [robot.urdf collision.yaml]".into());
+        return Err("usage: cargo run --example generate_collision_cuda -- [--float|--double] [--sfu|--no-sfu] [--optimization none|basic|algebraic] [--scheduling|--no-scheduling|--live-budget N] [robot.urdf collision.yaml]".into());
     }
     let fk = FkDag::from_robot(&robot)?;
     let spheres = collision::read_spheres(&yaml, &fk)?;
     let source = cuda::generate_collision_kernel(&fk, &spheres, options)?;
     eprintln!(
-        "Math: {:?}; scheduling: {:?}",
-        options.math, options.scheduling
+        "Math: {:?}; optimization: {:?}; scheduling: {:?}",
+        options.math, options.optimization, options.scheduling
     );
     eprintln!("Input joints: {:?}", fk.joint_names());
     eprintln!(

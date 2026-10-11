@@ -1,5 +1,5 @@
 use rkern::{
-    cuda::{self, MathMode, Precision, SphereCenter},
+    cuda::{self, MathMode, Optimization, Precision, SphereCenter},
     fk::FkDag,
     scheduling, urdf,
 };
@@ -13,6 +13,27 @@ mod common;
 mod harness;
 
 const PRECISIONS: [Precision; 2] = [Precision::F32, Precision::F64];
+
+fn kernel_options(math: MathMode) -> impl Iterator<Item = cuda::Options> {
+    [
+        Optimization::None,
+        Optimization::Basic,
+        Optimization::Algebraic,
+    ]
+    .into_iter()
+    .flat_map(move |optimization| {
+        [
+            scheduling::Mode::Live(scheduling::Options::default()),
+            scheduling::Mode::DagOrder,
+        ]
+        .into_iter()
+        .map(move |scheduling| cuda::Options {
+            math,
+            optimization,
+            scheduling,
+        })
+    })
+}
 
 #[test]
 fn invalid_kernel_inputs_return_errors() {
@@ -74,11 +95,9 @@ fn generated_batch_arithmetic_matches_the_reference() {
         (MathMode::F32, Precision::F32),
         (MathMode::F64, Precision::F64),
     ] {
-        for scheduling in [
-            scheduling::Mode::Live(scheduling::Options::default()),
-            scheduling::Mode::DagOrder,
-        ] {
-            harness::check_arithmetic(&cases::suite(cuda::Options { math, scheduling }), precision);
+        for options in kernel_options(math) {
+            eprintln!("Checking arithmetic: {options:?}");
+            harness::check_arithmetic(&cases::suite(options), precision);
         }
     }
 }
@@ -87,11 +106,9 @@ fn generated_batch_arithmetic_matches_the_reference() {
 #[ignore = "requires the CUDA toolkit; set NVCC and CXX if needed"]
 fn generated_source_compiles_with_nvcc() {
     for math in [MathMode::F32, MathMode::F64, MathMode::F32Sfu] {
-        for scheduling in [
-            scheduling::Mode::Live(scheduling::Options::default()),
-            scheduling::Mode::DagOrder,
-        ] {
-            harness::check_compilation(&cases::suite(cuda::Options { math, scheduling }), math);
+        for options in kernel_options(math) {
+            eprintln!("Checking CUDA compilation: {options:?}");
+            harness::check_compilation(&cases::suite(options), math);
         }
     }
 }

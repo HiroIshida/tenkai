@@ -27,7 +27,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     if args.next().is_some() {
         return Err(
-            "usage: cargo run --example generate_centers_cuda -- [--float|--double] [--sfu|--no-sfu] [--scheduling|--no-scheduling|--live-budget N] [sphere_robot.urdf]".into(),
+            "usage: cargo run --example generate_centers_cuda -- [--float|--double] [--sfu|--no-sfu] [--optimization none|basic|algebraic] [--scheduling|--no-scheduling|--live-budget N] [sphere_robot.urdf]".into(),
         );
     }
     let fk = FkDag::from_robot(&robot)?;
@@ -63,6 +63,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let source = cuda::generate_centers_kernel(&fk, &spheres, options)?;
     eprintln!("Math: {:?}", options.math);
+    eprintln!("Optimization: {:?}", options.optimization);
     eprintln!("Scheduling: {:?}", options.scheduling);
     eprintln!("Input joints: {:?}", fk.joint_names());
     eprintln!("Output: [count][{}][3] {precision:?}", spheres.len());

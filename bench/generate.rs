@@ -59,6 +59,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "sphere_count": spheres.len(),
         "scalar": match precision { cuda::Precision::F32 => "float", cuda::Precision::F64 => "double" },
         "math": format!("{:?}", options.math),
+        "optimization": format!("{:?}", options.optimization),
         "scheduling": format!("{:?}", options.scheduling),
     });
     fs::write(
