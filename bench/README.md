@@ -118,12 +118,13 @@ with the same names; use a separate `--output` directory to retain comparisons.
 sampling schedule and binary input handling; `run.py` coordinates preparation,
 execution, validation, and aggregation.
 
-## Batched CUDA RRT
+## Batched CUDA RRT and RRT-Connect
 
 ```sh
 python3 bench/rrt.py
 python3 bench/rrt.py --problems 32 --environments 2 --warps-per-problem 4
 python3 bench/rrt.py --math f64 --output bench/results/rrt-f64
+python3 bench/rrt.py --algorithm rrtc --problems 32 --environments 2 --resolution 0.01
 ```
 
 Uses the same CUDA/C++ toolchains and plainmp build dependencies as the collision
@@ -139,13 +140,21 @@ is the ground/table case above; additional environments shift the table by 0.02 
 along Y per environment. The planner keeps its allocated device buffers across
 solves. Its scene buffers are owned by the benchmark's native handle.
 
+`--max-registers 128` passes `--maxrregcount=128` to NVCC; omitting it keeps the
+compiler default. This is a compile-time setting, while `--warps-per-problem` is
+fixed when constructing the planner. More warps can accelerate one problem but
+reduce how many problem blocks fit on an SM. A register limit can allow more
+resident blocks at the cost of spills. Tune the two settings together for the
+intended batch size; neither changes the reserved tree capacity or sampling.
+The runtime rejects warp counts exceeding the compiled kernel/device limits.
+
 The start/goal are copied from `plainmp/example/bench/fetch_plan.py`, using the
-eight control joints and per-joint resolution 0.05. Bounds and collision geometry
+eight control joints and default per-joint resolution 0.05. Bounds and collision geometry
 match the collision benchmark: all 69 spheres, uncontrolled joints at zero,
 environment collisions only, no self-collision. The full collision setup therefore
 differs from `FetchSpec.create_collision_const()` in that example.
 
-This is a single-tree batched RRT with direct goal connections, not RRTConnect.
+`--algorithm rrt` (the default) selects single-tree batched RRT with direct goal connections.
 Each round samples 32 targets against the same tree snapshot, finds Euclidean
 nearest neighbors by linear scan, steers by at most `step_size` (default 1.0), and
 distributes the edge's configuration checks across the block. An edge uses
@@ -156,10 +165,32 @@ edge may exceed `step_size`, and is checked at the same resolution. Candidates
 are inserted in fixed order after validation. No intermediate nodes or path
 smoothing are added. A collision rejects the entire edge.
 
+`--algorithm rrtc` selects batched RRT-Connect, following the EXTEND/CONNECT
+structure in `plainmp/third/ompl_rrtc`. Each round alternates the active tree
+between start and goal. It samples and validates a batch of extensions against
+that tree's snapshot, then repeatedly extends the opposite tree toward those
+accepted nodes until each connection is blocked or one reaches its target.
+Every CONNECT wave queries the opposite tree's current snapshot; candidates
+share nodes inserted by earlier waves. All edges, including the connection,
+respect `step_size`. Goal-tree edges are checked toward their parents, including
+an explicit check of the new endpoint. The two parent chains are joined without
+duplicating the connection point. Both trees and their two roots share the
+`max_nodes` budget; `max_rounds` counts outer EXTEND rounds, not CONNECT waves.
+Setting `samples_per_round=1` gives one EXTEND/CONNECT attempt per round; larger
+batches differ from sequential RRTConnect. `goal_bias` samples the opposite root
+(set it to zero for uniform sampling as in plainmp). There is no path smoothing.
+
+The RRTC command above uses resolution 0.01. At 0.05, this 32-problem case can
+pass the planning grid yet collide between samples in the finer validation grid.
+Resolution is a per-coordinate (Box) limit; nearest-neighbor distances and
+`step_size` use the Euclidean norm. Changing algorithms does not change the
+default resolution of 0.05.
+
 Defaults are 8,192 nodes, 1,024 rounds, goal sampling probability 0.1, and 32
 problems with different seeds. The seed, round, and candidate index determine
 sampling independently of warp count. Failure results distinguish invalid start,
 invalid goal, node capacity, and round limit. `--help` lists all settings.
+The default output directory is `bench/results/<algorithm>`.
 
 `summary.json` reports per-problem results and whole-batch wall times for repeated
 solves, including input/result copies. Construction, compilation/JIT, warmup,
@@ -174,7 +205,9 @@ point collides.
 
 CUDA integration tests (FP32, FP64, and FP32 SFU) cover reachable/blocked problems,
 invalid endpoints/configs, shared and distinct environments, control ordering and
-fixed joints, repeated solves, and identical paths with one/four/eight warps:
+fixed joints, repeated solves, and identical paths with one/three/four/eight warps for
+both algorithms. RRTC additionally checks repeated CONNECT steps, node capacity
+across both trees, and joining an existing opposite root:
 
 ```sh
 CXX=g++-8 cargo test --test rrt -- --include-ignored
@@ -182,6 +215,8 @@ CXX=g++-8 cargo test --test rrt -- --include-ignored
 
 Use the host compiler supported by the installed CUDA toolkit; `g++-8` above is
 for the original CUDA 10 host. `cuda::generate_collision_function` exposes the
-single-configuration device predicate. `cuda::generate_rrt_kernel` emits the
-specialized kernel and native `RrtPlanner`; common planner config/result types are
+single-configuration device predicate. `cuda::generate_rrt_kernel` emits
+both specialized kernels and native `RrtPlanner`; pass
+`rkern::RrtAlgorithm::RrtConnect` as its final constructor argument to select RRTC.
+The Python `Planner` accepts `algorithm="rrtc"`. Common planner config/result types are
 in `src/planning/rrt.hpp`, separate from CUDA execution configuration and storage.

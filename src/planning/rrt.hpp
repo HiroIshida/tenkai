@@ -3,6 +3,8 @@
 #include <stdint.h>
 
 namespace rkern {
+enum class RrtAlgorithm : uint32_t { Rrt, RrtConnect };
+
 struct RrtConfig {
     uint32_t max_nodes = 8192;
     uint32_t max_rounds = 1024;

@@ -36,7 +36,7 @@ impl std::error::Error for RrtError {
     }
 }
 
-/// Generates a single-tree, goal-biased batched RRT and its collision predicate.
+/// Generates batched RRT and RRT-Connect kernels with their collision predicate.
 ///
 /// `controls` indexes the FK inputs in planning-coordinate order. Other joints
 /// take their values from `RrtSpace::reference`. The generated namespace contains
@@ -47,9 +47,15 @@ impl std::error::Error for RrtError {
 /// threads. Each round samples against a snapshot of the tree, checks all edge
 /// points in parallel, then attempts direct goal connections from valid endpoints.
 /// The final goal edge can exceed `step_size` but uses the same collision resolution.
-/// Valid endpoints are inserted in candidate order. This is not sequential RRT or
-/// RRTConnect. Parent chains are returned as node indices, with a native `RrtPlanner`
-/// wrapper for allocation, launches and path extraction.
+/// Valid endpoints are inserted in candidate order.
+///
+/// Launch `rkern_rrtc` with the same block layout to alternate two trees and
+/// repeatedly extend the opposite tree toward accepted endpoints. Every edge is
+/// bounded by `step_size`. Both kernels batch candidates against tree snapshots;
+/// they do not implement sequential sampling. Parent chains are returned as node
+/// indices, with a native `RrtPlanner` wrapper for allocation, launches and path
+/// extraction. Its algorithm defaults to RRT; select `RrtAlgorithm::RrtConnect`
+/// for RRTC.
 ///
 /// The caller owns device buffers, validates config/space with `validate_rrt`,
 /// checks device launch/storage limits, and supplies valid scene ranges and IDs.
@@ -92,9 +98,11 @@ pub fn generate_rrt_kernel(
             .replace("@FK_DOF@", &fk.joint_names().len().to_string())
             .replace("@CONTROLS@", &indices),
     );
-    source.push_str(&include_str!("rrt_runtime.cuh").replace(
-        "@NAMESPACE@",
-        collision::namespace(options.math.precision()),
-    ));
+    for implementation in [include_str!("rrtc.cuh"), include_str!("rrt_runtime.cuh")] {
+        source.push_str(&implementation.replace(
+            "@NAMESPACE@",
+            collision::namespace(options.math.precision()),
+        ));
+    }
     Ok(source)
 }

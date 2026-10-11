@@ -31,7 +31,7 @@ fn controls_must_be_nonempty_unique_fk_inputs() {
 
 #[test]
 #[ignore = "requires CUDA toolkit and GPU; set NVCC and CXX if needed"]
-fn batched_rrt_solves_and_reports_failures_for_each_precision() {
+fn batched_rrt_and_connect_solve_and_report_failures_for_each_precision() {
     let fk = robot();
     let spheres = [rkern::collision::Sphere {
         center: cuda::SphereCenter {

@@ -46,13 +46,15 @@ struct CudaRrtConfig { uint32_t warps_per_problem = 4; };
 class RrtPlanner {
 public:
     RrtPlanner(const rkern::RrtConfig& config, CudaRrtConfig execution,
-               const RrtSpace& space, Scene scene, size_t environment_count, size_t problem_count)
-        : config_(checked_config(config, execution, space, environment_count, problem_count)),
-          threads_(execution.warps_per_problem * 32), space_(space), scene_(scene),
+               const RrtSpace& space, Scene scene, size_t environment_count, size_t problem_count,
+               rkern::RrtAlgorithm algorithm = rkern::RrtAlgorithm::Rrt)
+        : config_(checked_config(config, execution, space, environment_count, problem_count, algorithm)),
+          algorithm_(algorithm), threads_(execution.warps_per_problem * 32), space_(space), scene_(scene),
           environment_count_(environment_count), problem_count_(problem_count),
           problems_(problem_count),
           nodes_(storage_product(storage_product(problem_count, config.max_nodes), rrt_dimension)),
           parents_(storage_product(problem_count, config.max_nodes)),
+          trees_(algorithm == rkern::RrtAlgorithm::RrtConnect ? storage_product(problem_count, config.max_nodes) : 0),
           candidates_(storage_product(problem_count, config.samples_per_round)),
           paths_(storage_product(problem_count, config.max_nodes)), results_(problem_count) {}
 
@@ -63,10 +65,15 @@ public:
                 throw std::invalid_argument("RRT environment ID out of range");
         solved_ = false;
         problems_.upload(problems.data(), problems.size());
-        rkern_rrt<<<static_cast<unsigned int>(problem_count_), threads_>>>(
-            problems_.data(), problem_count_, space_, scene_, config_, nodes_.data(),
-            parents_.data(), candidates_.data(), paths_.data(), results_.data());
-        cuda_check(cudaGetLastError(), "launch rkern_rrt");
+        if (algorithm_ == rkern::RrtAlgorithm::RrtConnect)
+            rkern_rrtc<<<static_cast<unsigned int>(problem_count_), threads_>>>(
+                problems_.data(), problem_count_, space_, scene_, config_, nodes_.data(),
+                parents_.data(), trees_.data(), candidates_.data(), paths_.data(), results_.data());
+        else
+            rkern_rrt<<<static_cast<unsigned int>(problem_count_), threads_>>>(
+                problems_.data(), problem_count_, space_, scene_, config_, nodes_.data(),
+                parents_.data(), candidates_.data(), paths_.data(), results_.data());
+        cuda_check(cudaGetLastError(), "launch RRT planner");
         std::vector<rkern::RrtResult> result(problem_count_);
         results_.download(result.data(), result.size());
         solved_ = true;
@@ -90,27 +97,33 @@ public:
 
 private:
     static rkern::RrtConfig checked_config(const rkern::RrtConfig& config, CudaRrtConfig execution,
-                                          const RrtSpace& space, size_t environments, size_t problems) {
+                                          const RrtSpace& space, size_t environments, size_t problems,
+                                          rkern::RrtAlgorithm algorithm) {
         validate_rrt(config, space);
+        if (algorithm != rkern::RrtAlgorithm::Rrt && algorithm != rkern::RrtAlgorithm::RrtConnect)
+            throw std::invalid_argument("invalid RRT algorithm");
         if (!execution.warps_per_problem || execution.warps_per_problem > 32 || !environments || !problems)
             throw std::invalid_argument("invalid CUDA RRT execution dimensions");
         int device;
         cudaDeviceProp properties;
         cudaFuncAttributes attributes;
+        const void* kernel = algorithm == rkern::RrtAlgorithm::RrtConnect ?
+            reinterpret_cast<const void*>(rkern_rrtc) : reinterpret_cast<const void*>(rkern_rrt);
         cuda_check(cudaGetDevice(&device), "get CUDA device");
         cuda_check(cudaGetDeviceProperties(&properties, device), "get CUDA properties");
-        cuda_check(cudaFuncGetAttributes(&attributes, rkern_rrt), "get RRT kernel attributes");
+        cuda_check(cudaFuncGetAttributes(&attributes, kernel), "get RRT kernel attributes");
         if (problems > size_t(properties.maxGridSize[0]) ||
             execution.warps_per_problem * 32 > uint32_t(attributes.maxThreadsPerBlock))
             throw std::invalid_argument("RRT launch exceeds device/kernel limits");
         int active_blocks;
         cuda_check(cudaOccupancyMaxActiveBlocksPerMultiprocessor(
-            &active_blocks, rkern_rrt, execution.warps_per_problem * 32, 0), "check RRT occupancy");
+            &active_blocks, kernel, execution.warps_per_problem * 32, 0), "check RRT occupancy");
         if (!active_blocks) throw std::invalid_argument("RRT block cannot fit on an SM");
         return config;
     }
 
     rkern::RrtConfig config_;
+    rkern::RrtAlgorithm algorithm_;
     uint32_t threads_;
     RrtSpace space_;
     Scene scene_;
@@ -119,6 +132,7 @@ private:
     DeviceBuffer<RrtProblem> problems_;
     DeviceBuffer<Scalar> nodes_;
     DeviceBuffer<uint32_t> parents_;
+    DeviceBuffer<RrtTree> trees_;
     DeviceBuffer<RrtCandidate> candidates_;
     DeviceBuffer<uint32_t> paths_;
     DeviceBuffer<rkern::RrtResult> results_;

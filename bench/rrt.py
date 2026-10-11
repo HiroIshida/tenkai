@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and run the batched CUDA RRT on Fetch with ground and a table."""
+"""Build and run batched CUDA RRT / RRT-Connect on Fetch with ground and a table."""
 
 import argparse
 import ctypes as ct
@@ -48,7 +48,9 @@ def pointer(array, scalar=ct.c_double):
 class Planner:
     """Benchmark binding; the native handle owns search storage and scene buffers."""
 
-    def __init__(self, library, model, config, warps, problem_count, geometry, resolution):
+    def __init__(self, library, model, config, warps, problem_count, geometry, resolution, algorithm="rrt"):
+        if algorithm not in ("rrt", "rrtc"):
+            raise ValueError("algorithm must be rrt or rrtc")
         self.library = ct.CDLL(str(library))
         self.handle = ct.c_void_p()
         self.problem_count = problem_count
@@ -57,10 +59,11 @@ class Planner:
         self.max_nodes = config.max_nodes
         p_double, p_u32, p_u64 = ct.POINTER(ct.c_double), ct.POINTER(ct.c_uint32), ct.POINTER(ct.c_uint64)
         self.library.rrt_error.restype = ct.c_char_p
-        self.library.rrt_create.argtypes = [ct.POINTER(NativeConfig), ct.c_uint32, ct.c_uint32,
-                                          ct.c_uint32, p_double, p_double, p_double, p_double,
-                                          ct.POINTER(ct.c_void_p)]
-        self.library.rrt_create.restype = ct.c_int
+        create = getattr(self.library, algorithm + "_create")
+        create.argtypes = [ct.POINTER(NativeConfig), ct.c_uint32, ct.c_uint32,
+                           ct.c_uint32, p_double, p_double, p_double, p_double,
+                           ct.POINTER(ct.c_void_p)]
+        create.restype = ct.c_int
         self.library.rrt_destroy.argtypes = [ct.c_void_p]
         self.library.rrt_destroy.restype = None
         self.library.rrt_solve.argtypes = [ct.c_void_p, p_double, p_double, p_u32, p_u64, ct.POINTER(NativeResult)]
@@ -81,9 +84,9 @@ class Planner:
         if not 1 <= warps <= 32 or not 0 < problem_count < 2**32:
             raise ValueError("invalid warp or problem count")
         native = NativeConfig(**asdict(config))
-        self.check(self.library.rrt_create(ct.byref(native), warps, problem_count, len(geometry),
-                                         pointer(geometry), pointer(lower), pointer(upper),
-                                         pointer(widths), ct.byref(self.handle)))
+        self.check(create(ct.byref(native), warps, problem_count, len(geometry),
+                          pointer(geometry), pointer(lower), pointer(upper),
+                          pointer(widths), ct.byref(self.handle)))
 
     def check(self, status):
         if status:
@@ -134,7 +137,9 @@ def write_json(path, data):
     path.write_text(json.dumps(data, indent=2, allow_nan=False) + "\n")
 
 
-def build(output, math_mode, arch):
+def build(output, math_mode, arch, max_registers=None):
+    if max_registers is not None and not 32 <= max_registers <= 255:
+        raise ValueError("max_registers must be between 32 and 255")
     directory = output / "build"
     directory.mkdir(parents=True, exist_ok=True)
     nvcc, compiler, version = toolchain()
@@ -147,6 +152,8 @@ def build(output, math_mode, arch):
     command = [nvcc, "-ccbin", compiler, "-std=c++14", "-O3", "-arch=" + arch, "-code=" + arch,
                "-shared", "-Xcompiler", "-fPIC", "-DRKERN_MODEL_NAMESPACE=" + namespace,
                "-I", str(directory), str(BENCH / "rrt.cu"), "-o", str(library)]
+    if max_registers is not None:
+        command.append("--maxrregcount=" + str(max_registers))
     with (directory / "compile.log").open("w") as log:
         completed = subprocess.run(command, stdout=log, stderr=log)
     if completed.returncode:
@@ -190,9 +197,12 @@ def validate_plainmp(output):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", type=Path, default=BENCH / "results/rrt")
+    parser.add_argument("--algorithm", choices=["rrt", "rrtc"], default="rrt")
+    parser.add_argument("--output", type=Path)
     parser.add_argument("--math", choices=["f32", "f32-sfu", "f64"], default="f32")
     parser.add_argument("--arch", default="compute_75")
+    parser.add_argument("--max-registers", type=int,
+                        help="NVCC register limit per thread (32..255); omitted uses the compiler default")
     parser.add_argument("--problems", type=int, default=32)
     parser.add_argument("--environments", type=int, default=1)
     parser.add_argument("--warps-per-problem", type=int, default=4)
@@ -214,8 +224,10 @@ def main():
         parser.error("resolution must be positive and finite")
     if re.fullmatch(r"compute_[0-9]+", args.arch) is None:
         parser.error("arch must be a virtual architecture such as compute_75")
-    output = args.output.resolve()
-    library, model, tool_info = build(output, args.math, args.arch)
+    if args.max_registers is not None and not 32 <= args.max_registers <= 255:
+        parser.error("max-registers must be between 32 and 255")
+    output = (args.output or BENCH / "results" / args.algorithm).resolve()
+    library, model, tool_info = build(output, args.math, args.arch, args.max_registers)
     config = RRTConfig(args.max_nodes, args.max_rounds, args.samples_per_round, args.step_size, args.goal_bias)
     geometry = np.tile([0.95, 0, 0.8, 1, 2, 0.05, 0], (args.environments, 1))
     geometry[:, 1] = np.arange(args.environments) * 0.02
@@ -225,7 +237,8 @@ def main():
     dtype = np.float64 if args.math == "f64" else np.float32
     controls = [joint["index"] for joint in model["control_joints"]]
     times = []
-    with Planner(library, model, config, args.warps_per_problem, args.problems, geometry, args.resolution) as planner:
+    with Planner(library, model, config, args.warps_per_problem, args.problems, geometry,
+                 args.resolution, args.algorithm) as planner:
         previous = planner.solve(starts, goals, ids, seeds)  # Includes JIT/warmup; excluded from timings.
         for _ in range(args.repetitions):
             begin = time.perf_counter()
@@ -246,6 +259,11 @@ def main():
             upper = np.array([j["upper"] for j in model["control_joints"]], dtype=dtype)
             if not np.isfinite(path).all() or (path < lower).any() or (path > upper).any():
                 raise RuntimeError("path violates joint bounds")
+            if args.algorithm == "rrtc":
+                lengths = np.linalg.norm(np.diff(path, axis=0), axis=1)
+                tolerance = 8 * np.finfo(dtype).eps * max(1, np.abs(path).max())
+                if (lengths == 0).any() or (lengths > config.step_size + tolerance).any():
+                    raise RuntimeError("RRT-Connect edge violates step size or repeats a configuration")
             # Keep the planning grid and an additional finer grid; their points differ.
             points = np.concatenate([interpolate(path, float(dtype(args.resolution))),
                                      interpolate(path, float(dtype(args.resolution)) / 5)])
@@ -257,7 +275,9 @@ def main():
         all_ids = np.concatenate(validation_ids) if validation_ids else np.empty(0, dtype=np.uint32)
         collisions = int(planner.collisions(all_points, all_ids).sum())
     success = sum(r["status"] == "success" for r in results)
-    summary = {"algorithm": "single-tree batched RRT", "config": asdict(config),
+    algorithm = {"rrt": "single-tree batched RRT", "rrtc": "batched RRT-Connect"}[args.algorithm]
+    summary = {"algorithm": algorithm, "config": asdict(config),
+               "max_registers": args.max_registers,
                "warps_per_problem": args.warps_per_problem, "model": model, "toolchain": tool_info,
                "problem_count": args.problems, "environment_count": args.environments,
                "environment_ids": ids.tolist(), "geometry": geometry.tolist(), "seeds": seeds.tolist(),
