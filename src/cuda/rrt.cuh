@@ -1,3 +1,4 @@
+#include <cfloat>
 #include <cmath>
 #include <limits>
 #include <stdexcept>
@@ -101,6 +102,24 @@ __device__ inline void rrt_sample(RrtCandidate& candidate, const RrtProblem& pro
     candidate.reaches_target = biased;
 }
 
+__device__ inline double rrt_squared_distance(const Scalar* a, const Scalar* b) {
+    Scalar distance = 0;
+    for (uint32_t d = 0; d < rrt_dimension; ++d) {
+        const Scalar delta = a[d] - b[d];
+        distance += delta * delta;
+    }
+    if (sizeof(Scalar) == sizeof(double) ||
+        (isfinite(distance) && distance >= Scalar(FLT_MIN)))
+        return distance;
+    // Valid FP32 bounds can still overflow or underflow a squared distance.
+    double wide_distance = 0;
+    for (uint32_t d = 0; d < rrt_dimension; ++d) {
+        const double delta = double(a[d]) - double(b[d]);
+        wide_distance += delta * delta;
+    }
+    return wide_distance;
+}
+
 __device__ inline void rrt_extend(RrtCandidate& candidate, const Scalar* nodes,
                                   uint32_t snapshot_size, const RrtSpace& space, double step_size,
                                   const RrtTree* trees = nullptr, RrtTree tree = RrtTree::Start) {
@@ -108,11 +127,7 @@ __device__ inline void rrt_extend(RrtCandidate& candidate, const Scalar* nodes,
     uint32_t nearest = 0;
     for (uint32_t n = 0; n < snapshot_size; ++n) {
         if (trees && trees[n] != tree) continue;
-        double distance = 0;
-        for (uint32_t d = 0; d < rrt_dimension; ++d) {
-            const double delta = double(nodes[size_t(n) * rrt_dimension + d]) - double(candidate.q[d]);
-            distance += delta * delta;
-        }
+        const double distance = rrt_squared_distance(nodes + size_t(n) * rrt_dimension, candidate.q);
         if (distance < best_distance) { best_distance = distance; nearest = n; }
     }
     const Scalar* parent = nodes + size_t(nearest) * rrt_dimension;
@@ -120,9 +135,11 @@ __device__ inline void rrt_extend(RrtCandidate& candidate, const Scalar* nodes,
     candidate.parent = nearest;
     candidate.reaches_target &= distance <= step_size;
     if (distance > step_size) {
-        const double ratio = step_size / distance;
+        const double wide_ratio = step_size / distance;
+        const Scalar ratio = Scalar(wide_ratio);
         for (uint32_t d = 0; d < rrt_dimension; ++d)
-            candidate.q[d] = Scalar(double(parent[d]) + ratio * (double(candidate.q[d]) - double(parent[d])));
+            candidate.q[d] = ratio > 0 ? parent[d] + ratio * (candidate.q[d] - parent[d]) :
+                Scalar(double(parent[d]) + wide_ratio * (double(candidate.q[d]) - double(parent[d])));
     }
     bool moved = false;
     for (uint32_t d = 0; d < rrt_dimension; ++d) moved |= candidate.q[d] != parent[d];
@@ -137,11 +154,11 @@ __device__ inline bool rrt_edge_collision(const RrtCandidate& candidate, uint32_
     const Scalar* from = direction == EdgeDirection::Forward ? parent : candidate.q;
     const Scalar* to = direction == EdgeDirection::Forward ? candidate.q :
         (direction == EdgeDirection::Reverse ? parent : problem.goal);
-    const double ratio = double(step) / candidate.steps;
+    const Scalar ratio = Scalar(step) / Scalar(candidate.steps);
     Scalar q[rrt_dimension];
     for (uint32_t d = 0; d < rrt_dimension; ++d)
-        q[d] = step == candidate.steps ? to[d] : (step == 0 ? from[d] : Scalar(
-            double(from[d]) + ratio * (double(to[d]) - double(from[d]))));
+        q[d] = step == candidate.steps ? to[d] : (step == 0 ? from[d] :
+            from[d] + ratio * (to[d] - from[d]));
     return rrt_collision(q, space, scene, problem.environment_id);
 }
 

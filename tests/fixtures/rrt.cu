@@ -100,7 +100,46 @@ void check_edge_grids(const m::RrtSpace& space, m::Scene scene) {
     }
 }
 
+__global__ void check_distance_precision(double* output) {
+    const Scalar zero[2] = {0, 0};
+    const Scalar large[2] = {Scalar(1e20), Scalar(2e20)};
+    const Scalar tiny[2] = {Scalar(1e-30), Scalar(2e-30)};
+    output[0] = m::rrt_squared_distance(zero, large);
+    output[1] = m::rrt_squared_distance(zero, tiny);
+    output[2] = m::rrt_squared_distance(large, large);
+    m::RrtSpace space{};
+    space.resolution[0] = space.resolution[1] = Scalar(1e20);
+    const Scalar nodes[] = {Scalar(4e20), 0, Scalar(3e20), 0};
+    m::RrtCandidate candidate{};
+    m::rrt_extend(candidate, nodes, 2, space, 1e20);
+    output[3] = candidate.parent;
+    output[4] = candidate.q[0];
+    candidate.q[0] = Scalar(1e30);
+    candidate.q[1] = 0;
+    space.resolution[0] = space.resolution[1] = Scalar(1e-30);
+    m::rrt_extend(candidate, zero, 1, space, 1e-30);
+    output[5] = candidate.q[0];
+}
+
+void check_distance_range() {
+    m::DeviceBuffer<double> output(6);
+    check_distance_precision<<<1, 1>>>(output.data());
+    m::cuda_check(cudaGetLastError(), "check distance precision");
+    double values[6];
+    output.download(values, 6);
+    for (unsigned i = 0; i < 2; ++i) {
+        const double a = double(Scalar(i ? 1e-30 : 1e20));
+        const double b = double(Scalar(i ? 2e-30 : 2e20));
+        assert(std::isfinite(values[i]) && values[i] > 0);
+        assert(std::abs(values[i] / (a*a + b*b) - 1) < 1e-12);
+    }
+    assert(values[2] == 0 && values[3] == 1);
+    assert(std::abs(values[4] / 2e20 - 1) < 1e-6);
+    assert(std::abs(values[5] / 1e-30 - 1) < 1e-6);
+}
+
 int main() try {
+    check_distance_range();
     const m::Box boxes[] = {
         {{{0,0,Scalar(0.25)}, {1,0,0,0,1,0,0,0,1}}, {Scalar(0.2),Scalar(0.8),Scalar(0.2)}},
         {{{0,0,Scalar(0.25)}, {1,0,0,0,1,0,0,0,1}}, {Scalar(0.2),4,4}},

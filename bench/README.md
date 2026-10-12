@@ -193,6 +193,11 @@ Resolution is a per-coordinate (Box) limit; nearest-neighbor distances and
 `step_size` use the Euclidean norm. Changing algorithms does not change the
 default resolution of 0.05.
 
+Distance accumulation and interpolation use the selected scalar precision. FP32
+squared distances fall back to double when they overflow or underflow; interval
+counts, random sampling, and the distance/step-size comparison remain in double.
+FP32 paths can differ from versions that used double throughout the planner.
+
 Defaults are 8,192 nodes, 1,024 rounds, goal sampling probability 0.1, and 32
 problems with different seeds. The seed, round, and candidate index determine
 sampling independently of warp count. Failure results distinguish invalid start,
