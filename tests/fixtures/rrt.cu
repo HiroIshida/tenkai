@@ -138,6 +138,32 @@ void check_distance_range() {
     assert(std::abs(values[5] / 1e-30 - 1) < 1e-6);
 }
 
+__global__ void check_cached_nearest(m::RrtSpace space) {
+    using Tree = m::RrtTree;
+    const Scalar nodes[] = {-5,0, 5,0, 0,0, -1,0, 1,0, Scalar(0.5),0, Scalar(0.1),0, 0,0};
+    const Tree trees[] = {Tree::Start, Tree::Goal, Tree::Start, Tree::Goal,
+                          Tree::Goal, Tree::Goal, Tree::Start, Tree::Goal};
+    const uint32_t snapshots[] = {2, 2, 3, 5, 5, 6, 7, 8};
+    for (Tree tree : {Tree::Start, Tree::Goal}) {
+        for (Scalar target : {Scalar(0), Scalar(2.2)}) {
+            m::RrtNearestCache cache{0, 0, INFINITY};
+            for (uint32_t snapshot : snapshots) {
+                m::RrtCandidate cached{}, scanned{};
+                cached.q[0] = scanned.q[0] = target;
+                cached.reaches_target = scanned.reaches_target = true;
+                m::rrt_extend(cached, nodes, snapshot, space, 0.25, trees, tree, &cache);
+                m::rrt_extend(scanned, nodes, snapshot, space, 0.25, trees, tree);
+                assert(cached.parent == scanned.parent && cache.node == scanned.parent);
+                assert(cache.scanned == snapshot);
+                assert(cached.steps == scanned.steps && cached.blocked == scanned.blocked);
+                assert(cached.reaches_target == scanned.reaches_target);
+                for (unsigned d = 0; d < m::rrt_dimension; ++d) assert(cached.q[d] == scanned.q[d]);
+                if (tree == Tree::Goal && target == 0 && snapshot == 5) assert(cached.parent == 3);
+            }
+        }
+    }
+}
+
 int main() try {
     check_distance_range();
     const m::Box boxes[] = {
@@ -154,6 +180,9 @@ int main() try {
     const m::Scene scene = {device_environments.data(), device_boxes.data(), nullptr, nullptr, nullptr};
     m::RrtSpace space{{-1,-1}, {1,1}, {Scalar(0.025),Scalar(0.025)}, {0,0,Scalar(0.25)}};
     check_edge_grids(space, scene);
+    check_cached_nearest<<<1, 1>>>(space);
+    m::cuda_check(cudaGetLastError(), "check cached nearest nodes");
+    m::cuda_check(cudaDeviceSynchronize(), "validate cached nearest nodes");
     rkern::RrtConfig config;
     config.max_nodes = 1024;
     config.samples_per_round = 64;

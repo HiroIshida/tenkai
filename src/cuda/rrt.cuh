@@ -22,12 +22,18 @@ enum class RrtTree : uint8_t { Start, Goal };
 enum class GrowState : uint8_t { Trapped, Advanced, Reached };
 enum class EdgeDirection { Forward, Reverse, Goal };
 
+struct RrtNearestCache {
+    uint32_t node, scanned;
+    double squared_distance;
+};
+
 struct RrtCandidate {
     Scalar q[rrt_dimension];
     uint32_t parent, steps, target;
     unsigned int blocked, goal_blocked;
     bool reaches_target;
     GrowState state;
+    RrtNearestCache nearest;
 };
 
 inline void validate_rrt(const rkern::RrtConfig& config, const RrtSpace& space) {
@@ -122,14 +128,17 @@ __device__ inline double rrt_squared_distance(const Scalar* a, const Scalar* b) 
 
 __device__ inline void rrt_extend(RrtCandidate& candidate, const Scalar* nodes,
                                   uint32_t snapshot_size, const RrtSpace& space, double step_size,
-                                  const RrtTree* trees = nullptr, RrtTree tree = RrtTree::Start) {
-    double best_distance = INFINITY;
-    uint32_t nearest = 0;
-    for (uint32_t n = 0; n < snapshot_size; ++n) {
+                                  const RrtTree* trees = nullptr, RrtTree tree = RrtTree::Start,
+                                  RrtNearestCache* cache = nullptr) {
+    double best_distance = cache ? cache->squared_distance : INFINITY;
+    uint32_t nearest = cache ? cache->node : 0;
+    // With an unchanged target and tree, only appended nodes can improve the answer.
+    for (uint32_t n = cache ? cache->scanned : 0; n < snapshot_size; ++n) {
         if (trees && trees[n] != tree) continue;
         const double distance = rrt_squared_distance(nodes + size_t(n) * rrt_dimension, candidate.q);
         if (distance < best_distance) { best_distance = distance; nearest = n; }
     }
+    if (cache) *cache = {nearest, snapshot_size, best_distance};
     const Scalar* parent = nodes + size_t(nearest) * rrt_dimension;
     const double distance = sqrt(best_distance);
     candidate.parent = nearest;

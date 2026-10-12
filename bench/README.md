@@ -177,8 +177,10 @@ structure in `plainmp/third/ompl_rrtc`. Each round alternates the active tree
 between start and goal. It samples and validates a batch of extensions against
 that tree's snapshot, then repeatedly extends the opposite tree toward those
 accepted nodes until each connection is blocked or one reaches its target.
-Every CONNECT wave queries the opposite tree's current snapshot; candidates
-share nodes inserted by earlier waves. All edges, including the connection,
+Each CONNECT target caches its nearest node and scanned prefix. Later waves
+compare that cached node with the newly appended nodes in the opposite tree,
+preserving the full scan's nearest node and tie order. Candidates share nodes
+inserted by earlier waves. All edges, including the connection,
 respect `step_size`. Goal-tree edges are checked toward their parents, including
 an explicit check of the new endpoint. The two parent chains are joined without
 duplicating the connection point. Both trees and their two roots share the

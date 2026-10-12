@@ -49,6 +49,7 @@ extern "C" __global__ void rkern_rrtc(
                 if (candidate.blocked) continue;
                 candidate.target = rrt_append(candidate.q, candidate.parent, nodes, parents, result);
                 trees[candidate.target] = active;
+                candidate.nearest = {0, 0, INFINITY};
                 candidate.state = GrowState::Advanced;
                 connecting = true;
             }
@@ -65,7 +66,8 @@ extern "C" __global__ void rkern_rrtc(
                 for (uint32_t d = 0; d < rrt_dimension; ++d)
                     candidate.q[d] = nodes[size_t(candidate.target) * rrt_dimension + d];
                 candidate.reaches_target = true;
-                rrt_extend(candidate, nodes, connect_snapshot, space, config.step_size, trees, other);
+                rrt_extend(candidate, nodes, connect_snapshot, space, config.step_size,
+                           trees, other, &candidate.nearest);
                 // An existing node at the target is already a valid connection.
                 if (!candidate.steps && candidate.reaches_target) candidate.blocked = 0;
             }
