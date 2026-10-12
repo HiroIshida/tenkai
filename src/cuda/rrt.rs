@@ -47,7 +47,8 @@ impl std::error::Error for RrtError {
 /// threads. Each round samples against a snapshot of the tree, checks all edge
 /// points in parallel, then attempts direct goal connections from valid endpoints.
 /// The final goal edge can exceed `step_size` but uses the same collision resolution.
-/// Valid endpoints are inserted in candidate order.
+/// Warps take pending edges as they become available. Valid endpoints are inserted
+/// in candidate order, independent of the collision work assignment.
 ///
 /// Launch `rkern_rrtc` with the same block layout to alternate two trees and
 /// repeatedly extend the opposite tree toward accepted endpoints. Every edge is
@@ -80,8 +81,9 @@ pub fn generate_rrt_kernel(
             return Err(RrtError::DuplicateControl(index));
         }
     }
-    let mut source =
-        collision::generate_collision_kernel(fk, spheres, options).map_err(RrtError::Collision)?;
+    // Do not duplicate the large FK predicate in each planning control-flow branch.
+    let mut source = collision::generate_kernel(fk, spheres, options, collision::Inlining::Never)
+        .map_err(RrtError::Collision)?;
     source.push_str(include_str!("../planning/rrt.hpp"));
     let indices = controls
         .iter()

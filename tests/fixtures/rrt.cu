@@ -63,25 +63,28 @@ __global__ void check_edge_grid(m::RrtCandidate* candidates, uint32_t count,
                                 m::EdgeDirection direction) {
     m::RrtProblem problem{};
     problem.environment_id = 1;
+    problem.goal[1] = Scalar(0.8);
     m::rrt_check_edges(candidates, count, nodes, problem, space, scene, direction);
 }
 
 void check_edge_grids(const m::RrtSpace& space, m::Scene scene) {
-    struct Edge { double from, to, y; uint32_t steps; bool blocked; };
+    struct Edge { double from, to, y; uint32_t steps; bool blocked, goal_blocked; };
     const Edge cases[] = {
-        {-0.8, 1.2, 0, 80, true}, // All quarter probes miss the obstacle.
-        {-2.6, 0.6, 0, 65, true}, // Collision after the first 32 samples.
-        {-0.8, 1.2, 0.8, 80, false},
-        {-0.8, 0.8, 0, 1, false}, // Only the endpoint belongs to this grid.
-        {-0.8, 0.8, 0, 2, true},
-        {0.2, 0, 0, 1, true}, // The new endpoint must be checked in reverse too.
-        {0.8, 0.8, 0, 0, false},
+        {-0.8, 1.2, 0, 80, true, false}, // All quarter probes miss the obstacle.
+        {-2.6, 0.6, 0, 65, true, false}, // Collision after the first 32 samples.
+        {-0.8, 1.2, 0.8, 80, false, false},
+        {-0.8, 0.8, 0, 1, false, false}, // Only the endpoint belongs to this grid.
+        {-0.8, 0.8, 0, 2, true, false},
+        {0.2, 0, 0, 1, true, true}, // The new endpoint must be checked in reverse too.
+        {0.8, 0.8, 0, 0, false, false},
+        {-0.9, -0.8, 0, 4, false, true},
+        {-0.8, 1.2, 0.8, 4097, false, false},
     };
     const uint32_t case_count = sizeof(cases) / sizeof(cases[0]);
-    const uint32_t count = 3 * case_count;
-    std::vector<m::RrtCandidate> candidates(count);
-    std::vector<Scalar> nodes(count * 2);
-    for (uint32_t c = 0; c < count; ++c) {
+    const uint32_t capacity = 65;
+    std::vector<m::RrtCandidate> candidates(capacity);
+    std::vector<Scalar> nodes(capacity * 2);
+    for (uint32_t c = 0; c < capacity; ++c) {
         const auto& edge = cases[c % case_count];
         candidates[c].parent = c;
         candidates[c].q[0] = Scalar(edge.y);
@@ -90,21 +93,77 @@ void check_edge_grids(const m::RrtSpace& space, m::Scene scene) {
         nodes[2*c] = Scalar(edge.y);
         nodes[2*c+1] = Scalar(edge.from);
     }
-    m::DeviceBuffer<m::RrtCandidate> device_candidates(count);
+    m::DeviceBuffer<m::RrtCandidate> device_candidates(capacity);
     m::DeviceBuffer<Scalar> device_nodes(nodes.size());
     device_nodes.upload(nodes.data(), nodes.size());
-    for (auto direction : {m::EdgeDirection::Forward, m::EdgeDirection::Reverse}) {
+    for (auto direction : {m::EdgeDirection::Forward, m::EdgeDirection::Reverse, m::EdgeDirection::Goal}) {
         for (uint32_t warps : {1u, 3u, 4u, 8u}) {
-            device_candidates.upload(candidates.data(), count);
-            check_edge_grid<<<1, 32 * warps>>>(device_candidates.data(), count,
-                device_nodes.data(), space, scene, direction);
-            m::cuda_check(cudaGetLastError(), "check edge grids");
-            std::vector<m::RrtCandidate> checked(count);
-            device_candidates.download(checked.data(), count);
-            for (uint32_t c = 0; c < count; ++c)
-                assert(bool(checked[c].blocked) == cases[c % case_count].blocked);
+            for (uint32_t count : {0u, 1u, 3u, 4u, 5u, 7u, 8u, 9u, 33u, capacity}) {
+                device_candidates.upload(candidates.data(), capacity);
+                check_edge_grid<<<1, 32 * warps>>>(device_candidates.data(), count,
+                    device_nodes.data(), space, scene, direction);
+                m::cuda_check(cudaGetLastError(), "check edge grids");
+                std::vector<m::RrtCandidate> checked(capacity);
+                device_candidates.download(checked.data(), capacity);
+                for (uint32_t c = 0; c < capacity; ++c) {
+                    const bool goal = direction == m::EdgeDirection::Goal;
+                    const bool blocked = goal ? checked[c].goal_blocked : checked[c].blocked;
+                    const auto& edge = cases[c % case_count];
+                    assert(blocked == (c < count && (goal ? edge.goal_blocked : edge.blocked)));
+                }
+            }
         }
     }
+}
+
+struct StepCase {
+    Scalar from[2], to[2], resolution[2];
+    uint32_t expected;
+};
+
+__global__ void check_step_counts(const StepCase* cases, uint32_t count, uint32_t* output) {
+    const uint32_t i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= count) return;
+    m::RrtSpace space{};
+    for (uint32_t d = 0; d < 2; ++d) space.resolution[d] = cases[i].resolution[d];
+    output[i] = m::rrt_steps(cases[i].from, cases[i].to, space);
+}
+
+void check_interpolation_grid_sizes() {
+    std::vector<StepCase> cases{
+        {{0, 0}, {0, 0}, {1, 1}, 1},
+        {{0, 0}, {0, 0}, {1, 2}, 1},
+        {{0, 0}, {1, 2}, {Scalar(0.5), Scalar(0.25)}, 8},
+        {{0, 0}, {1, 2}, {Scalar(0.25), Scalar(0.5)}, 4},
+        {{-1, -2}, {1, 2}, {Scalar(0.5), Scalar(0.5)}, 8},
+    };
+    const Scalar small = std::ldexp(Scalar(1), sizeof(Scalar) == sizeof(float) ? -120 : -1000);
+    const Scalar large = std::ldexp(Scalar(1), sizeof(Scalar) == sizeof(float) ? 100 : 900);
+    for (Scalar resolution : {Scalar(0.25), small, large}) {
+        const Scalar boundary = 4 * resolution;
+        for (uint32_t d = 0; d < 2; ++d) {
+            StepCase edge{{0, 0}, {0, 0}, {resolution, resolution}, 4};
+            edge.to[d] = boundary;
+            cases.push_back(edge);
+            edge.to[d] = std::nextafter(boundary, Scalar(0));
+            cases.push_back(edge);
+            edge.to[d] = std::nextafter(boundary, std::numeric_limits<Scalar>::infinity());
+            edge.expected = 5;
+            cases.push_back(edge);
+        }
+    }
+    const Scalar subnormal = std::numeric_limits<Scalar>::denorm_min();
+    cases.push_back({{0, 0}, {subnormal, 2 * subnormal}, {subnormal, subnormal}, 2});
+    const Scalar fine = std::ldexp(Scalar(1), -31);
+    cases.push_back({{0, 0}, {1, 1}, {fine, fine}, UINT32_C(2147483648)});
+    m::DeviceBuffer<StepCase> device_cases(cases.size());
+    m::DeviceBuffer<uint32_t> output(cases.size());
+    device_cases.upload(cases.data(), cases.size());
+    check_step_counts<<<1, 32>>>(device_cases.data(), cases.size(), output.data());
+    m::cuda_check(cudaGetLastError(), "check interpolation grid sizes");
+    std::vector<uint32_t> counts(cases.size());
+    output.download(counts.data(), counts.size());
+    for (size_t i = 0; i < cases.size(); ++i) assert(counts[i] == cases[i].expected);
 }
 
 __global__ void check_distance_precision(double* output) {
@@ -259,6 +318,7 @@ int main() try {
         assert(broad_phase_passed[i]);
     }
     check_distance_range();
+    check_interpolation_grid_sizes();
     const m::Box boxes[] = {
         {{{0,0,Scalar(0.25)}, {1,0,0,0,1,0,0,0,1}}, {Scalar(0.2),Scalar(0.8),Scalar(0.2)}},
         {{{0,0,Scalar(0.25)}, {1,0,0,0,1,0,0,0,1}}, {Scalar(0.2),4,4}},

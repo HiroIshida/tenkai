@@ -89,6 +89,15 @@ __device__ inline bool rrt_collision(const Scalar* q, const RrtSpace& space,
 
 __device__ inline uint32_t rrt_steps(const Scalar* a, const Scalar* b,
                                      const RrtSpace& space) {
+    const Scalar resolution = space.resolution[0];
+    bool uniform = true;
+    double displacement = 0;
+    for (uint32_t d = 0; d < rrt_dimension; ++d) {
+        uniform &= space.resolution[d] == resolution;
+        displacement = fmax(displacement, fabs(double(b[d]) - double(a[d])));
+    }
+    if (uniform)
+        return static_cast<uint32_t>(fmax(1.0, ceil(displacement / double(resolution))));
     double count = 1;
     for (uint32_t d = 0; d < rrt_dimension; ++d)
         count = fmax(count, ceil(fabs(double(b[d]) - double(a[d])) / double(space.resolution[d])));
@@ -214,6 +223,11 @@ __device__ inline bool rrt_edge_collision(const RrtCandidate& candidate, uint32_
 __device__ inline void rrt_check_edges(RrtCandidate* candidates, uint32_t count,
                                        const Scalar* nodes, const RrtProblem& problem,
                                        const RrtSpace& space, Scene scene, EdgeDirection direction) {
+    __shared__ unsigned int next_edge;
+    const uint32_t warps = blockDim.x / 32;
+    const bool dynamic = warps > 1 && count > warps;
+    // Initial warp assignments need no claim, leaving room for every terminal claim.
+    if (threadIdx.x == 0) next_edge = 0;
     if (direction != EdgeDirection::Goal) {
         // Probe existing grid points; accepting an edge still requires the full grid.
         for (uint64_t task = threadIdx.x; task < uint64_t(count) * 4; task += blockDim.x) {
@@ -239,7 +253,7 @@ __device__ inline void rrt_check_edges(RrtCandidate* candidates, uint32_t count,
         __syncthreads();
     }
     const unsigned int lane = threadIdx.x % 32;
-    for (uint64_t c = threadIdx.x / 32; c < count; c += blockDim.x / 32) {
+    for (uint64_t c = threadIdx.x / 32; c < count;) {
         RrtCandidate& candidate = candidates[c];
         // Reverse edges include the new endpoint, which is their source.
         const uint64_t checks = uint64_t(candidate.steps) +
@@ -257,6 +271,13 @@ __device__ inline void rrt_check_edges(RrtCandidate* candidates, uint32_t count,
                     (direction == EdgeDirection::Goal ? candidate.goal_blocked : candidate.blocked) = 1;
                 break;
             }
+        }
+        if (dynamic) {
+            unsigned int next = 0;
+            if (lane == 0) next = atomicAdd(&next_edge, 1u);
+            c = uint64_t(__shfl_sync(0xffffffffu, next, 0)) + warps;
+        } else {
+            c += warps;
         }
     }
     __syncthreads();

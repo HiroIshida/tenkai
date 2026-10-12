@@ -8,6 +8,12 @@ use crate::scheduling::Schedule;
 
 const SPHERES_PER_GROUP: usize = 16;
 
+#[derive(Clone, Copy)]
+pub(super) enum Inlining {
+    Automatic,
+    Never,
+}
+
 /// Generates `rkern_collision(configurations, environment_ids, scene, output, count)`.
 ///
 /// One thread checks one configuration against its selected environment. Centers
@@ -40,7 +46,16 @@ pub fn generate_collision_kernel(
     spheres: &[Sphere],
     options: Options,
 ) -> Result<String, Error> {
-    let mut source = generate_collision_function(fk, spheres, options)?;
+    generate_kernel(fk, spheres, options, Inlining::Automatic)
+}
+
+pub(super) fn generate_kernel(
+    fk: &FkDag,
+    spheres: &[Sphere],
+    options: Options,
+    inlining: Inlining,
+) -> Result<String, Error> {
+    let mut source = generate_function(fk, spheres, options, inlining)?;
     let (scalar, _) = options.math.precision().cuda_spelling();
     let namespace = namespace(options.math.precision());
     let dof = fk.joint_names().len();
@@ -85,6 +100,15 @@ pub fn generate_collision_function(
     spheres: &[Sphere],
     options: Options,
 ) -> Result<String, Error> {
+    generate_function(fk, spheres, options, Inlining::Automatic)
+}
+
+fn generate_function(
+    fk: &FkDag,
+    spheres: &[Sphere],
+    options: Options,
+    inlining: Inlining,
+) -> Result<String, Error> {
     for (index, sphere) in spheres.iter().enumerate() {
         sphere.validate(fk, index)?;
     }
@@ -106,10 +130,14 @@ pub fn generate_collision_function(
         .replace("@NAMESPACE@", namespace)
         .replace("@SCALAR@", scalar)
         .replace("@SUFFIX@", suffix);
+    let qualifier = match inlining {
+        Inlining::Automatic => "inline",
+        Inlining::Never => "__noinline__",
+    };
     write!(
         source,
         r#"
-__device__ inline bool rkern_collision_one(
+__device__ {qualifier} bool rkern_collision_one(
     const {scalar}* q, {namespace}::Scene scene, uint32_t environment_id) {{
 "#,
     )
