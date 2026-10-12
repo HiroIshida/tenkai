@@ -137,13 +137,19 @@ def write_json(path, data):
     path.write_text(json.dumps(data, indent=2, allow_nan=False) + "\n")
 
 
-def build(output, math_mode, arch, max_registers=None):
-    if max_registers is not None and not 32 <= max_registers <= 255:
-        raise ValueError("max_registers must be between 32 and 255")
+def build(output, math_mode, arch, max_registers=None, live_budget=None):
+    if max_registers is None:
+        max_registers = 128 if math_mode == "f32" else 0
+    if max_registers != 0 and not 32 <= max_registers <= 255:
+        raise ValueError("max_registers must be 0 or between 32 and 255")
+    if live_budget is not None and live_budget < 0:
+        raise ValueError("live_budget must be nonnegative")
     directory = output / "build"
     directory.mkdir(parents=True, exist_ok=True)
     nvcc, compiler, version = toolchain()
     options = {"f32": ["--float", "--no-sfu"], "f32-sfu": ["--float", "--sfu"], "f64": ["--double"]}[math_mode]
+    if live_budget is not None:
+        options += ["--live-budget", str(live_budget)]
     subprocess.run(["cargo", "run", "--quiet", "--locked", "--release", "--example", "bench_generate",
                     "--", *options, str(directory)], cwd=ROOT, check=True)
     model = json.loads((directory / "model.json").read_text())
@@ -152,13 +158,14 @@ def build(output, math_mode, arch, max_registers=None):
     command = [nvcc, "-ccbin", compiler, "-std=c++14", "-O3", "-arch=" + arch, "-code=" + arch,
                "-shared", "-Xcompiler", "-fPIC", "-DRKERN_MODEL_NAMESPACE=" + namespace,
                "-I", str(directory), str(BENCH / "rrt.cu"), "-o", str(library)]
-    if max_registers is not None:
+    if max_registers:
         command.append("--maxrregcount=" + str(max_registers))
     with (directory / "compile.log").open("w") as log:
         completed = subprocess.run(command, stdout=log, stderr=log)
     if completed.returncode:
         raise RuntimeError((directory / "compile.log").read_text())
-    return library, model, {"nvcc": version, "compile_command": command}
+    return library, model, {"nvcc": version, "compile_command": command,
+                            "max_registers": max_registers or None}
 
 
 def interpolate(path, resolution):
@@ -202,7 +209,10 @@ def main():
     parser.add_argument("--math", choices=["f32", "f32-sfu", "f64"], default="f32")
     parser.add_argument("--arch", default="compute_75")
     parser.add_argument("--max-registers", type=int,
-                        help="NVCC register limit per thread (32..255); omitted uses the compiler default")
+                        help="NVCC register limit per thread (32..255; 0 uses compiler default); "
+                             "default: 128 for f32, compiler default for f32-sfu/f64")
+    parser.add_argument("--live-budget", type=int,
+                        help="enable liveness scheduling with this nonnegative scalar-value budget")
     parser.add_argument("--problems", type=int, default=2048,
                         help="planning problems per kernel launch (default: %(default)s)")
     parser.add_argument("--environments", type=int, default=1)
@@ -225,10 +235,12 @@ def main():
         parser.error("resolution must be positive and finite")
     if re.fullmatch(r"compute_[0-9]+", args.arch) is None:
         parser.error("arch must be a virtual architecture such as compute_75")
-    if args.max_registers is not None and not 32 <= args.max_registers <= 255:
-        parser.error("max-registers must be between 32 and 255")
+    if args.max_registers not in (None, 0) and not 32 <= args.max_registers <= 255:
+        parser.error("max-registers must be 0 or between 32 and 255")
+    if args.live_budget is not None and args.live_budget < 0:
+        parser.error("live-budget must be nonnegative")
     output = (args.output or BENCH / "results" / args.algorithm).resolve()
-    library, model, tool_info = build(output, args.math, args.arch, args.max_registers)
+    library, model, tool_info = build(output, args.math, args.arch, args.max_registers, args.live_budget)
     config = RRTConfig(args.max_nodes, args.max_rounds, args.samples_per_round, args.step_size, args.goal_bias)
     geometry = np.tile([0.95, 0, 0.8, 1, 2, 0.05, 0], (args.environments, 1))
     geometry[:, 1] = np.arange(args.environments) * 0.02
@@ -278,7 +290,7 @@ def main():
     success = sum(r["status"] == "success" for r in results)
     algorithm = {"rrt": "single-tree batched RRT", "rrtc": "batched RRT-Connect"}[args.algorithm]
     summary = {"algorithm": algorithm, "config": asdict(config),
-               "max_registers": args.max_registers,
+               "max_registers": tool_info["max_registers"],
                "warps_per_problem": args.warps_per_problem, "model": model, "toolchain": tool_info,
                "problem_count": args.problems, "environment_count": args.environments,
                "environment_ids": ids.tolist(), "geometry": geometry.tolist(), "seeds": seeds.tolist(),

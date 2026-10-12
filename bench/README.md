@@ -144,13 +144,23 @@ is the ground/table case above; additional environments shift the table by 0.02 
 along Y per environment. The planner keeps its allocated device buffers across
 solves. Its scene buffers are owned by the benchmark's native handle.
 
-`--max-registers 128` passes `--maxrregcount=128` to NVCC; omitting it keeps the
-compiler default. This is a compile-time setting, while `--warps-per-problem` is
+FP32 without SFU defaults to `--max-registers 128`, passing `--maxrregcount=128`
+to NVCC. This reduced solve time by 8–16% on the RTX A500 with 2,048 plans;
+FP32 with SFU and FP64 keep the compiler default because the benefit did not
+generalize across math modes. Use `--max-registers 0` for the compiler default,
+or a value from 32 through 255 for an explicit limit. The summary records the
+effective limit. This is a compile-time setting, while `--warps-per-problem` is
 fixed when constructing the planner. More warps can accelerate one problem but
 reduce how many problem blocks fit on an SM. A register limit can allow more
 resident blocks at the cost of spills. Tune the two settings together for the
 intended batch size; neither changes the reserved tree capacity or sampling.
 The runtime rejects warp counts exceeding the compiled kernel/device limits.
+
+`--live-budget 64` enables the CUDA generator's liveness scheduler; omitting it
+keeps DAG order. The budget counts live scalar DAG values, whereas
+`--max-registers` constrains the compiler's registers per thread. These are
+independent inputs to code generation and compilation; tune their combination.
+A budget of zero always prioritizes the next output's dependencies.
 
 The start/goal are copied from `plainmp/example/bench/fetch_plan.py`, using the
 eight control joints and default per-joint resolution 0.05. Bounds and collision geometry
