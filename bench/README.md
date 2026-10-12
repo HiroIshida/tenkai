@@ -165,6 +165,11 @@ edge may exceed `step_size`, and is checked at the same resolution. Candidates
 are inserted in fixed order after validation. No intermediate nodes or path
 smoothing are added. A collision rejects the entire edge.
 
+EXTEND and CONNECT edges first probe four points near the quarter intervals,
+including the new endpoint, on the original checking grid. A collision rejects
+the edge immediately; surviving edges receive the full resolution check.
+Edges with at most four intervals go straight to the full check.
+
 `--algorithm rrtc` selects batched RRT-Connect, following the EXTEND/CONNECT
 structure in `plainmp/third/ompl_rrtc`. Each round alternates the active tree
 between start and goal. It samples and validates a batch of extensions against

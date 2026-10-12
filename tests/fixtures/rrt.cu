@@ -51,6 +51,56 @@ void validate_path(const std::vector<Scalar>& path, const m::RrtProblem& problem
     }
 }
 
+__global__ void check_edge_grid(m::RrtCandidate* candidates, uint32_t count,
+                                const Scalar* nodes, m::RrtSpace space, m::Scene scene,
+                                m::EdgeDirection direction) {
+    __shared__ uint64_t total_checks;
+    m::RrtProblem problem{};
+    problem.environment_id = 1;
+    m::rrt_check_edges(candidates, count, nodes, problem, space, scene, direction, total_checks);
+}
+
+void check_edge_grids(const m::RrtSpace& space, m::Scene scene) {
+    struct Edge { double from, to, y; uint32_t steps; bool blocked; };
+    const Edge cases[] = {
+        {-0.8, 1.2, 0, 80, true}, // All quarter probes miss the obstacle.
+        {-2.6, 0.6, 0, 65, true}, // Collision after the first 32 samples.
+        {-0.8, 1.2, 0.8, 80, false},
+        {-0.8, 0.8, 0, 1, false}, // Only the endpoint belongs to this grid.
+        {-0.8, 0.8, 0, 2, true},
+        {0.2, 0, 0, 1, true}, // The new endpoint must be checked in reverse too.
+        {0.8, 0.8, 0, 0, false},
+    };
+    const uint32_t case_count = sizeof(cases) / sizeof(cases[0]);
+    const uint32_t count = 3 * case_count;
+    std::vector<m::RrtCandidate> candidates(count);
+    std::vector<Scalar> nodes(count * 2);
+    for (uint32_t c = 0; c < count; ++c) {
+        const auto& edge = cases[c % case_count];
+        candidates[c].parent = c;
+        candidates[c].q[0] = Scalar(edge.y);
+        candidates[c].q[1] = Scalar(edge.to);
+        candidates[c].steps = edge.steps;
+        nodes[2*c] = Scalar(edge.y);
+        nodes[2*c+1] = Scalar(edge.from);
+    }
+    m::DeviceBuffer<m::RrtCandidate> device_candidates(count);
+    m::DeviceBuffer<Scalar> device_nodes(nodes.size());
+    device_nodes.upload(nodes.data(), nodes.size());
+    for (auto direction : {m::EdgeDirection::Forward, m::EdgeDirection::Reverse}) {
+        for (uint32_t warps : {1u, 3u, 4u, 8u}) {
+            device_candidates.upload(candidates.data(), count);
+            check_edge_grid<<<1, 32 * warps>>>(device_candidates.data(), count,
+                device_nodes.data(), space, scene, direction);
+            m::cuda_check(cudaGetLastError(), "check edge grids");
+            std::vector<m::RrtCandidate> checked(count);
+            device_candidates.download(checked.data(), count);
+            for (uint32_t c = 0; c < count; ++c)
+                assert(bool(checked[c].blocked) == cases[c % case_count].blocked);
+        }
+    }
+}
+
 int main() try {
     const m::Box boxes[] = {
         {{{0,0,Scalar(0.25)}, {1,0,0,0,1,0,0,0,1}}, {Scalar(0.2),Scalar(0.8),Scalar(0.2)}},
@@ -65,6 +115,7 @@ int main() try {
     device_environments.upload(environments, 3);
     const m::Scene scene = {device_environments.data(), device_boxes.data(), nullptr, nullptr, nullptr};
     m::RrtSpace space{{-1,-1}, {1,1}, {Scalar(0.025),Scalar(0.025)}, {0,0,Scalar(0.25)}};
+    check_edge_grids(space, scene);
     rkern::RrtConfig config;
     config.max_nodes = 1024;
     config.samples_per_round = 64;

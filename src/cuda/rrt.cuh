@@ -131,11 +131,41 @@ __device__ inline void rrt_extend(RrtCandidate& candidate, const Scalar* nodes,
     candidate.steps = moved ? rrt_steps(parent, candidate.q, space) : 0;
 }
 
+__device__ inline bool rrt_edge_collision(const RrtCandidate& candidate, uint32_t step,
+                                          const Scalar* nodes, const RrtProblem& problem,
+                                          const RrtSpace& space, Scene scene, EdgeDirection direction) {
+    const Scalar* parent = nodes + size_t(candidate.parent) * rrt_dimension;
+    const Scalar* from = direction == EdgeDirection::Forward ? parent : candidate.q;
+    const Scalar* to = direction == EdgeDirection::Forward ? candidate.q :
+        (direction == EdgeDirection::Reverse ? parent : problem.goal);
+    const double ratio = double(step) / candidate.steps;
+    Scalar q[rrt_dimension];
+    for (uint32_t d = 0; d < rrt_dimension; ++d)
+        q[d] = step == candidate.steps ? to[d] : (step == 0 ? from[d] : Scalar(
+            double(from[d]) + ratio * (double(to[d]) - double(from[d]))));
+    return rrt_collision(q, space, scene, problem.environment_id);
+}
+
 // All threads in the block must participate, including those with no edge work.
 __device__ inline void rrt_check_edges(RrtCandidate* candidates, uint32_t count,
                                        const Scalar* nodes, const RrtProblem& problem,
                                        const RrtSpace& space, Scene scene, EdgeDirection direction,
                                        uint64_t& total_checks) {
+    if (direction != EdgeDirection::Goal) {
+        // Probe existing grid points; accepting an edge still requires the full grid.
+        for (uint64_t task = threadIdx.x; task < uint64_t(count) * 4; task += blockDim.x) {
+            RrtCandidate& candidate = candidates[task / 4];
+            if (candidate.steps <= 4) continue;
+            uint32_t step = uint64_t(candidate.steps) * (task % 4 + 1) / 4;
+            if (direction == EdgeDirection::Reverse) step = candidate.steps - step;
+            if (rrt_edge_collision(candidate, step, nodes, problem, space, scene, direction))
+                atomicOr(&candidate.blocked, 1u);
+        }
+        __syncthreads();
+        for (uint32_t c = threadIdx.x; c < count; c += blockDim.x)
+            if (candidates[c].blocked) candidates[c].steps = 0;
+        __syncthreads();
+    }
     if (threadIdx.x == 0) {
         total_checks = 0;
         for (uint32_t c = 0; c < count; ++c) {
@@ -161,18 +191,9 @@ __device__ inline void rrt_check_edges(RrtCandidate* candidates, uint32_t count,
             else high = middle;
         }
         RrtCandidate& candidate = candidates[low];
-        const Scalar* parent = nodes + size_t(candidate.parent) * rrt_dimension;
-        const Scalar* from = direction == EdgeDirection::Forward ? parent : candidate.q;
-        const Scalar* to = direction == EdgeDirection::Forward ? candidate.q :
-            (direction == EdgeDirection::Reverse ? parent : problem.goal);
         const uint32_t step = static_cast<uint32_t>(task - candidate.offset) +
             (direction == EdgeDirection::Reverse ? 0 : 1);
-        const double ratio = double(step) / candidate.steps;
-        Scalar q[rrt_dimension];
-        for (uint32_t d = 0; d < rrt_dimension; ++d)
-            q[d] = step == candidate.steps ? to[d] : (step == 0 ? from[d] : Scalar(
-                double(from[d]) + ratio * (double(to[d]) - double(from[d]))));
-        if (rrt_collision(q, space, scene, problem.environment_id))
+        if (rrt_edge_collision(candidate, step, nodes, problem, space, scene, direction))
             atomicOr(direction == EdgeDirection::Goal ? &candidate.goal_blocked : &candidate.blocked, 1u);
     }
     __syncthreads();
