@@ -6,6 +6,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <math.h>
+#include <float.h>
 
 namespace @NAMESPACE@ {
 using Scalar = @SCALAR@;
@@ -28,6 +29,50 @@ struct Scene {
     const Cylinder* cylinders;
     const Ground* grounds;
 };
+
+// Bounds of the computed centers, expanded by the group's largest sphere radius.
+struct SphereBounds { Vec3 lower, upper; Scalar radius; };
+
+__device__ inline bool overlaps(Vec3 position, Vec3 half_extents, const SphereBounds& bounds) {
+    const Scalar epsilon = sizeof(Scalar) == sizeof(float) ? Scalar(FLT_EPSILON) : Scalar(DBL_EPSILON);
+    const Scalar minimum = sizeof(Scalar) == sizeof(float) ? Scalar(FLT_MIN) : Scalar(DBL_MIN);
+    const Scalar scale = fabs@SUFFIX@(position.x) + fabs@SUFFIX@(position.y) + fabs@SUFFIX@(position.z)
+        + half_extents.x + half_extents.y + half_extents.z + bounds.radius
+        + fmax@SUFFIX@(fabs@SUFFIX@(bounds.lower.x), fabs@SUFFIX@(bounds.upper.x))
+        + fmax@SUFFIX@(fabs@SUFFIX@(bounds.lower.y), fabs@SUFFIX@(bounds.upper.y))
+        + fmax@SUFFIX@(fabs@SUFFIX@(bounds.lower.z), fabs@SUFFIX@(bounds.upper.z));
+    // Broad-phase rounding must not discard contact accepted by the narrow phase.
+    // Its squared distances can also underflow near zero; uncertain bounds fall through.
+    const Scalar radius = bounds.radius + Scalar(64) * epsilon * scale + Scalar(8) * sqrt@SUFFIX@(minimum);
+    return !(bounds.lower.x > position.x + half_extents.x + radius ||
+             bounds.upper.x < position.x - half_extents.x - radius ||
+             bounds.lower.y > position.y + half_extents.y + radius ||
+             bounds.upper.y < position.y - half_extents.y - radius ||
+             bounds.lower.z > position.z + half_extents.z + radius ||
+             bounds.upper.z < position.z - half_extents.z - radius);
+}
+
+__device__ inline bool overlaps(const Pose& pose, Vec3 half_extents, const SphereBounds& bounds) {
+    const Scalar* r = pose.world_to_local;
+    const Vec3 world_half_extents = {
+        fabs@SUFFIX@(r[0])*half_extents.x + fabs@SUFFIX@(r[3])*half_extents.y + fabs@SUFFIX@(r[6])*half_extents.z,
+        fabs@SUFFIX@(r[1])*half_extents.x + fabs@SUFFIX@(r[4])*half_extents.y + fabs@SUFFIX@(r[7])*half_extents.z,
+        fabs@SUFFIX@(r[2])*half_extents.x + fabs@SUFFIX@(r[5])*half_extents.y + fabs@SUFFIX@(r[8])*half_extents.z};
+    return overlaps(pose.position, world_half_extents, bounds);
+}
+
+__device__ inline bool overlaps(const Box& box, const SphereBounds& bounds) {
+    return overlaps(box.pose, {box.extents.x * Scalar(0.5), box.extents.y * Scalar(0.5),
+                              box.extents.z * Scalar(0.5)}, bounds);
+}
+
+__device__ inline bool overlaps(const Sphere& sphere, const SphereBounds& bounds) {
+    return overlaps(sphere.position, {sphere.radius, sphere.radius, sphere.radius}, bounds);
+}
+
+__device__ inline bool overlaps(const Cylinder& cylinder, const SphereBounds& bounds) {
+    return overlaps(cylinder.pose, {cylinder.radius, cylinder.radius, cylinder.height * Scalar(0.5)}, bounds);
+}
 
 __device__ inline Vec3 local_point(const Pose& pose, Vec3 point) {
     const Scalar x = point.x - pose.position.x;

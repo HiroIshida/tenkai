@@ -7,6 +7,13 @@ namespace m = RKERN_MODEL_NAMESPACE;
 using Scalar = m::Scalar;
 using Status = rkern::PlanStatus;
 using Algorithm = rkern::RrtAlgorithm;
+namespace sdf = m;
+#include "broad_phase_checks.h"
+
+__global__ void check_broad_phase_device(bool* result) {
+    const unsigned int index = blockIdx.x * blockDim.x + threadIdx.x;
+    if (index < broad_phase_case_count) result[index] = check_broad_phase_case(index);
+}
 
 template <typename F> void rejects(F operation) {
     bool rejected = false;
@@ -165,6 +172,15 @@ __global__ void check_cached_nearest(m::RrtSpace space) {
 }
 
 int main() try {
+    m::DeviceBuffer<bool> broad_phase_result(broad_phase_case_count);
+    check_broad_phase_device<<<(broad_phase_case_count+127)/128,128>>>(broad_phase_result.data());
+    m::cuda_check(cudaGetLastError(), "check broad phase");
+    bool broad_phase_passed[broad_phase_case_count];
+    broad_phase_result.download(broad_phase_passed, broad_phase_case_count);
+    for (unsigned int i=0; i<broad_phase_case_count; ++i) {
+        if (!broad_phase_passed[i]) std::cerr << "broad phase case " << i << " failed\n";
+        assert(broad_phase_passed[i]);
+    }
     check_distance_range();
     const m::Box boxes[] = {
         {{{0,0,Scalar(0.25)}, {1,0,0,0,1,0,0,0,1}}, {Scalar(0.2),Scalar(0.8),Scalar(0.2)}},

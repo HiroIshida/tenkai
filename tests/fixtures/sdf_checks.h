@@ -1,4 +1,5 @@
 #include <limits>
+#include "broad_phase_checks.h"
 
 bool check_sdfs() {
     const sdf::Pose identity = {{0,0,0}, {1,0,0,0,1,0,0,0,1}};
@@ -61,6 +62,12 @@ bool check_sdfs() {
         if (intersections[i][0] != intersections[i][1]) {
             std::fprintf(stderr, "intersection check %zu: %d != %d\n", i,
                          int(intersections[i][0]), int(intersections[i][1]));
+            return false;
+        }
+    }
+    for (unsigned int i=0; i<broad_phase_case_count; ++i) {
+        if (!check_broad_phase_case(i)) {
+            std::fprintf(stderr, "broad phase case %u failed\n", i);
             return false;
         }
     }

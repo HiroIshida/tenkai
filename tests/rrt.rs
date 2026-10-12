@@ -33,13 +33,23 @@ fn controls_must_be_nonempty_unique_fk_inputs() {
 #[ignore = "requires CUDA toolkit and GPU; set NVCC and CXX if needed"]
 fn batched_rrt_and_connect_solve_and_report_failures_for_each_precision() {
     let fk = robot();
-    let spheres = [rkern::collision::Sphere {
-        center: cuda::SphereCenter {
-            link_index: 3,
-            position: [0.0; 3],
+    let spheres = [
+        rkern::collision::Sphere {
+            center: cuda::SphereCenter {
+                link_index: 3,
+                position: [0.0; 3],
+            },
+            radius: 0.05,
         },
-        radius: 0.05,
-    }];
+        // The contained sphere exercises group bounds without changing the obstacle model.
+        rkern::collision::Sphere {
+            center: cuda::SphereCenter {
+                link_index: 3,
+                position: [0.0, 0.0, 0.025],
+            },
+            radius: 0.025,
+        },
+    ];
     for math in [
         cuda::MathMode::F32,
         cuda::MathMode::F64,
@@ -61,6 +71,11 @@ fn batched_rrt_and_connect_solve_and_report_failures_for_each_precision() {
         )
         .unwrap();
         fs::write(directory.join("main.cu"), include_str!("fixtures/rrt.cu")).unwrap();
+        fs::write(
+            directory.join("broad_phase_checks.h"),
+            include_str!("fixtures/broad_phase_checks.h"),
+        )
+        .unwrap();
         let namespace = if math == cuda::MathMode::F64 {
             "rkern_f64"
         } else {

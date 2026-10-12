@@ -16,6 +16,11 @@ pub(super) fn check_arithmetic(cases: &[Case], precision: Precision) {
     )
     .unwrap();
     fs::write(
+        directory.join("broad_phase_checks.h"),
+        include_str!("../fixtures/broad_phase_checks.h"),
+    )
+    .unwrap();
+    fs::write(
         directory.join("main.cpp"),
         include_str!("../fixtures/cuda_host.cpp"),
     )

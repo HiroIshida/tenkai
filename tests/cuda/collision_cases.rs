@@ -107,6 +107,7 @@ const sdf::Scene scene = {envs, nullptr, nullptr, nullptr, shapes};
     for count in [15, 16, 17, 32, 33] {
         cases.push(group_boundary_case(&root, count, options));
     }
+    cases.push(sparse_group_case(&root, options));
 
     let chain = FkDag::from_robot(
         &urdf::read_from_string(include_str!("../fixtures/fk_chain.urdf")).unwrap(),
@@ -130,6 +131,41 @@ const sdf::Scene scene = {envs, nullptr, nullptr, nullptr, shapes};
         collision::read_spheres(include_str!("../../assets/fetch/collision.yaml"), &fetch).unwrap();
     cases.push(fk_case("fetch", &fetch, &spheres, options));
     cases
+}
+
+fn sparse_group_case(fk: &FkDag, options: cuda::Options) -> Case {
+    let spheres = [-2.0, 2.0].map(|x| Sphere {
+        center: SphereCenter {
+            link_index: 0,
+            position: [x, 0.0, 0.0],
+        },
+        radius: 0.25,
+    });
+    Case {
+        name: "collision_obstacles_in_group_gap_are_not_collisions".into(),
+        source: cuda::generate_collision_kernel(fk, &spheres, options).unwrap(),
+        entry: "rkern_collision",
+        components: 1,
+        count: 6,
+        inputs: vec![],
+        expected: vec![0.0, 0.0, 0.0, 1.0, 1.0, 1.0],
+        collision_setup: Some(
+            r#"
+const sdf::Pose origin = {{0,0,0},{0,1,0,-1,0,0,0,0,1}};
+const sdf::Pose touching = {{Scalar(2.75),0,0},{0,1,0,-1,0,0,0,0,1}};
+const sdf::Box boxes[] = {{origin,{1,1,1}}, {touching,{1,1,1}}};
+const sdf::Sphere obstacles[] = {{{0,0,0},Scalar(0.5)}, {{Scalar(2.75),0,0},Scalar(0.5)}};
+const sdf::Cylinder cylinders[] = {{origin,Scalar(0.5),1}, {touching,Scalar(0.5),1}};
+const sdf::Environment envs[] = {
+    {{0,1},{0,0},{0,0},{0,0}}, {{0,0},{0,1},{0,0},{0,0}}, {{0,0},{0,0},{0,1},{0,0}},
+    {{1,1},{0,0},{0,0},{0,0}}, {{0,0},{1,1},{0,0},{0,0}}, {{0,0},{0,0},{1,1},{0,0}}
+};
+const sdf::Scene scene = {envs, boxes, obstacles, cylinders, nullptr};
+const uint32_t environment_ids[] = {0,1,2,3,4,5};
+"#
+            .into(),
+        ),
+    }
 }
 
 fn group_boundary_case(fk: &FkDag, count: usize, options: cuda::Options) -> Case {

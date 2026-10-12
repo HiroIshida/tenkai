@@ -12,8 +12,9 @@ const SPHERES_PER_GROUP: usize = 16;
 ///
 /// One thread checks one configuration against its selected environment. Centers
 /// are computed in groups of up to 16 spheres, reusing shared FK values. Each group
-/// traverses the runtime obstacles once and checks all its spheres against each one.
-/// Every sphere/obstacle pair is evaluated, without early exit.
+/// traverses the runtime obstacles once. A group AABB excludes separated finite
+/// obstacles before checking individual spheres; ground checks go directly to
+/// the narrow phase. A colliding group ends the query.
 /// Output is `[count]` bytes: 1 for collision (including touching), 0 otherwise.
 /// An empty environment or empty robot sphere list produces 0.
 ///
@@ -22,7 +23,7 @@ const SPHERES_PER_GROUP: usize = 16;
 /// (uint32_t per query) reference device buffers. Each `Environment` contains
 /// offset/count ranges into the scene's Box, Sphere, Cylinder, and Ground arrays.
 /// A union is represented by multiple array entries; a point cloud by equal-radius
-/// spheres. No spatial acceleration or self-collision checks are performed.
+/// spheres. No scene hierarchy or self-collision checks are performed.
 ///
 /// Inputs follow `FkDag::joint_names()`, as in `generate_centers_kernel`.
 /// Environment geometry must be in the robot root frame. `Pose::world_to_local`
@@ -154,6 +155,27 @@ fn write_collision_group(
     namespace: &str,
     suffix: &str,
 ) {
+    if spheres.len() > 1 {
+        let bounds = ["fmin", "fmax"].map(|operation| {
+            let coordinates = ["x", "y", "z"].map(|axis| {
+                (start + 1..start + spheres.len())
+                    .fold(format!("point{start}.{axis}"), |value, i| {
+                        format!("{operation}{suffix}({value}, point{i}.{axis})")
+                    })
+            });
+            format!("{{{}}}", coordinates.join(", "))
+        });
+        let radius = spheres
+            .iter()
+            .map(|sphere| sphere.radius)
+            .fold(0.0, f64::max);
+        writeln!(
+            source,
+            "    const {namespace}::SphereBounds bounds{start} = {{{}, {radius:.17e}{suffix}}};",
+            bounds.join(", "),
+        )
+        .expect("writing to String is infallible");
+    }
     for (primitive, field) in [
         ("Box", "boxes"),
         ("Sphere", "spheres"),
@@ -172,6 +194,14 @@ fn write_collision_group(
 "#,
         )
         .expect("writing to String is infallible");
+        let broad_phase = spheres.len() > 1 && primitive != "Ground";
+        if broad_phase {
+            writeln!(
+                source,
+                "        if ({namespace}::overlaps(obstacle, bounds{start})) {{"
+            )
+            .expect("writing to String is infallible");
+        }
         for (offset, sphere) in spheres.iter().enumerate() {
             let index = start + offset;
             let radius = sphere.radius;
@@ -181,6 +211,10 @@ fn write_collision_group(
             )
             .expect("writing to String is infallible");
         }
+        if broad_phase {
+            source.push_str("        }\n");
+        }
+        source.push_str("        if (collision) return true;\n");
         source.push_str("    }\n");
     }
 }
