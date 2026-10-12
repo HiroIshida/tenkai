@@ -1,3 +1,13 @@
+namespace @NAMESPACE@ {
+__device__ inline uint32_t rrtc_nearest_width(uint32_t unscanned, uint32_t queries) {
+    if (unscanned < 32) return 1;
+    uint32_t width = 32;
+    // Preserve query concurrency instead of assigning a whole warp to every query.
+    while (width > 1 && queries > blockDim.x / width) width /= 2;
+    return width;
+}
+}
+
 // Both trees share max_nodes slots. Roots point to themselves; other parents
 // precede their children. Tree tags keep nearest-neighbor searches separate.
 extern "C" __global__ void rkern_rrtc(
@@ -17,7 +27,9 @@ extern "C" __global__ void rkern_rrtc(
     uint32_t* path = all_paths + problem_id * config.max_nodes;
     RrtCandidate* candidates = all_candidates + problem_id * config.samples_per_round;
     __shared__ rkern::RrtResult result;
-    __shared__ bool start_valid, goal_valid, finished, connecting;
+    __shared__ bool start_valid, goal_valid, connecting;
+    // Prevent speculative reads outside thread zero's node-limit checks.
+    __shared__ volatile bool finished;
     rrt_initialize(problem, space, scene, nodes, parents, path, result,
                    start_valid, goal_valid, finished, trees);
     if (thread == 0 && !finished && result.node_count == config.max_nodes) {
@@ -31,11 +43,16 @@ extern "C" __global__ void rkern_rrtc(
         const uint32_t snapshot_size = result.node_count;
         const uint32_t remaining = config.max_nodes - snapshot_size;
         const uint32_t count = remaining < config.samples_per_round ? remaining : config.samples_per_round;
-        for (uint32_t c = thread; c < count; c += blockDim.x) {
+        const uint32_t width = rrtc_nearest_width(snapshot_size, count);
+        const uint32_t lane = thread & (width - 1);
+        for (uint32_t c = thread / width; c < count; c += blockDim.x / width) {
             RrtCandidate& candidate = candidates[c];
-            rrt_sample(candidate, problem, space, config, round, c,
-                       active == RrtTree::Start ? problem.goal : problem.start);
-            rrt_extend(candidate, nodes, snapshot_size, space, config.step_size, trees, active);
+            if (lane == 0)
+                rrt_sample(candidate, problem, space, config, round, c,
+                           active == RrtTree::Start ? problem.goal : problem.start);
+            if (width > 1) __syncwarp(rrt_group_mask(width));
+            rrt_extend(candidate, nodes, snapshot_size, space, config.step_size,
+                       trees, active, nullptr, width);
         }
         __syncthreads();
         rrt_check_edges(candidates, count, nodes, problem, space, scene,
@@ -57,20 +74,28 @@ extern "C" __global__ void rkern_rrtc(
         __syncthreads();
         // Every Advanced connection adds a node, bounding CONNECT by max_nodes.
         // Each wave reads a snapshot; insertion order is independent of warps.
+        uint32_t connect_scanned = 0;
         while (connecting && !finished) {
             const uint32_t connect_snapshot = result.node_count;
-            for (uint32_t c = thread; c < count; c += blockDim.x) {
+            // Every still-Advanced query has scanned the preceding wave's snapshot.
+            const uint32_t width = rrtc_nearest_width(connect_snapshot - connect_scanned, count);
+            const uint32_t lane = thread & (width - 1);
+            for (uint32_t c = thread / width; c < count; c += blockDim.x / width) {
                 RrtCandidate& candidate = candidates[c];
-                candidate.steps = 0;
+                if (lane == 0) candidate.steps = 0;
                 if (candidate.state != GrowState::Advanced) continue;
-                for (uint32_t d = 0; d < rrt_dimension; ++d)
-                    candidate.q[d] = nodes[size_t(candidate.target) * rrt_dimension + d];
-                candidate.reaches_target = true;
+                if (lane == 0) {
+                    for (uint32_t d = 0; d < rrt_dimension; ++d)
+                        candidate.q[d] = nodes[size_t(candidate.target) * rrt_dimension + d];
+                    candidate.reaches_target = true;
+                }
+                if (width > 1) __syncwarp(rrt_group_mask(width));
                 rrt_extend(candidate, nodes, connect_snapshot, space, config.step_size,
-                           trees, other, &candidate.nearest);
+                           trees, other, &candidate.nearest, width);
                 // An existing node at the target is already a valid connection.
-                if (!candidate.steps && candidate.reaches_target) candidate.blocked = 0;
+                if (lane == 0 && !candidate.steps && candidate.reaches_target) candidate.blocked = 0;
             }
+            connect_scanned = connect_snapshot;
             __syncthreads();
             rrt_check_edges(candidates, count, nodes, problem, space, scene,
                             other == RrtTree::Start ? EdgeDirection::Forward : EdgeDirection::Reverse);

@@ -126,22 +126,43 @@ __device__ inline double rrt_squared_distance(const Scalar* a, const Scalar* b) 
     return wide_distance;
 }
 
-__device__ inline void rrt_extend(RrtCandidate& candidate, const Scalar* nodes,
-                                  uint32_t snapshot_size, const RrtSpace& space, double step_size,
-                                  const RrtTree* trees = nullptr, RrtTree tree = RrtTree::Start,
-                                  RrtNearestCache* cache = nullptr) {
-    double best_distance = cache ? cache->squared_distance : INFINITY;
-    uint32_t nearest = cache ? cache->node : 0;
+__device__ inline unsigned int rrt_group_mask(uint32_t width) {
+    return (0xffffffffu >> (32 - width)) << ((threadIdx.x % 32) & ~(width - 1));
+}
+
+// Width is a power of two in [1, 32]; every lane in the aligned group participates.
+// Each lane owns its cache value; only lane zero receives the reduced answer.
+__device__ inline void rrt_nearest(const Scalar* q, const Scalar* nodes, uint32_t snapshot_size,
+                                   const RrtTree* trees, RrtTree tree, RrtNearestCache& nearest,
+                                   uint32_t width = 1) {
+    const uint32_t lane = threadIdx.x & (width - 1);
+    double best_distance = nearest.squared_distance;
+    uint32_t best_node = nearest.node;
     // With an unchanged target and tree, only appended nodes can improve the answer.
-    for (uint32_t n = cache ? cache->scanned : 0; n < snapshot_size; ++n) {
+    for (uint64_t n = uint64_t(nearest.scanned) + lane; n < snapshot_size; n += width) {
         if (trees && trees[n] != tree) continue;
-        const double distance = rrt_squared_distance(nodes + size_t(n) * rrt_dimension, candidate.q);
-        if (distance < best_distance) { best_distance = distance; nearest = n; }
+        const double distance = rrt_squared_distance(nodes + size_t(n) * rrt_dimension, q);
+        if (distance < best_distance) { best_distance = distance; best_node = uint32_t(n); }
     }
-    if (cache) *cache = {nearest, snapshot_size, best_distance};
-    const Scalar* parent = nodes + size_t(nearest) * rrt_dimension;
+    if (width > 1) {
+        const unsigned int mask = rrt_group_mask(width);
+        for (uint32_t offset = width / 2; offset; offset /= 2) {
+            const double distance = __shfl_down_sync(mask, best_distance, offset, width);
+            const uint32_t node = __shfl_down_sync(mask, best_node, offset, width);
+            // Equal distances retain the earliest node, matching the serial scan.
+            if (lane + offset < width &&
+                (distance < best_distance || (distance == best_distance && node < best_node))) {
+                best_distance = distance;
+                best_node = node;
+            }
+        }
+    }
+    nearest = {best_node, snapshot_size, best_distance};
+}
+
+__device__ inline void rrt_steer(RrtCandidate& candidate, const Scalar* parent,
+                                 double best_distance, const RrtSpace& space, double step_size) {
     const double distance = sqrt(best_distance);
-    candidate.parent = nearest;
     candidate.reaches_target &= distance <= step_size;
     if (distance > step_size) {
         const double wide_ratio = step_size / distance;
@@ -154,6 +175,24 @@ __device__ inline void rrt_extend(RrtCandidate& candidate, const Scalar* nodes,
     for (uint32_t d = 0; d < rrt_dimension; ++d) moved |= candidate.q[d] != parent[d];
     candidate.blocked = !moved;
     candidate.steps = moved ? rrt_steps(parent, candidate.q, space) : 0;
+}
+
+// Parallel callers share candidate/cache and initialize them before the group enters.
+__device__ inline void rrt_extend(RrtCandidate& candidate, const Scalar* nodes,
+                                  uint32_t snapshot_size, const RrtSpace& space, double step_size,
+                                  const RrtTree* trees = nullptr, RrtTree tree = RrtTree::Start,
+                                  RrtNearestCache* cache = nullptr, uint32_t width = 1) {
+    RrtNearestCache nearest = cache ? *cache : RrtNearestCache{0, 0, INFINITY};
+    rrt_nearest(candidate.q, nodes, snapshot_size, trees, tree, nearest, width);
+    // Shuffles do not fence the other lanes' reads of the query and shared cache.
+    if (width > 1) __syncwarp(rrt_group_mask(width));
+    if ((threadIdx.x & (width - 1)) == 0) {
+        if (cache) *cache = nearest;
+        candidate.parent = nearest.node;
+        rrt_steer(candidate, nodes + size_t(nearest.node) * rrt_dimension,
+                  nearest.squared_distance, space, step_size);
+    }
+    if (width > 1) __syncwarp(rrt_group_mask(width));
 }
 
 __device__ inline bool rrt_edge_collision(const RrtCandidate& candidate, uint32_t step,
@@ -248,7 +287,7 @@ __device__ inline void rrt_start_path(uint32_t node, const uint32_t* parents,
 __device__ inline void rrt_initialize(const RrtProblem& problem, const RrtSpace& space, Scene scene,
                                       Scalar* nodes, uint32_t* parents, uint32_t* path,
                                       rkern::RrtResult& result, bool& start_valid,
-                                      bool& goal_valid, bool& finished, RrtTree* trees = nullptr) {
+                                      bool& goal_valid, volatile bool& finished, RrtTree* trees = nullptr) {
     if (threadIdx.x == 0) {
         result = {rkern::PlanStatus::RoundLimit, 0, 0, 0};
         finished = false;

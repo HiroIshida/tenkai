@@ -171,6 +171,83 @@ __global__ void check_cached_nearest(m::RrtSpace space) {
     }
 }
 
+__global__ void check_grouped_nearest(m::RrtSpace space) {
+    using Tree = m::RrtTree;
+    constexpr uint32_t capacity = 192, max_queries = 129;
+    __shared__ Scalar nodes[capacity * m::rrt_dimension];
+    __shared__ Tree trees[capacity];
+    __shared__ m::RrtCandidate candidates[max_queries];
+    for (uint32_t width : {1u, 2u, 4u, 8u, 16u, 32u}) {
+        assert(m::rrtc_nearest_width(31, blockDim.x / width) == 1);
+        assert(m::rrtc_nearest_width(32, blockDim.x / width) == width);
+    }
+    assert(m::rrtc_nearest_width(32, blockDim.x + 1) == 1);
+    assert(m::rrtc_nearest_width(capacity, 1) == 32);
+    for (Scalar scale : {Scalar(1), Scalar(1e-30), Scalar(1e20)}) {
+        for (uint32_t d = 0; d < m::rrt_dimension; ++d) space.resolution[d] = Scalar(0.025) * scale;
+        for (uint32_t n = threadIdx.x; n < capacity; n += blockDim.x) {
+            Scalar x = Scalar(4 + n % 7);
+            if (n == 2) x = -1;
+            if (n == 31 || n == 32) x = 1;
+            if (n == 64 || n == 65 || n == 95) x = 0;
+            nodes[n * m::rrt_dimension] = x * scale;
+            nodes[n * m::rrt_dimension + 1] = 0;
+            trees[n] = n % 2 ? Tree::Goal : Tree::Start;
+        }
+        __syncthreads();
+        for (uint32_t queries : {1u, 3u, 4u, 8u, 17u, 32u, 65u, max_queries}) {
+            for (Tree tree : {Tree::Start, Tree::Goal}) {
+                for (bool cached : {false, true}) {
+                    for (uint32_t c = threadIdx.x; c < queries; c += blockDim.x)
+                        candidates[c].nearest = {0, 0, INFINITY};
+                    __syncthreads();
+                    uint32_t scanned = 0;
+                    for (uint32_t snapshot : {2u, 2u, 31u, 32u, 64u, 65u, 96u, 128u, 160u, capacity}) {
+                        const uint32_t width = m::rrtc_nearest_width(snapshot - (cached ? scanned : 0), queries);
+                        const uint32_t lane = threadIdx.x & (width - 1);
+                        for (uint32_t c = threadIdx.x / width; c < queries; c += blockDim.x / width) {
+                            auto& candidate = candidates[c];
+                            const Scalar target = Scalar(c % 5) * Scalar(0.25) * scale;
+                            if (lane == 0) {
+                                candidate.q[0] = target;
+                                candidate.q[1] = 0;
+                                candidate.reaches_target = true;
+                            }
+                            if (width > 1) __syncwarp(m::rrt_group_mask(width));
+                            m::rrt_extend(candidate, nodes, snapshot, space, double(scale) * 0.25,
+                                          trees, tree, cached ? &candidate.nearest : nullptr, width);
+                            if (lane == 0) {
+                                m::RrtCandidate reference{};
+                                reference.q[0] = target;
+                                reference.reaches_target = true;
+                                m::RrtNearestCache nearest{0, 0, INFINITY};
+                                m::rrt_extend(reference, nodes, snapshot, space, double(scale) * 0.25,
+                                              trees, tree, &nearest);
+                                assert(candidate.parent == reference.parent);
+                                assert(candidate.steps == reference.steps && candidate.blocked == reference.blocked);
+                                assert(candidate.reaches_target == reference.reaches_target);
+                                for (uint32_t d = 0; d < m::rrt_dimension; ++d)
+                                    assert(candidate.q[d] == reference.q[d]);
+                                if (cached) {
+                                    assert(candidate.nearest.node == nearest.node);
+                                    assert(candidate.nearest.scanned == snapshot);
+                                    assert(candidate.nearest.squared_distance == nearest.squared_distance);
+                                }
+                                if (c == 0 && tree == Tree::Start && snapshot >= 31)
+                                    assert(reference.parent == (snapshot <= 64 ? 2u : 64u));
+                                if (c == 0 && tree == Tree::Goal && snapshot >= 32)
+                                    assert(reference.parent == (snapshot <= 65 ? 31u : 65u));
+                            }
+                        }
+                        scanned = snapshot;
+                        __syncthreads();
+                    }
+                }
+            }
+        }
+    }
+}
+
 int main() try {
     m::DeviceBuffer<bool> broad_phase_result(broad_phase_case_count);
     check_broad_phase_device<<<(broad_phase_case_count+127)/128,128>>>(broad_phase_result.data());
@@ -199,6 +276,11 @@ int main() try {
     check_cached_nearest<<<1, 1>>>(space);
     m::cuda_check(cudaGetLastError(), "check cached nearest nodes");
     m::cuda_check(cudaDeviceSynchronize(), "validate cached nearest nodes");
+    for (uint32_t warps : {1u, 3u, 4u, 8u}) {
+        check_grouped_nearest<<<1, 32 * warps>>>(space);
+        m::cuda_check(cudaGetLastError(), "check grouped nearest nodes");
+        m::cuda_check(cudaDeviceSynchronize(), "validate grouped nearest nodes");
+    }
     rkern::RrtConfig config;
     config.max_nodes = 1024;
     config.samples_per_round = 64;
