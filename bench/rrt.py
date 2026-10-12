@@ -203,7 +203,8 @@ def main():
     parser.add_argument("--arch", default="compute_75")
     parser.add_argument("--max-registers", type=int,
                         help="NVCC register limit per thread (32..255); omitted uses the compiler default")
-    parser.add_argument("--problems", type=int, default=32)
+    parser.add_argument("--problems", type=int, default=2048,
+                        help="planning problems per kernel launch (default: %(default)s)")
     parser.add_argument("--environments", type=int, default=1)
     parser.add_argument("--warps-per-problem", type=int, default=4)
     parser.add_argument("--samples-per-round", type=int, default=32)

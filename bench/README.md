@@ -204,11 +204,16 @@ squared distances fall back to double when they overflow or underflow; interval
 counts, random sampling, and the distance/step-size comparison remain in double.
 FP32 paths can differ from versions that used double throughout the planner.
 
-Defaults are 8,192 nodes, 1,024 rounds, goal sampling probability 0.1, and 32
+Defaults are 8,192 nodes, 1,024 rounds, goal sampling probability 0.1, and 2,048
 problems with different seeds. The seed, round, and candidate index determine
 sampling independently of warp count. Failure results distinguish invalid start,
 invalid goal, node capacity, and round limit. `--help` lists all settings.
 The default output directory is `bench/results/<algorithm>`.
+
+`--problems` sets the number of independent planning problems submitted in one
+kernel launch. The larger default lets queued problems fill available GPU capacity
+while slower problems finish, avoiding repeated drains of smaller batches.
+`--samples-per-round` sets the candidate count within each problem separately.
 
 `summary.json` reports per-problem results and whole-batch wall times for repeated
 solves, including input/result copies. Construction, compilation/JIT, warmup,
