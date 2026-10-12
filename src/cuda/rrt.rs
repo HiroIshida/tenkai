@@ -52,7 +52,9 @@ impl std::error::Error for RrtError {
 ///
 /// Launch `rkern_rrtc` with the same block layout to alternate two trees and
 /// repeatedly extend the opposite tree toward accepted endpoints. Every edge is
-/// bounded by `step_size`. Both kernels batch candidates against tree snapshots;
+/// bounded by `step_size`. With one candidate in FP32, each warp checks points
+/// spread across its edge first, covering the same full grid without separate probes.
+/// Both kernels batch candidates against tree snapshots;
 /// they do not implement sequential sampling. Parent chains are returned as node
 /// indices, with a native `RrtPlanner` wrapper for allocation, launches and path
 /// extraction. Its algorithm defaults to RRT; select `RrtAlgorithm::RrtConnect`

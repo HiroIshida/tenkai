@@ -222,13 +222,16 @@ __device__ inline bool rrt_edge_collision(const RrtCandidate& candidate, uint32_
 // All threads in the block must participate, including those with no edge work.
 __device__ inline void rrt_check_edges(RrtCandidate* candidates, uint32_t count,
                                        const Scalar* nodes, const RrtProblem& problem,
-                                       const RrtSpace& space, Scene scene, EdgeDirection direction) {
+                                       const RrtSpace& space, Scene scene, EdgeDirection direction,
+                                       bool interleaved = false) {
     __shared__ unsigned int next_edge;
     const uint32_t warps = blockDim.x / 32;
     const bool dynamic = warps > 1 && count > warps;
     // Initial warp assignments need no claim, leaving room for every terminal claim.
     if (threadIdx.x == 0) next_edge = 0;
-    if (direction != EdgeDirection::Goal) {
+    // Interleaved checks skip the probe barrier that publishes the work counter.
+    if (interleaved && dynamic) __syncthreads();
+    if (!interleaved && direction != EdgeDirection::Goal) {
         // Probe existing grid points; accepting an edge still requires the full grid.
         for (uint64_t task = threadIdx.x; task < uint64_t(count) * 4; task += blockDim.x) {
             RrtCandidate& candidate = candidates[task / 4];
@@ -258,8 +261,11 @@ __device__ inline void rrt_check_edges(RrtCandidate* candidates, uint32_t count,
         // Reverse edges include the new endpoint, which is their source.
         const uint64_t checks = uint64_t(candidate.steps) +
             (direction == EdgeDirection::Reverse && candidate.steps ? 1 : 0);
+        // Spreading each warp's checks across the edge avoids separate probes.
+        // Every original grid point is still required before accepting an edge.
+        const uint64_t waves = (checks + 31) / 32;
         for (uint64_t base = 0; base < checks; base += 32) {
-            const uint64_t sample = base + lane;
+            const uint64_t sample = interleaved ? uint64_t(lane) * waves + base / 32 : base + lane;
             bool hit = false;
             if (sample < checks) {
                 const uint32_t step = static_cast<uint32_t>(sample) +

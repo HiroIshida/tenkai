@@ -20,6 +20,7 @@ extern "C" __global__ void rkern_rrtc(
     const size_t problem_id = blockIdx.x;
     if (problem_id >= problem_count) return;
     const unsigned int thread = threadIdx.x;
+    const bool interleaved_edges = sizeof(Scalar) == sizeof(float) && config.samples_per_round == 1;
     const RrtProblem& problem = problems[problem_id];
     Scalar* nodes = all_nodes + problem_id * config.max_nodes * rrt_dimension;
     uint32_t* parents = all_parents + problem_id * config.max_nodes;
@@ -56,7 +57,8 @@ extern "C" __global__ void rkern_rrtc(
         }
         __syncthreads();
         rrt_check_edges(candidates, count, nodes, problem, space, scene,
-                        active == RrtTree::Start ? EdgeDirection::Forward : EdgeDirection::Reverse);
+                        active == RrtTree::Start ? EdgeDirection::Forward : EdgeDirection::Reverse,
+                        interleaved_edges);
         if (thread == 0) {
             result.rounds = round + 1;
             connecting = false;
@@ -98,7 +100,8 @@ extern "C" __global__ void rkern_rrtc(
             connect_scanned = connect_snapshot;
             __syncthreads();
             rrt_check_edges(candidates, count, nodes, problem, space, scene,
-                            other == RrtTree::Start ? EdgeDirection::Forward : EdgeDirection::Reverse);
+                            other == RrtTree::Start ? EdgeDirection::Forward : EdgeDirection::Reverse,
+                            interleaved_edges);
             if (thread == 0) {
                 connecting = false;
                 for (uint32_t c = 0; c < count; ++c) {

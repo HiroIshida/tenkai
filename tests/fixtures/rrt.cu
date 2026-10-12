@@ -60,32 +60,42 @@ void validate_path(const std::vector<Scalar>& path, const m::RrtProblem& problem
 
 __global__ void check_edge_grid(m::RrtCandidate* candidates, uint32_t count,
                                 const Scalar* nodes, m::RrtSpace space, m::Scene scene,
-                                m::EdgeDirection direction) {
+                                m::EdgeDirection direction, bool interleaved) {
     m::RrtProblem problem{};
     problem.environment_id = 1;
     problem.goal[1] = Scalar(0.8);
-    m::rrt_check_edges(candidates, count, nodes, problem, space, scene, direction);
+    m::rrt_check_edges(candidates, count, nodes, problem, space, scene, direction, interleaved);
 }
 
 void check_edge_grids(const m::RrtSpace& space, m::Scene scene) {
-    struct Edge { double from, to, y; uint32_t steps; bool blocked, goal_blocked; };
-    const Edge cases[] = {
-        {-0.8, 1.2, 0, 80, true, false}, // All quarter probes miss the obstacle.
-        {-2.6, 0.6, 0, 65, true, false}, // Collision after the first 32 samples.
-        {-0.8, 1.2, 0.8, 80, false, false},
-        {-0.8, 0.8, 0, 1, false, false}, // Only the endpoint belongs to this grid.
-        {-0.8, 0.8, 0, 2, true, false},
-        {0.2, 0, 0, 1, true, true}, // The new endpoint must be checked in reverse too.
-        {0.8, 0.8, 0, 0, false, false},
-        {-0.9, -0.8, 0, 4, false, true},
-        {-0.8, 1.2, 0.8, 4097, false, false},
+    struct Edge {
+        double from, to, y;
+        uint32_t steps;
+        bool forward_blocked, reverse_blocked, goal_blocked;
     };
-    const uint32_t case_count = sizeof(cases) / sizeof(cases[0]);
-    const uint32_t capacity = 65;
+    std::vector<Edge> cases{
+        {-0.8, 1.2, 0, 80, true, true, false}, // All quarter probes miss the obstacle.
+        {-2.6, 0.6, 0, 65, true, true, false}, // Collision after the first 32 samples.
+        {-0.8, 1.2, 0.8, 80, false, false, false},
+        {-0.8, 0.8, 0, 1, false, false, false}, // Only the endpoint belongs to this grid.
+        {-0.8, 0.8, 0, 2, true, true, false},
+        {0.2, 0, 0, 1, true, true, true}, // The new endpoint must be checked in reverse too.
+        {0.8, 0.8, 0, 0, false, false, false},
+        {-0.9, -0.8, 0, 4, false, false, true},
+        {-0.8, 1.2, 0.8, 4097, false, false, false},
+    };
+    for (uint32_t steps : {1u, 2u, 3u, 31u, 32u, 33u, 63u, 64u, 65u, 97u}) {
+        for (uint32_t hit = 0; hit <= steps + 1; ++hit) {
+            // Exactly one grid point can hit; omitting any point must fail.
+            cases.push_back({-0.5 * hit, 0.5 * (double(steps) - hit), 0, steps,
+                             hit > 0 && hit <= steps, hit <= steps, hit >= steps});
+        }
+    }
+    const uint32_t capacity = static_cast<uint32_t>(cases.size());
     std::vector<m::RrtCandidate> candidates(capacity);
     std::vector<Scalar> nodes(capacity * 2);
     for (uint32_t c = 0; c < capacity; ++c) {
-        const auto& edge = cases[c % case_count];
+        const auto& edge = cases[c];
         candidates[c].parent = c;
         candidates[c].q[0] = Scalar(edge.y);
         candidates[c].q[1] = Scalar(edge.to);
@@ -98,18 +108,22 @@ void check_edge_grids(const m::RrtSpace& space, m::Scene scene) {
     device_nodes.upload(nodes.data(), nodes.size());
     for (auto direction : {m::EdgeDirection::Forward, m::EdgeDirection::Reverse, m::EdgeDirection::Goal}) {
         for (uint32_t warps : {1u, 3u, 4u, 8u}) {
-            for (uint32_t count : {0u, 1u, 3u, 4u, 5u, 7u, 8u, 9u, 33u, capacity}) {
-                device_candidates.upload(candidates.data(), capacity);
-                check_edge_grid<<<1, 32 * warps>>>(device_candidates.data(), count,
-                    device_nodes.data(), space, scene, direction);
-                m::cuda_check(cudaGetLastError(), "check edge grids");
-                std::vector<m::RrtCandidate> checked(capacity);
-                device_candidates.download(checked.data(), capacity);
-                for (uint32_t c = 0; c < capacity; ++c) {
-                    const bool goal = direction == m::EdgeDirection::Goal;
-                    const bool blocked = goal ? checked[c].goal_blocked : checked[c].blocked;
-                    const auto& edge = cases[c % case_count];
-                    assert(blocked == (c < count && (goal ? edge.goal_blocked : edge.blocked)));
+            for (uint32_t count : {0u, 1u, 3u, 4u, 5u, 7u, 8u, 9u, 33u, 65u, capacity}) {
+                for (bool interleaved : {false, true}) {
+                    device_candidates.upload(candidates.data(), capacity);
+                    check_edge_grid<<<1, 32 * warps>>>(device_candidates.data(), count,
+                        device_nodes.data(), space, scene, direction, interleaved);
+                    m::cuda_check(cudaGetLastError(), "check edge grids");
+                    std::vector<m::RrtCandidate> checked(capacity);
+                    device_candidates.download(checked.data(), capacity);
+                    for (uint32_t c = 0; c < capacity; ++c) {
+                        const bool goal = direction == m::EdgeDirection::Goal;
+                        const bool blocked = goal ? checked[c].goal_blocked : checked[c].blocked;
+                        const auto& edge = cases[c];
+                        const bool expected = goal ? edge.goal_blocked :
+                            (direction == m::EdgeDirection::Forward ? edge.forward_blocked : edge.reverse_blocked);
+                        assert(blocked == (c < count && expected));
+                    }
                 }
             }
         }
