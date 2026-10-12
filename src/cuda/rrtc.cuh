@@ -18,7 +18,6 @@ extern "C" __global__ void rkern_rrtc(
     RrtCandidate* candidates = all_candidates + problem_id * config.samples_per_round;
     __shared__ rkern::RrtResult result;
     __shared__ bool start_valid, goal_valid, finished, connecting;
-    __shared__ uint64_t total_checks;
     rrt_initialize(problem, space, scene, nodes, parents, path, result,
                    start_valid, goal_valid, finished, trees);
     if (thread == 0 && !finished && result.node_count == config.max_nodes) {
@@ -40,7 +39,7 @@ extern "C" __global__ void rkern_rrtc(
         }
         __syncthreads();
         rrt_check_edges(candidates, count, nodes, problem, space, scene,
-                        active == RrtTree::Start ? EdgeDirection::Forward : EdgeDirection::Reverse, total_checks);
+                        active == RrtTree::Start ? EdgeDirection::Forward : EdgeDirection::Reverse);
         if (thread == 0) {
             result.rounds = round + 1;
             connecting = false;
@@ -72,7 +71,7 @@ extern "C" __global__ void rkern_rrtc(
             }
             __syncthreads();
             rrt_check_edges(candidates, count, nodes, problem, space, scene,
-                            other == RrtTree::Start ? EdgeDirection::Forward : EdgeDirection::Reverse, total_checks);
+                            other == RrtTree::Start ? EdgeDirection::Forward : EdgeDirection::Reverse);
             if (thread == 0) {
                 connecting = false;
                 for (uint32_t c = 0; c < count; ++c) {

@@ -54,10 +54,9 @@ void validate_path(const std::vector<Scalar>& path, const m::RrtProblem& problem
 __global__ void check_edge_grid(m::RrtCandidate* candidates, uint32_t count,
                                 const Scalar* nodes, m::RrtSpace space, m::Scene scene,
                                 m::EdgeDirection direction) {
-    __shared__ uint64_t total_checks;
     m::RrtProblem problem{};
     problem.environment_id = 1;
-    m::rrt_check_edges(candidates, count, nodes, problem, space, scene, direction, total_checks);
+    m::rrt_check_edges(candidates, count, nodes, problem, space, scene, direction);
 }
 
 void check_edge_grids(const m::RrtSpace& space, m::Scene scene) {

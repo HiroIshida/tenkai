@@ -24,7 +24,6 @@ enum class EdgeDirection { Forward, Reverse, Goal };
 struct RrtCandidate {
     Scalar q[rrt_dimension];
     uint32_t parent, steps, target;
-    uint64_t offset;
     unsigned int blocked, goal_blocked;
     bool reaches_target;
     GrowState state;
@@ -149,8 +148,7 @@ __device__ inline bool rrt_edge_collision(const RrtCandidate& candidate, uint32_
 // All threads in the block must participate, including those with no edge work.
 __device__ inline void rrt_check_edges(RrtCandidate* candidates, uint32_t count,
                                        const Scalar* nodes, const RrtProblem& problem,
-                                       const RrtSpace& space, Scene scene, EdgeDirection direction,
-                                       uint64_t& total_checks) {
+                                       const RrtSpace& space, Scene scene, EdgeDirection direction) {
     if (direction != EdgeDirection::Goal) {
         // Probe existing grid points; accepting an edge still requires the full grid.
         for (uint64_t task = threadIdx.x; task < uint64_t(count) * 4; task += blockDim.x) {
@@ -166,35 +164,35 @@ __device__ inline void rrt_check_edges(RrtCandidate* candidates, uint32_t count,
             if (candidates[c].blocked) candidates[c].steps = 0;
         __syncthreads();
     }
-    if (threadIdx.x == 0) {
-        total_checks = 0;
-        for (uint32_t c = 0; c < count; ++c) {
+    if (direction == EdgeDirection::Goal) {
+        for (uint32_t c = threadIdx.x; c < count; c += blockDim.x) {
             RrtCandidate& candidate = candidates[c];
-            if (direction == EdgeDirection::Goal) {
-                candidate.goal_blocked = candidate.blocked;
-                candidate.steps = candidate.blocked || candidate.reaches_target ? 0 :
-                    rrt_steps(candidate.q, problem.goal, space);
-            }
-            candidate.offset = total_checks;
-            total_checks += candidate.steps;
-            // Goal-tree paths run from the new node toward its parent. Check the
-            // new endpoint explicitly because it is the source in that direction.
-            if (direction == EdgeDirection::Reverse && candidate.steps) ++total_checks;
+            candidate.goal_blocked = candidate.blocked;
+            candidate.steps = candidate.blocked || candidate.reaches_target ? 0 :
+                rrt_steps(candidate.q, problem.goal, space);
         }
+        __syncthreads();
     }
-    __syncthreads();
-    for (uint64_t task = threadIdx.x; task < total_checks; task += blockDim.x) {
-        uint32_t low = 0, high = count;
-        while (low + 1 < high) {
-            const uint32_t middle = low + (high - low) / 2;
-            if (candidates[middle].offset <= task) low = middle;
-            else high = middle;
+    const unsigned int lane = threadIdx.x % 32;
+    for (uint64_t c = threadIdx.x / 32; c < count; c += blockDim.x / 32) {
+        RrtCandidate& candidate = candidates[c];
+        // Reverse edges include the new endpoint, which is their source.
+        const uint64_t checks = uint64_t(candidate.steps) +
+            (direction == EdgeDirection::Reverse && candidate.steps ? 1 : 0);
+        for (uint64_t base = 0; base < checks; base += 32) {
+            const uint64_t sample = base + lane;
+            bool hit = false;
+            if (sample < checks) {
+                const uint32_t step = static_cast<uint32_t>(sample) +
+                    (direction == EdgeDirection::Reverse ? 0 : 1);
+                hit = rrt_edge_collision(candidate, step, nodes, problem, space, scene, direction);
+            }
+            if (__any_sync(0xffffffffu, hit)) {
+                if (lane == 0)
+                    (direction == EdgeDirection::Goal ? candidate.goal_blocked : candidate.blocked) = 1;
+                break;
+            }
         }
-        RrtCandidate& candidate = candidates[low];
-        const uint32_t step = static_cast<uint32_t>(task - candidate.offset) +
-            (direction == EdgeDirection::Reverse ? 0 : 1);
-        if (rrt_edge_collision(candidate, step, nodes, problem, space, scene, direction))
-            atomicOr(direction == EdgeDirection::Goal ? &candidate.goal_blocked : &candidate.blocked, 1u);
     }
     __syncthreads();
 }
@@ -282,7 +280,6 @@ extern "C" __global__ void rkern_rrt(
     RrtCandidate* candidates = all_candidates + problem_id * config.samples_per_round;
     __shared__ rkern::RrtResult result;
     __shared__ bool start_valid, goal_valid, finished;
-    __shared__ uint64_t total_checks;
     rrt_initialize(problem, space, scene, nodes, parents, path, result,
                    start_valid, goal_valid, finished);
     for (uint32_t round = 0; round < config.max_rounds && !finished; ++round) {
@@ -296,8 +293,8 @@ extern "C" __global__ void rkern_rrt(
         }
         __syncthreads();
         // Trying only the nearest-to-goal node can repeatedly hit the same obstacle.
-        rrt_check_edges(candidates, count, nodes, problem, space, scene, EdgeDirection::Forward, total_checks);
-        rrt_check_edges(candidates, count, nodes, problem, space, scene, EdgeDirection::Goal, total_checks);
+        rrt_check_edges(candidates, count, nodes, problem, space, scene, EdgeDirection::Forward);
+        rrt_check_edges(candidates, count, nodes, problem, space, scene, EdgeDirection::Goal);
         if (thread == 0) {
             result.rounds = round + 1;
             for (uint32_t c = 0; c < count; ++c) {

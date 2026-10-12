@@ -169,6 +169,8 @@ EXTEND and CONNECT edges first probe four points near the quarter intervals,
 including the new endpoint, on the original checking grid. A collision rejects
 the edge immediately; surviving edges receive the full resolution check.
 Edges with at most four intervals go straight to the full check.
+One warp checks each surviving edge in groups of 32 points and stops on the first
+group containing a collision. Edges and insertion order are independent of warp count.
 
 `--algorithm rrtc` selects batched RRT-Connect, following the EXTEND/CONNECT
 structure in `plainmp/third/ompl_rrtc`. Each round alternates the active tree
