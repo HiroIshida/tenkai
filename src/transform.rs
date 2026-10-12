@@ -38,6 +38,50 @@ impl PoseNodes {
         let offset = rotate_vector(dag, self.rotation, point);
         [0, 1, 2].map(|i| dag.add(self.translation[i], offset[i]))
     }
+
+    pub(crate) fn rotation_matrix(self, dag: &mut Dag) -> [[NodeId; 3]; 3] {
+        let [x, y, z, w] = self.rotation;
+        let one = dag.constant(1.0);
+        let two = dag.constant(2.0);
+        let [xx, yy, zz, xy, xz, yz, wx, wy, wz] = [
+            (x, x),
+            (y, y),
+            (z, z),
+            (x, y),
+            (x, z),
+            (y, z),
+            (w, x),
+            (w, y),
+            (w, z),
+        ]
+        .map(|(a, b)| {
+            let product = dag.mul(a, b);
+            dag.mul(two, product)
+        });
+        let diagonal = [(yy, zz), (xx, zz), (xx, yy)].map(|(a, b)| {
+            let sum = dag.add(a, b);
+            dag.sub(one, sum)
+        });
+        [
+            [diagonal[0], dag.sub(xy, wz), dag.add(xz, wy)],
+            [dag.add(xy, wz), diagonal[1], dag.sub(yz, wx)],
+            [dag.sub(xz, wy), dag.add(yz, wx), diagonal[2]],
+        ]
+    }
+
+    pub(crate) fn transform_point_by_matrix(
+        self,
+        dag: &mut Dag,
+        point: [NodeId; 3],
+        rotation: [[NodeId; 3]; 3],
+    ) -> [NodeId; 3] {
+        [0, 1, 2].map(|i| {
+            let [x, y, z] = [0, 1, 2].map(|j| dag.mul(rotation[i][j], point[j]));
+            let xy = dag.add(x, y);
+            let offset = dag.add(xy, z);
+            dag.add(self.translation[i], offset)
+        })
+    }
 }
 
 fn rpy_quaternion([roll, pitch, yaw]: [f64; 3]) -> [f64; 4] {

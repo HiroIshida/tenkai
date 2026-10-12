@@ -115,6 +115,8 @@ pub fn generate_fk_kernel(
 /// and outputs are `[count][spheres.len()][3]`, in input sphere order and xyz order.
 /// Centers are relative to the robot root frame, with no additional base transform.
 /// Each center is `link_translation + link_rotation * sphere.position`.
+/// FP32 algebraic mode shares rotation-matrix coefficients on links with at least
+/// four spheres; other modes retain per-point quaternion rotation.
 /// Use separate buffers and a one-dimensional launch with at least `count` threads.
 /// An empty sphere slice produces a kernel that writes nothing.
 pub fn generate_centers_kernel(
@@ -122,8 +124,8 @@ pub fn generate_centers_kernel(
     spheres: &[SphereCenter],
     options: Options,
 ) -> Result<String, CentersError> {
-    let (dag, outputs) = center_expressions(fk, spheres)?;
-    let (dag, outputs) = dag.optimize(&outputs, options.math.precision(), options.optimization);
+    let (dag, outputs) =
+        center_expressions(fk, spheres, options.math.precision(), options.optimization)?;
     Ok(Kernel {
         name: "rkern_centers",
         dag: &dag,

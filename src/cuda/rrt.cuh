@@ -79,12 +79,13 @@ __device__ inline bool rrt_in_bounds(const Scalar* q, const RrtSpace& space) {
 }
 
 __device__ inline bool rrt_collision(const Scalar* q, const RrtSpace& space,
-                                     Scene scene, uint32_t environment_id) {
+                                     Scene scene, uint32_t environment_id, bool moving_only = false) {
     const uint32_t controls[rrt_dimension] = {@CONTROLS@};
     Scalar full[rrt_fk_dof];
     for (uint32_t d = 0; d < rrt_fk_dof; ++d) full[d] = space.reference[d];
     for (uint32_t d = 0; d < rrt_dimension; ++d) full[controls[d]] = q[d];
-    return rkern_collision_one(full, scene, environment_id);
+    return moving_only ? rkern_collision_moving(full, scene, environment_id) :
+        rkern_collision_one(full, scene, environment_id);
 }
 
 __device__ inline uint32_t rrt_steps(const Scalar* a, const Scalar* b,
@@ -216,7 +217,8 @@ __device__ inline bool rrt_edge_collision(const RrtCandidate& candidate, uint32_
     for (uint32_t d = 0; d < rrt_dimension; ++d)
         q[d] = step == candidate.steps ? to[d] : (step == 0 ? from[d] :
             from[d] + ratio * (to[d] - from[d]));
-    return rrt_collision(q, space, scene, problem.environment_id);
+    // Initialization already checked spheres that cannot move during this solve.
+    return rrt_collision(q, space, scene, problem.environment_id, true);
 }
 
 // All threads in the block must participate, including those with no edge work.
@@ -329,7 +331,7 @@ __device__ inline void rrt_initialize(const RrtProblem& problem, const RrtSpace&
     }
     if (threadIdx.x == 1)
         goal_valid = rrt_in_bounds(problem.goal, space) &&
-            !rrt_collision(problem.goal, space, scene, problem.environment_id);
+            !rrt_collision(problem.goal, space, scene, problem.environment_id, true);
     __syncthreads();
     if (threadIdx.x == 0) {
         if (!start_valid || !goal_valid) {

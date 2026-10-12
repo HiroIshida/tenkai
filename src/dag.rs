@@ -57,6 +57,18 @@ impl Dag {
         &self.nodes
     }
 
+    pub(crate) fn depends_on_inputs(&self, inputs: &[usize]) -> Vec<bool> {
+        let mut dependent = Vec::with_capacity(self.nodes.len());
+        for &node in &self.nodes {
+            let varies = match node {
+                Node::Input(index) => inputs.contains(&index),
+                _ => node.dependencies().any(|id| dependent[id.index()]),
+            };
+            dependent.push(varies);
+        }
+        dependent
+    }
+
     pub(crate) fn required_nodes(&self, outputs: &[NodeId]) -> Vec<bool> {
         let nodes = self.nodes();
         let mut needed = vec![false; nodes.len()];

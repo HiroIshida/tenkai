@@ -108,7 +108,14 @@ pub(super) fn suite(options: cuda::Options) -> Vec<Case> {
     let spheres = (0..chain.link_poses().len())
         .rev()
         .flat_map(|link_index| {
-            [[0.0; 3], [0.2, -0.3, 0.4], [-0.5, 0.1, 0.7]].map(|position| SphereCenter {
+            [
+                [0.0; 3],
+                [0.2, -0.3, 0.4],
+                [-0.5, 0.1, 0.7],
+                [0.0, 0.0, 0.8],
+                [0.7, 0.0, 0.0],
+            ]
+            .map(|position| SphereCenter {
                 link_index,
                 position,
             })

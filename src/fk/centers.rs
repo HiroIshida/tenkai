@@ -1,7 +1,7 @@
 use std::fmt;
 
 use super::FkDag;
-use crate::dag::{Dag, NodeId};
+use crate::dag::{Dag, NodeId, Optimization, Precision};
 use crate::transform::PoseNodes;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -78,11 +78,17 @@ impl SphereCenter {
 pub(crate) fn center_expressions(
     fk: &FkDag,
     spheres: &[SphereCenter],
+    precision: Precision,
+    optimization: Optimization,
 ) -> Result<(Dag, Vec<NodeId>), CentersError> {
+    let mut counts = vec![0; fk.link_poses().len()];
     for (sphere_index, sphere) in spheres.iter().enumerate() {
         sphere.validate(fk, sphere_index)?;
+        counts[sphere.link_index] += 1;
     }
     let mut dag = fk.dag().clone();
+    let mut rotations = vec![None; fk.link_poses().len()];
+    let shared_rotations = precision == Precision::F32 && optimization == Optimization::Algebraic;
     let mut outputs = Vec::with_capacity(3 * spheres.len());
     for sphere in spheres {
         let pose = &fk.link_poses()[sphere.link_index];
@@ -91,7 +97,14 @@ pub(crate) fn center_expressions(
             translation: pose.translation,
             rotation: pose.rotation,
         };
-        outputs.extend(transform.transform_point(&mut dag, local));
+        // Short groups do not amortize the matrix setup and live coefficients.
+        if shared_rotations && counts[sphere.link_index] >= 4 {
+            let rotation = *rotations[sphere.link_index]
+                .get_or_insert_with(|| transform.rotation_matrix(&mut dag));
+            outputs.extend(transform.transform_point_by_matrix(&mut dag, local, rotation));
+        } else {
+            outputs.extend(transform.transform_point(&mut dag, local));
+        }
     }
-    Ok((dag, outputs))
+    Ok(dag.optimize(&outputs, precision, optimization))
 }

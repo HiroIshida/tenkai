@@ -39,7 +39,10 @@ impl std::error::Error for RrtError {
 /// Generates batched RRT and RRT-Connect kernels with their collision predicate.
 ///
 /// `controls` indexes the FK inputs in planning-coordinate order. Other joints
-/// take their values from `RrtSpace::reference`. The generated namespace contains
+/// take their values from `RrtSpace::reference`. Spheres independent of controlled
+/// inputs are checked with the start and omitted from subsequent collision checks.
+/// The scene and reference configuration must remain fixed during a solve.
+/// The generated namespace contains
 /// `RrtSpace`, `RrtProblem`, `RrtCandidate`, and `validate_rrt`. Backend-independent
 /// config/result types live in `rkern`. See `src/cuda/rrt.cuh` for buffer layouts.
 ///
@@ -83,8 +86,7 @@ pub fn generate_rrt_kernel(
             return Err(RrtError::DuplicateControl(index));
         }
     }
-    // Do not duplicate the large FK predicate in each planning control-flow branch.
-    let mut source = collision::generate_kernel(fk, spheres, options, collision::Inlining::Never)
+    let mut source = collision::generate_kernel(fk, spheres, options, Some(controls))
         .map_err(RrtError::Collision)?;
     source.push_str(include_str!("../planning/rrt.hpp"));
     let indices = controls

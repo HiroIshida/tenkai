@@ -9,7 +9,7 @@ use crate::scheduling::Schedule;
 const SPHERES_PER_GROUP: usize = 16;
 
 #[derive(Clone, Copy)]
-pub(super) enum Inlining {
+enum Inlining {
     Automatic,
     Never,
 }
@@ -46,16 +46,16 @@ pub fn generate_collision_kernel(
     spheres: &[Sphere],
     options: Options,
 ) -> Result<String, Error> {
-    generate_kernel(fk, spheres, options, Inlining::Automatic)
+    generate_kernel(fk, spheres, options, None)
 }
 
 pub(super) fn generate_kernel(
     fk: &FkDag,
     spheres: &[Sphere],
     options: Options,
-    inlining: Inlining,
+    controls: Option<&[usize]>,
 ) -> Result<String, Error> {
-    let mut source = generate_function(fk, spheres, options, inlining)?;
+    let mut source = generate_function(fk, spheres, options, controls)?;
     let (scalar, _) = options.math.precision().cuda_spelling();
     let namespace = namespace(options.math.precision());
     let dof = fk.joint_names().len();
@@ -100,24 +100,25 @@ pub fn generate_collision_function(
     spheres: &[Sphere],
     options: Options,
 ) -> Result<String, Error> {
-    generate_function(fk, spheres, options, Inlining::Automatic)
+    generate_function(fk, spheres, options, None)
 }
 
 fn generate_function(
     fk: &FkDag,
     spheres: &[Sphere],
     options: Options,
-    inlining: Inlining,
+    controls: Option<&[usize]>,
 ) -> Result<String, Error> {
     for (index, sphere) in spheres.iter().enumerate() {
         sphere.validate(fk, index)?;
     }
     let centers: Vec<_> = spheres.iter().map(|sphere| sphere.center).collect();
-    let (dag, outputs) = center_expressions(fk, &centers).map_err(Error::Center)?;
-    let (dag, outputs) = dag.optimize(&outputs, options.math.precision(), options.optimization);
+    let (dag, outputs) =
+        center_expressions(fk, &centers, options.math.precision(), options.optimization)
+            .map_err(Error::Center)?;
     let groups: Vec<_> = outputs.chunks(3).collect();
     let kernel = Kernel {
-        name: "rkern_collision",
+        name: "rkern_collision_one",
         dag: &dag,
         dof: fk.joint_names().len(),
         schedule: Schedule::for_output_groups(&dag, &groups, options.scheduling)
@@ -130,6 +131,55 @@ fn generate_function(
         .replace("@NAMESPACE@", namespace)
         .replace("@SCALAR@", scalar)
         .replace("@SUFFIX@", suffix);
+    let inlining = if controls.is_some() {
+        // Planning branches must share the large FK predicate.
+        Inlining::Never
+    } else {
+        Inlining::Automatic
+    };
+    write_function(&mut source, &kernel, spheres, inlining);
+    if let Some(controls) = controls {
+        let dependent = dag.depends_on_inputs(controls);
+        let moving: Vec<_> = groups
+            .iter()
+            .enumerate()
+            .filter_map(|(i, center)| center.iter().any(|id| dependent[id.index()]).then_some(i))
+            .collect();
+        if moving.len() == spheres.len() {
+            write!(
+                source,
+                r#"
+__device__ inline bool rkern_collision_moving(
+    const {scalar}* q, {namespace}::Scene scene, uint32_t environment_id) {{
+    return rkern_collision_one(q, scene, environment_id);
+}}
+"#,
+            )
+            .expect("writing to String is infallible");
+        } else {
+            let moving_spheres: Vec<_> = moving.iter().map(|&i| spheres[i]).collect();
+            let moving_groups: Vec<_> = moving.iter().map(|&i| groups[i]).collect();
+            let moving_kernel = Kernel {
+                name: "rkern_collision_moving",
+                schedule: Schedule::for_output_groups(&dag, &moving_groups, options.scheduling)
+                    .expect("moving centers belong to the extended FK DAG"),
+                ..kernel
+            };
+            write_function(&mut source, &moving_kernel, &moving_spheres, inlining);
+        }
+    }
+    Ok(source)
+}
+
+fn write_function(
+    source: &mut String,
+    kernel: &Kernel<'_>,
+    spheres: &[Sphere],
+    inlining: Inlining,
+) {
+    let (scalar, suffix) = kernel.math.precision().cuda_spelling();
+    let namespace = namespace(kernel.math.precision());
+    let name = kernel.name;
     let qualifier = match inlining {
         Inlining::Automatic => "inline",
         Inlining::Never => "__noinline__",
@@ -137,14 +187,14 @@ fn generate_function(
     write!(
         source,
         r#"
-__device__ {qualifier} bool rkern_collision_one(
+__device__ {qualifier} bool {name}(
     const {scalar}* q, {namespace}::Scene scene, uint32_t environment_id) {{
 "#,
     )
     .expect("writing to String is infallible");
     if spheres.is_empty() {
         source.push_str("    return false;\n}\n");
-        return Ok(source);
+        return;
     }
     write!(
         source,
@@ -154,7 +204,7 @@ __device__ {qualifier} bool rkern_collision_one(
 "#,
     )
     .expect("writing to String is infallible");
-    kernel.write_body(&mut source, "q", |source, index, value| {
+    kernel.write_body(source, "q", |source, index, value| {
         let axis = ["x", "y", "z"][index % 3];
         writeln!(source, "    center.{axis} = v{};", value.index())
             .expect("writing to String is infallible");
@@ -173,7 +223,6 @@ __device__ {qualifier} bool rkern_collision_one(
         }
     });
     source.push_str("    return collision;\n}\n");
-    Ok(source)
 }
 
 fn write_collision_group(
