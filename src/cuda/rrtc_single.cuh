@@ -1,32 +1,69 @@
-// One warp owns the single candidate. EXTEND and CONNECT share the collision
-// call site so its FK values can stay in registers without duplicating the DAG.
-extern "C" __global__ void rkern_rrtc_single(
-    const @NAMESPACE@::RrtProblem* problems, size_t problem_count,
-    @NAMESPACE@::RrtSpace space, @NAMESPACE@::Scene scene, rkern::RrtConfig config,
-    @NAMESPACE@::Scalar* all_nodes, uint32_t* all_parents, @NAMESPACE@::RrtTree* all_trees,
-    @NAMESPACE@::RrtCandidate* all_candidates, uint32_t* all_paths,
-    rkern::RrtResult* results, const unsigned char* clear) {
+namespace @NAMESPACE@ {
+enum class RrtPreparation : unsigned char { Search, InvalidStart, InvalidGoal, Fallback };
+
+struct RrtSingleState {
+    RrtCandidate candidate;
+    rkern::RrtResult result;
+    bool start_valid, goal_valid, connecting, in_workspace;
+    volatile bool finished;
+    uint32_t round, target;
+};
+
+// Cold validation is compiled separately so its registers do not constrain the
+// resident warps executing the streaming collision predicate.
+template <bool Streaming>
+__device__ __forceinline__ void rrt_single_search(
+    const RrtProblem* problems, size_t id, const RrtSpace& space, Scene scene, rkern::RrtConfig config,
+    Scalar* all_nodes, uint32_t* all_parents, RrtTree* all_trees, uint32_t* all_paths,
+    rkern::RrtResult* results, const unsigned char* clear,
+    RrtSingleState& state, RrtPreparation* preparation) {
     using namespace @NAMESPACE@;
-    const size_t id = blockIdx.x;
-    if (id >= problem_count) return;
-    const uint32_t lane = threadIdx.x;
+    const uint32_t lane = threadIdx.x % 32;
     const RrtProblem& problem = problems[id];
     Scalar* nodes = all_nodes + id * config.max_nodes * rrt_dimension;
     uint32_t* parents = all_parents + id * config.max_nodes;
     RrtTree* trees = all_trees + id * config.max_nodes;
     uint32_t* path = all_paths + id * config.max_nodes;
-    __shared__ RrtCandidate candidate;
-    __shared__ rkern::RrtResult result;
-    __shared__ bool start_valid, goal_valid, connecting, in_workspace, streamable;
-    __shared__ volatile bool finished;
-    __shared__ uint32_t round, target;
-    if (lane == 0) {
-        round = 0;
-        connecting = false;
-        streamable = rkern_collision_streamable(scene, problem.environment_id);
+    RrtCandidate& candidate = state.candidate;
+    rkern::RrtResult& result = state.result;
+    bool& connecting = state.connecting;
+    bool& in_workspace = state.in_workspace;
+    volatile bool& finished = state.finished;
+    uint32_t& round = state.round;
+    uint32_t& target = state.target;
+    if (lane == 0) { round = 0; connecting = false; }
+    if (Streaming) {
+        if (preparation[id] == RrtPreparation::Fallback) return;
+        if (lane == 0) {
+            result = {rkern::PlanStatus::RoundLimit, 0, 0, 0};
+            finished = false;
+            rrt_append(problem.start, 0, nodes, parents, result);
+            rrt_append(problem.goal, 1, nodes, parents, result);
+            trees[0] = RrtTree::Start;
+            trees[1] = RrtTree::Goal;
+            const RrtPreparation initial = preparation[id];
+            if (initial == RrtPreparation::InvalidStart || initial == RrtPreparation::InvalidGoal) {
+                result.status = initial == RrtPreparation::InvalidStart ?
+                    rkern::PlanStatus::InvalidStart : rkern::PlanStatus::InvalidGoal;
+                result.node_count = 0;
+                finished = true;
+            } else {
+                bool equal = true;
+                for (uint32_t d = 0; d < rrt_dimension; ++d)
+                    equal &= problem.start[d] == problem.goal[d];
+                if (equal) {
+                    result.status = rkern::PlanStatus::Success;
+                    result.path_length = 1;
+                    path[0] = 0;
+                    finished = true;
+                }
+            }
+        }
+        __syncwarp();
+    } else {
+        rrt_initialize(problem, space, scene, nodes, parents, path, result,
+                       state.start_valid, state.goal_valid, finished, trees);
     }
-    rrt_initialize(problem, space, scene, nodes, parents, path, result,
-                   start_valid, goal_valid, finished, trees);
     if (lane == 0 && !finished) {
         if (result.node_count == config.max_nodes) {
             result.status = rkern::PlanStatus::NodeLimit;
@@ -64,12 +101,16 @@ extern "C" __global__ void rkern_rrtc_single(
                 rkern_collision_in_workspace(nodes + size_t(candidate.parent) * rrt_dimension,
                                              space.lower, space.upper);
         __syncwarp();
+        if (Streaming && !in_workspace) {
+            if (lane == 0) preparation[id] = RrtPreparation::Fallback;
+            return;
+        }
         const bool reverse = tree == RrtTree::Goal;
         const uint64_t checks = uint64_t(candidate.steps) + (reverse && candidate.steps ? 1 : 0);
         const uint64_t waves = (checks + 31) / 32;
         for (uint64_t wave = 0; wave < waves; ++wave) {
             const uint64_t sample = uint64_t(lane) * waves + wave;
-            bool hit = false;
+            bool hit = false, retry = false;
             const unsigned mask = __ballot_sync(0xffffffffu, sample < checks);
             if (sample < checks) {
                 const uint32_t step = uint32_t(sample) + (reverse ? 0 : 1);
@@ -85,17 +126,18 @@ extern "C" __global__ void rkern_rrtc_single(
                         (step == 0 ? from[d] : from[d] + ratio * (to[d] - from[d]));
                     full[controls[d]] = q;
                 }
-                if (streamable && in_workspace) {
+                if (Streaming) {
                     const auto collision = rkern_collision_streaming(full, scene, problem.environment_id, mask);
-                    // Collective early exits mark other lanes blocked too; retry the whole wave.
-                    if (__any_sync(mask, collision == StreamingCollision::Retry))
-                        hit = rkern_collision_edge(full, scene, problem.environment_id);
-                    else
-                        hit = collision == StreamingCollision::Blocked;
+                    retry = collision == StreamingCollision::Retry;
+                    hit = collision == StreamingCollision::Blocked;
                 } else {
                     hit = in_workspace ? rkern_collision_edge(full, scene, problem.environment_id) :
                         rkern_collision_moving(full, scene, problem.environment_id);
                 }
+            }
+            if (Streaming && __any_sync(0xffffffffu, retry)) {
+                if (lane == 0) preparation[id] = RrtPreparation::Fallback;
+                return;
             }
             if (__any_sync(0xffffffffu, hit)) {
                 if (lane == 0) candidate.blocked = 1;
@@ -147,6 +189,72 @@ extern "C" __global__ void rkern_rrtc_single(
         __syncwarp();
     }
     if (lane == 0) results[id] = result;
+}
+}
+
+extern "C" __global__ void rkern_rrtc_single(
+    const @NAMESPACE@::RrtProblem* problems, size_t problem_count,
+    @NAMESPACE@::RrtSpace space, @NAMESPACE@::Scene scene, rkern::RrtConfig config,
+    @NAMESPACE@::Scalar* all_nodes, uint32_t* all_parents, @NAMESPACE@::RrtTree* all_trees,
+    @NAMESPACE@::RrtCandidate* all_candidates, uint32_t* all_paths,
+    rkern::RrtResult* results, const unsigned char* clear) {
+    const size_t id = blockIdx.x;
+    if (id >= problem_count) return;
+    __shared__ @NAMESPACE@::RrtSingleState state;
+    @NAMESPACE@::rrt_single_search<false>(
+        problems, id, space, scene, config, all_nodes, all_parents, all_trees,
+        all_paths, results, clear, state, nullptr);
+}
+
+extern "C" __global__ void rkern_rrtc_prepare(
+    const @NAMESPACE@::RrtProblem* problems, size_t problem_count,
+    @NAMESPACE@::RrtSpace space, @NAMESPACE@::Scene scene, const unsigned char* clear,
+    @NAMESPACE@::RrtPreparation* preparation) {
+    using namespace @NAMESPACE@;
+    const size_t id = size_t(blockIdx.x) * blockDim.x + threadIdx.x;
+    if (id >= problem_count) return;
+    const RrtProblem& problem = problems[id];
+    RrtPreparation initial = RrtPreparation::Fallback;
+    if (clear[problem.environment_id] && rkern_collision_streamable(scene, problem.environment_id)) {
+        initial = RrtPreparation::Search;
+        if (!rrt_in_bounds(problem.start, space) ||
+            rrt_collision(problem.start, space, scene, problem.environment_id))
+            initial = RrtPreparation::InvalidStart;
+        else if (!rrt_in_bounds(problem.goal, space) ||
+                 rrt_collision(problem.goal, space, scene, problem.environment_id, true))
+            initial = RrtPreparation::InvalidGoal;
+    }
+    preparation[id] = initial;
+}
+
+extern "C" __global__ void rkern_rrtc_streaming(
+    const @NAMESPACE@::RrtProblem* problems, size_t problem_count,
+    @NAMESPACE@::RrtSpace space, @NAMESPACE@::Scene scene, rkern::RrtConfig config,
+    @NAMESPACE@::Scalar* all_nodes, uint32_t* all_parents, @NAMESPACE@::RrtTree* all_trees,
+    @NAMESPACE@::RrtCandidate* all_candidates, uint32_t* all_paths,
+    rkern::RrtResult* results, const unsigned char* clear,
+    @NAMESPACE@::RrtPreparation* preparation) {
+    const size_t id = blockIdx.x;
+    if (id >= problem_count) return;
+    __shared__ @NAMESPACE@::RrtSingleState state;
+    @NAMESPACE@::rrt_single_search<true>(
+        problems, id, space, scene, config, all_nodes, all_parents, all_trees,
+        all_paths, results, clear, state, preparation);
+}
+
+extern "C" __global__ void rkern_rrtc_fallback(
+    const @NAMESPACE@::RrtProblem* problems, size_t problem_count,
+    @NAMESPACE@::RrtSpace space, @NAMESPACE@::Scene scene, rkern::RrtConfig config,
+    @NAMESPACE@::Scalar* all_nodes, uint32_t* all_parents, @NAMESPACE@::RrtTree* all_trees,
+    @NAMESPACE@::RrtCandidate* all_candidates, uint32_t* all_paths,
+    rkern::RrtResult* results, const unsigned char* clear,
+    @NAMESPACE@::RrtPreparation* preparation) {
+    const size_t id = blockIdx.x;
+    if (id >= problem_count || preparation[id] != @NAMESPACE@::RrtPreparation::Fallback) return;
+    __shared__ @NAMESPACE@::RrtSingleState state;
+    @NAMESPACE@::rrt_single_search<false>(
+        problems, id, space, scene, config, all_nodes, all_parents, all_trees,
+        all_paths, results, clear, state, nullptr);
 }
 extern "C" __global__ void rkern_rrtc_workspace(
     @NAMESPACE@::RrtSpace space, @NAMESPACE@::Scene scene,

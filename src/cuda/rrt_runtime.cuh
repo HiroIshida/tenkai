@@ -58,7 +58,12 @@ public:
           candidates_(storage_product(problem_count, config.samples_per_round)),
           paths_(storage_product(problem_count, config.max_nodes)), results_(problem_count),
           workspace_clear_(algorithm == rkern::RrtAlgorithm::RrtConnect && single_candidate(config, threads_) ?
-                           environment_count : 0) {}
+                           environment_count : 0)
+#if @FP32@
+          , preparation_(algorithm == rkern::RrtAlgorithm::RrtConnect && single_candidate(config, threads_) ?
+                         problem_count : 0)
+#endif
+          {}
 
     std::vector<rkern::RrtResult> solve(const std::vector<RrtProblem>& problems) {
         if (problems.size() != problem_count_) throw std::invalid_argument("RRT problem count mismatch");
@@ -73,10 +78,19 @@ public:
             rkern_rrtc_workspace<<<static_cast<unsigned int>(blocks < 65535 ? blocks : 65535), 128>>>(
                 space_, scene_, environment_count_, workspace_clear_.data());
             cuda_check(cudaGetLastError(), "check RRT workspace");
-            @RRTC_SINGLE@<<<static_cast<unsigned int>(problem_count_), 32>>>(
+            rkern_rrtc_prepare<<<static_cast<unsigned int>((problem_count_ - 1) / 128 + 1), 128>>>(
+                problems_.data(), problem_count_, space_, scene_, workspace_clear_.data(),
+                preparation_.data());
+            cuda_check(cudaGetLastError(), "prepare RRT-Connect problems");
+            rkern_rrtc_streaming<<<static_cast<unsigned int>(problem_count_), 32>>>(
                 problems_.data(), problem_count_, space_, scene_, config_, nodes_.data(),
                 parents_.data(), trees_.data(), candidates_.data(), paths_.data(), results_.data(),
-                workspace_clear_.data());
+                workspace_clear_.data(), preparation_.data());
+            cuda_check(cudaGetLastError(), "launch streaming RRT-Connect");
+            rkern_rrtc_fallback<<<static_cast<unsigned int>(problem_count_), 32>>>(
+                problems_.data(), problem_count_, space_, scene_, config_, nodes_.data(),
+                parents_.data(), trees_.data(), candidates_.data(), paths_.data(), results_.data(),
+                workspace_clear_.data(), preparation_.data());
         } else
 #endif
         if (algorithm_ == rkern::RrtAlgorithm::RrtConnect)
@@ -139,6 +153,13 @@ private:
         cuda_check(cudaOccupancyMaxActiveBlocksPerMultiprocessor(
             &active_blocks, kernel, execution.warps_per_problem * 32, 0), "check RRT occupancy");
         if (!active_blocks) throw std::invalid_argument("RRT block cannot fit on an SM");
+#if @FP32@
+        if (algorithm == rkern::RrtAlgorithm::RrtConnect && single_candidate(config, execution.warps_per_problem * 32)) {
+            cuda_check(cudaOccupancyMaxActiveBlocksPerMultiprocessor(
+                &active_blocks, rkern_rrtc_streaming, 32, 0), "check streaming RRT occupancy");
+            if (!active_blocks) throw std::invalid_argument("streaming RRT block cannot fit on an SM");
+        }
+#endif
         return config;
     }
 
@@ -157,5 +178,8 @@ private:
     DeviceBuffer<uint32_t> paths_;
     DeviceBuffer<rkern::RrtResult> results_;
     DeviceBuffer<unsigned char> workspace_clear_;
+#if @FP32@
+    DeviceBuffer<RrtPreparation> preparation_;
+#endif
 };
 }

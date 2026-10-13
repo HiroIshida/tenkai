@@ -71,8 +71,8 @@ impl std::error::Error for RrtError {
 /// spheres. Start validation and standalone collision queries check every sphere.
 /// For a certified environment containing one axis-aligned box and one ground,
 /// a streaming predicate consumes each center immediately.
-/// Other scenes and numerical exceptions use the general collision predicate.
-/// Sampling and collision resolution are unchanged.
+/// Endpoint validation runs separately; other scenes and numerical exceptions use the
+/// general single-candidate kernel. Sampling and collision resolution are unchanged.
 ///
 /// The caller owns device buffers, validates config/space with `validate_rrt`,
 /// checks device launch/storage limits, and supplies valid scene ranges and IDs.
