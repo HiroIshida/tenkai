@@ -16,7 +16,7 @@ impl Kernel<'_> {
     pub(super) fn source(&self) -> String {
         let mut source = self.header();
         let input = format!("(configurations + batch * {})", self.dof);
-        self.write_body(&mut source, &input, |source, index, value| {
+        self.write_body(&mut source, &input, false, |source, index, value| {
             writeln!(
                 source,
                 "    output[batch * {} + {index}] = v{};",
@@ -33,11 +33,40 @@ impl Kernel<'_> {
         &self,
         source: &mut String,
         input: &str,
+        pair_trig: bool,
         mut store: impl FnMut(&mut String, usize, NodeId),
     ) {
-        for &step in self.schedule.steps() {
+        let mut steps = self.schedule.steps().iter().copied().peekable();
+        while let Some(step) = steps.next() {
             match step {
-                Step::Evaluate(id) => self.write_node(source, input, id),
+                Step::Evaluate(id) => {
+                    if pair_trig
+                        && self.math == MathMode::F32
+                        && let Some(&Step::Evaluate(next)) = steps.peek()
+                    {
+                        let pair =
+                            match (self.dag.nodes()[id.index()], self.dag.nodes()[next.index()]) {
+                                (Node::Sin(a), Node::Cos(b)) if a == b => Some((a, id, next)),
+                                (Node::Cos(a), Node::Sin(b)) if a == b => Some((a, next, id)),
+                                _ => None,
+                            };
+                        if let Some((angle, sin, cos)) = pair {
+                            writeln!(
+                                source,
+                                "    float v{}, v{};\n    sincosf(v{}, &v{}, &v{});",
+                                sin.index(),
+                                cos.index(),
+                                angle.index(),
+                                sin.index(),
+                                cos.index(),
+                            )
+                            .expect("writing to String is infallible");
+                            steps.next();
+                            continue;
+                        }
+                    }
+                    self.write_node(source, input, id);
+                }
                 Step::StoreOutput { index, value } => {
                     store(source, index, value);
                 }

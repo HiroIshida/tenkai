@@ -220,7 +220,7 @@ __device__ {qualifier} bool {name}(
 "#,
     )
     .expect("writing to String is infallible");
-    kernel.write_body(source, "q", |source, index, value| {
+    kernel.write_body(source, "q", false, |source, index, value| {
         let axis = ["x", "y", "z"][index % 3];
         writeln!(source, "    center.{axis} = v{};", value.index())
             .expect("writing to String is infallible");
@@ -404,7 +404,7 @@ __device__ __forceinline__ rkern_f32::StreamingCollision rkern_collision_streami
     Vec3 center;
 "#,
     );
-    kernel.write_body(source, "q", |source, index, value| {
+    kernel.write_body(source, "q", true, |source, index, value| {
         let axis = ["x", "y", "z"][index % 3];
         writeln!(source, "    center.{axis} = v{};", value.index())
             .expect("writing to String is infallible");
