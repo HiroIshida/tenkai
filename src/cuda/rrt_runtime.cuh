@@ -61,7 +61,8 @@ public:
                            environment_count : 0)
 #if @FP32@
           , preparation_(algorithm == rkern::RrtAlgorithm::RrtConnect && single_candidate(config, threads_) ?
-                         problem_count : 0)
+                         problem_count : 0),
+          next_problem_(algorithm == rkern::RrtAlgorithm::RrtConnect && single_candidate(config, threads_) ? 1 : 0)
 #endif
           {}
 
@@ -80,12 +81,12 @@ public:
             cuda_check(cudaGetLastError(), "check RRT workspace");
             rkern_rrtc_prepare<<<static_cast<unsigned int>((problem_count_ - 1) / 128 + 1), 128>>>(
                 problems_.data(), problem_count_, space_, scene_, workspace_clear_.data(),
-                preparation_.data());
+                preparation_.data(), next_problem_.data());
             cuda_check(cudaGetLastError(), "prepare RRT-Connect problems");
-            rkern_rrtc_streaming<<<static_cast<unsigned int>(problem_count_), 32>>>(
+            rkern_rrtc_streaming<<<static_cast<unsigned int>((problem_count_ - 1) / 4 + 1), 128>>>(
                 problems_.data(), problem_count_, space_, scene_, config_, nodes_.data(),
                 parents_.data(), trees_.data(), candidates_.data(), paths_.data(), results_.data(),
-                workspace_clear_.data(), preparation_.data());
+                workspace_clear_.data(), preparation_.data(), next_problem_.data());
             cuda_check(cudaGetLastError(), "launch streaming RRT-Connect");
             rkern_rrtc_fallback<<<static_cast<unsigned int>(problem_count_), 32>>>(
                 problems_.data(), problem_count_, space_, scene_, config_, nodes_.data(),
@@ -156,7 +157,7 @@ private:
 #if @FP32@
         if (algorithm == rkern::RrtAlgorithm::RrtConnect && single_candidate(config, execution.warps_per_problem * 32)) {
             cuda_check(cudaOccupancyMaxActiveBlocksPerMultiprocessor(
-                &active_blocks, rkern_rrtc_streaming, 32, 0), "check streaming RRT occupancy");
+                &active_blocks, rkern_rrtc_streaming, 128, 0), "check streaming RRT occupancy");
             if (!active_blocks) throw std::invalid_argument("streaming RRT block cannot fit on an SM");
         }
 #endif
@@ -180,6 +181,7 @@ private:
     DeviceBuffer<unsigned char> workspace_clear_;
 #if @FP32@
     DeviceBuffer<RrtPreparation> preparation_;
+    DeviceBuffer<uint32_t> next_problem_;
 #endif
 };
 }

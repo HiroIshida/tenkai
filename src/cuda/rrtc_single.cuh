@@ -209,9 +209,10 @@ extern "C" __global__ void rkern_rrtc_single(
 extern "C" __global__ void rkern_rrtc_prepare(
     const @NAMESPACE@::RrtProblem* problems, size_t problem_count,
     @NAMESPACE@::RrtSpace space, @NAMESPACE@::Scene scene, const unsigned char* clear,
-    @NAMESPACE@::RrtPreparation* preparation) {
+    @NAMESPACE@::RrtPreparation* preparation, uint32_t* next_problem) {
     using namespace @NAMESPACE@;
     const size_t id = size_t(blockIdx.x) * blockDim.x + threadIdx.x;
+    if (id == 0) *next_problem = 0;
     if (id >= problem_count) return;
     const RrtProblem& problem = problems[id];
     RrtPreparation initial = RrtPreparation::Fallback;
@@ -227,19 +228,26 @@ extern "C" __global__ void rkern_rrtc_prepare(
     preparation[id] = initial;
 }
 
-extern "C" __global__ void rkern_rrtc_streaming(
+extern "C" __global__ __launch_bounds__(128, 6) void rkern_rrtc_streaming(
     const @NAMESPACE@::RrtProblem* problems, size_t problem_count,
     @NAMESPACE@::RrtSpace space, @NAMESPACE@::Scene scene, rkern::RrtConfig config,
     @NAMESPACE@::Scalar* all_nodes, uint32_t* all_parents, @NAMESPACE@::RrtTree* all_trees,
     @NAMESPACE@::RrtCandidate* all_candidates, uint32_t* all_paths,
     rkern::RrtResult* results, const unsigned char* clear,
-    @NAMESPACE@::RrtPreparation* preparation) {
-    const size_t id = blockIdx.x;
-    if (id >= problem_count) return;
-    __shared__ @NAMESPACE@::RrtSingleState state;
-    @NAMESPACE@::rrt_single_search<true>(
-        problems, id, space, scene, config, all_nodes, all_parents, all_trees,
-        all_paths, results, clear, state, preparation);
+    @NAMESPACE@::RrtPreparation* preparation, uint32_t* next_problem) {
+    __shared__ @NAMESPACE@::RrtSingleState states[4];
+    auto& state = states[threadIdx.x / 32];
+    // A finished plan must not strand its warp behind another plan in the block.
+    for (;;) {
+        uint32_t id = 0;
+        if (threadIdx.x % 32 == 0) id = atomicAdd(next_problem, 1);
+        id = __shfl_sync(0xffffffffu, id, 0);
+        if (id >= problem_count) return;
+        @NAMESPACE@::rrt_single_search<true>(
+            problems, id, space, scene, config, all_nodes, all_parents, all_trees,
+            all_paths, results, clear, state, preparation);
+        __syncwarp();
+    }
 }
 
 extern "C" __global__ void rkern_rrtc_fallback(

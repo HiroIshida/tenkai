@@ -70,8 +70,9 @@ impl std::error::Error for RrtError {
 /// recomputed per environment on every solve; uncertain cases check all moving
 /// spheres. Start validation and standalone collision queries check every sphere.
 /// For a certified environment containing one axis-aligned box and one ground,
-/// a streaming predicate consumes each center immediately.
-/// Endpoint validation runs separately; other scenes and numerical exceptions use the
+/// a streaming predicate consumes each center immediately. Four independent
+/// problem warps share a block and take new problems as they finish. Endpoint
+/// validation runs separately; other scenes and numerical exceptions use the
 /// general single-candidate kernel. Sampling and collision resolution are unchanged.
 ///
 /// The caller owns device buffers, validates config/space with `validate_rrt`,
