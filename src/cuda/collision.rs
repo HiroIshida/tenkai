@@ -3,6 +3,7 @@ use std::fmt::Write;
 use super::kernel::Kernel;
 use super::{Options, Precision};
 use crate::collision::{Error, Sphere};
+use crate::dag::NodeId;
 use crate::fk::{FkDag, center_expressions};
 use crate::scheduling::Schedule;
 
@@ -12,6 +13,7 @@ const SPHERES_PER_GROUP: usize = 16;
 enum Inlining {
     Automatic,
     Never,
+    Always,
 }
 
 /// Generates `rkern_collision(configurations, environment_ids, scene, output, count)`.
@@ -163,9 +165,14 @@ __device__ inline bool rkern_collision_moving(
                 name: "rkern_collision_moving",
                 schedule: Schedule::for_output_groups(&dag, &moving_groups, options.scheduling)
                     .expect("moving centers belong to the extended FK DAG"),
-                ..kernel
+                dag: kernel.dag,
+                dof: kernel.dof,
+                math: kernel.math,
             };
             write_function(&mut source, &moving_kernel, &moving_spheres, inlining);
+        }
+        if options.math.precision() == Precision::F32 {
+            write_planning_functions(&mut source, &kernel, spheres, &groups, &moving, options);
         }
     }
     Ok(source)
@@ -183,6 +190,7 @@ fn write_function(
     let qualifier = match inlining {
         Inlining::Automatic => "inline",
         Inlining::Never => "__noinline__",
+        Inlining::Always => "__forceinline__",
     };
     write!(
         source,
@@ -223,6 +231,27 @@ __device__ {qualifier} bool {name}(
         }
     });
     source.push_str("    return collision;\n}\n");
+}
+
+fn write_planning_functions(
+    source: &mut String,
+    kernel: &Kernel<'_>,
+    spheres: &[Sphere],
+    groups: &[&[NodeId]],
+    moving: &[usize],
+    options: Options,
+) {
+    let edge_spheres: Vec<_> = moving.iter().map(|&i| spheres[i]).collect();
+    let edge_groups: Vec<_> = moving.iter().map(|&i| groups[i]).collect();
+    let edge_kernel = Kernel {
+        name: "rkern_collision_edge",
+        schedule: Schedule::for_output_groups(kernel.dag, &edge_groups, options.scheduling)
+            .expect("edge centers belong to the extended FK DAG"),
+        dag: kernel.dag,
+        dof: kernel.dof,
+        math: kernel.math,
+    };
+    write_function(source, &edge_kernel, &edge_spheres, Inlining::Always);
 }
 
 fn write_collision_group(

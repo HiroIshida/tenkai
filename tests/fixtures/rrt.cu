@@ -321,6 +321,34 @@ __global__ void check_grouped_nearest(m::RrtSpace space) {
     }
 }
 
+void check_single_candidate(const m::RrtSpace& space, m::Scene scene,
+                            const std::vector<m::RrtProblem>& problems) {
+    for (uint32_t capacity : {2u, 3u, 4u, 16u, 1024u}) {
+        for (double step : {0.05, 1.0, 2.0}) {
+            for (double bias : {0.0, 1.0}) {
+                rkern::RrtConfig config;
+                config.samples_per_round = 1;
+                config.max_nodes = capacity;
+                config.max_rounds = 128;
+                config.step_size = step;
+                config.goal_bias = bias;
+                m::RrtPlanner single(config, {1}, space, scene, 3, problems.size(), Algorithm::RrtConnect);
+                m::RrtPlanner general(config, {4}, space, scene, 3, problems.size(), Algorithm::RrtConnect);
+                const auto actual = single.solve(problems), expected = general.solve(problems);
+                for (size_t i = 0; i < problems.size(); ++i) {
+                    assert(actual[i].status == expected[i].status);
+                    assert(actual[i].node_count == expected[i].node_count);
+                    assert(actual[i].rounds == expected[i].rounds);
+                    assert(actual[i].path_length == expected[i].path_length);
+                    assert(single.path(i) == general.path(i));
+                    if (actual[i].status == Status::Success)
+                        validate_path(single.path(i), problems[i], space, config, Algorithm::RrtConnect);
+                }
+            }
+        }
+    }
+}
+
 int main() try {
     m::DeviceBuffer<bool> broad_phase_result(broad_phase_case_count);
     check_broad_phase_device<<<(broad_phase_case_count+127)/128,128>>>(broad_phase_result.data());
@@ -375,6 +403,7 @@ int main() try {
     problems[5].goal[0] = std::numeric_limits<Scalar>::quiet_NaN();
     problems[6].environment_id = 1; problems[6].start[1] = 0;
     problems[7].environment_id = 1; problems[7].goal[1] = 0;
+    check_single_candidate(space, scene, problems);
     for (Algorithm algorithm : {Algorithm::Rrt, Algorithm::RrtConnect}) {
         std::vector<std::vector<Scalar>> reference;
         std::vector<rkern::RrtResult> reference_results;

@@ -65,6 +65,13 @@ public:
                 throw std::invalid_argument("RRT environment ID out of range");
         solved_ = false;
         problems_.upload(problems.data(), problems.size());
+#if @FP32@
+        if (algorithm_ == rkern::RrtAlgorithm::RrtConnect && single_candidate(config_, threads_)) {
+            @RRTC_SINGLE@<<<static_cast<unsigned int>(problem_count_), 32>>>(
+                problems_.data(), problem_count_, space_, scene_, config_, nodes_.data(),
+                parents_.data(), trees_.data(), candidates_.data(), paths_.data(), results_.data());
+        } else
+#endif
         if (algorithm_ == rkern::RrtAlgorithm::RrtConnect)
             rkern_rrtc<<<static_cast<unsigned int>(problem_count_), threads_>>>(
                 problems_.data(), problem_count_, space_, scene_, config_, nodes_.data(),
@@ -96,6 +103,10 @@ public:
     }
 
 private:
+    static bool single_candidate(const rkern::RrtConfig& config, uint32_t threads) {
+        return sizeof(Scalar) == sizeof(float) && config.samples_per_round == 1 && threads == 32;
+    }
+
     static rkern::RrtConfig checked_config(const rkern::RrtConfig& config, CudaRrtConfig execution,
                                           const RrtSpace& space, size_t environments, size_t problems,
                                           rkern::RrtAlgorithm algorithm) {
@@ -108,7 +119,9 @@ private:
         cudaDeviceProp properties;
         cudaFuncAttributes attributes;
         const void* kernel = algorithm == rkern::RrtAlgorithm::RrtConnect ?
-            reinterpret_cast<const void*>(rkern_rrtc) : reinterpret_cast<const void*>(rkern_rrt);
+            (single_candidate(config, execution.warps_per_problem * 32) ?
+                reinterpret_cast<const void*>(@RRTC_SINGLE@) : reinterpret_cast<const void*>(rkern_rrtc)) :
+            reinterpret_cast<const void*>(rkern_rrt);
         cuda_check(cudaGetDevice(&device), "get CUDA device");
         cuda_check(cudaGetDeviceProperties(&properties, device), "get CUDA properties");
         cuda_check(cudaFuncGetAttributes(&attributes, kernel), "get RRT kernel attributes");

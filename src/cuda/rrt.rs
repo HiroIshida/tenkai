@@ -1,6 +1,6 @@
 use std::fmt;
 
-use super::{Options, collision};
+use super::{Options, Precision, collision};
 use crate::{collision::Sphere, fk::FkDag};
 
 #[derive(Debug)]
@@ -62,6 +62,8 @@ impl std::error::Error for RrtError {
 /// indices, with a native `RrtPlanner` wrapper for allocation, launches and path
 /// extraction. Its algorithm defaults to RRT; select `RrtAlgorithm::RrtConnect`
 /// for RRTC.
+/// In FP32 with one candidate and one warp, the wrapper selects a dedicated
+/// kernel sharing one EXTEND/CONNECT loop.
 ///
 /// The caller owns device buffers, validates config/space with `validate_rrt`,
 /// checks device launch/storage limits, and supplies valid scene ranges and IDs.
@@ -104,11 +106,34 @@ pub fn generate_rrt_kernel(
             .replace("@FK_DOF@", &fk.joint_names().len().to_string())
             .replace("@CONTROLS@", &indices),
     );
-    for implementation in [include_str!("rrtc.cuh"), include_str!("rrt_runtime.cuh")] {
-        source.push_str(&implementation.replace(
-            "@NAMESPACE@",
-            collision::namespace(options.math.precision()),
-        ));
+    let fp32 = options.math.precision() == Precision::F32;
+    let single = if fp32 {
+        include_str!("rrtc_single.cuh")
+    } else {
+        ""
+    };
+    for implementation in [
+        include_str!("rrtc.cuh"),
+        single,
+        include_str!("rrt_runtime.cuh"),
+    ] {
+        source.push_str(
+            &implementation
+                .replace(
+                    "@NAMESPACE@",
+                    collision::namespace(options.math.precision()),
+                )
+                .replace("@CONTROLS@", &indices)
+                .replace("@FP32@", if fp32 { "1" } else { "0" })
+                .replace(
+                    "@RRTC_SINGLE@",
+                    if fp32 {
+                        "rkern_rrtc_single"
+                    } else {
+                        "rkern_rrtc"
+                    },
+                ),
+        );
     }
     Ok(source)
 }
