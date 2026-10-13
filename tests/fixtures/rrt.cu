@@ -1,6 +1,7 @@
 #include <cuda_runtime.h>
 #include <cassert>
 #include <iostream>
+#include <random>
 #include "rrt.cuh"
 
 namespace m = RKERN_MODEL_NAMESPACE;
@@ -136,12 +137,13 @@ struct StepCase {
     uint32_t expected;
 };
 
-__global__ void check_step_counts(const StepCase* cases, uint32_t count, uint32_t* output) {
+__global__ void check_step_counts(const StepCase* cases, uint32_t count, uint32_t* output,
+                                  bool fp32_control) {
     const uint32_t i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= count) return;
     m::RrtSpace space{};
     for (uint32_t d = 0; d < 2; ++d) space.resolution[d] = cases[i].resolution[d];
-    output[i] = m::rrt_steps(cases[i].from, cases[i].to, space);
+    output[i] = m::rrt_steps(cases[i].from, cases[i].to, space, fp32_control);
 }
 
 void check_interpolation_grid_sizes() {
@@ -171,14 +173,34 @@ void check_interpolation_grid_sizes() {
     cases.push_back({{0, 0}, {subnormal, 2 * subnormal}, {subnormal, subnormal}, 2});
     const Scalar fine = std::ldexp(Scalar(1), -31);
     cases.push_back({{0, 0}, {1, 1}, {fine, fine}, UINT32_C(2147483648)});
+    std::mt19937 random(4137);
+    for (unsigned i = 0; i < 32768; ++i) {
+        const Scalar scale = std::ldexp(Scalar(1), int(random() % 220) - 120);
+        StepCase edge{};
+        const Scalar resolution = scale * Scalar(1.0 / (1 + random() % 1000000));
+        for (unsigned d = 0; d < 2; ++d) {
+            edge.from[d] = scale * Scalar(int(random() % 1024) - 512);
+            edge.to[d] = scale * Scalar(int(random() % 1024) - 512);
+            edge.resolution[d] = resolution;
+        }
+        double count = 1;
+        for (unsigned d = 0; d < 2; ++d)
+            count = std::max(count, std::ceil(std::abs(double(edge.to[d]) - double(edge.from[d])) /
+                                             double(edge.resolution[d])));
+        edge.expected = uint32_t(count);
+        cases.push_back(edge);
+    }
     m::DeviceBuffer<StepCase> device_cases(cases.size());
     m::DeviceBuffer<uint32_t> output(cases.size());
     device_cases.upload(cases.data(), cases.size());
-    check_step_counts<<<1, 32>>>(device_cases.data(), cases.size(), output.data());
-    m::cuda_check(cudaGetLastError(), "check interpolation grid sizes");
-    std::vector<uint32_t> counts(cases.size());
-    output.download(counts.data(), counts.size());
-    for (size_t i = 0; i < cases.size(); ++i) assert(counts[i] == cases[i].expected);
+    for (bool fp32_control : {false, true}) {
+        check_step_counts<<<(cases.size() + 127) / 128, 128>>>(
+            device_cases.data(), cases.size(), output.data(), fp32_control);
+        m::cuda_check(cudaGetLastError(), "check interpolation grid sizes");
+        std::vector<uint32_t> counts(cases.size());
+        output.download(counts.data(), counts.size());
+        for (size_t i = 0; i < cases.size(); ++i) assert(counts[i] == cases[i].expected);
+    }
 }
 
 __global__ void check_distance_precision(double* output) {

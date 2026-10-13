@@ -89,7 +89,25 @@ __device__ inline bool rrt_collision(const Scalar* q, const RrtSpace& space,
 }
 
 __device__ inline uint32_t rrt_steps(const Scalar* a, const Scalar* b,
-                                     const RrtSpace& space) {
+                                     const RrtSpace& space, bool fp32_control = false) {
+    if (fp32_control && sizeof(Scalar) == sizeof(float)) {
+        const float resolution = space.resolution[0];
+        bool uniform = true;
+        float displacement = 0;
+        for (uint32_t d = 0; d < rrt_dimension; ++d) {
+            uniform &= space.resolution[d] == resolution;
+            displacement = fmaxf(displacement, fabsf(b[d] - a[d]));
+        }
+        if (uniform && resolution >= FLT_MIN) {
+            const float quotient = displacement / resolution;
+            const float error = quotient * (4 * FLT_EPSILON) + 8 * FLT_MIN / resolution;
+            const float lower = ceilf(quotient - error), upper = ceilf(quotient + error);
+            // Subtraction/division rounding must not change the sampling grid.
+            // Close integer boundaries and large counts retain the FP64 path.
+            if (lower == upper && upper < 4294967040.0f)
+                return static_cast<uint32_t>(fmaxf(1.0f, upper));
+        }
+    }
     const Scalar resolution = space.resolution[0];
     bool uniform = true;
     double displacement = 0;
@@ -171,27 +189,40 @@ __device__ inline void rrt_nearest(const Scalar* q, const Scalar* nodes, uint32_
 }
 
 __device__ inline void rrt_steer(RrtCandidate& candidate, const Scalar* parent,
-                                 double best_distance, const RrtSpace& space, double step_size) {
-    const double distance = sqrt(best_distance);
-    candidate.reaches_target &= distance <= step_size;
-    if (distance > step_size) {
-        const double wide_ratio = step_size / distance;
-        const Scalar ratio = Scalar(wide_ratio);
-        for (uint32_t d = 0; d < rrt_dimension; ++d)
-            candidate.q[d] = ratio > 0 ? parent[d] + ratio * (candidate.q[d] - parent[d]) :
-                Scalar(double(parent[d]) + wide_ratio * (double(candidate.q[d]) - double(parent[d])));
+                                 double best_distance, const RrtSpace& space, double step_size,
+                                 bool fp32_control = false) {
+    if (fp32_control && sizeof(Scalar) == sizeof(float) && step_size == 1.0 &&
+        best_distance >= double(FLT_MIN) && best_distance <= double(FLT_MAX) &&
+        best_distance == double(Scalar(best_distance))) {
+        candidate.reaches_target &= best_distance <= 1.0;
+        if (best_distance > 1.0) {
+            const Scalar ratio = __frsqrt_rn(Scalar(best_distance));
+            for (uint32_t d = 0; d < rrt_dimension; ++d)
+                candidate.q[d] = parent[d] + ratio * (candidate.q[d] - parent[d]);
+        }
+    } else {
+        const double distance = sqrt(best_distance);
+        candidate.reaches_target &= distance <= step_size;
+        if (distance > step_size) {
+            const double wide_ratio = step_size / distance;
+            const Scalar ratio = Scalar(wide_ratio);
+            for (uint32_t d = 0; d < rrt_dimension; ++d)
+                candidate.q[d] = ratio > 0 ? parent[d] + ratio * (candidate.q[d] - parent[d]) :
+                    Scalar(double(parent[d]) + wide_ratio * (double(candidate.q[d]) - double(parent[d])));
+        }
     }
     bool moved = false;
     for (uint32_t d = 0; d < rrt_dimension; ++d) moved |= candidate.q[d] != parent[d];
     candidate.blocked = !moved;
-    candidate.steps = moved ? rrt_steps(parent, candidate.q, space) : 0;
+    candidate.steps = moved ? rrt_steps(parent, candidate.q, space, fp32_control) : 0;
 }
 
 // Parallel callers share candidate/cache and initialize them before the group enters.
 __device__ inline void rrt_extend(RrtCandidate& candidate, const Scalar* nodes,
                                   uint32_t snapshot_size, const RrtSpace& space, double step_size,
                                   const RrtTree* trees = nullptr, RrtTree tree = RrtTree::Start,
-                                  RrtNearestCache* cache = nullptr, uint32_t width = 1) {
+                                  RrtNearestCache* cache = nullptr, uint32_t width = 1,
+                                  bool fp32_control = false) {
     RrtNearestCache nearest = cache ? *cache : RrtNearestCache{0, 0, INFINITY};
     rrt_nearest(candidate.q, nodes, snapshot_size, trees, tree, nearest, width);
     // Shuffles do not fence the other lanes' reads of the query and shared cache.
@@ -200,7 +231,7 @@ __device__ inline void rrt_extend(RrtCandidate& candidate, const Scalar* nodes,
         if (cache) *cache = nearest;
         candidate.parent = nearest.node;
         rrt_steer(candidate, nodes + size_t(nearest.node) * rrt_dimension,
-                  nearest.squared_distance, space, step_size);
+                  nearest.squared_distance, space, step_size, fp32_control);
     }
     if (width > 1) __syncwarp(rrt_group_mask(width));
 }

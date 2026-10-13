@@ -49,7 +49,7 @@ extern "C" __global__ void rkern_rrtc_single(
         const uint32_t width = unscanned < 32 ? 1 : 32;
         if (lane < width)
             rrt_extend(candidate, nodes, result.node_count, space, config.step_size,
-                       trees, tree, connecting ? &candidate.nearest : nullptr, width);
+                       trees, tree, connecting ? &candidate.nearest : nullptr, width, true);
         if (lane == 0 && connecting && !candidate.steps && candidate.reaches_target)
             candidate.blocked = 0;
         if (lane == 0)
