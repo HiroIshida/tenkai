@@ -75,7 +75,24 @@ __device__ __forceinline__ void rrt_single_search(
         const RrtTree active = round % 2 == 0 ? RrtTree::Start : RrtTree::Goal;
         const RrtTree tree = connecting ?
             (active == RrtTree::Start ? RrtTree::Goal : RrtTree::Start) : active;
-        if (lane == 0) {
+        if (Streaming) {
+            if (connecting) {
+                for (uint32_t d = lane; d < rrt_dimension; d += 32)
+                    candidate.q[d] = nodes[size_t(target) * rrt_dimension + d];
+                if (lane == 0) candidate.reaches_target = true;
+            } else {
+                uint64_t base = problem.seed +
+                    uint64_t(round) * config.samples_per_round * UINT64_C(0xd1342543de82ef95);
+                const bool biased = rrt_uniform(base) < config.goal_bias;
+                const Scalar* bias_target = active == RrtTree::Start ? problem.goal : problem.start;
+                for (uint32_t d = lane; d < rrt_dimension; d += 32) {
+                    uint64_t rng = base + uint64_t(d) * UINT64_C(0x9e3779b97f4a7c15);
+                    candidate.q[d] = biased ? bias_target[d] : Scalar(double(space.lower[d]) +
+                        rrt_uniform(rng) * (double(space.upper[d]) - double(space.lower[d])));
+                }
+                if (lane == 0) candidate.reaches_target = biased;
+            }
+        } else if (lane == 0) {
             if (connecting) {
                 for (uint32_t d = 0; d < rrt_dimension; ++d)
                     candidate.q[d] = nodes[size_t(target) * rrt_dimension + d];
