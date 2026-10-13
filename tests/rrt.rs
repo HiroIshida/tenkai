@@ -120,6 +120,51 @@ fn fixed_spheres_reject_collisions_for_each_environment_and_solve() {
     }
 }
 
+#[test]
+#[ignore = "requires CUDA toolkit and GPU; set NVCC and CXX if needed"]
+fn streaming_connect_preserves_paths_for_mixed_scenes_and_partial_blocks() {
+    let rotating = FkDag::from_robot(
+        &urdf::read_from_string(
+            r#"<robot name="rotating">
+<link name="root"/><link name="x"/><link name="y"/><link name="turn"/>
+<joint name="x" type="prismatic"><parent link="root"/><child link="x"/><axis xyz="1 0 0"/></joint>
+<joint name="y" type="prismatic"><parent link="x"/><child link="y"/><axis xyz="0 1 0"/></joint>
+<joint name="turn" type="continuous"><parent link="y"/><child link="turn"/><origin xyz="0 0 0.35"/><axis xyz="0 1 0"/></joint>
+</robot>"#,
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    for (name, fk, offset) in [
+        ("rrtc-streaming", robot(), 0.0),
+        ("rrtc-streaming-rotating", rotating, 0.08),
+    ] {
+        let spheres: Vec<_> = (0..17)
+            .map(|i| Sphere {
+                center: cuda::SphereCenter {
+                    link_index: 3,
+                    position: [offset, 0.0, f64::from(i) * 0.002],
+                },
+                radius: 0.03,
+            })
+            .collect();
+        for math in [
+            cuda::MathMode::F32,
+            cuda::MathMode::F64,
+            cuda::MathMode::F32Sfu,
+        ] {
+            check_planner(
+                &fk,
+                &spheres,
+                &[2, 0, 1],
+                math,
+                name,
+                include_str!("fixtures/rrtc_streaming.cu"),
+            );
+        }
+    }
+}
+
 fn check_planner(
     fk: &FkDag,
     spheres: &[Sphere],

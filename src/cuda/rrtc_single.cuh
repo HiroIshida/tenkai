@@ -17,10 +17,14 @@ extern "C" __global__ void rkern_rrtc_single(
     uint32_t* path = all_paths + id * config.max_nodes;
     __shared__ RrtCandidate candidate;
     __shared__ rkern::RrtResult result;
-    __shared__ bool start_valid, goal_valid, connecting, in_workspace;
+    __shared__ bool start_valid, goal_valid, connecting, in_workspace, streamable;
     __shared__ volatile bool finished;
     __shared__ uint32_t round, target;
-    if (lane == 0) { round = 0; connecting = false; }
+    if (lane == 0) {
+        round = 0;
+        connecting = false;
+        streamable = rkern_collision_streamable(scene, problem.environment_id);
+    }
     rrt_initialize(problem, space, scene, nodes, parents, path, result,
                    start_valid, goal_valid, finished, trees);
     if (lane == 0 && !finished) {
@@ -50,6 +54,8 @@ extern "C" __global__ void rkern_rrtc_single(
         if (lane < width)
             rrt_extend(candidate, nodes, result.node_count, space, config.step_size,
                        trees, tree, connecting ? &candidate.nearest : nullptr, width, true);
+        // Lane-zero predicates can still compile to shared loads in every lane.
+        __syncwarp();
         if (lane == 0 && connecting && !candidate.steps && candidate.reaches_target)
             candidate.blocked = 0;
         if (lane == 0)
@@ -64,6 +70,7 @@ extern "C" __global__ void rkern_rrtc_single(
         for (uint64_t wave = 0; wave < waves; ++wave) {
             const uint64_t sample = uint64_t(lane) * waves + wave;
             bool hit = false;
+            const unsigned mask = __ballot_sync(0xffffffffu, sample < checks);
             if (sample < checks) {
                 const uint32_t step = uint32_t(sample) + (reverse ? 0 : 1);
                 const Scalar ratio = Scalar(step) / Scalar(candidate.steps);
@@ -78,8 +85,17 @@ extern "C" __global__ void rkern_rrtc_single(
                         (step == 0 ? from[d] : from[d] + ratio * (to[d] - from[d]));
                     full[controls[d]] = q;
                 }
-                hit = in_workspace ? rkern_collision_edge(full, scene, problem.environment_id) :
-                    rkern_collision_moving(full, scene, problem.environment_id);
+                if (streamable && in_workspace) {
+                    const auto collision = rkern_collision_streaming(full, scene, problem.environment_id, mask);
+                    // Collective early exits mark other lanes blocked too; retry the whole wave.
+                    if (__any_sync(mask, collision == StreamingCollision::Retry))
+                        hit = rkern_collision_edge(full, scene, problem.environment_id);
+                    else
+                        hit = collision == StreamingCollision::Blocked;
+                } else {
+                    hit = in_workspace ? rkern_collision_edge(full, scene, problem.environment_id) :
+                        rkern_collision_moving(full, scene, problem.environment_id);
+                }
             }
             if (__any_sync(0xffffffffu, hit)) {
                 if (lane == 0) candidate.blocked = 1;

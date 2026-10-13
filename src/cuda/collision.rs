@@ -284,6 +284,7 @@ fn write_planning_functions(
         math: kernel.math,
     };
     write_function(source, &edge_kernel, &edge_spheres, Inlining::Always);
+    write_streaming_function(source, &edge_kernel, &edge_spheres);
     source.push_str(
         "\n__device__ inline bool rkern_collision_in_workspace(const float* q, const float* lower, const float* upper) {\n",
     );
@@ -364,6 +365,66 @@ __device__ __noinline__ bool rkern_collision_workspace_clear(
             .expect("writing to String is infallible");
     }
     source.push_str("    return true;\n}\n");
+}
+
+fn write_streaming_function(source: &mut String, kernel: &Kernel<'_>, spheres: &[Sphere]) {
+    source.push_str(include_str!("streaming.cuh"));
+    source.push_str(
+        r#"
+__device__ inline bool rkern_collision_streamable(rkern_f32::Scene scene, uint32_t environment_id) {
+"#,
+    );
+    if spheres
+        .iter()
+        .any(|sphere| !(sphere.radius as f32 * sphere.radius as f32).is_finite())
+    {
+        source.push_str("    return false;\n}\n");
+    } else {
+        source.push_str(
+            r#"    const auto environment = scene.environments[environment_id];
+    if (environment.boxes.count != 1 || environment.grounds.count != 1 ||
+        environment.spheres.count || environment.cylinders.count) return false;
+    const auto& box = scene.boxes[environment.boxes.offset];
+    for (unsigned i = 0; i < 9; ++i)
+        if (box.pose.world_to_local[i] != (i % 4 == 0 ? 1.0f : 0.0f)) return false;
+    return true;
+}
+"#,
+        );
+    }
+    source.push_str(
+        r#"
+__device__ __forceinline__ rkern_f32::StreamingCollision rkern_collision_streaming(
+    const float* q, rkern_f32::Scene scene, uint32_t environment_id, unsigned mask) {
+    using namespace rkern_f32;
+    const Environment environment = scene.environments[environment_id];
+    const Box& box = scene.boxes[environment.boxes.offset];
+    const Ground& ground = scene.grounds[environment.grounds.offset];
+    bool collision = false, retry = false;
+    Vec3 center;
+"#,
+    );
+    kernel.write_body(source, "q", |source, index, value| {
+        let axis = ["x", "y", "z"][index % 3];
+        writeln!(source, "    center.{axis} = v{};", value.index())
+            .expect("writing to String is infallible");
+        if index % 3 == 2 {
+            let radius = spheres[index / 3].radius;
+            writeln!(
+                source,
+                "    collision |= streaming_intersects(box, center, {radius:.17e}f, retry);\n    collision |= intersects(ground, center, {radius:.17e}f);"
+            )
+            .expect("writing to String is infallible");
+            if (index / 3 + 1) % 8 == 0 {
+                source.push_str(
+                    "    if (__any_sync(mask, collision || retry))\n        return retry ? StreamingCollision::Retry : StreamingCollision::Blocked;\n",
+                );
+            }
+        }
+    });
+    source.push_str(
+        "    return retry ? StreamingCollision::Retry :\n        (collision ? StreamingCollision::Blocked : StreamingCollision::Clear);\n}\n",
+    );
 }
 
 fn write_collision_group(
