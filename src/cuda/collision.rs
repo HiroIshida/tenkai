@@ -1,9 +1,9 @@
 use std::fmt::Write;
 
 use super::kernel::Kernel;
-use super::{Options, Precision};
+use super::{MathMode, Options, Precision};
 use crate::collision::{Error, Sphere};
-use crate::dag::NodeId;
+use crate::dag::{Node, NodeId};
 use crate::fk::{FkDag, center_expressions};
 use crate::scheduling::Schedule;
 
@@ -172,7 +172,15 @@ __device__ inline bool rkern_collision_moving(
             write_function(&mut source, &moving_kernel, &moving_spheres, inlining);
         }
         if options.math.precision() == Precision::F32 {
-            write_planning_functions(&mut source, &kernel, spheres, &groups, &moving, options);
+            write_planning_functions(
+                &mut source,
+                &kernel,
+                spheres,
+                &groups,
+                &moving,
+                controls,
+                options,
+            );
         }
     }
     Ok(source)
@@ -239,10 +247,34 @@ fn write_planning_functions(
     spheres: &[Sphere],
     groups: &[&[NodeId]],
     moving: &[usize],
+    controls: &[usize],
     options: Options,
 ) {
-    let edge_spheres: Vec<_> = moving.iter().map(|&i| spheres[i]).collect();
-    let edge_groups: Vec<_> = moving.iter().map(|&i| groups[i]).collect();
+    let dependencies: Vec<_> = controls
+        .iter()
+        .map(|&input| kernel.dag.depends_on_inputs(&[input]))
+        .collect();
+    // Interval bounds grow quickly along articulated chains. Limit the extra
+    // predicate to shallow dependencies instead of generating every subset.
+    let bounded: Vec<_> = moving
+        .iter()
+        .copied()
+        .filter(|&i| {
+            options.math == MathMode::F32
+                && dependencies
+                    .iter()
+                    .filter(|dependent| groups[i].iter().any(|id| dependent[id.index()]))
+                    .count()
+                    <= 2
+        })
+        .collect();
+    let remaining: Vec<_> = moving
+        .iter()
+        .copied()
+        .filter(|i| !bounded.contains(i))
+        .collect();
+    let edge_spheres: Vec<_> = remaining.iter().map(|&i| spheres[i]).collect();
+    let edge_groups: Vec<_> = remaining.iter().map(|&i| groups[i]).collect();
     let edge_kernel = Kernel {
         name: "rkern_collision_edge",
         schedule: Schedule::for_output_groups(kernel.dag, &edge_groups, options.scheduling)
@@ -252,6 +284,86 @@ fn write_planning_functions(
         math: kernel.math,
     };
     write_function(source, &edge_kernel, &edge_spheres, Inlining::Always);
+    source.push_str(
+        "\n__device__ inline bool rkern_collision_in_workspace(const float* q, const float* lower, const float* upper) {\n",
+    );
+    for (d, dependent) in dependencies.iter().enumerate() {
+        if bounded
+            .iter()
+            .any(|&i| groups[i].iter().any(|id| dependent[id.index()]))
+        {
+            writeln!(
+                source,
+                "    if (!(q[{d}] >= lower[{d}] && q[{d}] <= upper[{d}])) return false;"
+            )
+            .expect("writing to String is infallible");
+        }
+    }
+    source.push_str("    return true;\n}\n");
+    source.push_str(include_str!("workspace.cuh"));
+    source.push_str(
+        r#"
+__device__ __noinline__ bool rkern_collision_workspace_clear(
+    const float* lower, const float* upper, const float* reference,
+    rkern_f32::Scene scene, uint32_t environment_id) {
+    using namespace rkern_f32;
+    const Environment environment = scene.environments[environment_id];
+"#,
+    );
+    if bounded.is_empty() {
+        source.push_str("    return true;\n}\n");
+        return;
+    }
+    let outputs: Vec<_> = bounded
+        .iter()
+        .flat_map(|&i| groups[i].iter().copied())
+        .collect();
+    let needed = kernel.dag.required_nodes(&outputs);
+    for (index, &node) in kernel.dag.nodes().iter().enumerate() {
+        if !needed[index] {
+            continue;
+        }
+        write!(source, "    const WorkspaceInterval v{index} = ")
+            .expect("writing to String is infallible");
+        match node {
+            Node::Constant(value) => writeln!(source, "{{{value:.17e}f, {value:.17e}f}};"),
+            Node::Input(input) => match controls.iter().position(|&i| i == input) {
+                Some(d) => writeln!(source, "workspace_input(lower[{d}], upper[{d}]);"),
+                None => writeln!(source, "{{reference[{input}], reference[{input}]}};"),
+            },
+            Node::Add(a, b) | Node::Sub(a, b) | Node::Mul(a, b) => {
+                let operation = match node {
+                    Node::Add(..) => "add",
+                    Node::Sub(..) => "sub",
+                    _ => "mul",
+                };
+                writeln!(
+                    source,
+                    "workspace_{operation}(v{}, v{});",
+                    a.index(),
+                    b.index()
+                )
+            }
+            Node::Sin(a) | Node::Cos(a) => writeln!(
+                source,
+                "workspace_trig(v{}, {});",
+                a.index(),
+                matches!(node, Node::Cos(_)),
+            ),
+        }
+        .expect("writing to String is infallible");
+    }
+    for i in bounded {
+        let [x, y, z] = [
+            groups[i][0].index(),
+            groups[i][1].index(),
+            groups[i][2].index(),
+        ];
+        let radius = spheres[i].radius;
+        writeln!(source, "    if (!workspace_clear(v{x}, v{y}, v{z}, {radius:.17e}f, scene, environment)) return false;")
+            .expect("writing to String is infallible");
+    }
+    source.push_str("    return true;\n}\n");
 }
 
 fn write_collision_group(

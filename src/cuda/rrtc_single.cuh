@@ -5,7 +5,7 @@ extern "C" __global__ void rkern_rrtc_single(
     @NAMESPACE@::RrtSpace space, @NAMESPACE@::Scene scene, rkern::RrtConfig config,
     @NAMESPACE@::Scalar* all_nodes, uint32_t* all_parents, @NAMESPACE@::RrtTree* all_trees,
     @NAMESPACE@::RrtCandidate* all_candidates, uint32_t* all_paths,
-    rkern::RrtResult* results) {
+    rkern::RrtResult* results, const unsigned char* clear) {
     using namespace @NAMESPACE@;
     const size_t id = blockIdx.x;
     if (id >= problem_count) return;
@@ -17,7 +17,7 @@ extern "C" __global__ void rkern_rrtc_single(
     uint32_t* path = all_paths + id * config.max_nodes;
     __shared__ RrtCandidate candidate;
     __shared__ rkern::RrtResult result;
-    __shared__ bool start_valid, goal_valid, connecting;
+    __shared__ bool start_valid, goal_valid, connecting, in_workspace;
     __shared__ volatile bool finished;
     __shared__ uint32_t round, target;
     if (lane == 0) { round = 0; connecting = false; }
@@ -52,6 +52,11 @@ extern "C" __global__ void rkern_rrtc_single(
                        trees, tree, connecting ? &candidate.nearest : nullptr, width);
         if (lane == 0 && connecting && !candidate.steps && candidate.reaches_target)
             candidate.blocked = 0;
+        if (lane == 0)
+            in_workspace = clear[problem.environment_id] &&
+                rkern_collision_in_workspace(candidate.q, space.lower, space.upper) &&
+                rkern_collision_in_workspace(nodes + size_t(candidate.parent) * rrt_dimension,
+                                             space.lower, space.upper);
         __syncwarp();
         const bool reverse = tree == RrtTree::Goal;
         const uint64_t checks = uint64_t(candidate.steps) + (reverse && candidate.steps ? 1 : 0);
@@ -73,7 +78,8 @@ extern "C" __global__ void rkern_rrtc_single(
                         (step == 0 ? from[d] : from[d] + ratio * (to[d] - from[d]));
                     full[controls[d]] = q;
                 }
-                hit = rkern_collision_edge(full, scene, problem.environment_id);
+                hit = in_workspace ? rkern_collision_edge(full, scene, problem.environment_id) :
+                    rkern_collision_moving(full, scene, problem.environment_id);
             }
             if (__any_sync(0xffffffffu, hit)) {
                 if (lane == 0) candidate.blocked = 1;
@@ -125,4 +131,12 @@ extern "C" __global__ void rkern_rrtc_single(
         __syncwarp();
     }
     if (lane == 0) results[id] = result;
+}
+extern "C" __global__ void rkern_rrtc_workspace(
+    @NAMESPACE@::RrtSpace space, @NAMESPACE@::Scene scene,
+    size_t environment_count, unsigned char* clear) {
+    for (size_t id = size_t(blockIdx.x) * blockDim.x + threadIdx.x;
+         id < environment_count; id += size_t(blockDim.x) * gridDim.x)
+        clear[id] = rkern_collision_workspace_clear(
+            space.lower, space.upper, space.reference, scene, uint32_t(id));
 }

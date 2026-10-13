@@ -149,12 +149,20 @@ fn check_planner(
         include_str!("fixtures/broad_phase_checks.h"),
     )
     .unwrap();
+    fs::write(
+        directory.join("workspace_checks.cuh"),
+        include_str!("fixtures/workspace_checks.cuh"),
+    )
+    .unwrap();
     let namespace = if math == cuda::MathMode::F64 {
         "rkern_f64"
     } else {
         "rkern_f32"
     };
     let mut command = cuda_compiler("c++14");
+    if math == cuda::MathMode::F32 {
+        command.arg("-DTEST_STANDARD_FP32");
+    }
     run(command
         .arg("-O2")
         .arg(format!("-DRKERN_MODEL_NAMESPACE={namespace}"))

@@ -56,7 +56,9 @@ public:
           parents_(storage_product(problem_count, config.max_nodes)),
           trees_(algorithm == rkern::RrtAlgorithm::RrtConnect ? storage_product(problem_count, config.max_nodes) : 0),
           candidates_(storage_product(problem_count, config.samples_per_round)),
-          paths_(storage_product(problem_count, config.max_nodes)), results_(problem_count) {}
+          paths_(storage_product(problem_count, config.max_nodes)), results_(problem_count),
+          workspace_clear_(algorithm == rkern::RrtAlgorithm::RrtConnect && single_candidate(config, threads_) ?
+                           environment_count : 0) {}
 
     std::vector<rkern::RrtResult> solve(const std::vector<RrtProblem>& problems) {
         if (problems.size() != problem_count_) throw std::invalid_argument("RRT problem count mismatch");
@@ -67,9 +69,14 @@ public:
         problems_.upload(problems.data(), problems.size());
 #if @FP32@
         if (algorithm_ == rkern::RrtAlgorithm::RrtConnect && single_candidate(config_, threads_)) {
+            const size_t blocks = (environment_count_ - 1) / 128 + 1;
+            rkern_rrtc_workspace<<<static_cast<unsigned int>(blocks < 65535 ? blocks : 65535), 128>>>(
+                space_, scene_, environment_count_, workspace_clear_.data());
+            cuda_check(cudaGetLastError(), "check RRT workspace");
             @RRTC_SINGLE@<<<static_cast<unsigned int>(problem_count_), 32>>>(
                 problems_.data(), problem_count_, space_, scene_, config_, nodes_.data(),
-                parents_.data(), trees_.data(), candidates_.data(), paths_.data(), results_.data());
+                parents_.data(), trees_.data(), candidates_.data(), paths_.data(), results_.data(),
+                workspace_clear_.data());
         } else
 #endif
         if (algorithm_ == rkern::RrtAlgorithm::RrtConnect)
@@ -149,5 +156,6 @@ private:
     DeviceBuffer<RrtCandidate> candidates_;
     DeviceBuffer<uint32_t> paths_;
     DeviceBuffer<rkern::RrtResult> results_;
+    DeviceBuffer<unsigned char> workspace_clear_;
 };
 }

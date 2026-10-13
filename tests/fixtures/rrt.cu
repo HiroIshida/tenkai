@@ -9,6 +9,7 @@ using Status = rkern::PlanStatus;
 using Algorithm = rkern::RrtAlgorithm;
 namespace sdf = m;
 #include "broad_phase_checks.h"
+#include "workspace_checks.cuh"
 
 __global__ void check_broad_phase_device(bool* result) {
     const unsigned int index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -350,6 +351,7 @@ void check_single_candidate(const m::RrtSpace& space, m::Scene scene,
 }
 
 int main() try {
+    check_workspace_bounds();
     m::DeviceBuffer<bool> broad_phase_result(broad_phase_case_count);
     check_broad_phase_device<<<(broad_phase_case_count+127)/128,128>>>(broad_phase_result.data());
     m::cuda_check(cudaGetLastError(), "check broad phase");

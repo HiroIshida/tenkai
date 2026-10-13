@@ -63,7 +63,12 @@ impl std::error::Error for RrtError {
 /// extraction. Its algorithm defaults to RRT; select `RrtAlgorithm::RrtConnect`
 /// for RRTC.
 /// In FP32 with one candidate and one warp, the wrapper selects a dedicated
-/// kernel sharing one EXTEND/CONNECT loop.
+/// kernel sharing one EXTEND/CONNECT loop. For standard FP32 trigonometry it
+/// first bounds spheres depending on at most two controlled joints over the
+/// entire joint domain. If these bounds exclude every obstacle, subsequent
+/// edges omit those spheres. Bounds include floating-point rounding and are
+/// recomputed per environment on every solve; uncertain cases check all moving
+/// spheres. Start validation and standalone collision queries check every sphere.
 ///
 /// The caller owns device buffers, validates config/space with `validate_rrt`,
 /// checks device launch/storage limits, and supplies valid scene ranges and IDs.
