@@ -2,8 +2,7 @@
 """Build and run batched CUDA RRT / RRT-Connect on Fetch with ground and a table."""
 
 import argparse
-import ctypes as ct
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 import json
 import os
 from pathlib import Path
@@ -13,125 +12,12 @@ import time
 
 import numpy as np
 
-from common import codegen_command, copy_rrt_bindings, toolchain
-from rkern import Options
+from rkern import Options, Planner, RRTConfig, build_rrt
 
 BENCH = Path(__file__).resolve().parent
 ROOT = BENCH.parent
 START = [0.0, 1.32, 1.40, -0.20, 1.72, 0.0, 1.66, 0.0]
 GOAL = [0.386, 0.205, 1.41, 0.308, -1.82, 0.245, 0.417, 6.01]
-STATUSES = ["success", "round_limit", "node_limit", "invalid_start", "invalid_goal"]
-
-
-@dataclass(frozen=True)
-class RRTConfig:
-    max_nodes: int = 8192
-    max_rounds: int = 1024
-    samples_per_round: int = 32
-    step_size: float = 1.0
-    goal_bias: float = 0.1
-
-
-class NativeConfig(ct.Structure):
-    _fields_ = [("max_nodes", ct.c_uint32), ("max_rounds", ct.c_uint32),
-                ("samples_per_round", ct.c_uint32), ("step_size", ct.c_double),
-                ("goal_bias", ct.c_double)]
-
-
-class NativeResult(ct.Structure):
-    _fields_ = [(name, ct.c_uint32) for name in ["status", "node_count", "rounds", "path_length"]]
-
-
-def pointer(array, scalar=ct.c_double):
-    return array.ctypes.data_as(ct.POINTER(scalar))
-
-
-class Planner:
-    """Benchmark binding; the native handle owns search storage and scene buffers."""
-
-    def __init__(self, library, model, config, warps, problem_count, geometry, resolution, algorithm="rrt"):
-        if algorithm not in ("rrt", "rrtc"):
-            raise ValueError("algorithm must be rrt or rrtc")
-        self.library = ct.CDLL(str(library))
-        self.handle = ct.c_void_p()
-        self.problem_count = problem_count
-        self.dimension = len(model["control_joints"])
-        self.fk_dof = len(model["input_joint_names"])
-        self.max_nodes = config.max_nodes
-        p_double, p_u32, p_u64 = ct.POINTER(ct.c_double), ct.POINTER(ct.c_uint32), ct.POINTER(ct.c_uint64)
-        self.library.rrt_error.restype = ct.c_char_p
-        create = getattr(self.library, algorithm + "_create")
-        create.argtypes = [ct.POINTER(NativeConfig), ct.c_uint32, ct.c_uint32,
-                           ct.c_uint32, p_double, p_double, p_double, p_double,
-                           ct.POINTER(ct.c_void_p)]
-        create.restype = ct.c_int
-        self.library.rrt_destroy.argtypes = [ct.c_void_p]
-        self.library.rrt_destroy.restype = None
-        self.library.rrt_solve.argtypes = [ct.c_void_p, p_double, p_double, p_u32, p_u64, ct.POINTER(NativeResult)]
-        self.library.rrt_solve.restype = ct.c_int
-        self.library.rrt_path.argtypes = [ct.c_void_p, ct.c_uint32, p_double, ct.c_uint32, p_u32]
-        self.library.rrt_path.restype = ct.c_int
-        self.library.rrt_check.argtypes = [ct.c_void_p, p_double, p_u32, ct.c_uint32, ct.POINTER(ct.c_ubyte)]
-        self.library.rrt_check.restype = ct.c_int
-        lower = np.array([joint["lower"] for joint in model["control_joints"]], dtype=np.float64)
-        upper = np.array([joint["upper"] for joint in model["control_joints"]], dtype=np.float64)
-        widths = np.full(self.dimension, resolution, dtype=np.float64)
-        geometry = np.ascontiguousarray(geometry, dtype=np.float64)
-        if geometry.ndim != 2 or geometry.shape[1] != 7:
-            raise ValueError("geometry must have shape (environments, 7)")
-        for name in ["max_nodes", "max_rounds", "samples_per_round"]:
-            if not 0 < getattr(config, name) < 2**32:
-                raise ValueError(f"{name} must fit a positive uint32")
-        if not 1 <= warps <= 32 or not 0 < problem_count < 2**32:
-            raise ValueError("invalid warp or problem count")
-        native = NativeConfig(**asdict(config))
-        self.check(create(ct.byref(native), warps, problem_count, len(geometry),
-                          pointer(geometry), pointer(lower), pointer(upper),
-                          pointer(widths), ct.byref(self.handle)))
-
-    def check(self, status):
-        if status:
-            raise RuntimeError(self.library.rrt_error().decode())
-
-    def close(self):
-        if self.handle.value:
-            self.library.rrt_destroy(self.handle)
-            self.handle = ct.c_void_p()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *_):
-        self.close()
-
-    def solve(self, starts, goals, environment_ids, seeds):
-        starts, goals = [np.ascontiguousarray(q, dtype=np.float64) for q in [starts, goals]]
-        ids = np.ascontiguousarray(environment_ids, dtype=np.uint32)
-        seeds = np.ascontiguousarray(seeds, dtype=np.uint64)
-        if (starts.shape != (self.problem_count, self.dimension) or goals.shape != starts.shape
-                or ids.shape != (self.problem_count,) or seeds.shape != ids.shape):
-            raise ValueError("invalid problem array shapes")
-        results = (NativeResult * self.problem_count)()
-        self.check(self.library.rrt_solve(self.handle, pointer(starts), pointer(goals),
-                                        pointer(ids, ct.c_uint32), pointer(seeds, ct.c_uint64), results))
-        return [{"status": STATUSES[r.status], "nodes": r.node_count, "rounds": r.rounds,
-                 "path_length": r.path_length} for r in results]
-
-    def path(self, problem_id):
-        path = np.empty((self.max_nodes, self.dimension), dtype=np.float64)
-        length = ct.c_uint32()
-        self.check(self.library.rrt_path(self.handle, problem_id, pointer(path), self.max_nodes, ct.byref(length)))
-        return path[:length.value].copy()
-
-    def collisions(self, configurations, environment_ids):
-        q = np.ascontiguousarray(configurations, dtype=np.float64)
-        ids = np.ascontiguousarray(environment_ids, dtype=np.uint32)
-        if q.ndim != 2 or q.shape[1] != self.fk_dof or ids.shape != (len(q),) or len(q) >= 2**32:
-            raise ValueError("invalid collision array shapes")
-        flags = np.empty(len(q), dtype=np.uint8)
-        self.check(self.library.rrt_check(self.handle, pointer(q), pointer(ids, ct.c_uint32),
-                                        len(q), pointer(flags, ct.c_ubyte)))
-        return flags
 
 
 def write_json(path, data):
@@ -139,32 +25,15 @@ def write_json(path, data):
 
 
 def build(output, math_mode, arch, max_registers=None, live_budget=None):
-    if max_registers is None:
-        max_registers = 128 if math_mode == "f32" else 0
-    if max_registers != 0 and not 32 <= max_registers <= 255:
-        raise ValueError("max_registers must be 0 or between 32 and 255")
-    if live_budget is not None and live_budget < 0:
-        raise ValueError("live_budget must be nonnegative")
-    directory = output / "build"
-    directory.mkdir(parents=True, exist_ok=True)
-    nvcc, compiler, version = toolchain()
-    options = Options(math_mode, live_budget=live_budget)
-    subprocess.run(codegen_command(directory, options), cwd=ROOT, check=True)
-    model = json.loads((directory / "model.json").read_text())
-    namespace = "rkern_f64" if model["scalar"] == "double" else "rkern_f32"
-    library = directory / "librrt.so"
-    source = copy_rrt_bindings(directory)
-    command = [nvcc, "-ccbin", compiler, "-std=c++14", "-O3", "-arch=" + arch, "-code=" + arch,
-               "-shared", "-Xcompiler", "-fPIC", "-DRKERN_MODEL_NAMESPACE=" + namespace,
-               "-I", str(directory), str(source), "-o", str(library)]
-    if max_registers:
-        command.append("--maxrregcount=" + str(max_registers))
-    with (directory / "compile.log").open("w") as log:
-        completed = subprocess.run(command, stdout=log, stderr=log)
-    if completed.returncode:
-        raise RuntimeError((directory / "compile.log").read_text())
-    return library, model, {"nvcc": version, "compile_command": command,
-                            "max_registers": max_registers or None}
+    compiled = build_rrt(
+        ROOT / "assets/fetch/fetch.urdf",
+        ROOT / "assets/fetch/collision.yaml",
+        output / "build",
+        options=Options(math_mode, live_budget=live_budget),
+        arch=arch,
+        max_registers=max_registers,
+    )
+    return compiled.library, compiled.model, compiled.toolchain
 
 
 def interpolate(path, resolution):
@@ -224,6 +93,8 @@ def main():
     parser.add_argument("--resolution", type=float, default=0.05)
     parser.add_argument("--seed", type=int, default=20261012)
     parser.add_argument("--repetitions", type=int, default=3)
+    parser.add_argument("--validate-plainmp", action="store_true",
+                        help="also validate paths with the separately built plainmp reference")
     args = parser.parse_args()
     if any(not 0 < getattr(args, name) < 2**32 for name in [
             "problems", "environments", "samples_per_round", "max_nodes", "max_rounds", "repetitions"]):
@@ -303,13 +174,17 @@ def main():
     all_ids.tofile(output / "validation_env_ids.bin")
     geometry.tofile(output / "geometry.bin")
     write_json(output / "summary.json", summary)
-    summary["plainmp_validation"] = validate_plainmp(output)
-    write_json(output / "summary.json", summary)
+    validation_failed = False
+    if args.validate_plainmp:
+        summary["plainmp_validation"] = validate_plainmp(output)
+        validation_failed = bool(summary["plainmp_validation"]["returncode"])
+        write_json(output / "summary.json", summary)
     print(f"Solved {success}/{args.problems}; batch median {np.median(times):.3f} ms; "
           f"checked {len(all_points)} path points, {collisions} collisions.")
     print(f"Results: {output}")
-    print(f"Independent plainmp validation: {summary['plainmp_validation']['collisions']} collisions.")
-    if success != args.problems or collisions or summary["plainmp_validation"]["returncode"]:
+    if args.validate_plainmp:
+        print(f"Independent plainmp validation: {summary['plainmp_validation']['collisions']} collisions.")
+    if success != args.problems or collisions or validation_failed:
         raise RuntimeError("planning or path validation failed; see summary.json")
 
 

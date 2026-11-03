@@ -1,0 +1,377 @@
+"""Build and run robot-specific CUDA RRT and RRT-Connect planners."""
+
+import ctypes as ct
+import json
+import math
+import re
+import subprocess
+from dataclasses import asdict, dataclass
+from pathlib import Path
+from types import TracebackType
+from typing import Literal, Self, TypedDict
+
+import numpy as np
+import numpy.typing as npt
+
+from .build import copy_rrt_bindings, toolchain
+from .compiler import ModelMetadata, generate
+from .cuda import Options
+
+type Algorithm = Literal["rrt", "rrtc"]
+type Status = Literal["success", "round_limit", "node_limit", "invalid_start", "invalid_goal"]
+
+STATUSES: tuple[Status, ...] = (
+    "success",
+    "round_limit",
+    "node_limit",
+    "invalid_start",
+    "invalid_goal",
+)
+
+
+def check_count(value: int, name: str, minimum: int = 1) -> None:
+    if isinstance(value, bool) or not isinstance(value, (int, np.integer)):
+        raise ValueError(f"{name} must be an integer")
+    if not minimum <= value < 2**32:
+        raise ValueError(f"{name} must be between {minimum} and 2**32 - 1")
+
+
+@dataclass(frozen=True)
+class RRTConfig:
+    max_nodes: int = 8192
+    max_rounds: int = 1024
+    samples_per_round: int = 32
+    step_size: float = 1.0
+    goal_bias: float = 0.1
+
+    def validate(self) -> None:
+        check_count(self.max_nodes, "max_nodes", 2)
+        check_count(self.max_rounds, "max_rounds")
+        check_count(self.samples_per_round, "samples_per_round")
+        if self.samples_per_round >= self.max_nodes:
+            raise ValueError("samples_per_round must be less than max_nodes")
+        if not math.isfinite(self.step_size) or self.step_size <= 0:
+            raise ValueError("step_size must be finite and positive")
+        if not math.isfinite(self.goal_bias) or not 0 <= self.goal_bias <= 1:
+            raise ValueError("goal_bias must be finite and between 0 and 1")
+
+
+class RRTResult(TypedDict):
+    status: Status
+    nodes: int
+    rounds: int
+    path_length: int
+
+
+class BuildInfo(TypedDict):
+    nvcc: str
+    compile_command: list[str]
+    max_registers: int | None
+
+
+@dataclass
+class RRTBuild:
+    library: Path
+    model: ModelMetadata
+    toolchain: BuildInfo
+
+    def planner(
+        self,
+        geometry: npt.ArrayLike,
+        *,
+        config: RRTConfig = RRTConfig(),
+        warps: int = 4,
+        problem_count: int = 1,
+        resolution: float = 0.05,
+        algorithm: Algorithm = "rrt",
+    ) -> "Planner":
+        """Allocate a planner; close it explicitly or use it as a context manager."""
+        return Planner(
+            self.library, self.model, config, warps, problem_count, geometry, resolution, algorithm
+        )
+
+
+def build_rrt(
+    urdf: str | Path,
+    spheres: str | Path,
+    output: str | Path,
+    *,
+    options: Options = Options(),
+    arch: str = "compute_75",
+    max_registers: int | None = None,
+) -> RRTBuild:
+    """Generate and compile both planners into output/librrt.so using nvcc.
+
+    Requires a CUDA toolkit and a supported C++ compiler, but no GPU. Each call
+    rebuilds the library. Use separate output directories for distinct builds.
+    """
+    if re.fullmatch(r"compute_[0-9]+", arch) is None:
+        raise ValueError("arch must be a virtual architecture such as compute_75")
+    if max_registers is None:
+        max_registers = 128 if options.math == "f32" else 0
+    check_count(max_registers, "max_registers", 0)
+    if max_registers != 0 and not 32 <= max_registers <= 255:
+        raise ValueError("max_registers must be 0 or between 32 and 255")
+    directory = Path(output).resolve()
+    generate(Path(urdf), Path(spheres), directory, options)
+    model: ModelMetadata = json.loads((directory / "model.json").read_text())
+    if not model["control_joints"]:
+        raise ValueError("RRT requires at least one control_joint_names entry")
+    nvcc, compiler, version = toolchain()
+    source = copy_rrt_bindings(directory)
+    library = directory / "librrt.so"
+    command = [
+        nvcc,
+        "-ccbin",
+        compiler,
+        "-std=c++14",
+        "-O3",
+        "-arch=" + arch,
+        "-code=" + arch,
+        "-shared",
+        "-Xcompiler",
+        "-fPIC",
+        "-DRKERN_MODEL_NAMESPACE=" + options.namespace,
+        "-I",
+        str(directory),
+        str(source),
+        "-o",
+        str(library),
+    ]
+    if max_registers:
+        command.append("--maxrregcount=" + str(max_registers))
+    log_path = directory / "compile.log"
+    with log_path.open("w") as log:
+        result = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT)
+    if result.returncode:
+        raise RuntimeError(f"nvcc failed; see {log_path}\n{log_path.read_text()}")
+    info = BuildInfo(nvcc=version, compile_command=command, max_registers=max_registers or None)
+    return RRTBuild(library, model, info)
+
+
+class NativeConfig(ct.Structure):
+    _fields_ = [
+        ("max_nodes", ct.c_uint32),
+        ("max_rounds", ct.c_uint32),
+        ("samples_per_round", ct.c_uint32),
+        ("step_size", ct.c_double),
+        ("goal_bias", ct.c_double),
+    ]
+
+
+class NativeResult(ct.Structure):
+    _fields_ = [
+        ("status", ct.c_uint32),
+        ("node_count", ct.c_uint32),
+        ("rounds", ct.c_uint32),
+        ("path_length", ct.c_uint32),
+    ]
+
+
+def unsigned_array[T: (np.uint32, np.uint64)](
+    values: npt.ArrayLike, dtype: type[T], name: str
+) -> npt.NDArray[T]:
+    array = np.asarray(values)
+    if array.size:
+        if array.dtype.kind not in ("i", "u"):
+            # NumPy can infer float64 for a list mixing small ints and large uint64 seeds.
+            array = np.asarray(values, dtype=object)
+            for value in array.flat:
+                if isinstance(value, (bool, np.bool_)) or not isinstance(value, (int, np.integer)):
+                    raise ValueError(f"{name} must contain integers")
+        if int(array.min()) < 0 or int(array.max()) > np.iinfo(dtype).max:
+            raise ValueError(f"{name} values must fit {np.dtype(dtype).name}")
+    return np.ascontiguousarray(array, dtype=dtype)
+
+
+class Planner:
+    """A reusable batch of RRT problems with owned GPU search and scene buffers.
+
+    Geometry has shape (environments, 7): box center x/y/z, box half extents
+    x/y/z, and ground height. Each environment contains one axis-aligned box
+    and one horizontal ground plane. Uncontrolled joints remain at zero.
+    """
+
+    def __init__(
+        self,
+        library: str | Path,
+        model: ModelMetadata,
+        config: RRTConfig,
+        warps: int,
+        problem_count: int,
+        geometry: npt.ArrayLike,
+        resolution: float,
+        algorithm: Algorithm = "rrt",
+    ) -> None:
+        if algorithm not in ("rrt", "rrtc"):
+            raise ValueError("algorithm must be rrt or rrtc")
+        config.validate()
+        check_count(warps, "warps")
+        if warps > 32:
+            raise ValueError("warps must be between 1 and 32")
+        check_count(problem_count, "problem_count")
+        if not math.isfinite(resolution) or resolution <= 0:
+            raise ValueError("resolution must be finite and positive")
+        scene = np.ascontiguousarray(geometry, dtype=np.float64)
+        if scene.ndim != 2 or scene.shape[1] != 7:
+            raise ValueError("geometry must have shape (environments, 7)")
+        check_count(len(scene), "environment_count")
+        if not np.isfinite(scene).all():
+            raise ValueError("geometry must be finite")
+        if (scene[:, 3:6] < 0).any():
+            raise ValueError("box half extents must be nonnegative")
+        self.problem_count = problem_count
+        self.environment_count = len(scene)
+        self.dimension = len(model["control_joints"])
+        self.fk_dof = len(model["input_joint_names"])
+        if not 0 < self.dimension <= self.fk_dof:
+            raise ValueError("model must have movable control joints")
+        self.max_nodes = config.max_nodes
+        lower = np.array([joint["lower"] for joint in model["control_joints"]], dtype=np.float64)
+        upper = np.array([joint["upper"] for joint in model["control_joints"]], dtype=np.float64)
+        if not np.isfinite(lower).all() or not np.isfinite(upper).all() or (lower >= upper).any():
+            raise ValueError("control joint bounds must be finite and increasing")
+        widths = np.full(self.dimension, resolution, dtype=np.float64)
+        self.handle = ct.c_void_p()
+        self.library = ct.CDLL(str(Path(library).resolve()))
+        floats = np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS")
+        ids = np.ctypeslib.ndpointer(dtype=np.uint32, flags="C_CONTIGUOUS")
+        seeds = np.ctypeslib.ndpointer(dtype=np.uint64, flags="C_CONTIGUOUS")
+        flags = np.ctypeslib.ndpointer(dtype=np.uint8, flags="C_CONTIGUOUS")
+        self.library.rrt_error.argtypes = []
+        self.library.rrt_error.restype = ct.c_char_p
+        create = getattr(self.library, algorithm + "_create")
+        create.argtypes = [
+            ct.POINTER(NativeConfig),
+            ct.c_uint32,
+            ct.c_uint32,
+            ct.c_uint32,
+            floats,
+            floats,
+            floats,
+            floats,
+            ct.POINTER(ct.c_void_p),
+        ]
+        create.restype = ct.c_int
+        self.library.rrt_destroy.argtypes = [ct.c_void_p]
+        self.library.rrt_destroy.restype = None
+        self.library.rrt_solve.argtypes = [
+            ct.c_void_p,
+            floats,
+            floats,
+            ids,
+            seeds,
+            ct.POINTER(NativeResult),
+        ]
+        self.library.rrt_solve.restype = ct.c_int
+        self.library.rrt_path.argtypes = [
+            ct.c_void_p,
+            ct.c_uint32,
+            floats,
+            ct.c_uint32,
+            ct.POINTER(ct.c_uint32),
+        ]
+        self.library.rrt_path.restype = ct.c_int
+        self.library.rrt_check.argtypes = [ct.c_void_p, floats, ids, ct.c_uint32, flags]
+        self.library.rrt_check.restype = ct.c_int
+        native = NativeConfig(**asdict(config))
+        self.check(
+            create(
+                ct.byref(native),
+                warps,
+                problem_count,
+                len(scene),
+                scene,
+                lower,
+                upper,
+                widths,
+                ct.byref(self.handle),
+            )
+        )
+
+    def check(self, status: int) -> None:
+        if status:
+            raise RuntimeError(self.library.rrt_error().decode())
+
+    def _require_open(self) -> None:
+        if not self.handle.value:
+            raise RuntimeError("planner is closed")
+
+    def close(self) -> None:
+        if self.handle.value:
+            self.library.rrt_destroy(self.handle)
+            self.handle = ct.c_void_p()
+
+    def __enter__(self) -> Self:
+        self._require_open()
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        self.close()
+
+    def solve(
+        self,
+        starts: npt.ArrayLike,
+        goals: npt.ArrayLike,
+        environment_ids: npt.ArrayLike,
+        seeds: npt.ArrayLike,
+    ) -> list[RRTResult]:
+        """Solve a batch; results and paths replace those from the previous solve."""
+        self._require_open()
+        start = np.ascontiguousarray(starts, dtype=np.float64)
+        goal = np.ascontiguousarray(goals, dtype=np.float64)
+        ids = unsigned_array(environment_ids, np.uint32, "environment_ids")
+        seed = unsigned_array(seeds, np.uint64, "seeds")
+        if start.shape != (self.problem_count, self.dimension) or goal.shape != start.shape:
+            raise ValueError("starts and goals must have shape (problem_count, dimension)")
+        if ids.shape != (self.problem_count,) or seed.shape != ids.shape:
+            raise ValueError("environment_ids and seeds must have shape (problem_count,)")
+        if (ids >= self.environment_count).any():
+            raise ValueError("environment ID out of range")
+        results = (NativeResult * self.problem_count)()
+        self.check(self.library.rrt_solve(self.handle, start, goal, ids, seed, results))
+        return [
+            RRTResult(
+                status=STATUSES[r.status],
+                nodes=r.node_count,
+                rounds=r.rounds,
+                path_length=r.path_length,
+            )
+            for r in results
+        ]
+
+    def path(self, problem_id: int) -> npt.NDArray[np.float64]:
+        """Return a copy of the last path, with one column per control joint."""
+        self._require_open()
+        check_count(problem_id, "problem_id", 0)
+        if problem_id >= self.problem_count:
+            raise ValueError("problem_id out of range")
+        path = np.empty((self.max_nodes, self.dimension), dtype=np.float64)
+        length = ct.c_uint32()
+        self.check(
+            self.library.rrt_path(self.handle, problem_id, path, self.max_nodes, ct.byref(length))
+        )
+        return path[: length.value].copy()
+
+    def collisions(
+        self, configurations: npt.ArrayLike, environment_ids: npt.ArrayLike
+    ) -> npt.NDArray[np.uint8]:
+        """Check full FK configurations, in model['input_joint_names'] order."""
+        self._require_open()
+        q = np.ascontiguousarray(configurations, dtype=np.float64)
+        ids = unsigned_array(environment_ids, np.uint32, "environment_ids")
+        if q.ndim != 2 or q.shape[1] != self.fk_dof or ids.shape != (len(q),):
+            raise ValueError("invalid collision array shapes")
+        check_count(len(q), "configuration_count", 0)
+        if not np.isfinite(q).all():
+            raise ValueError("configurations must be finite")
+        if (ids >= self.environment_count).any():
+            raise ValueError("environment ID out of range")
+        flags = np.empty(len(q), dtype=np.uint8)
+        self.check(self.library.rrt_check(self.handle, q, ids, len(q), flags))
+        return flags

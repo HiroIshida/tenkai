@@ -129,20 +129,24 @@ uv run python bench/rrt.py
 uv run python bench/rrt.py --problems 32 --environments 2 --warps-per-problem 4
 uv run python bench/rrt.py --math f64 --output bench/results/rrt-f64
 uv run python bench/rrt.py --algorithm rrtc --problems 32 --environments 2 --resolution 0.01
+uv run python bench/rrt.py --algorithm rrtc --validate-plainmp
 ```
 
-Uses the same CUDA/C++ toolchains and plainmp build dependencies as the collision
-benchmark, plus NumPy. `NVCC`, `CXX`, `CPU_CXX`, and `--arch` have the same meaning.
-Python constructs an `RRTConfig` dataclass and calls an opaque native planner
-through `build/librrt.so`; sampling, nearest-neighbor search, interpolation,
-collision checking, tree updates, and path tracing execute inside CUDA.
+Uses the installed `rkern` package and the same CUDA/C++ toolchains as the collision
+benchmark. Plainmp build dependencies are needed only with `--validate-plainmp`.
+`NVCC`, `CXX`, `CPU_CXX`, and `--arch` have the same meaning. The package owns
+code generation, compilation, and the Python/native planner binding; the benchmark
+supplies the Fetch inputs and measures solves. Python constructs an `RRTConfig`
+dataclass and calls the planner through `build/librrt.so`; sampling, nearest-neighbor
+search, interpolation, collision checking, tree updates, and path tracing execute
+inside CUDA.
 
 One problem owns one block for the entire solve. `--warps-per-problem` fixes its
 thread count to `32 * warps` at launch; the default is four. Environments and
 problems have separate IDs, so many problems can share a scene. Environment zero
 is the ground/table case above; additional environments shift the table by 0.02 m
 along Y per environment. The planner keeps its allocated device buffers across
-solves. Its scene buffers are owned by the benchmark's native handle.
+solves. Its scene buffers are owned by the library's native handle.
 
 FP32 without SFU defaults to `--max-registers 128`, passing `--maxrregcount=128`
 to NVCC. This reduced solve time by 8–16% on the RTX A500 with 2,048 plans;
@@ -231,8 +235,9 @@ path extraction, and validation are excluded. The repetitions use identical seed
 to check replay; they are timing repetitions, not additional independent trials.
 `paths.json` contains control-joint waypoints and their joint names. The benchmark
 checks bounds/endpoints and rechecks both the planning grid and a five-times finer
-grid with CUDA and independently with plainmp. These remain discrete checks,
-not a continuous collision certificate. Validation arrays and build logs are saved
+grid with CUDA, and independently with plainmp when `--validate-plainmp` is set.
+These remain discrete checks, not a continuous collision certificate.
+Validation arrays and build logs are saved
 alongside the results. The command fails if any problem fails or any checked path
 point collides.
 

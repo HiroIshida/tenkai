@@ -7,13 +7,13 @@ name = "rkern"
 version = "0.1.0"
 description = "Generate robot-specialized CUDA kernels from URDF models"
 requires-python = ">=3.12,<3.13"
-dependencies = ["PyYAML>=6.0,<7"]
+dependencies = ["PyYAML>=6.0,<7", "numpy>=2"]
 
 [project.scripts]
 rkern-generate = "rkern.cli:main"
 
 [project.optional-dependencies]
-bench = ["numpy>=2", "matplotlib>=3.9"]
+bench = ["matplotlib>=3.9"]
 
 [dependency-groups]
 dev = ["pytest>=8,<9", "mypy>=1.13", "types-PyYAML>=6", "ruff>=0.11"]
