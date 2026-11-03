@@ -207,6 +207,9 @@ def compiled(request: pytest.FixtureRequest, tmp_path_factory: pytest.TempPathFa
 @pytest.mark.cuda
 def test_public_build(compiled: RRTBuild) -> None:
     assert compiled.library.is_file()
+    assert compiled.timings["codegen"] > 0
+    assert compiled.timings["nvcc"] > 0
+    assert compiled.timings["total"] >= compiled.timings["codegen"] + compiled.timings["nvcc"]
     assert compiled.model == json.loads((compiled.library.parent / "model.json").read_text())
     assert [j["name"] for j in compiled.model["control_joints"]] == ["y", "x"]
     library = ct.CDLL(str(compiled.library))
