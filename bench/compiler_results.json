@@ -1,0 +1,927 @@
+{
+  "arguments": {
+    "output": "/home/h-ishida/rust/rkern/target/compiler-bench",
+    "modes": [
+      "f32",
+      "f32-sfu",
+      "f64"
+    ],
+    "optimization": "algebraic",
+    "live_budget": null,
+    "repeats": 5,
+    "nvcc_repeats": 3,
+    "arch": "compute_75"
+  },
+  "python": "3.8.10 (default, Mar 18 2025, 20:04:55) \n[GCC 9.4.0]",
+  "platform": "Linux-5.15.0-139-generic-x86_64-with-glibc2.29",
+  "cpu": "AMD Ryzen 7 7840HS w/ Radeon 780M Graphics",
+  "nvcc": "nvcc: NVIDIA (R) Cuda compiler driver\nCopyright (c) 2005-2019 NVIDIA Corporation\nBuilt on Sun_Jul_28_19:07:16_PDT_2019\nCuda compilation tools, release 10.1, V10.1.243\n",
+  "host_compiler": "g++-8 (Ubuntu 8.4.0-3ubuntu2) 8.4.0\nCopyright (C) 2018 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n",
+  "rustc": "rustc 1.99.0 (b940084d7 2026-09-28)\n",
+  "revision": "3bf7a2a9aa2bb0f302dd24bf4d9b3016b1854fd9",
+  "worktree_status": " M .gitignore\n M Cargo.toml\n M bench/README.md\n?? bench/compare_rrtc.py\n?? bench/compiler.py\n?? bench/compiler_reference.rs\n?? bench/generate.py\n?? bench/plainmp_rrtc_bench.cpp\n?? bench/rrtc_warps.py\n?? bench/speculative_rrtc.py\n?? python/\n?? src.tar\n?? src/cuda/rrtc_speculative.cuh\n?? tests/fixtures/collision_warp.cuh\n?? tests/fixtures/rrtc_speculation.cuh\n",
+  "input_sha256": {
+    "fetch.urdf": "f04bb641328c49f14be54571ec99608d34c04a7e29a0bec28f06764ba60e80dd",
+    "collision.yaml": "720f1b9e78bd47a970c4258274a64be3add7788779e1af6b0106febb665a630c"
+  },
+  "source_sha256": {
+    "src/collision.rs": "cdebd29ad5cf8a3bcede7ad8a3369cf59c630ea81ed99aa5c2b7325f088833db",
+    "src/cuda/collision.rs": "5fe3aac0993c85cbe5dfd01734782879e9e073d5cdda6aabcf204a6b6e2e03cc",
+    "src/cuda/kernel.rs": "6e8ffbd7119b18d098e9cb7ca4f2ef5960da92d682e422d3dd4877797eeb9514",
+    "src/cuda/rrt.cuh": "4469d43530ed464492b91dd3ed5b3660a3f2db47ccc8aa05e691eb22b4035c1e",
+    "src/cuda/rrt.rs": "c713f095154cb62ac470c8cf83935f8c9235a551de8c866f5701d2a7d17acabd",
+    "src/cuda/rrt_runtime.cuh": "d44a2281b064c98b2a3cda87ea95e53d972f24bf0aabbcb20a9da85757e1b0a4",
+    "src/cuda/rrtc.cuh": "0378facac89242103a3e2dfe39a1527a040824e27b3c1e1d36abc24bdc9796cf",
+    "src/cuda/rrtc_single.cuh": "512cbafcaf572df06a4c7a9c9c44dc8ef658f123c1ca8764068cc3f2cd875833",
+    "src/cuda/rrtc_speculative.cuh": "337298aea1bf0234f9b712a53d532c6352e4b4c5f25fbd595e1762885f3e7d1d",
+    "src/cuda/sdf.cuh": "cdf3272c2c3bae8f1c473ecbdd42cc6aabdc25c8d4d172a25e47d78ddb3fa057",
+    "src/cuda/streaming.cuh": "b1ff96b9765276bce4da0bcf0534511e1baee3e0a22cad3d36ec96db29dae33d",
+    "src/cuda/workspace.cuh": "2c94fcb47b26f395043c4c9246fe83f96b9a81fd64a26d5dde2e276e26092c09",
+    "src/cuda.rs": "a93bbb8e26db91a6644047134abe67443bfac7b2722f734fa45e034669d2494f",
+    "src/dag/cse.rs": "79408027bd1132d975b1548e9df6d9a3ee4b485768844c1b2c5fcfc3e9d6be62",
+    "src/dag/tests.rs": "4eb0330b29b87a3c9ff06fb9795c8561eb17628924c2a14dcab5d1d2deb77a0a",
+    "src/dag.rs": "d84cecfd6dfe2de4cc6f3e57e59bf6a6feb60f345cb7cefc1ba1b845b5336aca",
+    "src/fk/centers.rs": "a4468754b4d161aac490d2548b69c47b53ff95651644b0ad1e93384d1583b067",
+    "src/fk/tree.rs": "a15e43cbf33ff2cc9c818e1494fc0afaaaa45b1a34ae4730c637d68400fdaa6b",
+    "src/fk.rs": "ad2cfc26340fc57114544d795050a6cb08ad43ae262fb0c5cf3e2c622916b947",
+    "src/lib.rs": "33000567c4e1b99c32577337332222375ca6289b97f501f48885f19882c62dff",
+    "src/planning/rrt.hpp": "b684a1b30dd99ec7796987ad42694105a84087c900dfcd3b784af2dd5b12a5e7",
+    "src/scheduling/tests.rs": "d01e5bf87ed2d0ac6f4e06e273a404c08a9e8823864dd34914efca991c1a5af2",
+    "src/scheduling.rs": "7b19ffcc0f1a76414b4714e8d2340e0570e8d50f1952b1817eda1dcdb36ea581",
+    "src/transform.rs": "33c81408d967553c9a07f26e45346460cf65b6c851edb24e6bd65ba2e15d44d4",
+    "src/urdf.rs": "7014f51960528c913e60e42dbcfcb13416e0eccaea862d1441158ceae9863bb5",
+    "python/rkern/__init__.py": "bef116c6d7d9531a4d96541f3ccc1f248a302b8b7b84d8c2c6c7bf135930b96e",
+    "python/rkern/cli.py": "aaf8a9e1d118830a92cd10abf983d9aa938524a63f755a3d4982382ae7f4e281",
+    "python/rkern/cuda.py": "3b05598cd896d812a2e6867b3fa414eecd5aa7439b4fb56a61f9b662f7af25fc",
+    "python/rkern/dag.py": "8ee23a6215cbe3a14aa2a0ea37660dd0d73c18262e2822f7086edab5a0f0ab18",
+    "python/rkern/model.py": "417d017521224de5b841343a125f20ef5b4d3a9192c3c4a4ad430af4ee5c5778",
+    "python/rkern/scheduling.py": "5057cb74dffd6acafece2f382d292798904c2449fd699d738c8368dba842b762",
+    "python/rkern/transform.py": "ed67485726ee8ab472b6f7829b1efc2947f363cea3d1a98338103cc444789b4c",
+    "bench/compiler.py": "01890f29f175b8f6eab8067f096dccbe8e0f39be632227432526f0ff33969582",
+    "bench/compiler_reference.rs": "23b50fb3dfb2d801c1c73c7cfc364d9a9e1d701f37d4d4db14ef60db46e02de0",
+    "bench/generate.py": "f087c44c1a3aedb90c4679e986b77bea570cab981c9371cb16c37e37bdc55583",
+    "bench/common.py": "4f69271bf870f500cd61dbe57cf4c126f1c2e7b4df3f9f93e3b04b9b989b1742",
+    "bench/collision.cu": "be9f33fa847b740eddcd29c874607fd7cd294a175df0d93915df59e46bda1293",
+    "bench/rrt.cu": "6bcabc067fec0f98751a8f5918eab401cc279f18263e02725c850f271853e17e",
+    "bench/workload.hpp": "a69316a67e36a3b43dc24616f6346f5cc455a8727aa009e06217da1d50b87103",
+    "examples/common/mod.rs": "d6cb87a4292c0e4a0442e2242b3537a7378ddad83c8f9cac7cf551b24c082ae4"
+  },
+  "rust_incremental_build_seconds": 0.04148440800008757,
+  "methodology": {
+    "codegen": "one warmup; alternating fresh Rust/Python processes; no output cache; stage timings exclude process startup/imports; process_seconds includes them",
+    "nvcc": "identical generated CUDA source compiled once per backend target per repetition; sequential runs; first invocation retained; normal OS filesystem cache; no ccache",
+    "profile": "separate cProfile run; instrumented cumulative times, not included in benchmark samples",
+    "excluded": "Rust compiler build (reported separately), GPU driver PTX JIT, GPU execution",
+    "comparison": "CUDA source byte equality; model.json parsed equality before every nvcc run"
+  },
+  "modes": {
+    "f32": {
+      "source_sha256": {
+        "collision.cuh": "61aa4ca6e8305687b49ed9a466a79ef732cd75a4ffb52eb422edd08402fcf89e",
+        "rrt.cuh": "f20d73894100e145b5e52819ab9a4e0e4679cb4a71dc93feccbef9d1c02e6c95"
+      },
+      "codegen_commands": {
+        "rust": [
+          "/home/h-ishida/rust/rkern/target/release/examples/compiler_reference",
+          "--float",
+          "--no-sfu",
+          "--optimization",
+          "algebraic",
+          "/home/h-ishida/rust/rkern/assets/fetch/fetch.urdf",
+          "/home/h-ishida/rust/rkern/assets/fetch/collision.yaml",
+          "/home/h-ishida/rust/rkern/target/compiler-bench/f32/rust"
+        ],
+        "python": [
+          "/usr/bin/python3",
+          "/home/h-ishida/rust/rkern/bench/generate.py",
+          "--float",
+          "--no-sfu",
+          "--optimization",
+          "algebraic",
+          "/home/h-ishida/rust/rkern/target/compiler-bench/f32/python"
+        ]
+      },
+      "codegen_samples": {
+        "rust": [
+          {
+            "collision_codegen": 0.001039833,
+            "fk_dag": 6.7586e-05,
+            "parse_urdf": 0.00066361,
+            "rrt_codegen": 0.001645516,
+            "spheres_and_controls": 0.000683848,
+            "total": 0.004814438,
+            "write_outputs": 0.00071175,
+            "process_seconds": 0.010128340000164826
+          },
+          {
+            "collision_codegen": 0.001065081,
+            "fk_dag": 7.2135e-05,
+            "parse_urdf": 0.00072217,
+            "rrt_codegen": 0.001660704,
+            "spheres_and_controls": 0.00074915,
+            "total": 0.005007569,
+            "write_outputs": 0.000735805,
+            "process_seconds": 0.008965747000047486
+          },
+          {
+            "collision_codegen": 0.001615409,
+            "fk_dag": 0.000168234,
+            "parse_urdf": 0.001852763,
+            "rrt_codegen": 0.001599129,
+            "spheres_and_controls": 0.001735374,
+            "total": 0.0076507,
+            "write_outputs": 0.000677386,
+            "process_seconds": 0.01125402499997108
+          },
+          {
+            "collision_codegen": 0.001033762,
+            "fk_dag": 7.2836e-05,
+            "parse_urdf": 0.000669181,
+            "rrt_codegen": 0.001597947,
+            "spheres_and_controls": 0.000683037,
+            "total": 0.004769845,
+            "write_outputs": 0.000710868,
+            "process_seconds": 0.008445624999922074
+          },
+          {
+            "collision_codegen": 0.001011842,
+            "fk_dag": 5.1396e-05,
+            "parse_urdf": 0.000613957,
+            "rrt_codegen": 0.001701811,
+            "spheres_and_controls": 0.000591926,
+            "total": 0.004626397,
+            "write_outputs": 0.000654333,
+            "process_seconds": 0.006745808999994551
+          }
+        ],
+        "python": [
+          {
+            "parse_urdf": 0.0010340119999909803,
+            "fk_dag": 0.0018193010000686627,
+            "spheres_and_controls": 0.04155175599998984,
+            "collision_codegen": 0.05041638400007287,
+            "rrt_codegen": 0.09063001699996676,
+            "write_outputs": 0.0012591740000971186,
+            "total": 0.1867162419998749,
+            "process_seconds": 0.259340014999907
+          },
+          {
+            "parse_urdf": 0.0011924489999728394,
+            "fk_dag": 0.00193215100011912,
+            "spheres_and_controls": 0.04042606099983459,
+            "collision_codegen": 0.05254181600002994,
+            "rrt_codegen": 0.08980588800000078,
+            "write_outputs": 0.0011015579998456815,
+            "total": 0.18700493199980883,
+            "process_seconds": 0.2581929709999713
+          },
+          {
+            "parse_urdf": 0.0011083120000421331,
+            "fk_dag": 0.0019319919999816193,
+            "spheres_and_controls": 0.044109054000045944,
+            "collision_codegen": 0.05458148999991863,
+            "rrt_codegen": 0.09454472400011582,
+            "write_outputs": 0.0011558100000002014,
+            "total": 0.19743680100009442,
+            "process_seconds": 0.2745033369999419
+          },
+          {
+            "parse_urdf": 0.0011487669999041827,
+            "fk_dag": 0.001877749999948719,
+            "spheres_and_controls": 0.04080183299993223,
+            "collision_codegen": 0.05279386799998065,
+            "rrt_codegen": 0.09053936800000884,
+            "write_outputs": 0.0011343099999976403,
+            "total": 0.18830084499995792,
+            "process_seconds": 0.25641238299999713
+          },
+          {
+            "parse_urdf": 0.001059681000015189,
+            "fk_dag": 0.001872670000011567,
+            "spheres_and_controls": 0.041015473000015845,
+            "collision_codegen": 0.05087580200006414,
+            "rrt_codegen": 0.08890598400012095,
+            "write_outputs": 0.0009097709998968639,
+            "total": 0.184644009999829,
+            "process_seconds": 0.24702742099998432
+          }
+        ]
+      },
+      "codegen": {
+        "rust": {
+          "collision_codegen": {
+            "median": 0.001039833,
+            "minimum": 0.001011842,
+            "maximum": 0.001615409
+          },
+          "fk_dag": {
+            "median": 7.2135e-05,
+            "minimum": 5.1396e-05,
+            "maximum": 0.000168234
+          },
+          "parse_urdf": {
+            "median": 0.000669181,
+            "minimum": 0.000613957,
+            "maximum": 0.001852763
+          },
+          "rrt_codegen": {
+            "median": 0.001645516,
+            "minimum": 0.001597947,
+            "maximum": 0.001701811
+          },
+          "spheres_and_controls": {
+            "median": 0.000683848,
+            "minimum": 0.000591926,
+            "maximum": 0.001735374
+          },
+          "total": {
+            "median": 0.004814438,
+            "minimum": 0.004626397,
+            "maximum": 0.0076507
+          },
+          "write_outputs": {
+            "median": 0.000710868,
+            "minimum": 0.000654333,
+            "maximum": 0.000735805
+          },
+          "process_seconds": {
+            "median": 0.008965747000047486,
+            "minimum": 0.006745808999994551,
+            "maximum": 0.01125402499997108
+          }
+        },
+        "python": {
+          "parse_urdf": {
+            "median": 0.0011083120000421331,
+            "minimum": 0.0010340119999909803,
+            "maximum": 0.0011924489999728394
+          },
+          "fk_dag": {
+            "median": 0.001877749999948719,
+            "minimum": 0.0018193010000686627,
+            "maximum": 0.00193215100011912
+          },
+          "spheres_and_controls": {
+            "median": 0.041015473000015845,
+            "minimum": 0.04042606099983459,
+            "maximum": 0.044109054000045944
+          },
+          "collision_codegen": {
+            "median": 0.05254181600002994,
+            "minimum": 0.05041638400007287,
+            "maximum": 0.05458148999991863
+          },
+          "rrt_codegen": {
+            "median": 0.09053936800000884,
+            "minimum": 0.08890598400012095,
+            "maximum": 0.09454472400011582
+          },
+          "write_outputs": {
+            "median": 0.0011343099999976403,
+            "minimum": 0.0009097709998968639,
+            "maximum": 0.0012591740000971186
+          },
+          "total": {
+            "median": 0.18700493199980883,
+            "minimum": 0.184644009999829,
+            "maximum": 0.19743680100009442
+          },
+          "process_seconds": {
+            "median": 0.2581929709999713,
+            "minimum": 0.24702742099998432,
+            "maximum": 0.2745033369999419
+          }
+        }
+      },
+      "python_profile_seconds": {
+        "total": 0.257027875,
+        "cse": 0.047374657,
+        "emit_dag": 0.01706676,
+        "scheduling": 0.094050479
+      },
+      "nvcc_commands": {
+        "collision": [
+          "/usr/bin/nvcc",
+          "-ccbin",
+          "/usr/bin/g++-8",
+          "-std=c++14",
+          "-O3",
+          "-arch=compute_75",
+          "-code=compute_75",
+          "-I",
+          "/home/h-ishida/rust/rkern/target/compiler-bench/f32/python",
+          "/home/h-ishida/rust/rkern/bench/collision.cu",
+          "-o",
+          "/home/h-ishida/rust/rkern/target/compiler-bench/f32/python/collision_bench"
+        ],
+        "rrt": [
+          "/usr/bin/nvcc",
+          "-ccbin",
+          "/usr/bin/g++-8",
+          "-std=c++14",
+          "-O3",
+          "-arch=compute_75",
+          "-code=compute_75",
+          "-I",
+          "/home/h-ishida/rust/rkern/target/compiler-bench/f32/python",
+          "-shared",
+          "-Xcompiler",
+          "-fPIC",
+          "-DRKERN_MODEL_NAMESPACE=rkern_f32",
+          "/home/h-ishida/rust/rkern/bench/rrt.cu",
+          "-o",
+          "/home/h-ishida/rust/rkern/target/compiler-bench/f32/python/librrt.so",
+          "--maxrregcount=128"
+        ]
+      },
+      "nvcc_samples": {
+        "collision": [
+          2.4602621980000094,
+          2.4537657890000446,
+          2.4673359290000008
+        ],
+        "rrt": [
+          5.112229714000023,
+          5.1498387720000665,
+          5.161459588000071
+        ]
+      },
+      "nvcc_seconds": {
+        "collision": {
+          "median": 2.4602621980000094,
+          "minimum": 2.4537657890000446,
+          "maximum": 2.4673359290000008
+        },
+        "rrt": {
+          "median": 5.1498387720000665,
+          "minimum": 5.112229714000023,
+          "maximum": 5.161459588000071
+        }
+      }
+    },
+    "f32-sfu": {
+      "source_sha256": {
+        "collision.cuh": "b385752b96b80af06fb33e912f33d2a345fe2167bdfaf8cfdba8815b66171e5b",
+        "rrt.cuh": "37f15e1e8c629dfec472892ef4f55ee991006e41b3783c0c6c276e96757855d7"
+      },
+      "codegen_commands": {
+        "rust": [
+          "/home/h-ishida/rust/rkern/target/release/examples/compiler_reference",
+          "--float",
+          "--sfu",
+          "--optimization",
+          "algebraic",
+          "/home/h-ishida/rust/rkern/assets/fetch/fetch.urdf",
+          "/home/h-ishida/rust/rkern/assets/fetch/collision.yaml",
+          "/home/h-ishida/rust/rkern/target/compiler-bench/f32-sfu/rust"
+        ],
+        "python": [
+          "/usr/bin/python3",
+          "/home/h-ishida/rust/rkern/bench/generate.py",
+          "--float",
+          "--sfu",
+          "--optimization",
+          "algebraic",
+          "/home/h-ishida/rust/rkern/target/compiler-bench/f32-sfu/python"
+        ]
+      },
+      "codegen_samples": {
+        "rust": [
+          {
+            "collision_codegen": 0.002141653,
+            "fk_dag": 0.000115245,
+            "parse_urdf": 0.001264564,
+            "rrt_codegen": 0.003635645,
+            "spheres_and_controls": 0.001271497,
+            "total": 0.009604561,
+            "write_outputs": 0.001173163,
+            "process_seconds": 0.0140235600001688
+          },
+          {
+            "collision_codegen": 0.002118881,
+            "fk_dag": 0.000108092,
+            "parse_urdf": 0.0014502,
+            "rrt_codegen": 0.003628824,
+            "spheres_and_controls": 0.001288158,
+            "total": 0.009796882,
+            "write_outputs": 0.001199893,
+            "process_seconds": 0.014053308000029574
+          },
+          {
+            "collision_codegen": 0.00261663,
+            "fk_dag": 0.000159107,
+            "parse_urdf": 0.001765089,
+            "rrt_codegen": 0.002075349,
+            "spheres_and_controls": 0.001786048,
+            "total": 0.009013466,
+            "write_outputs": 0.000608517,
+            "process_seconds": 0.01305669300018053
+          },
+          {
+            "collision_codegen": 0.001004587,
+            "fk_dag": 0.000156843,
+            "parse_urdf": 0.001662637,
+            "rrt_codegen": 0.001697162,
+            "spheres_and_controls": 0.000833067,
+            "total": 0.006084372,
+            "write_outputs": 0.000727841,
+            "process_seconds": 0.010249367000142229
+          },
+          {
+            "collision_codegen": 0.001008364,
+            "fk_dag": 5.4432e-05,
+            "parse_urdf": 0.000615239,
+            "rrt_codegen": 0.001735493,
+            "spheres_and_controls": 0.000586787,
+            "total": 0.004619013,
+            "write_outputs": 0.000617564,
+            "process_seconds": 0.008157748000030551
+          }
+        ],
+        "python": [
+          {
+            "parse_urdf": 0.0009702939998987858,
+            "fk_dag": 0.001780167000106303,
+            "spheres_and_controls": 0.04255902399995648,
+            "collision_codegen": 0.04980176100002609,
+            "rrt_codegen": 0.09593586699998014,
+            "write_outputs": 0.000927362999846082,
+            "total": 0.19197816299993065,
+            "process_seconds": 0.25048439200008943
+          },
+          {
+            "parse_urdf": 0.0009312099998624035,
+            "fk_dag": 0.0017919700001129968,
+            "spheres_and_controls": 0.039921845999970174,
+            "collision_codegen": 0.05130313700010447,
+            "rrt_codegen": 0.09576723999998649,
+            "write_outputs": 0.0010252970000692585,
+            "total": 0.19074439499991058,
+            "process_seconds": 0.24993988300002457
+          },
+          {
+            "parse_urdf": 0.0008438370000476425,
+            "fk_dag": 0.0017833429999427608,
+            "spheres_and_controls": 0.0398008069998923,
+            "collision_codegen": 0.04984938999996302,
+            "rrt_codegen": 0.09570263099999465,
+            "write_outputs": 0.0020462850000058097,
+            "total": 0.19002985900010572,
+            "process_seconds": 0.24585721199991895
+          },
+          {
+            "parse_urdf": 0.0009689309999885154,
+            "fk_dag": 0.0017990420001297025,
+            "spheres_and_controls": 0.04043532600007893,
+            "collision_codegen": 0.05058117700014009,
+            "rrt_codegen": 0.09759341400013,
+            "write_outputs": 0.0009408680000433378,
+            "total": 0.19232214399994518,
+            "process_seconds": 0.2530641129999367
+          },
+          {
+            "parse_urdf": 0.0009150210000825609,
+            "fk_dag": 0.0018541559998084267,
+            "spheres_and_controls": 0.04047687100000985,
+            "collision_codegen": 0.051165029000003415,
+            "rrt_codegen": 0.09905503699997098,
+            "write_outputs": 0.0009917729998960567,
+            "total": 0.19446224500006792,
+            "process_seconds": 0.25301338700000997
+          }
+        ]
+      },
+      "codegen": {
+        "rust": {
+          "collision_codegen": {
+            "median": 0.002118881,
+            "minimum": 0.001004587,
+            "maximum": 0.00261663
+          },
+          "fk_dag": {
+            "median": 0.000115245,
+            "minimum": 5.4432e-05,
+            "maximum": 0.000159107
+          },
+          "parse_urdf": {
+            "median": 0.0014502,
+            "minimum": 0.000615239,
+            "maximum": 0.001765089
+          },
+          "rrt_codegen": {
+            "median": 0.002075349,
+            "minimum": 0.001697162,
+            "maximum": 0.003635645
+          },
+          "spheres_and_controls": {
+            "median": 0.001271497,
+            "minimum": 0.000586787,
+            "maximum": 0.001786048
+          },
+          "total": {
+            "median": 0.009013466,
+            "minimum": 0.004619013,
+            "maximum": 0.009796882
+          },
+          "write_outputs": {
+            "median": 0.000727841,
+            "minimum": 0.000608517,
+            "maximum": 0.001199893
+          },
+          "process_seconds": {
+            "median": 0.01305669300018053,
+            "minimum": 0.008157748000030551,
+            "maximum": 0.014053308000029574
+          }
+        },
+        "python": {
+          "parse_urdf": {
+            "median": 0.0009312099998624035,
+            "minimum": 0.0008438370000476425,
+            "maximum": 0.0009702939998987858
+          },
+          "fk_dag": {
+            "median": 0.0017919700001129968,
+            "minimum": 0.001780167000106303,
+            "maximum": 0.0018541559998084267
+          },
+          "spheres_and_controls": {
+            "median": 0.04043532600007893,
+            "minimum": 0.0398008069998923,
+            "maximum": 0.04255902399995648
+          },
+          "collision_codegen": {
+            "median": 0.05058117700014009,
+            "minimum": 0.04980176100002609,
+            "maximum": 0.05130313700010447
+          },
+          "rrt_codegen": {
+            "median": 0.09593586699998014,
+            "minimum": 0.09570263099999465,
+            "maximum": 0.09905503699997098
+          },
+          "write_outputs": {
+            "median": 0.0009917729998960567,
+            "minimum": 0.000927362999846082,
+            "maximum": 0.0020462850000058097
+          },
+          "total": {
+            "median": 0.19197816299993065,
+            "minimum": 0.19002985900010572,
+            "maximum": 0.19446224500006792
+          },
+          "process_seconds": {
+            "median": 0.25048439200008943,
+            "minimum": 0.24585721199991895,
+            "maximum": 0.2530641129999367
+          }
+        }
+      },
+      "python_profile_seconds": {
+        "total": 0.274020214,
+        "cse": 0.047842568,
+        "emit_dag": 0.020362586000000002,
+        "scheduling": 0.10584546
+      },
+      "nvcc_commands": {
+        "collision": [
+          "/usr/bin/nvcc",
+          "-ccbin",
+          "/usr/bin/g++-8",
+          "-std=c++14",
+          "-O3",
+          "-arch=compute_75",
+          "-code=compute_75",
+          "-I",
+          "/home/h-ishida/rust/rkern/target/compiler-bench/f32-sfu/python",
+          "/home/h-ishida/rust/rkern/bench/collision.cu",
+          "-o",
+          "/home/h-ishida/rust/rkern/target/compiler-bench/f32-sfu/python/collision_bench"
+        ],
+        "rrt": [
+          "/usr/bin/nvcc",
+          "-ccbin",
+          "/usr/bin/g++-8",
+          "-std=c++14",
+          "-O3",
+          "-arch=compute_75",
+          "-code=compute_75",
+          "-I",
+          "/home/h-ishida/rust/rkern/target/compiler-bench/f32-sfu/python",
+          "-shared",
+          "-Xcompiler",
+          "-fPIC",
+          "-DRKERN_MODEL_NAMESPACE=rkern_f32",
+          "/home/h-ishida/rust/rkern/bench/rrt.cu",
+          "-o",
+          "/home/h-ishida/rust/rkern/target/compiler-bench/f32-sfu/python/librrt.so"
+        ]
+      },
+      "nvcc_samples": {
+        "collision": [
+          2.369056174999969,
+          2.3799518519999765,
+          2.349796668999943
+        ],
+        "rrt": [
+          4.819438985000033,
+          4.942693173999942,
+          5.106396756000095
+        ]
+      },
+      "nvcc_seconds": {
+        "collision": {
+          "median": 2.369056174999969,
+          "minimum": 2.349796668999943,
+          "maximum": 2.3799518519999765
+        },
+        "rrt": {
+          "median": 4.942693173999942,
+          "minimum": 4.819438985000033,
+          "maximum": 5.106396756000095
+        }
+      }
+    },
+    "f64": {
+      "source_sha256": {
+        "collision.cuh": "5c5615aa5cf00cba5c8a642dc2d0481fa309a6902af518e980cd223a77c55a9b",
+        "rrt.cuh": "78cf0d8963917fa4da99ed845c381a78eda1241702fa7bc193382c4397668847"
+      },
+      "codegen_commands": {
+        "rust": [
+          "/home/h-ishida/rust/rkern/target/release/examples/compiler_reference",
+          "--double",
+          "--optimization",
+          "algebraic",
+          "/home/h-ishida/rust/rkern/assets/fetch/fetch.urdf",
+          "/home/h-ishida/rust/rkern/assets/fetch/collision.yaml",
+          "/home/h-ishida/rust/rkern/target/compiler-bench/f64/rust"
+        ],
+        "python": [
+          "/usr/bin/python3",
+          "/home/h-ishida/rust/rkern/bench/generate.py",
+          "--double",
+          "--optimization",
+          "algebraic",
+          "/home/h-ishida/rust/rkern/target/compiler-bench/f64/python"
+        ]
+      },
+      "codegen_samples": {
+        "rust": [
+          {
+            "collision_codegen": 0.00129485,
+            "fk_dag": 6.8127e-05,
+            "parse_urdf": 0.000650806,
+            "rrt_codegen": 0.001201256,
+            "spheres_and_controls": 0.000636049,
+            "total": 0.00440852,
+            "write_outputs": 0.000555478,
+            "process_seconds": 0.007036779999907594
+          },
+          {
+            "collision_codegen": 0.00133749,
+            "fk_dag": 6.1986e-05,
+            "parse_urdf": 0.000667738,
+            "rrt_codegen": 0.001215702,
+            "spheres_and_controls": 0.000671335,
+            "total": 0.004467399,
+            "write_outputs": 0.000511005,
+            "process_seconds": 0.007172584999807441
+          },
+          {
+            "collision_codegen": 0.001339724,
+            "fk_dag": 6.2587e-05,
+            "parse_urdf": 0.000635728,
+            "rrt_codegen": 0.001170298,
+            "spheres_and_controls": 0.00068525,
+            "total": 0.004427525,
+            "write_outputs": 0.000531444,
+            "process_seconds": 0.007090330999972139
+          },
+          {
+            "collision_codegen": 0.002498088,
+            "fk_dag": 0.000121797,
+            "parse_urdf": 0.001364721,
+            "rrt_codegen": 0.001350524,
+            "spheres_and_controls": 0.001378637,
+            "total": 0.007325391,
+            "write_outputs": 0.000606794,
+            "process_seconds": 0.011516905000007682
+          },
+          {
+            "collision_codegen": 0.003717579,
+            "fk_dag": 0.000155731,
+            "parse_urdf": 0.001512297,
+            "rrt_codegen": 0.002786498,
+            "spheres_and_controls": 0.001693936,
+            "total": 0.010566569,
+            "write_outputs": 0.000694788,
+            "process_seconds": 0.014247428000089712
+          }
+        ],
+        "python": [
+          {
+            "parse_urdf": 0.001039592999859451,
+            "fk_dag": 0.0018480940000245027,
+            "spheres_and_controls": 0.04272391900008188,
+            "collision_codegen": 0.07046702899992852,
+            "rrt_codegen": 0.07092009699999835,
+            "write_outputs": 0.0008568209998429666,
+            "total": 0.18786053199983144,
+            "process_seconds": 0.25244551000014326
+          },
+          {
+            "parse_urdf": 0.0013931840001077944,
+            "fk_dag": 0.001892195999971591,
+            "spheres_and_controls": 0.04244011900004807,
+            "collision_codegen": 0.06850340899995899,
+            "rrt_codegen": 0.07539563199998156,
+            "write_outputs": 0.0008035009998366149,
+            "total": 0.19043301000010615,
+            "process_seconds": 0.2600221770001099
+          },
+          {
+            "parse_urdf": 0.001403133000167145,
+            "fk_dag": 0.00184122199993908,
+            "spheres_and_controls": 0.0472980679999182,
+            "collision_codegen": 0.06619018500009588,
+            "rrt_codegen": 0.06674390199987101,
+            "write_outputs": 0.0007608119999531482,
+            "total": 0.18424192000020412,
+            "process_seconds": 0.2601101530001415
+          },
+          {
+            "parse_urdf": 0.0009184259999983624,
+            "fk_dag": 0.001820974000111164,
+            "spheres_and_controls": 0.04059518000008211,
+            "collision_codegen": 0.06868899599999168,
+            "rrt_codegen": 0.07284539599982054,
+            "write_outputs": 0.0008191609999812499,
+            "total": 0.1856926000000385,
+            "process_seconds": 0.2531651310000598
+          },
+          {
+            "parse_urdf": 0.0010876029998598824,
+            "fk_dag": 0.0018877080001402646,
+            "spheres_and_controls": 0.04146408400015389,
+            "collision_codegen": 0.06662270299989359,
+            "rrt_codegen": 0.06692118399996616,
+            "write_outputs": 0.0007538290001321002,
+            "total": 0.17874334299995098,
+            "process_seconds": 0.24873097599993343
+          }
+        ]
+      },
+      "codegen": {
+        "rust": {
+          "collision_codegen": {
+            "median": 0.001339724,
+            "minimum": 0.00129485,
+            "maximum": 0.003717579
+          },
+          "fk_dag": {
+            "median": 6.8127e-05,
+            "minimum": 6.1986e-05,
+            "maximum": 0.000155731
+          },
+          "parse_urdf": {
+            "median": 0.000667738,
+            "minimum": 0.000635728,
+            "maximum": 0.001512297
+          },
+          "rrt_codegen": {
+            "median": 0.001215702,
+            "minimum": 0.001170298,
+            "maximum": 0.002786498
+          },
+          "spheres_and_controls": {
+            "median": 0.00068525,
+            "minimum": 0.000636049,
+            "maximum": 0.001693936
+          },
+          "total": {
+            "median": 0.004467399,
+            "minimum": 0.00440852,
+            "maximum": 0.010566569
+          },
+          "write_outputs": {
+            "median": 0.000555478,
+            "minimum": 0.000511005,
+            "maximum": 0.000694788
+          },
+          "process_seconds": {
+            "median": 0.007172584999807441,
+            "minimum": 0.007036779999907594,
+            "maximum": 0.014247428000089712
+          }
+        },
+        "python": {
+          "parse_urdf": {
+            "median": 0.0010876029998598824,
+            "minimum": 0.0009184259999983624,
+            "maximum": 0.001403133000167145
+          },
+          "fk_dag": {
+            "median": 0.0018480940000245027,
+            "minimum": 0.001820974000111164,
+            "maximum": 0.001892195999971591
+          },
+          "spheres_and_controls": {
+            "median": 0.04244011900004807,
+            "minimum": 0.04059518000008211,
+            "maximum": 0.0472980679999182
+          },
+          "collision_codegen": {
+            "median": 0.06850340899995899,
+            "minimum": 0.06619018500009588,
+            "maximum": 0.07046702899992852
+          },
+          "rrt_codegen": {
+            "median": 0.07092009699999835,
+            "minimum": 0.06674390199987101,
+            "maximum": 0.07539563199998156
+          },
+          "write_outputs": {
+            "median": 0.0008035009998366149,
+            "minimum": 0.0007538290001321002,
+            "maximum": 0.0008568209998429666
+          },
+          "total": {
+            "median": 0.1856926000000385,
+            "minimum": 0.17874334299995098,
+            "maximum": 0.19043301000010615
+          },
+          "process_seconds": {
+            "median": 0.2531651310000598,
+            "minimum": 0.24873097599993343,
+            "maximum": 0.2601101530001415
+          }
+        }
+      },
+      "python_profile_seconds": {
+        "total": 0.263391393,
+        "cse": 0.063503946,
+        "emit_dag": 0.014106754,
+        "scheduling": 0.09500831500000001
+      },
+      "nvcc_commands": {
+        "collision": [
+          "/usr/bin/nvcc",
+          "-ccbin",
+          "/usr/bin/g++-8",
+          "-std=c++14",
+          "-O3",
+          "-arch=compute_75",
+          "-code=compute_75",
+          "-I",
+          "/home/h-ishida/rust/rkern/target/compiler-bench/f64/python",
+          "/home/h-ishida/rust/rkern/bench/collision.cu",
+          "-o",
+          "/home/h-ishida/rust/rkern/target/compiler-bench/f64/python/collision_bench"
+        ],
+        "rrt": [
+          "/usr/bin/nvcc",
+          "-ccbin",
+          "/usr/bin/g++-8",
+          "-std=c++14",
+          "-O3",
+          "-arch=compute_75",
+          "-code=compute_75",
+          "-I",
+          "/home/h-ishida/rust/rkern/target/compiler-bench/f64/python",
+          "-shared",
+          "-Xcompiler",
+          "-fPIC",
+          "-DRKERN_MODEL_NAMESPACE=rkern_f64",
+          "/home/h-ishida/rust/rkern/bench/rrt.cu",
+          "-o",
+          "/home/h-ishida/rust/rkern/target/compiler-bench/f64/python/librrt.so"
+        ]
+      },
+      "nvcc_samples": {
+        "collision": [
+          2.757473305000076,
+          2.4106918609998047,
+          2.4373508789999505
+        ],
+        "rrt": [
+          3.0925098540001272,
+          2.6605106959998466,
+          2.6365142100000867
+        ]
+      },
+      "nvcc_seconds": {
+        "collision": {
+          "median": 2.4373508789999505,
+          "minimum": 2.4106918609998047,
+          "maximum": 2.757473305000076
+        },
+        "rrt": {
+          "median": 2.6605106959998466,
+          "minimum": 2.6365142100000867,
+          "maximum": 3.0925098540001272
+        }
+      }
+    }
+  }
+}

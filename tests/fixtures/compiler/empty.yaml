@@ -1,0 +1,2 @@
+control_joint_names: [yaw]
+collision_spheres: {}

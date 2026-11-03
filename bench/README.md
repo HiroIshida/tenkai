@@ -3,10 +3,10 @@
 From the repository root:
 
 ```sh
-python3 bench/run.py
+uv run python bench/run.py
 ```
 
-Requires Linux, Git, Rust/Cargo, Python 3.8+ with NumPy and Matplotlib, an NVIDIA GPU, the CUDA
+Run `uv sync --all-extras` first. Requires Linux, Git, Python 3.12, an NVIDIA GPU, the CUDA
 toolkit (`nvcc`), and a host C++ compiler supported by that toolkit. `NVCC` and `CXX` override the
 compiler paths. CUDA 10 uses `g++-8` by default; newer toolkits use `c++`.
 The default PTX target is `compute_75` (GPU compute capability 7.5 or newer).
@@ -89,12 +89,12 @@ their strict checks. NumPy is used for sampling and statistics only.
 ## Options and results
 
 ```sh
-python3 bench/run.py --math f64 --output bench/results/double
-python3 bench/run.py --math f32 --live-budget 64 --output bench/results/scheduled
-python3 bench/run.py --cpu-core 8
-python3 bench/run.py --pool 4096 --batches 1 256 4096 --rounds 3 \
+uv run python bench/run.py --math f64 --output bench/results/double
+uv run python bench/run.py --math f32 --live-budget 64 --output bench/results/scheduled
+uv run python bench/run.py --cpu-core 8
+uv run python bench/run.py --pool 4096 --batches 1 256 4096 --rounds 3 \
   --warmup-seconds 0.2 --queries-per-round 4096 --max-repetitions 16
-python3 bench/run.py --help
+uv run python bench/run.py --help
 ```
 
 Outputs are in the git-ignored `bench/results/` by default. A run replaces files
@@ -117,7 +117,7 @@ with the same names; use a separate `--output` directory to retain comparisons.
 - `build/`: generated CUDA source, model metadata, configuration header,
   compiler log, and executable.
 
-`generate.rs` prepares the code and model metadata; `collision.cu` and
+`generate.py` prepares the code and model metadata; `collision.cu` and
 `plainmp_bench.cpp` own GPU/CPU execution and timers; `workload.hpp` shares the
 sampling schedule and binary input handling; `run.py` coordinates preparation,
 execution, validation, and aggregation.
@@ -125,10 +125,10 @@ execution, validation, and aggregation.
 ## Batched CUDA RRT and RRT-Connect
 
 ```sh
-python3 bench/rrt.py
-python3 bench/rrt.py --problems 32 --environments 2 --warps-per-problem 4
-python3 bench/rrt.py --math f64 --output bench/results/rrt-f64
-python3 bench/rrt.py --algorithm rrtc --problems 32 --environments 2 --resolution 0.01
+uv run python bench/rrt.py
+uv run python bench/rrt.py --problems 32 --environments 2 --warps-per-problem 4
+uv run python bench/rrt.py --math f64 --output bench/results/rrt-f64
+uv run python bench/rrt.py --algorithm rrtc --problems 32 --environments 2 --resolution 0.01
 ```
 
 Uses the same CUDA/C++ toolchains and plainmp build dependencies as the collision
@@ -243,13 +243,45 @@ both algorithms. RRTC additionally checks repeated CONNECT steps, node capacity
 across both trees, and joining an existing opposite root:
 
 ```sh
-CXX=g++-8 cargo test --test rrt -- --include-ignored
+CXX=g++-8 uv run pytest tests/test_cuda.py --run-cuda --run-gpu
 ```
 
 Use the host compiler supported by the installed CUDA toolkit; `g++-8` above is
-for the original CUDA 10 host. `cuda::generate_collision_function` exposes the
-single-configuration device predicate. `cuda::generate_rrt_kernel` emits
+for the original CUDA 10 host. `rkern.generate_collision_function` exposes the
+single-configuration device predicate. `rkern.generate_rrt_kernel` emits
 both specialized kernels and native `RrtPlanner`; pass
 `rkern::RrtAlgorithm::RrtConnect` as its final constructor argument to select RRTC.
 The Python `Planner` accepts `algorithm="rrtc"`. Common planner config/result types are
-in `src/planning/rrt.hpp`, separate from CUDA execution configuration and storage.
+in `src/rkern/templates/planning/rrt.hpp`, separate from CUDA execution configuration and storage.
+
+## Compile-time comparison
+
+The Python 3.12 compiler and CUDA templates are installed from `src/rkern` by uv.
+All benchmark entry points use this compiler.
+
+```sh
+uv run python bench/generate.py --float --no-sfu artifacts/generated
+uv run python bench/compiler.py --output artifacts/compiler-bench
+uv run python bench/verify_migration.py
+```
+
+The compile benchmark warms up the generator, measures five fresh Python
+processes, and separately measures three nvcc builds per target and math mode.
+Stage timings exclude Python startup/imports; `process_seconds` includes them.
+A separate cProfile run records CSE/scheduling/emission with instrumentation
+overhead. Compilation uses the collision executable and RRT shared-library
+builds described above. Driver PTX JIT and GPU execution are excluded.
+
+`results.json` contains raw samples, medians/ranges, stage breakdowns, commands,
+source hashes and toolchain versions. Generated source, compiler logs, binaries,
+and `codegen.prof` remain in each mode's subdirectory. Use `--modes`,
+`--optimization`, `--live-budget`, `--repeats`, `--nvcc-repeats`, and `--arch`
+to change the experiment.
+
+[The original experiment](compiler_results.json) records Rust versus Python 3.8
+before the migration, on a Ryzen 7 7840HS with CUDA 10.1 and GCC 8.4.
+[Migration verification](migration_results.json) records whole-file binary
+identity against the Rust baseline for all three math modes. The saved binaries
+and Rust source archive live in `artifacts/rust-reference/`; they are required
+only for the local binary replay. Ordinary tests compare against the 108 frozen
+Rust output records in `tests/reference/compiler.json` without invoking Rust.

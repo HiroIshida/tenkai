@@ -1,0 +1,24 @@
+{
+  "reference": "/home/h-ishida/rust/rkern/artifacts/rust-reference",
+  "matched_sha256": {
+    "f32": {
+      "collision.cuh": "61aa4ca6e8305687b49ed9a466a79ef732cd75a4ffb52eb422edd08402fcf89e",
+      "rrt.cuh": "f20d73894100e145b5e52819ab9a4e0e4679cb4a71dc93feccbef9d1c02e6c95",
+      "collision_bench": "8ea47db3ceb374d8fca9b237fd5e4bfc306b06fb6bd0bfdded71b79549fd0223",
+      "librrt.so": "02af32313e73c839e792fe27e2c32f8632c017835baa6de8d869794d51542ab7"
+    },
+    "f32-sfu": {
+      "collision.cuh": "b385752b96b80af06fb33e912f33d2a345fe2167bdfaf8cfdba8815b66171e5b",
+      "rrt.cuh": "37f15e1e8c629dfec472892ef4f55ee991006e41b3783c0c6c276e96757855d7",
+      "collision_bench": "0e15b2a74672370813734aab6dca7224f7bb6f3da6744f436d0660746fbab162",
+      "librrt.so": "882cf1ba80a570131ddc6e08d96d2af03d6007eb0a5ad67aef5f223bc2c9e8a6"
+    },
+    "f64": {
+      "collision.cuh": "5c5615aa5cf00cba5c8a642dc2d0481fa309a6902af518e980cd223a77c55a9b",
+      "rrt.cuh": "78cf0d8963917fa4da99ed845c381a78eda1241702fa7bc193382c4397668847",
+      "collision_bench": "5623e09ac5dc3850102a3131c99e584d1adb7f11dc451e3243e076ffe83ec91c",
+      "librrt.so": "ad782ec961ff218dfc4767824d1ee864193be4d4a1e21bf101b0771d2ef3296a"
+    }
+  },
+  "comparison": "whole-file byte equality; no normalization"
+}

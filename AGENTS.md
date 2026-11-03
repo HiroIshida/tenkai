@@ -5,18 +5,17 @@ Unless explicitly requested, avoid unnecessary explanations or extra content.
 
 Treat questions about reasons (e.g., "Why did you do X?") as requests for explanation only. Do not modify code or files in response unless the user explicitly requests a change.
 
-# Rust guidelines
+# Python guidelines
 
-- Prefer straightforward, idiomatic Rust and concrete types. Add traits, generics, macros, or wrapper types only when they serve a concrete need; avoid speculative abstractions.
-- Design ownership and borrowing deliberately. Do not add `clone()`, `Rc`, `Arc`, or interior mutability just to silence the borrow checker. Use them when their semantics are needed.
-- Accept borrowed inputs such as `&str` and `&[T]` when ownership is unnecessary. Avoid needless allocations and conversions, but keep optimization driven by actual requirements or measurements.
-- Use `Result` and `?` for recoverable failures. Do not silently discard errors or substitute defaults that hide failures. Add useful context at error boundaries.
-- Avoid `unwrap()`, `expect()`, and panics for expected failures in production code. Reserve them for tests or established invariants; make the invariant clear when it is not obvious.
-- Use enums, `Option`, and appropriate types to express valid states. Avoid sentinel values, stringly typed states, and combinations of booleans that permit invalid states.
-- Prefer safe Rust. Introduce `unsafe` only for a demonstrated need, keep it small, and document its safety invariants and why safe alternatives are insufficient.
-- Keep visibility and mutable state as narrow as practical. Do not introduce async execution, shared state, or locks without a requirement that justifies them.
-- Add dependencies only when they meaningfully simplify the solution. Follow the project's Rust edition, minimum supported Rust version, and existing conventions.
-- After relevant changes, run `cargo fmt`, the applicable tests, and `cargo clippy` with the project's supported features and targets. Fix warnings at their cause; do not add broad lint suppressions to make checks pass.
+- Use Python 3.12, the standard `src/rkern` package layout, and uv with a committed lockfile.
+- Prefer simple, explicit control flow. Give intermediate results meaningful names; avoid nested expressions and dense one-liners.
+- Use ordinary dataclasses for records and concrete types. Add abstractions only when they serve an existing need.
+- Annotate functions and data structures. Keep the compiler and its tooling passing strict mypy checks.
+- Validate external input at the boundary and raise useful exceptions. Do not hide errors with defaults or broad exception handling.
+- Preserve arithmetic order, precision, and deterministic generated output when refactoring the compiler.
+- Add dependencies only when they meaningfully simplify the solution; manage them through uv.
+- After relevant changes, run applicable pytest tests, Ruff formatting/lint checks, and mypy. Fix issues at their cause.
+- CUDA compilation tests use `--run-cuda`; GPU execution tests use `--run-gpu`. The frozen Rust output fixtures run without Rust or CUDA.
 
 # Structure and testing
 

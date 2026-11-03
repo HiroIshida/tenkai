@@ -1,0 +1,5132 @@
+[
+  {
+    "name": "fetch-f32-none-None",
+    "urdf": "assets/fetch/fetch.urdf",
+    "spheres": "assets/fetch/collision.yaml",
+    "math": "f32",
+    "optimization": "none",
+    "live_budget": null,
+    "sha256": {
+      "centers.cuh": "5aafc73b62012d959274e5e65c3493082a646533305bf210c6b222f50056ad29",
+      "collision.cuh": "254606501fd1d0d4142eb7752a48b516ad8b52e51bdd3528953a371562c8600a",
+      "collision_function.cuh": "534cd48dd31b120525c7e15fbc5d61af7047120fe05f4895c223ac10de6fe35b",
+      "fk.cuh": "bb403078b4dd1f3d2b406158016f41392a336b5daa04062cf64e4c557cd9609a",
+      "rrt.cuh": "04fbd482a272bb42a29cdc0d72fe7cdb92b8dce84b937890a12a00fc561bd3a3"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 2,
+          "lower": 0.0,
+          "name": "torso_lift_joint",
+          "upper": 0.38615
+        },
+        {
+          "index": 5,
+          "lower": -1.6056,
+          "name": "shoulder_pan_joint",
+          "upper": 1.6056
+        },
+        {
+          "index": 6,
+          "lower": -1.221,
+          "name": "shoulder_lift_joint",
+          "upper": 1.518
+        },
+        {
+          "index": 7,
+          "lower": -6.283185307179586,
+          "name": "upperarm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 8,
+          "lower": -2.251,
+          "name": "elbow_flex_joint",
+          "upper": 2.251
+        },
+        {
+          "index": 9,
+          "lower": -6.283185307179586,
+          "name": "forearm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 10,
+          "lower": -2.16,
+          "name": "wrist_flex_joint",
+          "upper": 2.16
+        },
+        {
+          "index": 11,
+          "lower": -6.283185307179586,
+          "name": "wrist_roll_joint",
+          "upper": 6.283185307179586
+        }
+      ],
+      "input_joint_names": [
+        "r_wheel_joint",
+        "l_wheel_joint",
+        "torso_lift_joint",
+        "head_pan_joint",
+        "head_tilt_joint",
+        "shoulder_pan_joint",
+        "shoulder_lift_joint",
+        "upperarm_roll_joint",
+        "elbow_flex_joint",
+        "forearm_roll_joint",
+        "wrist_flex_joint",
+        "wrist_roll_joint",
+        "r_gripper_finger_joint",
+        "l_gripper_finger_joint",
+        "bellows_joint"
+      ],
+      "math": "F32",
+      "optimization": "None",
+      "scalar": "float",
+      "scheduling": "DagOrder",
+      "sphere_count": 69
+    }
+  },
+  {
+    "name": "fetch-f32-none-0",
+    "urdf": "assets/fetch/fetch.urdf",
+    "spheres": "assets/fetch/collision.yaml",
+    "math": "f32",
+    "optimization": "none",
+    "live_budget": 0,
+    "sha256": {
+      "centers.cuh": "dbe77a392cf4e6d8997da8680169d268c3ebbcc2131b2f8d226cf32d93e31645",
+      "collision.cuh": "7cca1f65a0eea2068e274fe044076f53e6d5eefda81798e18e5be2101cd60e96",
+      "collision_function.cuh": "bea6f119386a57d8693ec2605b4a30a7508b8fba826bf32b808ea5783769bf6d",
+      "fk.cuh": "aa0b9a19b7730570589778d4eb1a13be6f35cd69e14cff9173a3c1326eeadd69",
+      "rrt.cuh": "1a35a1fcc078fdd4584e64be3f64a2c62c078d801f28fbf40c98b0fa580a25ed"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 2,
+          "lower": 0.0,
+          "name": "torso_lift_joint",
+          "upper": 0.38615
+        },
+        {
+          "index": 5,
+          "lower": -1.6056,
+          "name": "shoulder_pan_joint",
+          "upper": 1.6056
+        },
+        {
+          "index": 6,
+          "lower": -1.221,
+          "name": "shoulder_lift_joint",
+          "upper": 1.518
+        },
+        {
+          "index": 7,
+          "lower": -6.283185307179586,
+          "name": "upperarm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 8,
+          "lower": -2.251,
+          "name": "elbow_flex_joint",
+          "upper": 2.251
+        },
+        {
+          "index": 9,
+          "lower": -6.283185307179586,
+          "name": "forearm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 10,
+          "lower": -2.16,
+          "name": "wrist_flex_joint",
+          "upper": 2.16
+        },
+        {
+          "index": 11,
+          "lower": -6.283185307179586,
+          "name": "wrist_roll_joint",
+          "upper": 6.283185307179586
+        }
+      ],
+      "input_joint_names": [
+        "r_wheel_joint",
+        "l_wheel_joint",
+        "torso_lift_joint",
+        "head_pan_joint",
+        "head_tilt_joint",
+        "shoulder_pan_joint",
+        "shoulder_lift_joint",
+        "upperarm_roll_joint",
+        "elbow_flex_joint",
+        "forearm_roll_joint",
+        "wrist_flex_joint",
+        "wrist_roll_joint",
+        "r_gripper_finger_joint",
+        "l_gripper_finger_joint",
+        "bellows_joint"
+      ],
+      "math": "F32",
+      "optimization": "None",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 0 })",
+      "sphere_count": 69
+    }
+  },
+  {
+    "name": "fetch-f32-none-64",
+    "urdf": "assets/fetch/fetch.urdf",
+    "spheres": "assets/fetch/collision.yaml",
+    "math": "f32",
+    "optimization": "none",
+    "live_budget": 64,
+    "sha256": {
+      "centers.cuh": "2d6d88e64f0f1ed68267bcfd24787ebf6c724b2aa4b9c052683a353198014e2e",
+      "collision.cuh": "e24e739b38965ebd769ee2340433a7436986a65b4cdb3b67e11df64cce57ae3f",
+      "collision_function.cuh": "a2b616a532e4a496fc9d8b5382357d1d713afd330d6408f2c802179327aab93b",
+      "fk.cuh": "2946fb949c26dc812a8caf88bd68f4a69e126b92c1e22d81c47e622894273a43",
+      "rrt.cuh": "e5c429997cb2e6c09d4ddd980344c972927595d9aeaa1705734a4ed55575376e"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 2,
+          "lower": 0.0,
+          "name": "torso_lift_joint",
+          "upper": 0.38615
+        },
+        {
+          "index": 5,
+          "lower": -1.6056,
+          "name": "shoulder_pan_joint",
+          "upper": 1.6056
+        },
+        {
+          "index": 6,
+          "lower": -1.221,
+          "name": "shoulder_lift_joint",
+          "upper": 1.518
+        },
+        {
+          "index": 7,
+          "lower": -6.283185307179586,
+          "name": "upperarm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 8,
+          "lower": -2.251,
+          "name": "elbow_flex_joint",
+          "upper": 2.251
+        },
+        {
+          "index": 9,
+          "lower": -6.283185307179586,
+          "name": "forearm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 10,
+          "lower": -2.16,
+          "name": "wrist_flex_joint",
+          "upper": 2.16
+        },
+        {
+          "index": 11,
+          "lower": -6.283185307179586,
+          "name": "wrist_roll_joint",
+          "upper": 6.283185307179586
+        }
+      ],
+      "input_joint_names": [
+        "r_wheel_joint",
+        "l_wheel_joint",
+        "torso_lift_joint",
+        "head_pan_joint",
+        "head_tilt_joint",
+        "shoulder_pan_joint",
+        "shoulder_lift_joint",
+        "upperarm_roll_joint",
+        "elbow_flex_joint",
+        "forearm_roll_joint",
+        "wrist_flex_joint",
+        "wrist_roll_joint",
+        "r_gripper_finger_joint",
+        "l_gripper_finger_joint",
+        "bellows_joint"
+      ],
+      "math": "F32",
+      "optimization": "None",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 64 })",
+      "sphere_count": 69
+    }
+  },
+  {
+    "name": "fetch-f32-basic-None",
+    "urdf": "assets/fetch/fetch.urdf",
+    "spheres": "assets/fetch/collision.yaml",
+    "math": "f32",
+    "optimization": "basic",
+    "live_budget": null,
+    "sha256": {
+      "centers.cuh": "aa44737634385be460ff8693330b7bb8c62b24ed72b0e9b58e3e67cba742769f",
+      "collision.cuh": "c981f276c011d8bf0a1e11022467da0c73494fa1865c6d868a474bae7b86829f",
+      "collision_function.cuh": "81aa3dda85699ac5ea97fe5333ffe4f58b62cc3930ed01f79485ffb52211c38f",
+      "fk.cuh": "0e9823734b4084af9b584d70ff1ffe8373211427acb708a7171619e07c1aa5bb",
+      "rrt.cuh": "9dabcfae45d4ed3f40f8c82c982ce17f369aeb27b9f5049e34126d61fd031b61"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 2,
+          "lower": 0.0,
+          "name": "torso_lift_joint",
+          "upper": 0.38615
+        },
+        {
+          "index": 5,
+          "lower": -1.6056,
+          "name": "shoulder_pan_joint",
+          "upper": 1.6056
+        },
+        {
+          "index": 6,
+          "lower": -1.221,
+          "name": "shoulder_lift_joint",
+          "upper": 1.518
+        },
+        {
+          "index": 7,
+          "lower": -6.283185307179586,
+          "name": "upperarm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 8,
+          "lower": -2.251,
+          "name": "elbow_flex_joint",
+          "upper": 2.251
+        },
+        {
+          "index": 9,
+          "lower": -6.283185307179586,
+          "name": "forearm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 10,
+          "lower": -2.16,
+          "name": "wrist_flex_joint",
+          "upper": 2.16
+        },
+        {
+          "index": 11,
+          "lower": -6.283185307179586,
+          "name": "wrist_roll_joint",
+          "upper": 6.283185307179586
+        }
+      ],
+      "input_joint_names": [
+        "r_wheel_joint",
+        "l_wheel_joint",
+        "torso_lift_joint",
+        "head_pan_joint",
+        "head_tilt_joint",
+        "shoulder_pan_joint",
+        "shoulder_lift_joint",
+        "upperarm_roll_joint",
+        "elbow_flex_joint",
+        "forearm_roll_joint",
+        "wrist_flex_joint",
+        "wrist_roll_joint",
+        "r_gripper_finger_joint",
+        "l_gripper_finger_joint",
+        "bellows_joint"
+      ],
+      "math": "F32",
+      "optimization": "Basic",
+      "scalar": "float",
+      "scheduling": "DagOrder",
+      "sphere_count": 69
+    }
+  },
+  {
+    "name": "fetch-f32-basic-0",
+    "urdf": "assets/fetch/fetch.urdf",
+    "spheres": "assets/fetch/collision.yaml",
+    "math": "f32",
+    "optimization": "basic",
+    "live_budget": 0,
+    "sha256": {
+      "centers.cuh": "a974658f0c410997888427f056c1c86e47fab158582ec5aed884f6c04b91df8f",
+      "collision.cuh": "feaf3b0e9f30367a1c9fae96e678aae9464adffe800ea3d33ed3e23019b86efd",
+      "collision_function.cuh": "9d24385c21ce3e5f08450a349a5d77bfe59c86e6531c1111f7bd5b31c58e4e35",
+      "fk.cuh": "2297d35e202cd197be62029ee6a2964c6c72d4a92258f3d6c57caa380880bbeb",
+      "rrt.cuh": "8b211f2c1df9e6822fba08b78233d7e2b0dc81c2f5c2aa33712e546d983526de"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 2,
+          "lower": 0.0,
+          "name": "torso_lift_joint",
+          "upper": 0.38615
+        },
+        {
+          "index": 5,
+          "lower": -1.6056,
+          "name": "shoulder_pan_joint",
+          "upper": 1.6056
+        },
+        {
+          "index": 6,
+          "lower": -1.221,
+          "name": "shoulder_lift_joint",
+          "upper": 1.518
+        },
+        {
+          "index": 7,
+          "lower": -6.283185307179586,
+          "name": "upperarm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 8,
+          "lower": -2.251,
+          "name": "elbow_flex_joint",
+          "upper": 2.251
+        },
+        {
+          "index": 9,
+          "lower": -6.283185307179586,
+          "name": "forearm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 10,
+          "lower": -2.16,
+          "name": "wrist_flex_joint",
+          "upper": 2.16
+        },
+        {
+          "index": 11,
+          "lower": -6.283185307179586,
+          "name": "wrist_roll_joint",
+          "upper": 6.283185307179586
+        }
+      ],
+      "input_joint_names": [
+        "r_wheel_joint",
+        "l_wheel_joint",
+        "torso_lift_joint",
+        "head_pan_joint",
+        "head_tilt_joint",
+        "shoulder_pan_joint",
+        "shoulder_lift_joint",
+        "upperarm_roll_joint",
+        "elbow_flex_joint",
+        "forearm_roll_joint",
+        "wrist_flex_joint",
+        "wrist_roll_joint",
+        "r_gripper_finger_joint",
+        "l_gripper_finger_joint",
+        "bellows_joint"
+      ],
+      "math": "F32",
+      "optimization": "Basic",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 0 })",
+      "sphere_count": 69
+    }
+  },
+  {
+    "name": "fetch-f32-basic-64",
+    "urdf": "assets/fetch/fetch.urdf",
+    "spheres": "assets/fetch/collision.yaml",
+    "math": "f32",
+    "optimization": "basic",
+    "live_budget": 64,
+    "sha256": {
+      "centers.cuh": "6b83acd0e71377eb030d2f9cbd85dc117fe76de8c4b90208677cc9fefb7b83ac",
+      "collision.cuh": "a951d91e60e6ac4c877ffa334ee6a96ed296fda6ef27bb8bd08c81a0499f55c5",
+      "collision_function.cuh": "0ed9e1f104309e5b246b3b1270c42166d66e6b85c5eb9e9c5f016db4cc6118a8",
+      "fk.cuh": "f7b316131d27201465dc8fd1832861d3654904c2c2c285010ef99e65aa090762",
+      "rrt.cuh": "7d99aa7f1d74b2fdbb9791b74432889ff134a21dac919e9a458c6a0542164a21"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 2,
+          "lower": 0.0,
+          "name": "torso_lift_joint",
+          "upper": 0.38615
+        },
+        {
+          "index": 5,
+          "lower": -1.6056,
+          "name": "shoulder_pan_joint",
+          "upper": 1.6056
+        },
+        {
+          "index": 6,
+          "lower": -1.221,
+          "name": "shoulder_lift_joint",
+          "upper": 1.518
+        },
+        {
+          "index": 7,
+          "lower": -6.283185307179586,
+          "name": "upperarm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 8,
+          "lower": -2.251,
+          "name": "elbow_flex_joint",
+          "upper": 2.251
+        },
+        {
+          "index": 9,
+          "lower": -6.283185307179586,
+          "name": "forearm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 10,
+          "lower": -2.16,
+          "name": "wrist_flex_joint",
+          "upper": 2.16
+        },
+        {
+          "index": 11,
+          "lower": -6.283185307179586,
+          "name": "wrist_roll_joint",
+          "upper": 6.283185307179586
+        }
+      ],
+      "input_joint_names": [
+        "r_wheel_joint",
+        "l_wheel_joint",
+        "torso_lift_joint",
+        "head_pan_joint",
+        "head_tilt_joint",
+        "shoulder_pan_joint",
+        "shoulder_lift_joint",
+        "upperarm_roll_joint",
+        "elbow_flex_joint",
+        "forearm_roll_joint",
+        "wrist_flex_joint",
+        "wrist_roll_joint",
+        "r_gripper_finger_joint",
+        "l_gripper_finger_joint",
+        "bellows_joint"
+      ],
+      "math": "F32",
+      "optimization": "Basic",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 64 })",
+      "sphere_count": 69
+    }
+  },
+  {
+    "name": "fetch-f32-algebraic-None",
+    "urdf": "assets/fetch/fetch.urdf",
+    "spheres": "assets/fetch/collision.yaml",
+    "math": "f32",
+    "optimization": "algebraic",
+    "live_budget": null,
+    "sha256": {
+      "centers.cuh": "7c571f371f8d9b33939169d1c98f6a1349a4e5e9a70bbb21e731f1b282fc42df",
+      "collision.cuh": "61aa4ca6e8305687b49ed9a466a79ef732cd75a4ffb52eb422edd08402fcf89e",
+      "collision_function.cuh": "9fbcbed4318fa82a265cbf6b914bb5bf0425d138070fdca10497f41f82c26705",
+      "fk.cuh": "c6248f2f2a861ae36cb01cea51a543fc61fccf983bc0c7532a647b78bfaf0283",
+      "rrt.cuh": "f20d73894100e145b5e52819ab9a4e0e4679cb4a71dc93feccbef9d1c02e6c95"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 2,
+          "lower": 0.0,
+          "name": "torso_lift_joint",
+          "upper": 0.38615
+        },
+        {
+          "index": 5,
+          "lower": -1.6056,
+          "name": "shoulder_pan_joint",
+          "upper": 1.6056
+        },
+        {
+          "index": 6,
+          "lower": -1.221,
+          "name": "shoulder_lift_joint",
+          "upper": 1.518
+        },
+        {
+          "index": 7,
+          "lower": -6.283185307179586,
+          "name": "upperarm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 8,
+          "lower": -2.251,
+          "name": "elbow_flex_joint",
+          "upper": 2.251
+        },
+        {
+          "index": 9,
+          "lower": -6.283185307179586,
+          "name": "forearm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 10,
+          "lower": -2.16,
+          "name": "wrist_flex_joint",
+          "upper": 2.16
+        },
+        {
+          "index": 11,
+          "lower": -6.283185307179586,
+          "name": "wrist_roll_joint",
+          "upper": 6.283185307179586
+        }
+      ],
+      "input_joint_names": [
+        "r_wheel_joint",
+        "l_wheel_joint",
+        "torso_lift_joint",
+        "head_pan_joint",
+        "head_tilt_joint",
+        "shoulder_pan_joint",
+        "shoulder_lift_joint",
+        "upperarm_roll_joint",
+        "elbow_flex_joint",
+        "forearm_roll_joint",
+        "wrist_flex_joint",
+        "wrist_roll_joint",
+        "r_gripper_finger_joint",
+        "l_gripper_finger_joint",
+        "bellows_joint"
+      ],
+      "math": "F32",
+      "optimization": "Algebraic",
+      "scalar": "float",
+      "scheduling": "DagOrder",
+      "sphere_count": 69
+    }
+  },
+  {
+    "name": "fetch-f32-algebraic-0",
+    "urdf": "assets/fetch/fetch.urdf",
+    "spheres": "assets/fetch/collision.yaml",
+    "math": "f32",
+    "optimization": "algebraic",
+    "live_budget": 0,
+    "sha256": {
+      "centers.cuh": "492acd01f23d0c2575b25417db277be3c972a75166f89a2c3cc0eaa8002e3d7e",
+      "collision.cuh": "966d1c426f401fe46de1a92c807d57f8056fea2e6738e5b0943ddb4bdf7f705c",
+      "collision_function.cuh": "991377132f1a8c1247b24502475956d576f76ce01c3d74acc9c93640476d4644",
+      "fk.cuh": "381d1af597dd49d8395d475d3a1c7dc678ac26b50f91b4872723c18ff1e54556",
+      "rrt.cuh": "f7b5daea90d01ba4376aa0ef8443dab8e722e456a80a2819b223d57c07c72ecf"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 2,
+          "lower": 0.0,
+          "name": "torso_lift_joint",
+          "upper": 0.38615
+        },
+        {
+          "index": 5,
+          "lower": -1.6056,
+          "name": "shoulder_pan_joint",
+          "upper": 1.6056
+        },
+        {
+          "index": 6,
+          "lower": -1.221,
+          "name": "shoulder_lift_joint",
+          "upper": 1.518
+        },
+        {
+          "index": 7,
+          "lower": -6.283185307179586,
+          "name": "upperarm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 8,
+          "lower": -2.251,
+          "name": "elbow_flex_joint",
+          "upper": 2.251
+        },
+        {
+          "index": 9,
+          "lower": -6.283185307179586,
+          "name": "forearm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 10,
+          "lower": -2.16,
+          "name": "wrist_flex_joint",
+          "upper": 2.16
+        },
+        {
+          "index": 11,
+          "lower": -6.283185307179586,
+          "name": "wrist_roll_joint",
+          "upper": 6.283185307179586
+        }
+      ],
+      "input_joint_names": [
+        "r_wheel_joint",
+        "l_wheel_joint",
+        "torso_lift_joint",
+        "head_pan_joint",
+        "head_tilt_joint",
+        "shoulder_pan_joint",
+        "shoulder_lift_joint",
+        "upperarm_roll_joint",
+        "elbow_flex_joint",
+        "forearm_roll_joint",
+        "wrist_flex_joint",
+        "wrist_roll_joint",
+        "r_gripper_finger_joint",
+        "l_gripper_finger_joint",
+        "bellows_joint"
+      ],
+      "math": "F32",
+      "optimization": "Algebraic",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 0 })",
+      "sphere_count": 69
+    }
+  },
+  {
+    "name": "fetch-f32-algebraic-64",
+    "urdf": "assets/fetch/fetch.urdf",
+    "spheres": "assets/fetch/collision.yaml",
+    "math": "f32",
+    "optimization": "algebraic",
+    "live_budget": 64,
+    "sha256": {
+      "centers.cuh": "cc717e3e3b025bc0f89d1297bd43429512efda22101ffd7c605faeff757ea1f3",
+      "collision.cuh": "410e4d85b3b28c2914a01f851800dd54e93be35ef93c7dfbbddf164a4e5f8c01",
+      "collision_function.cuh": "74684f4204174048626e69717f1efa4843d89a4a8d197402b5b47bb5b9fe77c0",
+      "fk.cuh": "15233f6b0c43eae0fe0ed9ac229a73e91be60ee9fde4a20b44496744eefb4d3f",
+      "rrt.cuh": "17dd486e4528af15f6c1b33e1d5cb304de1845fd577ff5b263b26ae722710870"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 2,
+          "lower": 0.0,
+          "name": "torso_lift_joint",
+          "upper": 0.38615
+        },
+        {
+          "index": 5,
+          "lower": -1.6056,
+          "name": "shoulder_pan_joint",
+          "upper": 1.6056
+        },
+        {
+          "index": 6,
+          "lower": -1.221,
+          "name": "shoulder_lift_joint",
+          "upper": 1.518
+        },
+        {
+          "index": 7,
+          "lower": -6.283185307179586,
+          "name": "upperarm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 8,
+          "lower": -2.251,
+          "name": "elbow_flex_joint",
+          "upper": 2.251
+        },
+        {
+          "index": 9,
+          "lower": -6.283185307179586,
+          "name": "forearm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 10,
+          "lower": -2.16,
+          "name": "wrist_flex_joint",
+          "upper": 2.16
+        },
+        {
+          "index": 11,
+          "lower": -6.283185307179586,
+          "name": "wrist_roll_joint",
+          "upper": 6.283185307179586
+        }
+      ],
+      "input_joint_names": [
+        "r_wheel_joint",
+        "l_wheel_joint",
+        "torso_lift_joint",
+        "head_pan_joint",
+        "head_tilt_joint",
+        "shoulder_pan_joint",
+        "shoulder_lift_joint",
+        "upperarm_roll_joint",
+        "elbow_flex_joint",
+        "forearm_roll_joint",
+        "wrist_flex_joint",
+        "wrist_roll_joint",
+        "r_gripper_finger_joint",
+        "l_gripper_finger_joint",
+        "bellows_joint"
+      ],
+      "math": "F32",
+      "optimization": "Algebraic",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 64 })",
+      "sphere_count": 69
+    }
+  },
+  {
+    "name": "fetch-f32-sfu-none-None",
+    "urdf": "assets/fetch/fetch.urdf",
+    "spheres": "assets/fetch/collision.yaml",
+    "math": "f32-sfu",
+    "optimization": "none",
+    "live_budget": null,
+    "sha256": {
+      "centers.cuh": "a972680b7a0d9619570552283642df26d3507aaf4d4b8d6d8a0ebafab080eadf",
+      "collision.cuh": "1152a76523bf912baf1684c59408f86fb65375f36b4ece90909efb024c2b95e1",
+      "collision_function.cuh": "1a16bb9e2e737ca84d0a3115d450778b3d124b379926ab4301391e025e16abb4",
+      "fk.cuh": "23765c9a4d17b677e1d810783a8ba4019e610a12a32b5b699772e1b0b87adbaa",
+      "rrt.cuh": "0e80fe9d534111c9264c8b7560ac4caf6671fba22f0bca3089a55a8c1a5ac920"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 2,
+          "lower": 0.0,
+          "name": "torso_lift_joint",
+          "upper": 0.38615
+        },
+        {
+          "index": 5,
+          "lower": -1.6056,
+          "name": "shoulder_pan_joint",
+          "upper": 1.6056
+        },
+        {
+          "index": 6,
+          "lower": -1.221,
+          "name": "shoulder_lift_joint",
+          "upper": 1.518
+        },
+        {
+          "index": 7,
+          "lower": -6.283185307179586,
+          "name": "upperarm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 8,
+          "lower": -2.251,
+          "name": "elbow_flex_joint",
+          "upper": 2.251
+        },
+        {
+          "index": 9,
+          "lower": -6.283185307179586,
+          "name": "forearm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 10,
+          "lower": -2.16,
+          "name": "wrist_flex_joint",
+          "upper": 2.16
+        },
+        {
+          "index": 11,
+          "lower": -6.283185307179586,
+          "name": "wrist_roll_joint",
+          "upper": 6.283185307179586
+        }
+      ],
+      "input_joint_names": [
+        "r_wheel_joint",
+        "l_wheel_joint",
+        "torso_lift_joint",
+        "head_pan_joint",
+        "head_tilt_joint",
+        "shoulder_pan_joint",
+        "shoulder_lift_joint",
+        "upperarm_roll_joint",
+        "elbow_flex_joint",
+        "forearm_roll_joint",
+        "wrist_flex_joint",
+        "wrist_roll_joint",
+        "r_gripper_finger_joint",
+        "l_gripper_finger_joint",
+        "bellows_joint"
+      ],
+      "math": "F32Sfu",
+      "optimization": "None",
+      "scalar": "float",
+      "scheduling": "DagOrder",
+      "sphere_count": 69
+    }
+  },
+  {
+    "name": "fetch-f32-sfu-none-0",
+    "urdf": "assets/fetch/fetch.urdf",
+    "spheres": "assets/fetch/collision.yaml",
+    "math": "f32-sfu",
+    "optimization": "none",
+    "live_budget": 0,
+    "sha256": {
+      "centers.cuh": "b5644b1668a9836790fd084204c0e566f55422e8bc872f7db5e0454095aa7915",
+      "collision.cuh": "37abca3ceed717d98b7c27cea3a81deb553ec1e408bf0f87cb227be96a8e968a",
+      "collision_function.cuh": "670358d50c712df57abdcdb98ac71cb9633482de3643e5a503e3335cddfa84c1",
+      "fk.cuh": "c549c7e6ea98e9cbc301db1366d6bda720209e6e2063c9674d0bb4afd5dd4877",
+      "rrt.cuh": "f1d1d8f37e2f38600e28ba6be2f6ac433ff704bdd526e8fe957260ed2e20cb0e"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 2,
+          "lower": 0.0,
+          "name": "torso_lift_joint",
+          "upper": 0.38615
+        },
+        {
+          "index": 5,
+          "lower": -1.6056,
+          "name": "shoulder_pan_joint",
+          "upper": 1.6056
+        },
+        {
+          "index": 6,
+          "lower": -1.221,
+          "name": "shoulder_lift_joint",
+          "upper": 1.518
+        },
+        {
+          "index": 7,
+          "lower": -6.283185307179586,
+          "name": "upperarm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 8,
+          "lower": -2.251,
+          "name": "elbow_flex_joint",
+          "upper": 2.251
+        },
+        {
+          "index": 9,
+          "lower": -6.283185307179586,
+          "name": "forearm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 10,
+          "lower": -2.16,
+          "name": "wrist_flex_joint",
+          "upper": 2.16
+        },
+        {
+          "index": 11,
+          "lower": -6.283185307179586,
+          "name": "wrist_roll_joint",
+          "upper": 6.283185307179586
+        }
+      ],
+      "input_joint_names": [
+        "r_wheel_joint",
+        "l_wheel_joint",
+        "torso_lift_joint",
+        "head_pan_joint",
+        "head_tilt_joint",
+        "shoulder_pan_joint",
+        "shoulder_lift_joint",
+        "upperarm_roll_joint",
+        "elbow_flex_joint",
+        "forearm_roll_joint",
+        "wrist_flex_joint",
+        "wrist_roll_joint",
+        "r_gripper_finger_joint",
+        "l_gripper_finger_joint",
+        "bellows_joint"
+      ],
+      "math": "F32Sfu",
+      "optimization": "None",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 0 })",
+      "sphere_count": 69
+    }
+  },
+  {
+    "name": "fetch-f32-sfu-none-64",
+    "urdf": "assets/fetch/fetch.urdf",
+    "spheres": "assets/fetch/collision.yaml",
+    "math": "f32-sfu",
+    "optimization": "none",
+    "live_budget": 64,
+    "sha256": {
+      "centers.cuh": "802937f5cded75befd01f3e185c827a30b3872571601646fba74e622065e1555",
+      "collision.cuh": "8421d9d44acc6bc45b6c623fa61c623df54836033b491a875b2309f503479bd4",
+      "collision_function.cuh": "04ca7cb9ac12255d44ca419b079fafadee3584581a8939ea7de73aff0590998b",
+      "fk.cuh": "52a37ceab6eb745b0fd1f9eb48b8e52847000d1873642fed81379ca57fe68049",
+      "rrt.cuh": "2c9715e003ce5766ee040fa673ee8dd0545f3a61146341c8bf32e38bad845392"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 2,
+          "lower": 0.0,
+          "name": "torso_lift_joint",
+          "upper": 0.38615
+        },
+        {
+          "index": 5,
+          "lower": -1.6056,
+          "name": "shoulder_pan_joint",
+          "upper": 1.6056
+        },
+        {
+          "index": 6,
+          "lower": -1.221,
+          "name": "shoulder_lift_joint",
+          "upper": 1.518
+        },
+        {
+          "index": 7,
+          "lower": -6.283185307179586,
+          "name": "upperarm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 8,
+          "lower": -2.251,
+          "name": "elbow_flex_joint",
+          "upper": 2.251
+        },
+        {
+          "index": 9,
+          "lower": -6.283185307179586,
+          "name": "forearm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 10,
+          "lower": -2.16,
+          "name": "wrist_flex_joint",
+          "upper": 2.16
+        },
+        {
+          "index": 11,
+          "lower": -6.283185307179586,
+          "name": "wrist_roll_joint",
+          "upper": 6.283185307179586
+        }
+      ],
+      "input_joint_names": [
+        "r_wheel_joint",
+        "l_wheel_joint",
+        "torso_lift_joint",
+        "head_pan_joint",
+        "head_tilt_joint",
+        "shoulder_pan_joint",
+        "shoulder_lift_joint",
+        "upperarm_roll_joint",
+        "elbow_flex_joint",
+        "forearm_roll_joint",
+        "wrist_flex_joint",
+        "wrist_roll_joint",
+        "r_gripper_finger_joint",
+        "l_gripper_finger_joint",
+        "bellows_joint"
+      ],
+      "math": "F32Sfu",
+      "optimization": "None",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 64 })",
+      "sphere_count": 69
+    }
+  },
+  {
+    "name": "fetch-f32-sfu-basic-None",
+    "urdf": "assets/fetch/fetch.urdf",
+    "spheres": "assets/fetch/collision.yaml",
+    "math": "f32-sfu",
+    "optimization": "basic",
+    "live_budget": null,
+    "sha256": {
+      "centers.cuh": "66a1d84f14556b592b880b28401299428f193fe237268b5c5b7082dc34dcdfc2",
+      "collision.cuh": "39ae7d7751b5d5ecab3303962ea1c81c677af603b81a599e76d0c43109d1f7a6",
+      "collision_function.cuh": "ab9414601e45160fc0940eb45db2c7466c6cc0fc2c7b0af5d89c88f192cbead5",
+      "fk.cuh": "bdf1d65c807030fdfd99217e5f71dfa185bb766d99287e230614fe218c4e2b47",
+      "rrt.cuh": "dfe7728b90242b63bf75a4b0636f9195623603bcc47025cb4bfe9a150d8df337"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 2,
+          "lower": 0.0,
+          "name": "torso_lift_joint",
+          "upper": 0.38615
+        },
+        {
+          "index": 5,
+          "lower": -1.6056,
+          "name": "shoulder_pan_joint",
+          "upper": 1.6056
+        },
+        {
+          "index": 6,
+          "lower": -1.221,
+          "name": "shoulder_lift_joint",
+          "upper": 1.518
+        },
+        {
+          "index": 7,
+          "lower": -6.283185307179586,
+          "name": "upperarm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 8,
+          "lower": -2.251,
+          "name": "elbow_flex_joint",
+          "upper": 2.251
+        },
+        {
+          "index": 9,
+          "lower": -6.283185307179586,
+          "name": "forearm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 10,
+          "lower": -2.16,
+          "name": "wrist_flex_joint",
+          "upper": 2.16
+        },
+        {
+          "index": 11,
+          "lower": -6.283185307179586,
+          "name": "wrist_roll_joint",
+          "upper": 6.283185307179586
+        }
+      ],
+      "input_joint_names": [
+        "r_wheel_joint",
+        "l_wheel_joint",
+        "torso_lift_joint",
+        "head_pan_joint",
+        "head_tilt_joint",
+        "shoulder_pan_joint",
+        "shoulder_lift_joint",
+        "upperarm_roll_joint",
+        "elbow_flex_joint",
+        "forearm_roll_joint",
+        "wrist_flex_joint",
+        "wrist_roll_joint",
+        "r_gripper_finger_joint",
+        "l_gripper_finger_joint",
+        "bellows_joint"
+      ],
+      "math": "F32Sfu",
+      "optimization": "Basic",
+      "scalar": "float",
+      "scheduling": "DagOrder",
+      "sphere_count": 69
+    }
+  },
+  {
+    "name": "fetch-f32-sfu-basic-0",
+    "urdf": "assets/fetch/fetch.urdf",
+    "spheres": "assets/fetch/collision.yaml",
+    "math": "f32-sfu",
+    "optimization": "basic",
+    "live_budget": 0,
+    "sha256": {
+      "centers.cuh": "54d04073f686f529e4afd85deb56dd622f7fd120ae8d2646a94085da71db3c60",
+      "collision.cuh": "a8464e9f50cf3a7172dca9d45499e98977eb74cc4a13efe09a4f00e4290fd052",
+      "collision_function.cuh": "a3c8132367069965be640d18d92529de9e40fc23a0d4cd1905542c3bb969d47d",
+      "fk.cuh": "7e560a738b2f947387c6ccd9c6baf3bdab90f18a79b6d7f800e50c21dca8a908",
+      "rrt.cuh": "25b412930a2808625e41f4fc1f6bdba86a310b2daf078541c281f92736926a85"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 2,
+          "lower": 0.0,
+          "name": "torso_lift_joint",
+          "upper": 0.38615
+        },
+        {
+          "index": 5,
+          "lower": -1.6056,
+          "name": "shoulder_pan_joint",
+          "upper": 1.6056
+        },
+        {
+          "index": 6,
+          "lower": -1.221,
+          "name": "shoulder_lift_joint",
+          "upper": 1.518
+        },
+        {
+          "index": 7,
+          "lower": -6.283185307179586,
+          "name": "upperarm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 8,
+          "lower": -2.251,
+          "name": "elbow_flex_joint",
+          "upper": 2.251
+        },
+        {
+          "index": 9,
+          "lower": -6.283185307179586,
+          "name": "forearm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 10,
+          "lower": -2.16,
+          "name": "wrist_flex_joint",
+          "upper": 2.16
+        },
+        {
+          "index": 11,
+          "lower": -6.283185307179586,
+          "name": "wrist_roll_joint",
+          "upper": 6.283185307179586
+        }
+      ],
+      "input_joint_names": [
+        "r_wheel_joint",
+        "l_wheel_joint",
+        "torso_lift_joint",
+        "head_pan_joint",
+        "head_tilt_joint",
+        "shoulder_pan_joint",
+        "shoulder_lift_joint",
+        "upperarm_roll_joint",
+        "elbow_flex_joint",
+        "forearm_roll_joint",
+        "wrist_flex_joint",
+        "wrist_roll_joint",
+        "r_gripper_finger_joint",
+        "l_gripper_finger_joint",
+        "bellows_joint"
+      ],
+      "math": "F32Sfu",
+      "optimization": "Basic",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 0 })",
+      "sphere_count": 69
+    }
+  },
+  {
+    "name": "fetch-f32-sfu-basic-64",
+    "urdf": "assets/fetch/fetch.urdf",
+    "spheres": "assets/fetch/collision.yaml",
+    "math": "f32-sfu",
+    "optimization": "basic",
+    "live_budget": 64,
+    "sha256": {
+      "centers.cuh": "f3d6775aaa17c6c9bb830295c9d7e97fd1aef8243e885f9ff8142dbcee061c36",
+      "collision.cuh": "d1058f630ad82276edfde44f628b3e7b0cd598567b8c3287323430ac2537995e",
+      "collision_function.cuh": "ac4519ff0324f606719e75a5723436304470cfa3299d1a5b37b96e85a67af838",
+      "fk.cuh": "d53d5119bb89be6f6364b45ffac16ba892beb3787a892d69b8f78e59b2c2a3a6",
+      "rrt.cuh": "621e8eb15c356246215976b403ed5a20279bd45c3a3c774b85e710613862cce9"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 2,
+          "lower": 0.0,
+          "name": "torso_lift_joint",
+          "upper": 0.38615
+        },
+        {
+          "index": 5,
+          "lower": -1.6056,
+          "name": "shoulder_pan_joint",
+          "upper": 1.6056
+        },
+        {
+          "index": 6,
+          "lower": -1.221,
+          "name": "shoulder_lift_joint",
+          "upper": 1.518
+        },
+        {
+          "index": 7,
+          "lower": -6.283185307179586,
+          "name": "upperarm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 8,
+          "lower": -2.251,
+          "name": "elbow_flex_joint",
+          "upper": 2.251
+        },
+        {
+          "index": 9,
+          "lower": -6.283185307179586,
+          "name": "forearm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 10,
+          "lower": -2.16,
+          "name": "wrist_flex_joint",
+          "upper": 2.16
+        },
+        {
+          "index": 11,
+          "lower": -6.283185307179586,
+          "name": "wrist_roll_joint",
+          "upper": 6.283185307179586
+        }
+      ],
+      "input_joint_names": [
+        "r_wheel_joint",
+        "l_wheel_joint",
+        "torso_lift_joint",
+        "head_pan_joint",
+        "head_tilt_joint",
+        "shoulder_pan_joint",
+        "shoulder_lift_joint",
+        "upperarm_roll_joint",
+        "elbow_flex_joint",
+        "forearm_roll_joint",
+        "wrist_flex_joint",
+        "wrist_roll_joint",
+        "r_gripper_finger_joint",
+        "l_gripper_finger_joint",
+        "bellows_joint"
+      ],
+      "math": "F32Sfu",
+      "optimization": "Basic",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 64 })",
+      "sphere_count": 69
+    }
+  },
+  {
+    "name": "fetch-f32-sfu-algebraic-None",
+    "urdf": "assets/fetch/fetch.urdf",
+    "spheres": "assets/fetch/collision.yaml",
+    "math": "f32-sfu",
+    "optimization": "algebraic",
+    "live_budget": null,
+    "sha256": {
+      "centers.cuh": "0086f22e6fd7490a438d9d04dcdaf4263963d1667142767ab1177a18dd7be46e",
+      "collision.cuh": "b385752b96b80af06fb33e912f33d2a345fe2167bdfaf8cfdba8815b66171e5b",
+      "collision_function.cuh": "97b16d06d3d9f107fa6b6c37731efb66891329a09db25db07894c1d6d8932b9b",
+      "fk.cuh": "cb653a65478ec08976e51bab40e21fbd161d3b44ad905d371bf0f04ffc86fbcb",
+      "rrt.cuh": "37f15e1e8c629dfec472892ef4f55ee991006e41b3783c0c6c276e96757855d7"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 2,
+          "lower": 0.0,
+          "name": "torso_lift_joint",
+          "upper": 0.38615
+        },
+        {
+          "index": 5,
+          "lower": -1.6056,
+          "name": "shoulder_pan_joint",
+          "upper": 1.6056
+        },
+        {
+          "index": 6,
+          "lower": -1.221,
+          "name": "shoulder_lift_joint",
+          "upper": 1.518
+        },
+        {
+          "index": 7,
+          "lower": -6.283185307179586,
+          "name": "upperarm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 8,
+          "lower": -2.251,
+          "name": "elbow_flex_joint",
+          "upper": 2.251
+        },
+        {
+          "index": 9,
+          "lower": -6.283185307179586,
+          "name": "forearm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 10,
+          "lower": -2.16,
+          "name": "wrist_flex_joint",
+          "upper": 2.16
+        },
+        {
+          "index": 11,
+          "lower": -6.283185307179586,
+          "name": "wrist_roll_joint",
+          "upper": 6.283185307179586
+        }
+      ],
+      "input_joint_names": [
+        "r_wheel_joint",
+        "l_wheel_joint",
+        "torso_lift_joint",
+        "head_pan_joint",
+        "head_tilt_joint",
+        "shoulder_pan_joint",
+        "shoulder_lift_joint",
+        "upperarm_roll_joint",
+        "elbow_flex_joint",
+        "forearm_roll_joint",
+        "wrist_flex_joint",
+        "wrist_roll_joint",
+        "r_gripper_finger_joint",
+        "l_gripper_finger_joint",
+        "bellows_joint"
+      ],
+      "math": "F32Sfu",
+      "optimization": "Algebraic",
+      "scalar": "float",
+      "scheduling": "DagOrder",
+      "sphere_count": 69
+    }
+  },
+  {
+    "name": "fetch-f32-sfu-algebraic-0",
+    "urdf": "assets/fetch/fetch.urdf",
+    "spheres": "assets/fetch/collision.yaml",
+    "math": "f32-sfu",
+    "optimization": "algebraic",
+    "live_budget": 0,
+    "sha256": {
+      "centers.cuh": "766bd89ff9e99921805aa4dba8a44d69def152e9c54cd3eb4666b3a2c3a1ba06",
+      "collision.cuh": "8e4815f059d52ab40ed6068b64dabf815ef81ba91729aafd87eecaf3b6b452b9",
+      "collision_function.cuh": "952debd0b7eb1928b42226019aec992c7add4400a443a8590e52cf4aa0ecdefe",
+      "fk.cuh": "891fa8a19acd1c7ef66a832d3856a417149dec1a4aa879b0da80da289f193a7b",
+      "rrt.cuh": "31432206d6f6d0c464028f4dba6d7fb5f1967116d5f672526c1b461e4bfee8a2"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 2,
+          "lower": 0.0,
+          "name": "torso_lift_joint",
+          "upper": 0.38615
+        },
+        {
+          "index": 5,
+          "lower": -1.6056,
+          "name": "shoulder_pan_joint",
+          "upper": 1.6056
+        },
+        {
+          "index": 6,
+          "lower": -1.221,
+          "name": "shoulder_lift_joint",
+          "upper": 1.518
+        },
+        {
+          "index": 7,
+          "lower": -6.283185307179586,
+          "name": "upperarm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 8,
+          "lower": -2.251,
+          "name": "elbow_flex_joint",
+          "upper": 2.251
+        },
+        {
+          "index": 9,
+          "lower": -6.283185307179586,
+          "name": "forearm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 10,
+          "lower": -2.16,
+          "name": "wrist_flex_joint",
+          "upper": 2.16
+        },
+        {
+          "index": 11,
+          "lower": -6.283185307179586,
+          "name": "wrist_roll_joint",
+          "upper": 6.283185307179586
+        }
+      ],
+      "input_joint_names": [
+        "r_wheel_joint",
+        "l_wheel_joint",
+        "torso_lift_joint",
+        "head_pan_joint",
+        "head_tilt_joint",
+        "shoulder_pan_joint",
+        "shoulder_lift_joint",
+        "upperarm_roll_joint",
+        "elbow_flex_joint",
+        "forearm_roll_joint",
+        "wrist_flex_joint",
+        "wrist_roll_joint",
+        "r_gripper_finger_joint",
+        "l_gripper_finger_joint",
+        "bellows_joint"
+      ],
+      "math": "F32Sfu",
+      "optimization": "Algebraic",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 0 })",
+      "sphere_count": 69
+    }
+  },
+  {
+    "name": "fetch-f32-sfu-algebraic-64",
+    "urdf": "assets/fetch/fetch.urdf",
+    "spheres": "assets/fetch/collision.yaml",
+    "math": "f32-sfu",
+    "optimization": "algebraic",
+    "live_budget": 64,
+    "sha256": {
+      "centers.cuh": "67a5351f6bc01a865d54da0b446c57eeeb02e923df2feb37c6b1fe639db7f3bc",
+      "collision.cuh": "0a4111da76bb3a5cd00e4cddf576207dee3dfb8615a28eb3da2196db35674770",
+      "collision_function.cuh": "e3a4e45f7f71a06906de98d30302bac5e30f3838077d40a05f5c4b8a6378a72c",
+      "fk.cuh": "465d2641e54cb526c171ef10ec5b94ccc37a45476999e963415d51451eb04f37",
+      "rrt.cuh": "1decd20aa0768a4121e3286e362c8cc16a8d530169dbb6d3502c6702fbc73106"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 2,
+          "lower": 0.0,
+          "name": "torso_lift_joint",
+          "upper": 0.38615
+        },
+        {
+          "index": 5,
+          "lower": -1.6056,
+          "name": "shoulder_pan_joint",
+          "upper": 1.6056
+        },
+        {
+          "index": 6,
+          "lower": -1.221,
+          "name": "shoulder_lift_joint",
+          "upper": 1.518
+        },
+        {
+          "index": 7,
+          "lower": -6.283185307179586,
+          "name": "upperarm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 8,
+          "lower": -2.251,
+          "name": "elbow_flex_joint",
+          "upper": 2.251
+        },
+        {
+          "index": 9,
+          "lower": -6.283185307179586,
+          "name": "forearm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 10,
+          "lower": -2.16,
+          "name": "wrist_flex_joint",
+          "upper": 2.16
+        },
+        {
+          "index": 11,
+          "lower": -6.283185307179586,
+          "name": "wrist_roll_joint",
+          "upper": 6.283185307179586
+        }
+      ],
+      "input_joint_names": [
+        "r_wheel_joint",
+        "l_wheel_joint",
+        "torso_lift_joint",
+        "head_pan_joint",
+        "head_tilt_joint",
+        "shoulder_pan_joint",
+        "shoulder_lift_joint",
+        "upperarm_roll_joint",
+        "elbow_flex_joint",
+        "forearm_roll_joint",
+        "wrist_flex_joint",
+        "wrist_roll_joint",
+        "r_gripper_finger_joint",
+        "l_gripper_finger_joint",
+        "bellows_joint"
+      ],
+      "math": "F32Sfu",
+      "optimization": "Algebraic",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 64 })",
+      "sphere_count": 69
+    }
+  },
+  {
+    "name": "fetch-f64-none-None",
+    "urdf": "assets/fetch/fetch.urdf",
+    "spheres": "assets/fetch/collision.yaml",
+    "math": "f64",
+    "optimization": "none",
+    "live_budget": null,
+    "sha256": {
+      "centers.cuh": "551dd89a17d34c1df0429d9aa1472f3eb4f39eac623a89cc9579124657a8f9b7",
+      "collision.cuh": "c6c12581a05b6c451000b435c6f3d4878ee4d2950e6932b242f19aaa11fca9d0",
+      "collision_function.cuh": "d9683131f04d85a8ff5cf28c30093504e9f4cff1ad4e4a58d94fc6a9d52f8e93",
+      "fk.cuh": "f212fb4e6894ed5b6be038da95dd62048e253613dcff8fe609efc9fbbaff0d2c",
+      "rrt.cuh": "a9e60db58bf5beae7912740c8bfb23de00fac5e5b99d6853c0f481d4579f091d"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 2,
+          "lower": 0.0,
+          "name": "torso_lift_joint",
+          "upper": 0.38615
+        },
+        {
+          "index": 5,
+          "lower": -1.6056,
+          "name": "shoulder_pan_joint",
+          "upper": 1.6056
+        },
+        {
+          "index": 6,
+          "lower": -1.221,
+          "name": "shoulder_lift_joint",
+          "upper": 1.518
+        },
+        {
+          "index": 7,
+          "lower": -6.283185307179586,
+          "name": "upperarm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 8,
+          "lower": -2.251,
+          "name": "elbow_flex_joint",
+          "upper": 2.251
+        },
+        {
+          "index": 9,
+          "lower": -6.283185307179586,
+          "name": "forearm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 10,
+          "lower": -2.16,
+          "name": "wrist_flex_joint",
+          "upper": 2.16
+        },
+        {
+          "index": 11,
+          "lower": -6.283185307179586,
+          "name": "wrist_roll_joint",
+          "upper": 6.283185307179586
+        }
+      ],
+      "input_joint_names": [
+        "r_wheel_joint",
+        "l_wheel_joint",
+        "torso_lift_joint",
+        "head_pan_joint",
+        "head_tilt_joint",
+        "shoulder_pan_joint",
+        "shoulder_lift_joint",
+        "upperarm_roll_joint",
+        "elbow_flex_joint",
+        "forearm_roll_joint",
+        "wrist_flex_joint",
+        "wrist_roll_joint",
+        "r_gripper_finger_joint",
+        "l_gripper_finger_joint",
+        "bellows_joint"
+      ],
+      "math": "F64",
+      "optimization": "None",
+      "scalar": "double",
+      "scheduling": "DagOrder",
+      "sphere_count": 69
+    }
+  },
+  {
+    "name": "fetch-f64-none-0",
+    "urdf": "assets/fetch/fetch.urdf",
+    "spheres": "assets/fetch/collision.yaml",
+    "math": "f64",
+    "optimization": "none",
+    "live_budget": 0,
+    "sha256": {
+      "centers.cuh": "c2339ed201d5451bd37d6c0bf1bd0e90b9339074b8ffd5c7a0ce812744b2187e",
+      "collision.cuh": "d54e7c1be64fb79e732c69fc467c5124aad2e42a3897a745c75802e058cc2a72",
+      "collision_function.cuh": "5360bef98dd0222c75750afeded1b2bc5b9fe357a2b6440c8aeed9611a39fe21",
+      "fk.cuh": "04d7ad862eb38487825db2c05c0c0de89a6d03c67e790c64367506ae1510199f",
+      "rrt.cuh": "7f93a3cb09dd4acb2ebefc014e7d8a831146129cd04c44bc83e7c03dead119b0"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 2,
+          "lower": 0.0,
+          "name": "torso_lift_joint",
+          "upper": 0.38615
+        },
+        {
+          "index": 5,
+          "lower": -1.6056,
+          "name": "shoulder_pan_joint",
+          "upper": 1.6056
+        },
+        {
+          "index": 6,
+          "lower": -1.221,
+          "name": "shoulder_lift_joint",
+          "upper": 1.518
+        },
+        {
+          "index": 7,
+          "lower": -6.283185307179586,
+          "name": "upperarm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 8,
+          "lower": -2.251,
+          "name": "elbow_flex_joint",
+          "upper": 2.251
+        },
+        {
+          "index": 9,
+          "lower": -6.283185307179586,
+          "name": "forearm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 10,
+          "lower": -2.16,
+          "name": "wrist_flex_joint",
+          "upper": 2.16
+        },
+        {
+          "index": 11,
+          "lower": -6.283185307179586,
+          "name": "wrist_roll_joint",
+          "upper": 6.283185307179586
+        }
+      ],
+      "input_joint_names": [
+        "r_wheel_joint",
+        "l_wheel_joint",
+        "torso_lift_joint",
+        "head_pan_joint",
+        "head_tilt_joint",
+        "shoulder_pan_joint",
+        "shoulder_lift_joint",
+        "upperarm_roll_joint",
+        "elbow_flex_joint",
+        "forearm_roll_joint",
+        "wrist_flex_joint",
+        "wrist_roll_joint",
+        "r_gripper_finger_joint",
+        "l_gripper_finger_joint",
+        "bellows_joint"
+      ],
+      "math": "F64",
+      "optimization": "None",
+      "scalar": "double",
+      "scheduling": "Live(Options { live_budget: 0 })",
+      "sphere_count": 69
+    }
+  },
+  {
+    "name": "fetch-f64-none-64",
+    "urdf": "assets/fetch/fetch.urdf",
+    "spheres": "assets/fetch/collision.yaml",
+    "math": "f64",
+    "optimization": "none",
+    "live_budget": 64,
+    "sha256": {
+      "centers.cuh": "d89e1f44294ec88cb8dfe5bebad1e4e3b36a9738656f026c8fb424862f8332b1",
+      "collision.cuh": "82113ceee5297cbe67218f4b804709f45b79d1dbb17b38d620f2df115e06a987",
+      "collision_function.cuh": "e59bdd079f538458eb86e8822a6b8fc4f12f0ac4a51620d65efe4d9ceb544b26",
+      "fk.cuh": "b7433650b9f563fe92bcbeae847ed2205c0d906554eeb9e3c7427955580049c7",
+      "rrt.cuh": "96828d163c38d2231ef70fe4921e1c080dcc60dbca3d4caa3b8b3ed29718f4e2"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 2,
+          "lower": 0.0,
+          "name": "torso_lift_joint",
+          "upper": 0.38615
+        },
+        {
+          "index": 5,
+          "lower": -1.6056,
+          "name": "shoulder_pan_joint",
+          "upper": 1.6056
+        },
+        {
+          "index": 6,
+          "lower": -1.221,
+          "name": "shoulder_lift_joint",
+          "upper": 1.518
+        },
+        {
+          "index": 7,
+          "lower": -6.283185307179586,
+          "name": "upperarm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 8,
+          "lower": -2.251,
+          "name": "elbow_flex_joint",
+          "upper": 2.251
+        },
+        {
+          "index": 9,
+          "lower": -6.283185307179586,
+          "name": "forearm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 10,
+          "lower": -2.16,
+          "name": "wrist_flex_joint",
+          "upper": 2.16
+        },
+        {
+          "index": 11,
+          "lower": -6.283185307179586,
+          "name": "wrist_roll_joint",
+          "upper": 6.283185307179586
+        }
+      ],
+      "input_joint_names": [
+        "r_wheel_joint",
+        "l_wheel_joint",
+        "torso_lift_joint",
+        "head_pan_joint",
+        "head_tilt_joint",
+        "shoulder_pan_joint",
+        "shoulder_lift_joint",
+        "upperarm_roll_joint",
+        "elbow_flex_joint",
+        "forearm_roll_joint",
+        "wrist_flex_joint",
+        "wrist_roll_joint",
+        "r_gripper_finger_joint",
+        "l_gripper_finger_joint",
+        "bellows_joint"
+      ],
+      "math": "F64",
+      "optimization": "None",
+      "scalar": "double",
+      "scheduling": "Live(Options { live_budget: 64 })",
+      "sphere_count": 69
+    }
+  },
+  {
+    "name": "fetch-f64-basic-None",
+    "urdf": "assets/fetch/fetch.urdf",
+    "spheres": "assets/fetch/collision.yaml",
+    "math": "f64",
+    "optimization": "basic",
+    "live_budget": null,
+    "sha256": {
+      "centers.cuh": "534ab46f8e3a5c6d35f05edede916acc73706b1326d4377a4f31df0b0df60bd9",
+      "collision.cuh": "7f41f04f141cbaa747ad8248e89890e4a49a39145a995f0762c434ce8c3f78ea",
+      "collision_function.cuh": "417150559c31b747561cca59de97e1553c67463fc46f92959dd5ba81104d8283",
+      "fk.cuh": "f344c3fc524c52d831449245ebec90707688d1cf07ccc2b8633f76eaf5efcfef",
+      "rrt.cuh": "f0acbfc49ab5ce081445b879c2d1d07e00deb1453c5e56aa58464a2ee1b82f01"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 2,
+          "lower": 0.0,
+          "name": "torso_lift_joint",
+          "upper": 0.38615
+        },
+        {
+          "index": 5,
+          "lower": -1.6056,
+          "name": "shoulder_pan_joint",
+          "upper": 1.6056
+        },
+        {
+          "index": 6,
+          "lower": -1.221,
+          "name": "shoulder_lift_joint",
+          "upper": 1.518
+        },
+        {
+          "index": 7,
+          "lower": -6.283185307179586,
+          "name": "upperarm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 8,
+          "lower": -2.251,
+          "name": "elbow_flex_joint",
+          "upper": 2.251
+        },
+        {
+          "index": 9,
+          "lower": -6.283185307179586,
+          "name": "forearm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 10,
+          "lower": -2.16,
+          "name": "wrist_flex_joint",
+          "upper": 2.16
+        },
+        {
+          "index": 11,
+          "lower": -6.283185307179586,
+          "name": "wrist_roll_joint",
+          "upper": 6.283185307179586
+        }
+      ],
+      "input_joint_names": [
+        "r_wheel_joint",
+        "l_wheel_joint",
+        "torso_lift_joint",
+        "head_pan_joint",
+        "head_tilt_joint",
+        "shoulder_pan_joint",
+        "shoulder_lift_joint",
+        "upperarm_roll_joint",
+        "elbow_flex_joint",
+        "forearm_roll_joint",
+        "wrist_flex_joint",
+        "wrist_roll_joint",
+        "r_gripper_finger_joint",
+        "l_gripper_finger_joint",
+        "bellows_joint"
+      ],
+      "math": "F64",
+      "optimization": "Basic",
+      "scalar": "double",
+      "scheduling": "DagOrder",
+      "sphere_count": 69
+    }
+  },
+  {
+    "name": "fetch-f64-basic-0",
+    "urdf": "assets/fetch/fetch.urdf",
+    "spheres": "assets/fetch/collision.yaml",
+    "math": "f64",
+    "optimization": "basic",
+    "live_budget": 0,
+    "sha256": {
+      "centers.cuh": "fb43b74d36c9adb054dfdf42ab64acaefe4dd6a5e14c7dc3315c44e60040ca62",
+      "collision.cuh": "82af28d9614e0da4a178f4eae58e82f95401b4f8cbf74d5480a332f1164f3529",
+      "collision_function.cuh": "408126b6e9b725982cf89e84fb29fcd200d66132f4d85cf8068d2f02ebaeff1a",
+      "fk.cuh": "820a9ce9ec0d40775e1d542e851831d6af8ff346978a323ea5e9b1322ad3865a",
+      "rrt.cuh": "2fe0b015f94a7fda41b01bf3afaa28bc95185c4b6101f3d27d3ce14e53601bb4"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 2,
+          "lower": 0.0,
+          "name": "torso_lift_joint",
+          "upper": 0.38615
+        },
+        {
+          "index": 5,
+          "lower": -1.6056,
+          "name": "shoulder_pan_joint",
+          "upper": 1.6056
+        },
+        {
+          "index": 6,
+          "lower": -1.221,
+          "name": "shoulder_lift_joint",
+          "upper": 1.518
+        },
+        {
+          "index": 7,
+          "lower": -6.283185307179586,
+          "name": "upperarm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 8,
+          "lower": -2.251,
+          "name": "elbow_flex_joint",
+          "upper": 2.251
+        },
+        {
+          "index": 9,
+          "lower": -6.283185307179586,
+          "name": "forearm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 10,
+          "lower": -2.16,
+          "name": "wrist_flex_joint",
+          "upper": 2.16
+        },
+        {
+          "index": 11,
+          "lower": -6.283185307179586,
+          "name": "wrist_roll_joint",
+          "upper": 6.283185307179586
+        }
+      ],
+      "input_joint_names": [
+        "r_wheel_joint",
+        "l_wheel_joint",
+        "torso_lift_joint",
+        "head_pan_joint",
+        "head_tilt_joint",
+        "shoulder_pan_joint",
+        "shoulder_lift_joint",
+        "upperarm_roll_joint",
+        "elbow_flex_joint",
+        "forearm_roll_joint",
+        "wrist_flex_joint",
+        "wrist_roll_joint",
+        "r_gripper_finger_joint",
+        "l_gripper_finger_joint",
+        "bellows_joint"
+      ],
+      "math": "F64",
+      "optimization": "Basic",
+      "scalar": "double",
+      "scheduling": "Live(Options { live_budget: 0 })",
+      "sphere_count": 69
+    }
+  },
+  {
+    "name": "fetch-f64-basic-64",
+    "urdf": "assets/fetch/fetch.urdf",
+    "spheres": "assets/fetch/collision.yaml",
+    "math": "f64",
+    "optimization": "basic",
+    "live_budget": 64,
+    "sha256": {
+      "centers.cuh": "391f6b1ce893a0397fa34f16f3cbeb4bb9d819db6a8d2468293880d78d8f5584",
+      "collision.cuh": "07cc45d08fa95276a48f7d7cb23e8050071a3c6782a7faf5afa0aa42439e8bb2",
+      "collision_function.cuh": "ded9b779de4e416cff77744c478fb90130d1a76d0f2cfd4adbf91bd2708ac083",
+      "fk.cuh": "b1653525cca30133cc8180f48348a5f4cfaa3ed07fa5d24f9e8de96cadd953ac",
+      "rrt.cuh": "d52fab12dafbfe4f350ef73d2f8ed1fa90bd050d2c945b5ed8f87839b6a61654"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 2,
+          "lower": 0.0,
+          "name": "torso_lift_joint",
+          "upper": 0.38615
+        },
+        {
+          "index": 5,
+          "lower": -1.6056,
+          "name": "shoulder_pan_joint",
+          "upper": 1.6056
+        },
+        {
+          "index": 6,
+          "lower": -1.221,
+          "name": "shoulder_lift_joint",
+          "upper": 1.518
+        },
+        {
+          "index": 7,
+          "lower": -6.283185307179586,
+          "name": "upperarm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 8,
+          "lower": -2.251,
+          "name": "elbow_flex_joint",
+          "upper": 2.251
+        },
+        {
+          "index": 9,
+          "lower": -6.283185307179586,
+          "name": "forearm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 10,
+          "lower": -2.16,
+          "name": "wrist_flex_joint",
+          "upper": 2.16
+        },
+        {
+          "index": 11,
+          "lower": -6.283185307179586,
+          "name": "wrist_roll_joint",
+          "upper": 6.283185307179586
+        }
+      ],
+      "input_joint_names": [
+        "r_wheel_joint",
+        "l_wheel_joint",
+        "torso_lift_joint",
+        "head_pan_joint",
+        "head_tilt_joint",
+        "shoulder_pan_joint",
+        "shoulder_lift_joint",
+        "upperarm_roll_joint",
+        "elbow_flex_joint",
+        "forearm_roll_joint",
+        "wrist_flex_joint",
+        "wrist_roll_joint",
+        "r_gripper_finger_joint",
+        "l_gripper_finger_joint",
+        "bellows_joint"
+      ],
+      "math": "F64",
+      "optimization": "Basic",
+      "scalar": "double",
+      "scheduling": "Live(Options { live_budget: 64 })",
+      "sphere_count": 69
+    }
+  },
+  {
+    "name": "fetch-f64-algebraic-None",
+    "urdf": "assets/fetch/fetch.urdf",
+    "spheres": "assets/fetch/collision.yaml",
+    "math": "f64",
+    "optimization": "algebraic",
+    "live_budget": null,
+    "sha256": {
+      "centers.cuh": "ed6140cccae1256d37fed054756e7f465c3f112585fcde9b762fe49517ecf8b4",
+      "collision.cuh": "5c5615aa5cf00cba5c8a642dc2d0481fa309a6902af518e980cd223a77c55a9b",
+      "collision_function.cuh": "7777ad36239c20053c7b3a97ecd54771f5eb65c5455446948d9a19684cc2c688",
+      "fk.cuh": "79bbc703e7a89523b9d7cb34241d13e09ef2713db5ee903d896da09e683b2d54",
+      "rrt.cuh": "78cf0d8963917fa4da99ed845c381a78eda1241702fa7bc193382c4397668847"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 2,
+          "lower": 0.0,
+          "name": "torso_lift_joint",
+          "upper": 0.38615
+        },
+        {
+          "index": 5,
+          "lower": -1.6056,
+          "name": "shoulder_pan_joint",
+          "upper": 1.6056
+        },
+        {
+          "index": 6,
+          "lower": -1.221,
+          "name": "shoulder_lift_joint",
+          "upper": 1.518
+        },
+        {
+          "index": 7,
+          "lower": -6.283185307179586,
+          "name": "upperarm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 8,
+          "lower": -2.251,
+          "name": "elbow_flex_joint",
+          "upper": 2.251
+        },
+        {
+          "index": 9,
+          "lower": -6.283185307179586,
+          "name": "forearm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 10,
+          "lower": -2.16,
+          "name": "wrist_flex_joint",
+          "upper": 2.16
+        },
+        {
+          "index": 11,
+          "lower": -6.283185307179586,
+          "name": "wrist_roll_joint",
+          "upper": 6.283185307179586
+        }
+      ],
+      "input_joint_names": [
+        "r_wheel_joint",
+        "l_wheel_joint",
+        "torso_lift_joint",
+        "head_pan_joint",
+        "head_tilt_joint",
+        "shoulder_pan_joint",
+        "shoulder_lift_joint",
+        "upperarm_roll_joint",
+        "elbow_flex_joint",
+        "forearm_roll_joint",
+        "wrist_flex_joint",
+        "wrist_roll_joint",
+        "r_gripper_finger_joint",
+        "l_gripper_finger_joint",
+        "bellows_joint"
+      ],
+      "math": "F64",
+      "optimization": "Algebraic",
+      "scalar": "double",
+      "scheduling": "DagOrder",
+      "sphere_count": 69
+    }
+  },
+  {
+    "name": "fetch-f64-algebraic-0",
+    "urdf": "assets/fetch/fetch.urdf",
+    "spheres": "assets/fetch/collision.yaml",
+    "math": "f64",
+    "optimization": "algebraic",
+    "live_budget": 0,
+    "sha256": {
+      "centers.cuh": "e7f190d17f02fa41ec49416a01e43f1a0d667a8162b3fc216900f856dcaf3b77",
+      "collision.cuh": "44120d4f79853cb822b511e86d9d0efd0ae7bbcf626c40931bdcb1b45d7f7b14",
+      "collision_function.cuh": "227535f54d8cc00627b776fccb03221af55e5a5dfbae8b5d3db8a41470cf72be",
+      "fk.cuh": "212974b6d542df412bebf6664fb88bafbbab78950939fdaaf235645740c45773",
+      "rrt.cuh": "15d61254e7a10cec5e7b7c6cb4ffd4fb755cca46375db113bd3d3858fb75a2b4"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 2,
+          "lower": 0.0,
+          "name": "torso_lift_joint",
+          "upper": 0.38615
+        },
+        {
+          "index": 5,
+          "lower": -1.6056,
+          "name": "shoulder_pan_joint",
+          "upper": 1.6056
+        },
+        {
+          "index": 6,
+          "lower": -1.221,
+          "name": "shoulder_lift_joint",
+          "upper": 1.518
+        },
+        {
+          "index": 7,
+          "lower": -6.283185307179586,
+          "name": "upperarm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 8,
+          "lower": -2.251,
+          "name": "elbow_flex_joint",
+          "upper": 2.251
+        },
+        {
+          "index": 9,
+          "lower": -6.283185307179586,
+          "name": "forearm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 10,
+          "lower": -2.16,
+          "name": "wrist_flex_joint",
+          "upper": 2.16
+        },
+        {
+          "index": 11,
+          "lower": -6.283185307179586,
+          "name": "wrist_roll_joint",
+          "upper": 6.283185307179586
+        }
+      ],
+      "input_joint_names": [
+        "r_wheel_joint",
+        "l_wheel_joint",
+        "torso_lift_joint",
+        "head_pan_joint",
+        "head_tilt_joint",
+        "shoulder_pan_joint",
+        "shoulder_lift_joint",
+        "upperarm_roll_joint",
+        "elbow_flex_joint",
+        "forearm_roll_joint",
+        "wrist_flex_joint",
+        "wrist_roll_joint",
+        "r_gripper_finger_joint",
+        "l_gripper_finger_joint",
+        "bellows_joint"
+      ],
+      "math": "F64",
+      "optimization": "Algebraic",
+      "scalar": "double",
+      "scheduling": "Live(Options { live_budget: 0 })",
+      "sphere_count": 69
+    }
+  },
+  {
+    "name": "fetch-f64-algebraic-64",
+    "urdf": "assets/fetch/fetch.urdf",
+    "spheres": "assets/fetch/collision.yaml",
+    "math": "f64",
+    "optimization": "algebraic",
+    "live_budget": 64,
+    "sha256": {
+      "centers.cuh": "e55ac94220bf7a4232a381319aebbeb120f11614e175c8d6c095d08095ada8cb",
+      "collision.cuh": "d7140feec3ced2c52bc51d200cd42db14fc24099e4b20a1698207af83653cc49",
+      "collision_function.cuh": "e23918601506eeea9c5352e2d46381f5aba80492a1340d976a65932693ad3739",
+      "fk.cuh": "e8aced5c3712a1156aa76aeece8f15aa418409513efb35cd088ba72fa09e5b17",
+      "rrt.cuh": "ffb890091332e1b9e01c1622b0a0f3def96b64810bbd1588501b5240253cb7a1"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 2,
+          "lower": 0.0,
+          "name": "torso_lift_joint",
+          "upper": 0.38615
+        },
+        {
+          "index": 5,
+          "lower": -1.6056,
+          "name": "shoulder_pan_joint",
+          "upper": 1.6056
+        },
+        {
+          "index": 6,
+          "lower": -1.221,
+          "name": "shoulder_lift_joint",
+          "upper": 1.518
+        },
+        {
+          "index": 7,
+          "lower": -6.283185307179586,
+          "name": "upperarm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 8,
+          "lower": -2.251,
+          "name": "elbow_flex_joint",
+          "upper": 2.251
+        },
+        {
+          "index": 9,
+          "lower": -6.283185307179586,
+          "name": "forearm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 10,
+          "lower": -2.16,
+          "name": "wrist_flex_joint",
+          "upper": 2.16
+        },
+        {
+          "index": 11,
+          "lower": -6.283185307179586,
+          "name": "wrist_roll_joint",
+          "upper": 6.283185307179586
+        }
+      ],
+      "input_joint_names": [
+        "r_wheel_joint",
+        "l_wheel_joint",
+        "torso_lift_joint",
+        "head_pan_joint",
+        "head_tilt_joint",
+        "shoulder_pan_joint",
+        "shoulder_lift_joint",
+        "upperarm_roll_joint",
+        "elbow_flex_joint",
+        "forearm_roll_joint",
+        "wrist_flex_joint",
+        "wrist_roll_joint",
+        "r_gripper_finger_joint",
+        "l_gripper_finger_joint",
+        "bellows_joint"
+      ],
+      "math": "F64",
+      "optimization": "Algebraic",
+      "scalar": "double",
+      "scheduling": "Live(Options { live_budget: 64 })",
+      "sphere_count": 69
+    }
+  },
+  {
+    "name": "chain-f32-none-None",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "math": "f32",
+    "optimization": "none",
+    "live_budget": null,
+    "sha256": {
+      "centers.cuh": "59d5ce3a5dbea0148a4f717644131ba45b4444380ac7a8666fab8b5e6b285d49",
+      "collision.cuh": "69de75f4447b0fb3f5e09dedbeaa0d42a07526692d96db3846ede8549695ecb6",
+      "collision_function.cuh": "02877400eed8671cd4be7797391423f051be454301e43339eeb509887c5d11ba",
+      "fk.cuh": "ac634b0fce7ffa3d3014f222bb49afae32039109713e1688ea28879ccea723ad",
+      "rrt.cuh": "846c211c09b275b8b11930da3da46e450c7d6ebb9d48482815caffe55f6c1a25"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        },
+        {
+          "index": 3,
+          "lower": -1.0,
+          "name": "slide",
+          "upper": 1.0
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F32",
+      "optimization": "None",
+      "scalar": "float",
+      "scheduling": "DagOrder",
+      "sphere_count": 23
+    }
+  },
+  {
+    "name": "chain-f32-none-0",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "math": "f32",
+    "optimization": "none",
+    "live_budget": 0,
+    "sha256": {
+      "centers.cuh": "27c036995fd3d05ed36f209b7542e2930e75b0e2f5a6f04f55c326be9f7cf4ff",
+      "collision.cuh": "71328c357e00da7310ec42298bd65d7064b5962411ef3e25187291dd5ff76b02",
+      "collision_function.cuh": "c8656e003b3fa0deaebee164044bad796f4a80526749f0d87b5d3dda2703ca60",
+      "fk.cuh": "dd779a333c02dfa6081cac3c71a7978d581f949113254816c4b134bdf300921d",
+      "rrt.cuh": "dba627749e31d00680a7987c7436419af9204df699fdfc3901445234d848d15a"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        },
+        {
+          "index": 3,
+          "lower": -1.0,
+          "name": "slide",
+          "upper": 1.0
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F32",
+      "optimization": "None",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 0 })",
+      "sphere_count": 23
+    }
+  },
+  {
+    "name": "chain-f32-none-64",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "math": "f32",
+    "optimization": "none",
+    "live_budget": 64,
+    "sha256": {
+      "centers.cuh": "c7857b09f6b2d1a689c940d0af73211001395df3a90ca4d82fa56dbd20a1d724",
+      "collision.cuh": "487c42ea39d06585f3b3d1fde27298a2d6a026a4941d9f19085f5b2e5a9b7253",
+      "collision_function.cuh": "439affb6472a38b73404386773b0e0eb55e4901e67b76ec1b2ded4395d443e72",
+      "fk.cuh": "4b2e42ac29170e620adf64cdc14fd7c4dc1013ca0a486e9cf11df683d7831676",
+      "rrt.cuh": "526859c5b7dce0c3453613b5dac6dd9ab26e31e8b36bead2d1d9df22f840a8df"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        },
+        {
+          "index": 3,
+          "lower": -1.0,
+          "name": "slide",
+          "upper": 1.0
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F32",
+      "optimization": "None",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 64 })",
+      "sphere_count": 23
+    }
+  },
+  {
+    "name": "chain-f32-basic-None",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "math": "f32",
+    "optimization": "basic",
+    "live_budget": null,
+    "sha256": {
+      "centers.cuh": "fd077832246fc6147a0bd73ac339d4637cd17c4bd5790a4305d4e5866c21cf8c",
+      "collision.cuh": "0b8abfda4791473d3ba9b77e7e7c5d641be3a713e6524e7300b8ed78ff77d272",
+      "collision_function.cuh": "1c661a5b5e46e630a01490859ef3db52c04b74213a032b00cc99e9d67e1b8399",
+      "fk.cuh": "fea830264294b87a3c9d157ab827aa768318f6903b108f625b4cecf4def1eff6",
+      "rrt.cuh": "f68012191a6365d0a46066eeaa28811d21b3a7a4ea80610a75b96a9e97f3ee5c"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        },
+        {
+          "index": 3,
+          "lower": -1.0,
+          "name": "slide",
+          "upper": 1.0
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F32",
+      "optimization": "Basic",
+      "scalar": "float",
+      "scheduling": "DagOrder",
+      "sphere_count": 23
+    }
+  },
+  {
+    "name": "chain-f32-basic-0",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "math": "f32",
+    "optimization": "basic",
+    "live_budget": 0,
+    "sha256": {
+      "centers.cuh": "b8346f8bcbdcec2b011ff271861f39a2861b5ec4b62d8a7c006f90ded06a096e",
+      "collision.cuh": "b65fe5aab5c59058ce44cd814ee771425b3cc3ab96d1afe377bdcd1733c77c45",
+      "collision_function.cuh": "99974e995ac41c13c2da359bf5a9ab92a2c7e508083c923e4f071baf1d5172fc",
+      "fk.cuh": "835b8dd3e6385427eb7cee4efca91197e197999d92c905f27826fe5e4e07691d",
+      "rrt.cuh": "3c731ae88206e627776a62524379715b61a4b5c353949ad6ddca930a0e15e75d"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        },
+        {
+          "index": 3,
+          "lower": -1.0,
+          "name": "slide",
+          "upper": 1.0
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F32",
+      "optimization": "Basic",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 0 })",
+      "sphere_count": 23
+    }
+  },
+  {
+    "name": "chain-f32-basic-64",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "math": "f32",
+    "optimization": "basic",
+    "live_budget": 64,
+    "sha256": {
+      "centers.cuh": "c0c6aabdd6da13b7801c221bef40a08d9e07946707a6a0486bd81b35a0ad4bcc",
+      "collision.cuh": "d3c52f149a93b12b8e5cc6f513629c6960ddb4825054e3d1368c310b68933ba4",
+      "collision_function.cuh": "99a630a53d2061d3c814c0f777f75927db03b4047c7518ed1ddb8f2f2046feb1",
+      "fk.cuh": "ebe19e39f224fb728b0f6021ee9bcecae551a02b142adbf45209bcccfcf6dbbd",
+      "rrt.cuh": "ccec7afc85e6389432f4fcad8ca6410faaa83ce0a2db07e727d7c34ba311ade6"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        },
+        {
+          "index": 3,
+          "lower": -1.0,
+          "name": "slide",
+          "upper": 1.0
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F32",
+      "optimization": "Basic",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 64 })",
+      "sphere_count": 23
+    }
+  },
+  {
+    "name": "chain-f32-algebraic-None",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "math": "f32",
+    "optimization": "algebraic",
+    "live_budget": null,
+    "sha256": {
+      "centers.cuh": "2f9e7a7d1f6eeb2d3fadcd830da45950d6d6fab5cca5402f5a8cc16e32c405f9",
+      "collision.cuh": "c8c4a7d0e649e5368d7376655c78627e94d2ea41f79cf523ce49653f5739db07",
+      "collision_function.cuh": "041b2dd549f218df0d1feb7934886e20faca3af1ea50415103540658d133fad8",
+      "fk.cuh": "47b87c205ac3388197005c0a2375b84a1ca592bd032e98da1a0bb1b1a79ad5f9",
+      "rrt.cuh": "f5d57da84af1699e5e6eddef706dcecd3ca432961ea69d16f837ec44cad82805"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        },
+        {
+          "index": 3,
+          "lower": -1.0,
+          "name": "slide",
+          "upper": 1.0
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F32",
+      "optimization": "Algebraic",
+      "scalar": "float",
+      "scheduling": "DagOrder",
+      "sphere_count": 23
+    }
+  },
+  {
+    "name": "chain-f32-algebraic-0",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "math": "f32",
+    "optimization": "algebraic",
+    "live_budget": 0,
+    "sha256": {
+      "centers.cuh": "503090746ac1e763aa563c69afb43b6accbb8b81f479caaaa7ed93a9fb1037eb",
+      "collision.cuh": "72174b9a6f2ae1f578c74218222f530ddd0cf445c8e48d99edaf2e74cfecc624",
+      "collision_function.cuh": "908fd084c5d4d38f93b185b30bea64ffa1835df00b5b662026fc42d9db024ecf",
+      "fk.cuh": "6d1742cace8948c39dae83635841a2acf48cf0f02214cd19a1f6508802b63749",
+      "rrt.cuh": "0d4c17823dad8d15aa465fb882029dd327e60cb21fdf1dbae2754fa3d68b567f"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        },
+        {
+          "index": 3,
+          "lower": -1.0,
+          "name": "slide",
+          "upper": 1.0
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F32",
+      "optimization": "Algebraic",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 0 })",
+      "sphere_count": 23
+    }
+  },
+  {
+    "name": "chain-f32-algebraic-64",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "math": "f32",
+    "optimization": "algebraic",
+    "live_budget": 64,
+    "sha256": {
+      "centers.cuh": "7c54738968d2677bfa999f3442889fe5170a9acc16e1698e7077618d76062190",
+      "collision.cuh": "e1fa80e5ee6457368cd138ff276efff3954f88202d90e9af29f0879b7f17c111",
+      "collision_function.cuh": "4986c92abf91e9b01eb74c228cf62275933d9f404d2ce57a37d498457ff46633",
+      "fk.cuh": "a182d2f9bd8d05126434e067c4a9547ddc758e666079734d8241b3f1cd7da71a",
+      "rrt.cuh": "59a8814fdb69896b7ad0f587ebfb9848c8bdc00a7f89ec3059357b0d65296cdd"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        },
+        {
+          "index": 3,
+          "lower": -1.0,
+          "name": "slide",
+          "upper": 1.0
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F32",
+      "optimization": "Algebraic",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 64 })",
+      "sphere_count": 23
+    }
+  },
+  {
+    "name": "chain-f32-sfu-none-None",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "math": "f32-sfu",
+    "optimization": "none",
+    "live_budget": null,
+    "sha256": {
+      "centers.cuh": "88b5bb0fe87443d424f66ab5d75683f8a35ecddd78e79080b0803d75bfc1d4c8",
+      "collision.cuh": "ec192ad0c8fedb116b703b10853fa0eebef6e7569ebfeaf3b5b56041b0e2b5a0",
+      "collision_function.cuh": "1ac74d252d1e68d40d2292dcdabb5561d065bc7c7a9b3b8313e3a505ec110597",
+      "fk.cuh": "8ac0866221d9710ff514c090594ff014af50274b6a4bd385e3dd1f7c066dc70c",
+      "rrt.cuh": "317b7a913586b02ef5ccf9eda4407d983fba189c07a0e9d897dda318b4344485"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        },
+        {
+          "index": 3,
+          "lower": -1.0,
+          "name": "slide",
+          "upper": 1.0
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F32Sfu",
+      "optimization": "None",
+      "scalar": "float",
+      "scheduling": "DagOrder",
+      "sphere_count": 23
+    }
+  },
+  {
+    "name": "chain-f32-sfu-none-0",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "math": "f32-sfu",
+    "optimization": "none",
+    "live_budget": 0,
+    "sha256": {
+      "centers.cuh": "d0a8bbff4ca5e30b3918eaef9d9282bed763b452f6cde0c00302d323dd199efb",
+      "collision.cuh": "d299e98e4f131b4367ea6df3923928968fd98a6315c80973f74c00eb8534de1f",
+      "collision_function.cuh": "3401f7e9be81533eac5ae0d768518c0604c4e7daf2a424f0fb106814ea20df6a",
+      "fk.cuh": "a513fe34060062c48184cd35832bda8bada451c4c46390ea8138a0316809bd14",
+      "rrt.cuh": "8ae412df9ca568581f3d7c9ab72132a0ba79967262ca511bdc39a8190f5e1129"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        },
+        {
+          "index": 3,
+          "lower": -1.0,
+          "name": "slide",
+          "upper": 1.0
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F32Sfu",
+      "optimization": "None",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 0 })",
+      "sphere_count": 23
+    }
+  },
+  {
+    "name": "chain-f32-sfu-none-64",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "math": "f32-sfu",
+    "optimization": "none",
+    "live_budget": 64,
+    "sha256": {
+      "centers.cuh": "8eea5894ae4ac0941418ecc1e05ca927e1a344de71cf15812db02d6f9a60f35b",
+      "collision.cuh": "ef2792de48e0436e494fe474b195343c7127e39db0a0c2feca6765f50fd9da48",
+      "collision_function.cuh": "e8a76243d10aac10952a03bd2eaf0e44d7aec5bfc180a76046f2ec1ecff56bd6",
+      "fk.cuh": "f08d41c81dad5e13d5c1347fba8bf5703fb13495b4c073d588720b73d69ab49c",
+      "rrt.cuh": "6a22aa52bfd5b463a071a6d3c738a29468eefdc7af03c1bd2c486f9379aee108"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        },
+        {
+          "index": 3,
+          "lower": -1.0,
+          "name": "slide",
+          "upper": 1.0
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F32Sfu",
+      "optimization": "None",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 64 })",
+      "sphere_count": 23
+    }
+  },
+  {
+    "name": "chain-f32-sfu-basic-None",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "math": "f32-sfu",
+    "optimization": "basic",
+    "live_budget": null,
+    "sha256": {
+      "centers.cuh": "6d1f96ea350a08dab045e949a5ed94f5660338b4a6c056ddef41ed5d170540cd",
+      "collision.cuh": "ce801bb9bbe7c271209e05da440e952b4a1a81dcf4258c09720dd17a82c90247",
+      "collision_function.cuh": "fa267c15d6559f0fd6e37648443ac367935333e00a365cc26d2b725de007ee6c",
+      "fk.cuh": "72ab5fc844bb09b1d4d29fec553c3589587e78558c71593a95be37e7a70cef03",
+      "rrt.cuh": "e94aec693a2c74500dbe97deb7538f952707c71f9bce5cf5ab48a3aeb775c020"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        },
+        {
+          "index": 3,
+          "lower": -1.0,
+          "name": "slide",
+          "upper": 1.0
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F32Sfu",
+      "optimization": "Basic",
+      "scalar": "float",
+      "scheduling": "DagOrder",
+      "sphere_count": 23
+    }
+  },
+  {
+    "name": "chain-f32-sfu-basic-0",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "math": "f32-sfu",
+    "optimization": "basic",
+    "live_budget": 0,
+    "sha256": {
+      "centers.cuh": "a241b5f3820af263561eb32383a3e6e7a30bc542e686d5532f5fcae2add2629b",
+      "collision.cuh": "8540ff5f53171958d8d1dfd7ed3d67fcce1cc0e8ecdbc1ce23ff42bda5b97bf6",
+      "collision_function.cuh": "5696137f55b73cac2f824633d79019fed4e326d8e6fcfe823b997c2703707d48",
+      "fk.cuh": "7666a9661d1770984180c86a9c9d9aa225a73ed210e97999ca1a95a56c96cd79",
+      "rrt.cuh": "e910f228250a2d26fffc30bfeff6bea564698389211a15b0ec05e873060af0df"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        },
+        {
+          "index": 3,
+          "lower": -1.0,
+          "name": "slide",
+          "upper": 1.0
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F32Sfu",
+      "optimization": "Basic",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 0 })",
+      "sphere_count": 23
+    }
+  },
+  {
+    "name": "chain-f32-sfu-basic-64",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "math": "f32-sfu",
+    "optimization": "basic",
+    "live_budget": 64,
+    "sha256": {
+      "centers.cuh": "aac7efd10e9e7af033e4f930aa8c0a4fa1d5640a74f05beab4fa24e714f51a32",
+      "collision.cuh": "b81fac1b26b43208c2d5863f7ba0119c75934a82691d25540f42af8dc5d4bd9d",
+      "collision_function.cuh": "8ae209303f2530f216ba39f949247b341a3a164e12138a9153ede64f96bcb5a2",
+      "fk.cuh": "e7a7aa37d357e3234efc0c3d62f1145ee78c3f5ae365cc1d9d440f666433f8f1",
+      "rrt.cuh": "58f3ed50b1761f00f146f51bedf6e2dfb2733b637248fc453a489362b11a604b"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        },
+        {
+          "index": 3,
+          "lower": -1.0,
+          "name": "slide",
+          "upper": 1.0
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F32Sfu",
+      "optimization": "Basic",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 64 })",
+      "sphere_count": 23
+    }
+  },
+  {
+    "name": "chain-f32-sfu-algebraic-None",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "math": "f32-sfu",
+    "optimization": "algebraic",
+    "live_budget": null,
+    "sha256": {
+      "centers.cuh": "1234cc277b643743e68c60a765231c87649b5f348f1d16da141f80cb79cd5778",
+      "collision.cuh": "c85b6005fbf452be6f6707776efc1e382933d2e8b1bada49aec47b3ee5bf550d",
+      "collision_function.cuh": "ca04653cf28d0144cad32dea769dd8b31bb0a79bfedbd55c88f4a8b8e3e610e6",
+      "fk.cuh": "525abdf11d12e36a77e09e313c421a8ce782a84b693906856f37caa9539fc1a3",
+      "rrt.cuh": "3bbf4dfdabe1fcea41791326d83ee479d82f8d275197a1aa8eedf94a7e12d24a"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        },
+        {
+          "index": 3,
+          "lower": -1.0,
+          "name": "slide",
+          "upper": 1.0
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F32Sfu",
+      "optimization": "Algebraic",
+      "scalar": "float",
+      "scheduling": "DagOrder",
+      "sphere_count": 23
+    }
+  },
+  {
+    "name": "chain-f32-sfu-algebraic-0",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "math": "f32-sfu",
+    "optimization": "algebraic",
+    "live_budget": 0,
+    "sha256": {
+      "centers.cuh": "75e4fb685d9ff9236b38981725b411511103645b98900f4d769e78700b2d703e",
+      "collision.cuh": "ff24c842903c97bffc5002a2df14982056d9b965276d5d48a196929a4cbcac27",
+      "collision_function.cuh": "451778054792a9c5fe6d48a4fdbc3f937a4f7d9a842f8cc47ad55b84a1a1c8b5",
+      "fk.cuh": "71206806b5de9eb69bba58aaa5afc5901faf7a814896f0568eb93c70c4634364",
+      "rrt.cuh": "af757e6fc07a90ff5c559ee3888f94413586b7f93049d5f49adbad24e22a6d27"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        },
+        {
+          "index": 3,
+          "lower": -1.0,
+          "name": "slide",
+          "upper": 1.0
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F32Sfu",
+      "optimization": "Algebraic",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 0 })",
+      "sphere_count": 23
+    }
+  },
+  {
+    "name": "chain-f32-sfu-algebraic-64",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "math": "f32-sfu",
+    "optimization": "algebraic",
+    "live_budget": 64,
+    "sha256": {
+      "centers.cuh": "c8f7e05a15e1c47e8169f6209ff27684bf99916d27c50f74a26672fea7e1f3b8",
+      "collision.cuh": "4892ecc219a29bddbc576cc7b3f8fba58d088873698d7da726c8d3eb692276c8",
+      "collision_function.cuh": "a9af181762e7bd96660d354d77c86fa26fe0dc19adda3e96a8b35158f28c507a",
+      "fk.cuh": "95c1919b25e4784b287ff7d26d30b48778b1653fc19a9ec7904a9c190a17ac7b",
+      "rrt.cuh": "0825bf9eaccb5c2c25027c1d9cb2c26df771f2c6b82842cb491a8246ede7d8c8"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        },
+        {
+          "index": 3,
+          "lower": -1.0,
+          "name": "slide",
+          "upper": 1.0
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F32Sfu",
+      "optimization": "Algebraic",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 64 })",
+      "sphere_count": 23
+    }
+  },
+  {
+    "name": "chain-f64-none-None",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "math": "f64",
+    "optimization": "none",
+    "live_budget": null,
+    "sha256": {
+      "centers.cuh": "b028b93f1a1845d3aa01110c49eba63a1904ef8c5913f63fe5bab29ff2bf31bf",
+      "collision.cuh": "b1f48401cb21052b778d1babeca0b64cf7064f9c8fbc7b670cf3abd2905ea7ba",
+      "collision_function.cuh": "fb7ab8d035b421d3a30960849ea44d8d939037151341b5d56d74423dd4412377",
+      "fk.cuh": "9cf5aef87fe108a7307adcc8fdf800b005ae02932993d4df6cf81847a10c532f",
+      "rrt.cuh": "e668bdcf78057cca8de7715f03bd95be0cdd80f966f87f15ab6f234cd0e65917"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        },
+        {
+          "index": 3,
+          "lower": -1.0,
+          "name": "slide",
+          "upper": 1.0
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F64",
+      "optimization": "None",
+      "scalar": "double",
+      "scheduling": "DagOrder",
+      "sphere_count": 23
+    }
+  },
+  {
+    "name": "chain-f64-none-0",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "math": "f64",
+    "optimization": "none",
+    "live_budget": 0,
+    "sha256": {
+      "centers.cuh": "19b92715e64f21c81c55856c7fd88becc4907472c021118ec9e9a491e94c1459",
+      "collision.cuh": "842555d8bf2926b2c2d41da66a066decf7ad3d1b9e2436d2fcb4b1fe5888cb4c",
+      "collision_function.cuh": "47dd5552d871def0c1d30a33aca8fdbb160c39ffd11d6c42ec9040b7bdfa628c",
+      "fk.cuh": "38ecc2c6d652e76e7c187eab6b6a57147b6abfb97e90ed05205477028773fbae",
+      "rrt.cuh": "dce60ef212aac13fd757c212e4ec08a339c3a3165e87d352cfd9339b6810a79e"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        },
+        {
+          "index": 3,
+          "lower": -1.0,
+          "name": "slide",
+          "upper": 1.0
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F64",
+      "optimization": "None",
+      "scalar": "double",
+      "scheduling": "Live(Options { live_budget: 0 })",
+      "sphere_count": 23
+    }
+  },
+  {
+    "name": "chain-f64-none-64",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "math": "f64",
+    "optimization": "none",
+    "live_budget": 64,
+    "sha256": {
+      "centers.cuh": "974f2dcdea1dc9ae1bda83836e3c4004017b7d535377bb3e52a295801f0a0a15",
+      "collision.cuh": "098aa638c7f5ec93c562120fd969879a6afdb342891942a7b67574e24f939328",
+      "collision_function.cuh": "d4c295bb9708b0fcbfae6dda58c82825466d5b88c438588a448b0b3f876b7188",
+      "fk.cuh": "88f3f0cad20bd336bc11f86507204a3307a12681c872003fb57b01e4314af454",
+      "rrt.cuh": "3f8c5ca2cd77c76fd9dffbd9043ecf5c2a8edf6f2ccb56a9e551ccc3baf1e943"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        },
+        {
+          "index": 3,
+          "lower": -1.0,
+          "name": "slide",
+          "upper": 1.0
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F64",
+      "optimization": "None",
+      "scalar": "double",
+      "scheduling": "Live(Options { live_budget: 64 })",
+      "sphere_count": 23
+    }
+  },
+  {
+    "name": "chain-f64-basic-None",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "math": "f64",
+    "optimization": "basic",
+    "live_budget": null,
+    "sha256": {
+      "centers.cuh": "92c06a4fdf9af11165d521364788d73d71d6360c8fc57edcfb00aa1d78a53c13",
+      "collision.cuh": "550eaaead6f2e435e98129161e82f3700541e801b2581105eb261b6ee19a0e52",
+      "collision_function.cuh": "6dd31dff7ed4b2c071ab8c5f956bef5e2291d7f0cdb83d6c102adfa6771439e1",
+      "fk.cuh": "6be47fd0b568816d93fadf265481d3e665bcc4cb2974abfb2e04fd55811afcb1",
+      "rrt.cuh": "301948b91c892abafe0787b89d057699898aeccd5478838167619b5aa7aaa121"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        },
+        {
+          "index": 3,
+          "lower": -1.0,
+          "name": "slide",
+          "upper": 1.0
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F64",
+      "optimization": "Basic",
+      "scalar": "double",
+      "scheduling": "DagOrder",
+      "sphere_count": 23
+    }
+  },
+  {
+    "name": "chain-f64-basic-0",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "math": "f64",
+    "optimization": "basic",
+    "live_budget": 0,
+    "sha256": {
+      "centers.cuh": "5e09bf683aa7b7a93c3b5e485013c8a9c2691c649ce6be553274f35a84aa7ce8",
+      "collision.cuh": "755f3aa314cf479da64b30f3de7b1195c5f65d76417244c3f62ec80ac77ac1d1",
+      "collision_function.cuh": "66b1b272f51f33a5f47cb46e29c7ad525975ff763361d7b2705048dc31d526b2",
+      "fk.cuh": "e6ac68caab427b79b2c318cdd086b5d1921f8522d5dc62ed00b75588f7ce00bd",
+      "rrt.cuh": "99e7a5aa1caded5b3daf54c7558bd8279ca7ba14087a008577da8520bc9bfff2"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        },
+        {
+          "index": 3,
+          "lower": -1.0,
+          "name": "slide",
+          "upper": 1.0
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F64",
+      "optimization": "Basic",
+      "scalar": "double",
+      "scheduling": "Live(Options { live_budget: 0 })",
+      "sphere_count": 23
+    }
+  },
+  {
+    "name": "chain-f64-basic-64",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "math": "f64",
+    "optimization": "basic",
+    "live_budget": 64,
+    "sha256": {
+      "centers.cuh": "b538fbe71608943980bffef7e69d3fc7f6866391a6232384689bd9ee311d656c",
+      "collision.cuh": "d1af3fc409d52fb18a6282b7c86bf4f2c9d0da1e0d82190cb63a13c8b8914220",
+      "collision_function.cuh": "b8e0f15cec7b779a70290456d7c43e8c8f74c2e5c021b8b68ab951f2870d0fe0",
+      "fk.cuh": "24a67762c1c33fb276b0d0753f33a51b5cb1437d84d00a7bdcf177faf4a067ce",
+      "rrt.cuh": "2792234602d5074c1fa4b0074f1d436189f0493a4bd36727e44bbaeaa2694c8a"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        },
+        {
+          "index": 3,
+          "lower": -1.0,
+          "name": "slide",
+          "upper": 1.0
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F64",
+      "optimization": "Basic",
+      "scalar": "double",
+      "scheduling": "Live(Options { live_budget: 64 })",
+      "sphere_count": 23
+    }
+  },
+  {
+    "name": "chain-f64-algebraic-None",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "math": "f64",
+    "optimization": "algebraic",
+    "live_budget": null,
+    "sha256": {
+      "centers.cuh": "c8a343e3cf051795b3b21c25483825b0e7a85ded1083a659001b8bdea7eec5ff",
+      "collision.cuh": "c921a4ad9d98dc22961e6047961be7c4489ac1cc7cf82b3e055e83171c952bd8",
+      "collision_function.cuh": "0ab5afe055a514d34c1a32023225b3e1840a03ce2c0069d7b1a2729696bb4f1d",
+      "fk.cuh": "f657e677eb18da6c70aa31826fad9508d1f3f3dae3eacba311cacfaed6d94d96",
+      "rrt.cuh": "6ccb3ecd844426dc7b9311fee9afef412c70ecc716160abefdced2ab6dc17ca3"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        },
+        {
+          "index": 3,
+          "lower": -1.0,
+          "name": "slide",
+          "upper": 1.0
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F64",
+      "optimization": "Algebraic",
+      "scalar": "double",
+      "scheduling": "DagOrder",
+      "sphere_count": 23
+    }
+  },
+  {
+    "name": "chain-f64-algebraic-0",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "math": "f64",
+    "optimization": "algebraic",
+    "live_budget": 0,
+    "sha256": {
+      "centers.cuh": "9bb44568dc2fa3ae3de72b42a6fc6d4184f7f505ca7b333738522312f34ebe3a",
+      "collision.cuh": "b939271e3eb5fc6c88db430f4cbb2f4659b42df13c1e873a83c87052d88b04e6",
+      "collision_function.cuh": "8e79f6b47d1f50bbfa39281d61a95a8b931a8b4944df0f09bbe3aab5ad886031",
+      "fk.cuh": "7208cd624ec822d7a332b5795bc1085b94ce6e7034a6eb5198f58e078cff819d",
+      "rrt.cuh": "d40986e1d7b1c84e4eefcb274c9621fcfce26ea5c4092b899e252b14180a775b"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        },
+        {
+          "index": 3,
+          "lower": -1.0,
+          "name": "slide",
+          "upper": 1.0
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F64",
+      "optimization": "Algebraic",
+      "scalar": "double",
+      "scheduling": "Live(Options { live_budget: 0 })",
+      "sphere_count": 23
+    }
+  },
+  {
+    "name": "chain-f64-algebraic-64",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "math": "f64",
+    "optimization": "algebraic",
+    "live_budget": 64,
+    "sha256": {
+      "centers.cuh": "635231ece7699b9738a17d017000672c9f2cf18a8552f5f2bff7b115915fcd56",
+      "collision.cuh": "c4ba1c4422d5b55520c25bf079a1a80c9125007756eca0bca12a1b936b55601b",
+      "collision_function.cuh": "28c5a73c2c59d2c34633684018ea633a6163e55e0cdbe373bcbc448745b2183c",
+      "fk.cuh": "489502fb2a1d39198b0298c1c5a12f7d7e368a9d4ede754ccd8691e16989ceb0",
+      "rrt.cuh": "4fabef0a3bf2620b2d048091ba7d1c8340d9a882cd9bf3fbde9f19dd4c22ce19"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        },
+        {
+          "index": 3,
+          "lower": -1.0,
+          "name": "slide",
+          "upper": 1.0
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F64",
+      "optimization": "Algebraic",
+      "scalar": "double",
+      "scheduling": "Live(Options { live_budget: 64 })",
+      "sphere_count": 23
+    }
+  },
+  {
+    "name": "empty-f32-none-None",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "math": "f32",
+    "optimization": "none",
+    "live_budget": null,
+    "sha256": {
+      "centers.cuh": "56674de441e590b3f3d6fe53d69939e076307f941bb5dcd147cdfbbdc8a2c9b9",
+      "collision.cuh": "403c94487a747f6c7e95654643c1967723005b2e27e5919356e4e144b2ac42b1",
+      "collision_function.cuh": "c6132ae3c624ef37120b7280a84083b3b764dcd1fb2d8850b60a9e4d8e3bc5f3",
+      "fk.cuh": "ac634b0fce7ffa3d3014f222bb49afae32039109713e1688ea28879ccea723ad",
+      "rrt.cuh": "bb3dc24b24428db11a14b0f8e97ba148b00270b81baa1d2b65209250d5d01028"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F32",
+      "optimization": "None",
+      "scalar": "float",
+      "scheduling": "DagOrder",
+      "sphere_count": 0
+    }
+  },
+  {
+    "name": "empty-f32-none-0",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "math": "f32",
+    "optimization": "none",
+    "live_budget": 0,
+    "sha256": {
+      "centers.cuh": "56674de441e590b3f3d6fe53d69939e076307f941bb5dcd147cdfbbdc8a2c9b9",
+      "collision.cuh": "403c94487a747f6c7e95654643c1967723005b2e27e5919356e4e144b2ac42b1",
+      "collision_function.cuh": "c6132ae3c624ef37120b7280a84083b3b764dcd1fb2d8850b60a9e4d8e3bc5f3",
+      "fk.cuh": "dd779a333c02dfa6081cac3c71a7978d581f949113254816c4b134bdf300921d",
+      "rrt.cuh": "bb3dc24b24428db11a14b0f8e97ba148b00270b81baa1d2b65209250d5d01028"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F32",
+      "optimization": "None",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 0 })",
+      "sphere_count": 0
+    }
+  },
+  {
+    "name": "empty-f32-none-64",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "math": "f32",
+    "optimization": "none",
+    "live_budget": 64,
+    "sha256": {
+      "centers.cuh": "56674de441e590b3f3d6fe53d69939e076307f941bb5dcd147cdfbbdc8a2c9b9",
+      "collision.cuh": "403c94487a747f6c7e95654643c1967723005b2e27e5919356e4e144b2ac42b1",
+      "collision_function.cuh": "c6132ae3c624ef37120b7280a84083b3b764dcd1fb2d8850b60a9e4d8e3bc5f3",
+      "fk.cuh": "4b2e42ac29170e620adf64cdc14fd7c4dc1013ca0a486e9cf11df683d7831676",
+      "rrt.cuh": "bb3dc24b24428db11a14b0f8e97ba148b00270b81baa1d2b65209250d5d01028"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F32",
+      "optimization": "None",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 64 })",
+      "sphere_count": 0
+    }
+  },
+  {
+    "name": "empty-f32-basic-None",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "math": "f32",
+    "optimization": "basic",
+    "live_budget": null,
+    "sha256": {
+      "centers.cuh": "56674de441e590b3f3d6fe53d69939e076307f941bb5dcd147cdfbbdc8a2c9b9",
+      "collision.cuh": "403c94487a747f6c7e95654643c1967723005b2e27e5919356e4e144b2ac42b1",
+      "collision_function.cuh": "c6132ae3c624ef37120b7280a84083b3b764dcd1fb2d8850b60a9e4d8e3bc5f3",
+      "fk.cuh": "fea830264294b87a3c9d157ab827aa768318f6903b108f625b4cecf4def1eff6",
+      "rrt.cuh": "bb3dc24b24428db11a14b0f8e97ba148b00270b81baa1d2b65209250d5d01028"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F32",
+      "optimization": "Basic",
+      "scalar": "float",
+      "scheduling": "DagOrder",
+      "sphere_count": 0
+    }
+  },
+  {
+    "name": "empty-f32-basic-0",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "math": "f32",
+    "optimization": "basic",
+    "live_budget": 0,
+    "sha256": {
+      "centers.cuh": "56674de441e590b3f3d6fe53d69939e076307f941bb5dcd147cdfbbdc8a2c9b9",
+      "collision.cuh": "403c94487a747f6c7e95654643c1967723005b2e27e5919356e4e144b2ac42b1",
+      "collision_function.cuh": "c6132ae3c624ef37120b7280a84083b3b764dcd1fb2d8850b60a9e4d8e3bc5f3",
+      "fk.cuh": "835b8dd3e6385427eb7cee4efca91197e197999d92c905f27826fe5e4e07691d",
+      "rrt.cuh": "bb3dc24b24428db11a14b0f8e97ba148b00270b81baa1d2b65209250d5d01028"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F32",
+      "optimization": "Basic",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 0 })",
+      "sphere_count": 0
+    }
+  },
+  {
+    "name": "empty-f32-basic-64",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "math": "f32",
+    "optimization": "basic",
+    "live_budget": 64,
+    "sha256": {
+      "centers.cuh": "56674de441e590b3f3d6fe53d69939e076307f941bb5dcd147cdfbbdc8a2c9b9",
+      "collision.cuh": "403c94487a747f6c7e95654643c1967723005b2e27e5919356e4e144b2ac42b1",
+      "collision_function.cuh": "c6132ae3c624ef37120b7280a84083b3b764dcd1fb2d8850b60a9e4d8e3bc5f3",
+      "fk.cuh": "ebe19e39f224fb728b0f6021ee9bcecae551a02b142adbf45209bcccfcf6dbbd",
+      "rrt.cuh": "bb3dc24b24428db11a14b0f8e97ba148b00270b81baa1d2b65209250d5d01028"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F32",
+      "optimization": "Basic",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 64 })",
+      "sphere_count": 0
+    }
+  },
+  {
+    "name": "empty-f32-algebraic-None",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "math": "f32",
+    "optimization": "algebraic",
+    "live_budget": null,
+    "sha256": {
+      "centers.cuh": "56674de441e590b3f3d6fe53d69939e076307f941bb5dcd147cdfbbdc8a2c9b9",
+      "collision.cuh": "403c94487a747f6c7e95654643c1967723005b2e27e5919356e4e144b2ac42b1",
+      "collision_function.cuh": "c6132ae3c624ef37120b7280a84083b3b764dcd1fb2d8850b60a9e4d8e3bc5f3",
+      "fk.cuh": "47b87c205ac3388197005c0a2375b84a1ca592bd032e98da1a0bb1b1a79ad5f9",
+      "rrt.cuh": "bb3dc24b24428db11a14b0f8e97ba148b00270b81baa1d2b65209250d5d01028"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F32",
+      "optimization": "Algebraic",
+      "scalar": "float",
+      "scheduling": "DagOrder",
+      "sphere_count": 0
+    }
+  },
+  {
+    "name": "empty-f32-algebraic-0",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "math": "f32",
+    "optimization": "algebraic",
+    "live_budget": 0,
+    "sha256": {
+      "centers.cuh": "56674de441e590b3f3d6fe53d69939e076307f941bb5dcd147cdfbbdc8a2c9b9",
+      "collision.cuh": "403c94487a747f6c7e95654643c1967723005b2e27e5919356e4e144b2ac42b1",
+      "collision_function.cuh": "c6132ae3c624ef37120b7280a84083b3b764dcd1fb2d8850b60a9e4d8e3bc5f3",
+      "fk.cuh": "6d1742cace8948c39dae83635841a2acf48cf0f02214cd19a1f6508802b63749",
+      "rrt.cuh": "bb3dc24b24428db11a14b0f8e97ba148b00270b81baa1d2b65209250d5d01028"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F32",
+      "optimization": "Algebraic",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 0 })",
+      "sphere_count": 0
+    }
+  },
+  {
+    "name": "empty-f32-algebraic-64",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "math": "f32",
+    "optimization": "algebraic",
+    "live_budget": 64,
+    "sha256": {
+      "centers.cuh": "56674de441e590b3f3d6fe53d69939e076307f941bb5dcd147cdfbbdc8a2c9b9",
+      "collision.cuh": "403c94487a747f6c7e95654643c1967723005b2e27e5919356e4e144b2ac42b1",
+      "collision_function.cuh": "c6132ae3c624ef37120b7280a84083b3b764dcd1fb2d8850b60a9e4d8e3bc5f3",
+      "fk.cuh": "a182d2f9bd8d05126434e067c4a9547ddc758e666079734d8241b3f1cd7da71a",
+      "rrt.cuh": "bb3dc24b24428db11a14b0f8e97ba148b00270b81baa1d2b65209250d5d01028"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F32",
+      "optimization": "Algebraic",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 64 })",
+      "sphere_count": 0
+    }
+  },
+  {
+    "name": "empty-f32-sfu-none-None",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "math": "f32-sfu",
+    "optimization": "none",
+    "live_budget": null,
+    "sha256": {
+      "centers.cuh": "56674de441e590b3f3d6fe53d69939e076307f941bb5dcd147cdfbbdc8a2c9b9",
+      "collision.cuh": "403c94487a747f6c7e95654643c1967723005b2e27e5919356e4e144b2ac42b1",
+      "collision_function.cuh": "c6132ae3c624ef37120b7280a84083b3b764dcd1fb2d8850b60a9e4d8e3bc5f3",
+      "fk.cuh": "8ac0866221d9710ff514c090594ff014af50274b6a4bd385e3dd1f7c066dc70c",
+      "rrt.cuh": "bb3dc24b24428db11a14b0f8e97ba148b00270b81baa1d2b65209250d5d01028"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F32Sfu",
+      "optimization": "None",
+      "scalar": "float",
+      "scheduling": "DagOrder",
+      "sphere_count": 0
+    }
+  },
+  {
+    "name": "empty-f32-sfu-none-0",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "math": "f32-sfu",
+    "optimization": "none",
+    "live_budget": 0,
+    "sha256": {
+      "centers.cuh": "56674de441e590b3f3d6fe53d69939e076307f941bb5dcd147cdfbbdc8a2c9b9",
+      "collision.cuh": "403c94487a747f6c7e95654643c1967723005b2e27e5919356e4e144b2ac42b1",
+      "collision_function.cuh": "c6132ae3c624ef37120b7280a84083b3b764dcd1fb2d8850b60a9e4d8e3bc5f3",
+      "fk.cuh": "a513fe34060062c48184cd35832bda8bada451c4c46390ea8138a0316809bd14",
+      "rrt.cuh": "bb3dc24b24428db11a14b0f8e97ba148b00270b81baa1d2b65209250d5d01028"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F32Sfu",
+      "optimization": "None",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 0 })",
+      "sphere_count": 0
+    }
+  },
+  {
+    "name": "empty-f32-sfu-none-64",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "math": "f32-sfu",
+    "optimization": "none",
+    "live_budget": 64,
+    "sha256": {
+      "centers.cuh": "56674de441e590b3f3d6fe53d69939e076307f941bb5dcd147cdfbbdc8a2c9b9",
+      "collision.cuh": "403c94487a747f6c7e95654643c1967723005b2e27e5919356e4e144b2ac42b1",
+      "collision_function.cuh": "c6132ae3c624ef37120b7280a84083b3b764dcd1fb2d8850b60a9e4d8e3bc5f3",
+      "fk.cuh": "f08d41c81dad5e13d5c1347fba8bf5703fb13495b4c073d588720b73d69ab49c",
+      "rrt.cuh": "bb3dc24b24428db11a14b0f8e97ba148b00270b81baa1d2b65209250d5d01028"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F32Sfu",
+      "optimization": "None",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 64 })",
+      "sphere_count": 0
+    }
+  },
+  {
+    "name": "empty-f32-sfu-basic-None",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "math": "f32-sfu",
+    "optimization": "basic",
+    "live_budget": null,
+    "sha256": {
+      "centers.cuh": "56674de441e590b3f3d6fe53d69939e076307f941bb5dcd147cdfbbdc8a2c9b9",
+      "collision.cuh": "403c94487a747f6c7e95654643c1967723005b2e27e5919356e4e144b2ac42b1",
+      "collision_function.cuh": "c6132ae3c624ef37120b7280a84083b3b764dcd1fb2d8850b60a9e4d8e3bc5f3",
+      "fk.cuh": "72ab5fc844bb09b1d4d29fec553c3589587e78558c71593a95be37e7a70cef03",
+      "rrt.cuh": "bb3dc24b24428db11a14b0f8e97ba148b00270b81baa1d2b65209250d5d01028"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F32Sfu",
+      "optimization": "Basic",
+      "scalar": "float",
+      "scheduling": "DagOrder",
+      "sphere_count": 0
+    }
+  },
+  {
+    "name": "empty-f32-sfu-basic-0",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "math": "f32-sfu",
+    "optimization": "basic",
+    "live_budget": 0,
+    "sha256": {
+      "centers.cuh": "56674de441e590b3f3d6fe53d69939e076307f941bb5dcd147cdfbbdc8a2c9b9",
+      "collision.cuh": "403c94487a747f6c7e95654643c1967723005b2e27e5919356e4e144b2ac42b1",
+      "collision_function.cuh": "c6132ae3c624ef37120b7280a84083b3b764dcd1fb2d8850b60a9e4d8e3bc5f3",
+      "fk.cuh": "7666a9661d1770984180c86a9c9d9aa225a73ed210e97999ca1a95a56c96cd79",
+      "rrt.cuh": "bb3dc24b24428db11a14b0f8e97ba148b00270b81baa1d2b65209250d5d01028"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F32Sfu",
+      "optimization": "Basic",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 0 })",
+      "sphere_count": 0
+    }
+  },
+  {
+    "name": "empty-f32-sfu-basic-64",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "math": "f32-sfu",
+    "optimization": "basic",
+    "live_budget": 64,
+    "sha256": {
+      "centers.cuh": "56674de441e590b3f3d6fe53d69939e076307f941bb5dcd147cdfbbdc8a2c9b9",
+      "collision.cuh": "403c94487a747f6c7e95654643c1967723005b2e27e5919356e4e144b2ac42b1",
+      "collision_function.cuh": "c6132ae3c624ef37120b7280a84083b3b764dcd1fb2d8850b60a9e4d8e3bc5f3",
+      "fk.cuh": "e7a7aa37d357e3234efc0c3d62f1145ee78c3f5ae365cc1d9d440f666433f8f1",
+      "rrt.cuh": "bb3dc24b24428db11a14b0f8e97ba148b00270b81baa1d2b65209250d5d01028"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F32Sfu",
+      "optimization": "Basic",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 64 })",
+      "sphere_count": 0
+    }
+  },
+  {
+    "name": "empty-f32-sfu-algebraic-None",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "math": "f32-sfu",
+    "optimization": "algebraic",
+    "live_budget": null,
+    "sha256": {
+      "centers.cuh": "56674de441e590b3f3d6fe53d69939e076307f941bb5dcd147cdfbbdc8a2c9b9",
+      "collision.cuh": "403c94487a747f6c7e95654643c1967723005b2e27e5919356e4e144b2ac42b1",
+      "collision_function.cuh": "c6132ae3c624ef37120b7280a84083b3b764dcd1fb2d8850b60a9e4d8e3bc5f3",
+      "fk.cuh": "525abdf11d12e36a77e09e313c421a8ce782a84b693906856f37caa9539fc1a3",
+      "rrt.cuh": "bb3dc24b24428db11a14b0f8e97ba148b00270b81baa1d2b65209250d5d01028"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F32Sfu",
+      "optimization": "Algebraic",
+      "scalar": "float",
+      "scheduling": "DagOrder",
+      "sphere_count": 0
+    }
+  },
+  {
+    "name": "empty-f32-sfu-algebraic-0",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "math": "f32-sfu",
+    "optimization": "algebraic",
+    "live_budget": 0,
+    "sha256": {
+      "centers.cuh": "56674de441e590b3f3d6fe53d69939e076307f941bb5dcd147cdfbbdc8a2c9b9",
+      "collision.cuh": "403c94487a747f6c7e95654643c1967723005b2e27e5919356e4e144b2ac42b1",
+      "collision_function.cuh": "c6132ae3c624ef37120b7280a84083b3b764dcd1fb2d8850b60a9e4d8e3bc5f3",
+      "fk.cuh": "71206806b5de9eb69bba58aaa5afc5901faf7a814896f0568eb93c70c4634364",
+      "rrt.cuh": "bb3dc24b24428db11a14b0f8e97ba148b00270b81baa1d2b65209250d5d01028"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F32Sfu",
+      "optimization": "Algebraic",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 0 })",
+      "sphere_count": 0
+    }
+  },
+  {
+    "name": "empty-f32-sfu-algebraic-64",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "math": "f32-sfu",
+    "optimization": "algebraic",
+    "live_budget": 64,
+    "sha256": {
+      "centers.cuh": "56674de441e590b3f3d6fe53d69939e076307f941bb5dcd147cdfbbdc8a2c9b9",
+      "collision.cuh": "403c94487a747f6c7e95654643c1967723005b2e27e5919356e4e144b2ac42b1",
+      "collision_function.cuh": "c6132ae3c624ef37120b7280a84083b3b764dcd1fb2d8850b60a9e4d8e3bc5f3",
+      "fk.cuh": "95c1919b25e4784b287ff7d26d30b48778b1653fc19a9ec7904a9c190a17ac7b",
+      "rrt.cuh": "bb3dc24b24428db11a14b0f8e97ba148b00270b81baa1d2b65209250d5d01028"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F32Sfu",
+      "optimization": "Algebraic",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 64 })",
+      "sphere_count": 0
+    }
+  },
+  {
+    "name": "empty-f64-none-None",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "math": "f64",
+    "optimization": "none",
+    "live_budget": null,
+    "sha256": {
+      "centers.cuh": "82ae7ca2a7e40a4c61fe156e418e408ed38cb83511107d2bcdb0a5b037141a3c",
+      "collision.cuh": "adf81ee701e1a5ecdc96a05be8eed029f6275735f2cee70bada72f2ef518b755",
+      "collision_function.cuh": "43d801c995daf4cc87b15c33e17fb3c800b72475933d4cce614b79c7cc3ddc27",
+      "fk.cuh": "9cf5aef87fe108a7307adcc8fdf800b005ae02932993d4df6cf81847a10c532f",
+      "rrt.cuh": "34209b1649d69958638fa679ad1bc2d794e9a4d61ed3caee5efcfcab20dac910"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F64",
+      "optimization": "None",
+      "scalar": "double",
+      "scheduling": "DagOrder",
+      "sphere_count": 0
+    }
+  },
+  {
+    "name": "empty-f64-none-0",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "math": "f64",
+    "optimization": "none",
+    "live_budget": 0,
+    "sha256": {
+      "centers.cuh": "82ae7ca2a7e40a4c61fe156e418e408ed38cb83511107d2bcdb0a5b037141a3c",
+      "collision.cuh": "adf81ee701e1a5ecdc96a05be8eed029f6275735f2cee70bada72f2ef518b755",
+      "collision_function.cuh": "43d801c995daf4cc87b15c33e17fb3c800b72475933d4cce614b79c7cc3ddc27",
+      "fk.cuh": "38ecc2c6d652e76e7c187eab6b6a57147b6abfb97e90ed05205477028773fbae",
+      "rrt.cuh": "34209b1649d69958638fa679ad1bc2d794e9a4d61ed3caee5efcfcab20dac910"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F64",
+      "optimization": "None",
+      "scalar": "double",
+      "scheduling": "Live(Options { live_budget: 0 })",
+      "sphere_count": 0
+    }
+  },
+  {
+    "name": "empty-f64-none-64",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "math": "f64",
+    "optimization": "none",
+    "live_budget": 64,
+    "sha256": {
+      "centers.cuh": "82ae7ca2a7e40a4c61fe156e418e408ed38cb83511107d2bcdb0a5b037141a3c",
+      "collision.cuh": "adf81ee701e1a5ecdc96a05be8eed029f6275735f2cee70bada72f2ef518b755",
+      "collision_function.cuh": "43d801c995daf4cc87b15c33e17fb3c800b72475933d4cce614b79c7cc3ddc27",
+      "fk.cuh": "88f3f0cad20bd336bc11f86507204a3307a12681c872003fb57b01e4314af454",
+      "rrt.cuh": "34209b1649d69958638fa679ad1bc2d794e9a4d61ed3caee5efcfcab20dac910"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F64",
+      "optimization": "None",
+      "scalar": "double",
+      "scheduling": "Live(Options { live_budget: 64 })",
+      "sphere_count": 0
+    }
+  },
+  {
+    "name": "empty-f64-basic-None",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "math": "f64",
+    "optimization": "basic",
+    "live_budget": null,
+    "sha256": {
+      "centers.cuh": "82ae7ca2a7e40a4c61fe156e418e408ed38cb83511107d2bcdb0a5b037141a3c",
+      "collision.cuh": "adf81ee701e1a5ecdc96a05be8eed029f6275735f2cee70bada72f2ef518b755",
+      "collision_function.cuh": "43d801c995daf4cc87b15c33e17fb3c800b72475933d4cce614b79c7cc3ddc27",
+      "fk.cuh": "6be47fd0b568816d93fadf265481d3e665bcc4cb2974abfb2e04fd55811afcb1",
+      "rrt.cuh": "34209b1649d69958638fa679ad1bc2d794e9a4d61ed3caee5efcfcab20dac910"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F64",
+      "optimization": "Basic",
+      "scalar": "double",
+      "scheduling": "DagOrder",
+      "sphere_count": 0
+    }
+  },
+  {
+    "name": "empty-f64-basic-0",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "math": "f64",
+    "optimization": "basic",
+    "live_budget": 0,
+    "sha256": {
+      "centers.cuh": "82ae7ca2a7e40a4c61fe156e418e408ed38cb83511107d2bcdb0a5b037141a3c",
+      "collision.cuh": "adf81ee701e1a5ecdc96a05be8eed029f6275735f2cee70bada72f2ef518b755",
+      "collision_function.cuh": "43d801c995daf4cc87b15c33e17fb3c800b72475933d4cce614b79c7cc3ddc27",
+      "fk.cuh": "e6ac68caab427b79b2c318cdd086b5d1921f8522d5dc62ed00b75588f7ce00bd",
+      "rrt.cuh": "34209b1649d69958638fa679ad1bc2d794e9a4d61ed3caee5efcfcab20dac910"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F64",
+      "optimization": "Basic",
+      "scalar": "double",
+      "scheduling": "Live(Options { live_budget: 0 })",
+      "sphere_count": 0
+    }
+  },
+  {
+    "name": "empty-f64-basic-64",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "math": "f64",
+    "optimization": "basic",
+    "live_budget": 64,
+    "sha256": {
+      "centers.cuh": "82ae7ca2a7e40a4c61fe156e418e408ed38cb83511107d2bcdb0a5b037141a3c",
+      "collision.cuh": "adf81ee701e1a5ecdc96a05be8eed029f6275735f2cee70bada72f2ef518b755",
+      "collision_function.cuh": "43d801c995daf4cc87b15c33e17fb3c800b72475933d4cce614b79c7cc3ddc27",
+      "fk.cuh": "24a67762c1c33fb276b0d0753f33a51b5cb1437d84d00a7bdcf177faf4a067ce",
+      "rrt.cuh": "34209b1649d69958638fa679ad1bc2d794e9a4d61ed3caee5efcfcab20dac910"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F64",
+      "optimization": "Basic",
+      "scalar": "double",
+      "scheduling": "Live(Options { live_budget: 64 })",
+      "sphere_count": 0
+    }
+  },
+  {
+    "name": "empty-f64-algebraic-None",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "math": "f64",
+    "optimization": "algebraic",
+    "live_budget": null,
+    "sha256": {
+      "centers.cuh": "82ae7ca2a7e40a4c61fe156e418e408ed38cb83511107d2bcdb0a5b037141a3c",
+      "collision.cuh": "adf81ee701e1a5ecdc96a05be8eed029f6275735f2cee70bada72f2ef518b755",
+      "collision_function.cuh": "43d801c995daf4cc87b15c33e17fb3c800b72475933d4cce614b79c7cc3ddc27",
+      "fk.cuh": "f657e677eb18da6c70aa31826fad9508d1f3f3dae3eacba311cacfaed6d94d96",
+      "rrt.cuh": "34209b1649d69958638fa679ad1bc2d794e9a4d61ed3caee5efcfcab20dac910"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F64",
+      "optimization": "Algebraic",
+      "scalar": "double",
+      "scheduling": "DagOrder",
+      "sphere_count": 0
+    }
+  },
+  {
+    "name": "empty-f64-algebraic-0",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "math": "f64",
+    "optimization": "algebraic",
+    "live_budget": 0,
+    "sha256": {
+      "centers.cuh": "82ae7ca2a7e40a4c61fe156e418e408ed38cb83511107d2bcdb0a5b037141a3c",
+      "collision.cuh": "adf81ee701e1a5ecdc96a05be8eed029f6275735f2cee70bada72f2ef518b755",
+      "collision_function.cuh": "43d801c995daf4cc87b15c33e17fb3c800b72475933d4cce614b79c7cc3ddc27",
+      "fk.cuh": "7208cd624ec822d7a332b5795bc1085b94ce6e7034a6eb5198f58e078cff819d",
+      "rrt.cuh": "34209b1649d69958638fa679ad1bc2d794e9a4d61ed3caee5efcfcab20dac910"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F64",
+      "optimization": "Algebraic",
+      "scalar": "double",
+      "scheduling": "Live(Options { live_budget: 0 })",
+      "sphere_count": 0
+    }
+  },
+  {
+    "name": "empty-f64-algebraic-64",
+    "urdf": "tests/fixtures/fk_chain.urdf",
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "math": "f64",
+    "optimization": "algebraic",
+    "live_budget": 64,
+    "sha256": {
+      "centers.cuh": "82ae7ca2a7e40a4c61fe156e418e408ed38cb83511107d2bcdb0a5b037141a3c",
+      "collision.cuh": "adf81ee701e1a5ecdc96a05be8eed029f6275735f2cee70bada72f2ef518b755",
+      "collision_function.cuh": "43d801c995daf4cc87b15c33e17fb3c800b72475933d4cce614b79c7cc3ddc27",
+      "fk.cuh": "489502fb2a1d39198b0298c1c5a12f7d7e368a9d4ede754ccd8691e16989ceb0",
+      "rrt.cuh": "34209b1649d69958638fa679ad1bc2d794e9a4d61ed3caee5efcfcab20dac910"
+    },
+    "model": {
+      "control_joints": [
+        {
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
+        }
+      ],
+      "input_joint_names": [
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
+      ],
+      "math": "F64",
+      "optimization": "Algebraic",
+      "scalar": "double",
+      "scheduling": "Live(Options { live_budget: 64 })",
+      "sphere_count": 0
+    }
+  },
+  {
+    "name": "fixed-f32-none-None",
+    "urdf": "tests/fixtures/compiler/fixed.urdf",
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "math": "f32",
+    "optimization": "none",
+    "live_budget": null,
+    "sha256": {
+      "centers.cuh": "b65a493efe074a50585cc27420a47f4c13afb749d47a35f90acd00526f38a76c",
+      "collision.cuh": "5ec6242b214e11aae263fb1cdd4f422c3c998992ee362182f127dc13c97623c4",
+      "collision_function.cuh": "c77d4e1114aab10132006410b15069a3a164206217bf19fe885c31e0da7cd941",
+      "fk.cuh": "f793e7a2bb8c33b1f976c14c26ecd94bddaf8dd7ccf7ccdb731a7704be7dd5ee"
+    },
+    "model": {
+      "control_joints": [],
+      "input_joint_names": [],
+      "math": "F32",
+      "optimization": "None",
+      "scalar": "float",
+      "scheduling": "DagOrder",
+      "sphere_count": 1
+    }
+  },
+  {
+    "name": "fixed-f32-none-0",
+    "urdf": "tests/fixtures/compiler/fixed.urdf",
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "math": "f32",
+    "optimization": "none",
+    "live_budget": 0,
+    "sha256": {
+      "centers.cuh": "106e6ef9557c04b9147c4bf28127e9809dac178dc06dfc777acc46f6cc59530f",
+      "collision.cuh": "0c532d3f67cd9d33f2d5f8e00ade4a8a34e087fbae2896f3992e17fd1a5b78c3",
+      "collision_function.cuh": "bc78d35e69186943a8d49382974b186ef17eea136f9057823df2ffa3c779020a",
+      "fk.cuh": "31c48af2b61e6e4811ed4b00bf588cfff99565ad6d8a8be284924d344af6b8e0"
+    },
+    "model": {
+      "control_joints": [],
+      "input_joint_names": [],
+      "math": "F32",
+      "optimization": "None",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 0 })",
+      "sphere_count": 1
+    }
+  },
+  {
+    "name": "fixed-f32-none-64",
+    "urdf": "tests/fixtures/compiler/fixed.urdf",
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "math": "f32",
+    "optimization": "none",
+    "live_budget": 64,
+    "sha256": {
+      "centers.cuh": "d87e1b7d4e596b75663507965e2a2560810ac08f912c7a4f034c87dc588567a1",
+      "collision.cuh": "df866e15d49bc5adbb7167dfd1f5d31b68f1f9614046ae150758e3b391c83fec",
+      "collision_function.cuh": "8bafebbb8031ffe4ca0b02eb5714d94423fd7042ccc89cbe141080b6c64bf412",
+      "fk.cuh": "31c48af2b61e6e4811ed4b00bf588cfff99565ad6d8a8be284924d344af6b8e0"
+    },
+    "model": {
+      "control_joints": [],
+      "input_joint_names": [],
+      "math": "F32",
+      "optimization": "None",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 64 })",
+      "sphere_count": 1
+    }
+  },
+  {
+    "name": "fixed-f32-basic-None",
+    "urdf": "tests/fixtures/compiler/fixed.urdf",
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "math": "f32",
+    "optimization": "basic",
+    "live_budget": null,
+    "sha256": {
+      "centers.cuh": "76a185751b5a96c5c3bb0e6fef82166c8195c55e96b7addbb0a257b5a3497882",
+      "collision.cuh": "148c0107d404048c753719539ec4b0e564d4e2eeac844e71bfbf9eb306ffc12c",
+      "collision_function.cuh": "f1d455e476c141f07197792d841c393face7037dadb5525cfabc244db7adfbb2",
+      "fk.cuh": "f793e7a2bb8c33b1f976c14c26ecd94bddaf8dd7ccf7ccdb731a7704be7dd5ee"
+    },
+    "model": {
+      "control_joints": [],
+      "input_joint_names": [],
+      "math": "F32",
+      "optimization": "Basic",
+      "scalar": "float",
+      "scheduling": "DagOrder",
+      "sphere_count": 1
+    }
+  },
+  {
+    "name": "fixed-f32-basic-0",
+    "urdf": "tests/fixtures/compiler/fixed.urdf",
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "math": "f32",
+    "optimization": "basic",
+    "live_budget": 0,
+    "sha256": {
+      "centers.cuh": "ca6f7c353c43579c6816ea5f8466f72cdb910b97806144f4af3127f615a27ef2",
+      "collision.cuh": "68c649192efc25ad83225ee69ca1eeb5821138f6bd852b5bc23bf1882229c551",
+      "collision_function.cuh": "02730beaa04c996ecf0d57998b628014ba2cec642cd9ebe33cf9061e4ecbbf48",
+      "fk.cuh": "31c48af2b61e6e4811ed4b00bf588cfff99565ad6d8a8be284924d344af6b8e0"
+    },
+    "model": {
+      "control_joints": [],
+      "input_joint_names": [],
+      "math": "F32",
+      "optimization": "Basic",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 0 })",
+      "sphere_count": 1
+    }
+  },
+  {
+    "name": "fixed-f32-basic-64",
+    "urdf": "tests/fixtures/compiler/fixed.urdf",
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "math": "f32",
+    "optimization": "basic",
+    "live_budget": 64,
+    "sha256": {
+      "centers.cuh": "974e65f0f9c3d573b250cd04e9ccb64fd14a5c0dc9f8a3f1a8c062083685236a",
+      "collision.cuh": "148c0107d404048c753719539ec4b0e564d4e2eeac844e71bfbf9eb306ffc12c",
+      "collision_function.cuh": "f1d455e476c141f07197792d841c393face7037dadb5525cfabc244db7adfbb2",
+      "fk.cuh": "31c48af2b61e6e4811ed4b00bf588cfff99565ad6d8a8be284924d344af6b8e0"
+    },
+    "model": {
+      "control_joints": [],
+      "input_joint_names": [],
+      "math": "F32",
+      "optimization": "Basic",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 64 })",
+      "sphere_count": 1
+    }
+  },
+  {
+    "name": "fixed-f32-algebraic-None",
+    "urdf": "tests/fixtures/compiler/fixed.urdf",
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "math": "f32",
+    "optimization": "algebraic",
+    "live_budget": null,
+    "sha256": {
+      "centers.cuh": "76a185751b5a96c5c3bb0e6fef82166c8195c55e96b7addbb0a257b5a3497882",
+      "collision.cuh": "148c0107d404048c753719539ec4b0e564d4e2eeac844e71bfbf9eb306ffc12c",
+      "collision_function.cuh": "f1d455e476c141f07197792d841c393face7037dadb5525cfabc244db7adfbb2",
+      "fk.cuh": "f793e7a2bb8c33b1f976c14c26ecd94bddaf8dd7ccf7ccdb731a7704be7dd5ee"
+    },
+    "model": {
+      "control_joints": [],
+      "input_joint_names": [],
+      "math": "F32",
+      "optimization": "Algebraic",
+      "scalar": "float",
+      "scheduling": "DagOrder",
+      "sphere_count": 1
+    }
+  },
+  {
+    "name": "fixed-f32-algebraic-0",
+    "urdf": "tests/fixtures/compiler/fixed.urdf",
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "math": "f32",
+    "optimization": "algebraic",
+    "live_budget": 0,
+    "sha256": {
+      "centers.cuh": "ca6f7c353c43579c6816ea5f8466f72cdb910b97806144f4af3127f615a27ef2",
+      "collision.cuh": "68c649192efc25ad83225ee69ca1eeb5821138f6bd852b5bc23bf1882229c551",
+      "collision_function.cuh": "02730beaa04c996ecf0d57998b628014ba2cec642cd9ebe33cf9061e4ecbbf48",
+      "fk.cuh": "31c48af2b61e6e4811ed4b00bf588cfff99565ad6d8a8be284924d344af6b8e0"
+    },
+    "model": {
+      "control_joints": [],
+      "input_joint_names": [],
+      "math": "F32",
+      "optimization": "Algebraic",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 0 })",
+      "sphere_count": 1
+    }
+  },
+  {
+    "name": "fixed-f32-algebraic-64",
+    "urdf": "tests/fixtures/compiler/fixed.urdf",
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "math": "f32",
+    "optimization": "algebraic",
+    "live_budget": 64,
+    "sha256": {
+      "centers.cuh": "974e65f0f9c3d573b250cd04e9ccb64fd14a5c0dc9f8a3f1a8c062083685236a",
+      "collision.cuh": "148c0107d404048c753719539ec4b0e564d4e2eeac844e71bfbf9eb306ffc12c",
+      "collision_function.cuh": "f1d455e476c141f07197792d841c393face7037dadb5525cfabc244db7adfbb2",
+      "fk.cuh": "31c48af2b61e6e4811ed4b00bf588cfff99565ad6d8a8be284924d344af6b8e0"
+    },
+    "model": {
+      "control_joints": [],
+      "input_joint_names": [],
+      "math": "F32",
+      "optimization": "Algebraic",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 64 })",
+      "sphere_count": 1
+    }
+  },
+  {
+    "name": "fixed-f32-sfu-none-None",
+    "urdf": "tests/fixtures/compiler/fixed.urdf",
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "math": "f32-sfu",
+    "optimization": "none",
+    "live_budget": null,
+    "sha256": {
+      "centers.cuh": "b65a493efe074a50585cc27420a47f4c13afb749d47a35f90acd00526f38a76c",
+      "collision.cuh": "5ec6242b214e11aae263fb1cdd4f422c3c998992ee362182f127dc13c97623c4",
+      "collision_function.cuh": "c77d4e1114aab10132006410b15069a3a164206217bf19fe885c31e0da7cd941",
+      "fk.cuh": "f793e7a2bb8c33b1f976c14c26ecd94bddaf8dd7ccf7ccdb731a7704be7dd5ee"
+    },
+    "model": {
+      "control_joints": [],
+      "input_joint_names": [],
+      "math": "F32Sfu",
+      "optimization": "None",
+      "scalar": "float",
+      "scheduling": "DagOrder",
+      "sphere_count": 1
+    }
+  },
+  {
+    "name": "fixed-f32-sfu-none-0",
+    "urdf": "tests/fixtures/compiler/fixed.urdf",
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "math": "f32-sfu",
+    "optimization": "none",
+    "live_budget": 0,
+    "sha256": {
+      "centers.cuh": "106e6ef9557c04b9147c4bf28127e9809dac178dc06dfc777acc46f6cc59530f",
+      "collision.cuh": "0c532d3f67cd9d33f2d5f8e00ade4a8a34e087fbae2896f3992e17fd1a5b78c3",
+      "collision_function.cuh": "bc78d35e69186943a8d49382974b186ef17eea136f9057823df2ffa3c779020a",
+      "fk.cuh": "31c48af2b61e6e4811ed4b00bf588cfff99565ad6d8a8be284924d344af6b8e0"
+    },
+    "model": {
+      "control_joints": [],
+      "input_joint_names": [],
+      "math": "F32Sfu",
+      "optimization": "None",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 0 })",
+      "sphere_count": 1
+    }
+  },
+  {
+    "name": "fixed-f32-sfu-none-64",
+    "urdf": "tests/fixtures/compiler/fixed.urdf",
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "math": "f32-sfu",
+    "optimization": "none",
+    "live_budget": 64,
+    "sha256": {
+      "centers.cuh": "d87e1b7d4e596b75663507965e2a2560810ac08f912c7a4f034c87dc588567a1",
+      "collision.cuh": "df866e15d49bc5adbb7167dfd1f5d31b68f1f9614046ae150758e3b391c83fec",
+      "collision_function.cuh": "8bafebbb8031ffe4ca0b02eb5714d94423fd7042ccc89cbe141080b6c64bf412",
+      "fk.cuh": "31c48af2b61e6e4811ed4b00bf588cfff99565ad6d8a8be284924d344af6b8e0"
+    },
+    "model": {
+      "control_joints": [],
+      "input_joint_names": [],
+      "math": "F32Sfu",
+      "optimization": "None",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 64 })",
+      "sphere_count": 1
+    }
+  },
+  {
+    "name": "fixed-f32-sfu-basic-None",
+    "urdf": "tests/fixtures/compiler/fixed.urdf",
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "math": "f32-sfu",
+    "optimization": "basic",
+    "live_budget": null,
+    "sha256": {
+      "centers.cuh": "76a185751b5a96c5c3bb0e6fef82166c8195c55e96b7addbb0a257b5a3497882",
+      "collision.cuh": "148c0107d404048c753719539ec4b0e564d4e2eeac844e71bfbf9eb306ffc12c",
+      "collision_function.cuh": "f1d455e476c141f07197792d841c393face7037dadb5525cfabc244db7adfbb2",
+      "fk.cuh": "f793e7a2bb8c33b1f976c14c26ecd94bddaf8dd7ccf7ccdb731a7704be7dd5ee"
+    },
+    "model": {
+      "control_joints": [],
+      "input_joint_names": [],
+      "math": "F32Sfu",
+      "optimization": "Basic",
+      "scalar": "float",
+      "scheduling": "DagOrder",
+      "sphere_count": 1
+    }
+  },
+  {
+    "name": "fixed-f32-sfu-basic-0",
+    "urdf": "tests/fixtures/compiler/fixed.urdf",
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "math": "f32-sfu",
+    "optimization": "basic",
+    "live_budget": 0,
+    "sha256": {
+      "centers.cuh": "ca6f7c353c43579c6816ea5f8466f72cdb910b97806144f4af3127f615a27ef2",
+      "collision.cuh": "68c649192efc25ad83225ee69ca1eeb5821138f6bd852b5bc23bf1882229c551",
+      "collision_function.cuh": "02730beaa04c996ecf0d57998b628014ba2cec642cd9ebe33cf9061e4ecbbf48",
+      "fk.cuh": "31c48af2b61e6e4811ed4b00bf588cfff99565ad6d8a8be284924d344af6b8e0"
+    },
+    "model": {
+      "control_joints": [],
+      "input_joint_names": [],
+      "math": "F32Sfu",
+      "optimization": "Basic",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 0 })",
+      "sphere_count": 1
+    }
+  },
+  {
+    "name": "fixed-f32-sfu-basic-64",
+    "urdf": "tests/fixtures/compiler/fixed.urdf",
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "math": "f32-sfu",
+    "optimization": "basic",
+    "live_budget": 64,
+    "sha256": {
+      "centers.cuh": "974e65f0f9c3d573b250cd04e9ccb64fd14a5c0dc9f8a3f1a8c062083685236a",
+      "collision.cuh": "148c0107d404048c753719539ec4b0e564d4e2eeac844e71bfbf9eb306ffc12c",
+      "collision_function.cuh": "f1d455e476c141f07197792d841c393face7037dadb5525cfabc244db7adfbb2",
+      "fk.cuh": "31c48af2b61e6e4811ed4b00bf588cfff99565ad6d8a8be284924d344af6b8e0"
+    },
+    "model": {
+      "control_joints": [],
+      "input_joint_names": [],
+      "math": "F32Sfu",
+      "optimization": "Basic",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 64 })",
+      "sphere_count": 1
+    }
+  },
+  {
+    "name": "fixed-f32-sfu-algebraic-None",
+    "urdf": "tests/fixtures/compiler/fixed.urdf",
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "math": "f32-sfu",
+    "optimization": "algebraic",
+    "live_budget": null,
+    "sha256": {
+      "centers.cuh": "76a185751b5a96c5c3bb0e6fef82166c8195c55e96b7addbb0a257b5a3497882",
+      "collision.cuh": "148c0107d404048c753719539ec4b0e564d4e2eeac844e71bfbf9eb306ffc12c",
+      "collision_function.cuh": "f1d455e476c141f07197792d841c393face7037dadb5525cfabc244db7adfbb2",
+      "fk.cuh": "f793e7a2bb8c33b1f976c14c26ecd94bddaf8dd7ccf7ccdb731a7704be7dd5ee"
+    },
+    "model": {
+      "control_joints": [],
+      "input_joint_names": [],
+      "math": "F32Sfu",
+      "optimization": "Algebraic",
+      "scalar": "float",
+      "scheduling": "DagOrder",
+      "sphere_count": 1
+    }
+  },
+  {
+    "name": "fixed-f32-sfu-algebraic-0",
+    "urdf": "tests/fixtures/compiler/fixed.urdf",
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "math": "f32-sfu",
+    "optimization": "algebraic",
+    "live_budget": 0,
+    "sha256": {
+      "centers.cuh": "ca6f7c353c43579c6816ea5f8466f72cdb910b97806144f4af3127f615a27ef2",
+      "collision.cuh": "68c649192efc25ad83225ee69ca1eeb5821138f6bd852b5bc23bf1882229c551",
+      "collision_function.cuh": "02730beaa04c996ecf0d57998b628014ba2cec642cd9ebe33cf9061e4ecbbf48",
+      "fk.cuh": "31c48af2b61e6e4811ed4b00bf588cfff99565ad6d8a8be284924d344af6b8e0"
+    },
+    "model": {
+      "control_joints": [],
+      "input_joint_names": [],
+      "math": "F32Sfu",
+      "optimization": "Algebraic",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 0 })",
+      "sphere_count": 1
+    }
+  },
+  {
+    "name": "fixed-f32-sfu-algebraic-64",
+    "urdf": "tests/fixtures/compiler/fixed.urdf",
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "math": "f32-sfu",
+    "optimization": "algebraic",
+    "live_budget": 64,
+    "sha256": {
+      "centers.cuh": "974e65f0f9c3d573b250cd04e9ccb64fd14a5c0dc9f8a3f1a8c062083685236a",
+      "collision.cuh": "148c0107d404048c753719539ec4b0e564d4e2eeac844e71bfbf9eb306ffc12c",
+      "collision_function.cuh": "f1d455e476c141f07197792d841c393face7037dadb5525cfabc244db7adfbb2",
+      "fk.cuh": "31c48af2b61e6e4811ed4b00bf588cfff99565ad6d8a8be284924d344af6b8e0"
+    },
+    "model": {
+      "control_joints": [],
+      "input_joint_names": [],
+      "math": "F32Sfu",
+      "optimization": "Algebraic",
+      "scalar": "float",
+      "scheduling": "Live(Options { live_budget: 64 })",
+      "sphere_count": 1
+    }
+  },
+  {
+    "name": "fixed-f64-none-None",
+    "urdf": "tests/fixtures/compiler/fixed.urdf",
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "math": "f64",
+    "optimization": "none",
+    "live_budget": null,
+    "sha256": {
+      "centers.cuh": "963a79a776cf55e2f361add8a6624c5e235aa58fd4c38d7ff8ad48a9d52ceb12",
+      "collision.cuh": "a24c13f572cb069020bd52642a660a3b261b2c3c23c4cde5686b99ac6de18cf2",
+      "collision_function.cuh": "9e968ca5fbcb66e75b50ba3cb673429b8193a783b047d73bea005a0e105f1efd",
+      "fk.cuh": "7c2964ed6d4f5f875c7e85708681a68fa850593855f0db6d46541a1d16a63848"
+    },
+    "model": {
+      "control_joints": [],
+      "input_joint_names": [],
+      "math": "F64",
+      "optimization": "None",
+      "scalar": "double",
+      "scheduling": "DagOrder",
+      "sphere_count": 1
+    }
+  },
+  {
+    "name": "fixed-f64-none-0",
+    "urdf": "tests/fixtures/compiler/fixed.urdf",
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "math": "f64",
+    "optimization": "none",
+    "live_budget": 0,
+    "sha256": {
+      "centers.cuh": "7ebcf5b0d684a6957f24dd7bbb9e4229bddc7091be6cb276c03838e40bb764df",
+      "collision.cuh": "e8ad12b5e332f39edde2327376fe2e692be05962371b5372ccf6b9bce46ad531",
+      "collision_function.cuh": "f9ddbee116dc056a00740e94dba521a9fc60c211de04b256d2c05aa288cb20c6",
+      "fk.cuh": "e8e374264dfcbe1a8b77bc50728dca4b9af9ee65c8d231ef2fb372dafbc7f1c7"
+    },
+    "model": {
+      "control_joints": [],
+      "input_joint_names": [],
+      "math": "F64",
+      "optimization": "None",
+      "scalar": "double",
+      "scheduling": "Live(Options { live_budget: 0 })",
+      "sphere_count": 1
+    }
+  },
+  {
+    "name": "fixed-f64-none-64",
+    "urdf": "tests/fixtures/compiler/fixed.urdf",
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "math": "f64",
+    "optimization": "none",
+    "live_budget": 64,
+    "sha256": {
+      "centers.cuh": "d2667214b99cfafa7bff6c19ba86b8cbf6a85f321527263153040a40aaa0c1b0",
+      "collision.cuh": "e99ae14185b0de0f8b87584336d7400e6700c3e2beaa791b692922a99912d8b1",
+      "collision_function.cuh": "337c5bbaf08ad77b4235216630bded4a871ef0e9ab5f327d94bc6c6ede7ea658",
+      "fk.cuh": "e8e374264dfcbe1a8b77bc50728dca4b9af9ee65c8d231ef2fb372dafbc7f1c7"
+    },
+    "model": {
+      "control_joints": [],
+      "input_joint_names": [],
+      "math": "F64",
+      "optimization": "None",
+      "scalar": "double",
+      "scheduling": "Live(Options { live_budget: 64 })",
+      "sphere_count": 1
+    }
+  },
+  {
+    "name": "fixed-f64-basic-None",
+    "urdf": "tests/fixtures/compiler/fixed.urdf",
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "math": "f64",
+    "optimization": "basic",
+    "live_budget": null,
+    "sha256": {
+      "centers.cuh": "13e9a6feecc5f2971dff2214cc01870c578977f197dab78fc576b5196fb0c5ba",
+      "collision.cuh": "69919a75cd2043a299cf30925cd5fe41c1570cafb6e42691ef472f9bbdecb361",
+      "collision_function.cuh": "b79230897b65acefcfafbf0021e2bdf196dc2dcb4f0832505ba8205fc4a70378",
+      "fk.cuh": "7c2964ed6d4f5f875c7e85708681a68fa850593855f0db6d46541a1d16a63848"
+    },
+    "model": {
+      "control_joints": [],
+      "input_joint_names": [],
+      "math": "F64",
+      "optimization": "Basic",
+      "scalar": "double",
+      "scheduling": "DagOrder",
+      "sphere_count": 1
+    }
+  },
+  {
+    "name": "fixed-f64-basic-0",
+    "urdf": "tests/fixtures/compiler/fixed.urdf",
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "math": "f64",
+    "optimization": "basic",
+    "live_budget": 0,
+    "sha256": {
+      "centers.cuh": "4190462ca5d966046df9b13841160daaff48d3856ac6c59f765a754b3428f257",
+      "collision.cuh": "a5abdf69501632add6ba0ac32dd2f27059585e55dadef9f1fc6ba308e0e45c1a",
+      "collision_function.cuh": "a3196d1d7a417a44e594cc45838fbeea3b87ff49c83bdc844107aa570e00d9a1",
+      "fk.cuh": "e8e374264dfcbe1a8b77bc50728dca4b9af9ee65c8d231ef2fb372dafbc7f1c7"
+    },
+    "model": {
+      "control_joints": [],
+      "input_joint_names": [],
+      "math": "F64",
+      "optimization": "Basic",
+      "scalar": "double",
+      "scheduling": "Live(Options { live_budget: 0 })",
+      "sphere_count": 1
+    }
+  },
+  {
+    "name": "fixed-f64-basic-64",
+    "urdf": "tests/fixtures/compiler/fixed.urdf",
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "math": "f64",
+    "optimization": "basic",
+    "live_budget": 64,
+    "sha256": {
+      "centers.cuh": "5429c71ec58aa6372a8ed9db0428a442f0d16addc2c91d59f5a44de645471e9b",
+      "collision.cuh": "69919a75cd2043a299cf30925cd5fe41c1570cafb6e42691ef472f9bbdecb361",
+      "collision_function.cuh": "b79230897b65acefcfafbf0021e2bdf196dc2dcb4f0832505ba8205fc4a70378",
+      "fk.cuh": "e8e374264dfcbe1a8b77bc50728dca4b9af9ee65c8d231ef2fb372dafbc7f1c7"
+    },
+    "model": {
+      "control_joints": [],
+      "input_joint_names": [],
+      "math": "F64",
+      "optimization": "Basic",
+      "scalar": "double",
+      "scheduling": "Live(Options { live_budget: 64 })",
+      "sphere_count": 1
+    }
+  },
+  {
+    "name": "fixed-f64-algebraic-None",
+    "urdf": "tests/fixtures/compiler/fixed.urdf",
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "math": "f64",
+    "optimization": "algebraic",
+    "live_budget": null,
+    "sha256": {
+      "centers.cuh": "13e9a6feecc5f2971dff2214cc01870c578977f197dab78fc576b5196fb0c5ba",
+      "collision.cuh": "69919a75cd2043a299cf30925cd5fe41c1570cafb6e42691ef472f9bbdecb361",
+      "collision_function.cuh": "b79230897b65acefcfafbf0021e2bdf196dc2dcb4f0832505ba8205fc4a70378",
+      "fk.cuh": "7c2964ed6d4f5f875c7e85708681a68fa850593855f0db6d46541a1d16a63848"
+    },
+    "model": {
+      "control_joints": [],
+      "input_joint_names": [],
+      "math": "F64",
+      "optimization": "Algebraic",
+      "scalar": "double",
+      "scheduling": "DagOrder",
+      "sphere_count": 1
+    }
+  },
+  {
+    "name": "fixed-f64-algebraic-0",
+    "urdf": "tests/fixtures/compiler/fixed.urdf",
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "math": "f64",
+    "optimization": "algebraic",
+    "live_budget": 0,
+    "sha256": {
+      "centers.cuh": "4190462ca5d966046df9b13841160daaff48d3856ac6c59f765a754b3428f257",
+      "collision.cuh": "a5abdf69501632add6ba0ac32dd2f27059585e55dadef9f1fc6ba308e0e45c1a",
+      "collision_function.cuh": "a3196d1d7a417a44e594cc45838fbeea3b87ff49c83bdc844107aa570e00d9a1",
+      "fk.cuh": "e8e374264dfcbe1a8b77bc50728dca4b9af9ee65c8d231ef2fb372dafbc7f1c7"
+    },
+    "model": {
+      "control_joints": [],
+      "input_joint_names": [],
+      "math": "F64",
+      "optimization": "Algebraic",
+      "scalar": "double",
+      "scheduling": "Live(Options { live_budget: 0 })",
+      "sphere_count": 1
+    }
+  },
+  {
+    "name": "fixed-f64-algebraic-64",
+    "urdf": "tests/fixtures/compiler/fixed.urdf",
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "math": "f64",
+    "optimization": "algebraic",
+    "live_budget": 64,
+    "sha256": {
+      "centers.cuh": "5429c71ec58aa6372a8ed9db0428a442f0d16addc2c91d59f5a44de645471e9b",
+      "collision.cuh": "69919a75cd2043a299cf30925cd5fe41c1570cafb6e42691ef472f9bbdecb361",
+      "collision_function.cuh": "b79230897b65acefcfafbf0021e2bdf196dc2dcb4f0832505ba8205fc4a70378",
+      "fk.cuh": "e8e374264dfcbe1a8b77bc50728dca4b9af9ee65c8d231ef2fb372dafbc7f1c7"
+    },
+    "model": {
+      "control_joints": [],
+      "input_joint_names": [],
+      "math": "F64",
+      "optimization": "Algebraic",
+      "scalar": "double",
+      "scheduling": "Live(Options { live_budget: 64 })",
+      "sphere_count": 1
+    }
+  }
+]

@@ -1,0 +1,46 @@
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "rkern"
+version = "0.1.0"
+description = "Generate robot-specialized CUDA kernels from URDF models"
+requires-python = ">=3.12,<3.13"
+dependencies = ["PyYAML>=6.0,<7"]
+
+[project.scripts]
+rkern-generate = "rkern.cli:main"
+
+[project.optional-dependencies]
+bench = ["numpy>=2", "matplotlib>=3.9"]
+
+[dependency-groups]
+dev = ["pytest>=8,<9", "mypy>=1.13", "types-PyYAML>=6", "ruff>=0.11"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/rkern"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"licenses" = "rkern/licenses"
+
+[tool.hatch.build.targets.sdist]
+include = ["src/rkern", "tests", "assets", "bench", "licenses", "pyproject.toml", "uv.lock", ".python-version", "README.md"]
+exclude = ["bench/plainmp", "bench/results", "__pycache__"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["cuda: requires nvcc and a supported host compiler", "gpu: requires a CUDA GPU"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+extend-exclude = ["bench/plainmp", "artifacts", "target"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "UP"]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["src/rkern", "bench/common.py", "bench/generate.py", "bench/compiler.py", "bench/verify_migration.py"]
+strict = true

@@ -1,0 +1,2 @@
+control_joint_names: []
+collision_spheres: {base: {spheres: [[0.25, 0.5, -0.0, 0.1]]}}

@@ -13,7 +13,8 @@ import time
 
 import numpy as np
 
-from common import toolchain
+from common import codegen_command, toolchain
+from rkern import Options
 
 BENCH = Path(__file__).resolve().parent
 ROOT = BENCH.parent
@@ -147,11 +148,8 @@ def build(output, math_mode, arch, max_registers=None, live_budget=None):
     directory = output / "build"
     directory.mkdir(parents=True, exist_ok=True)
     nvcc, compiler, version = toolchain()
-    options = {"f32": ["--float", "--no-sfu"], "f32-sfu": ["--float", "--sfu"], "f64": ["--double"]}[math_mode]
-    if live_budget is not None:
-        options += ["--live-budget", str(live_budget)]
-    subprocess.run(["cargo", "run", "--quiet", "--locked", "--release", "--example", "bench_generate",
-                    "--", *options, str(directory)], cwd=ROOT, check=True)
+    options = Options(math_mode, live_budget=live_budget)
+    subprocess.run(codegen_command(directory, options), cwd=ROOT, check=True)
     model = json.loads((directory / "model.json").read_text())
     namespace = "rkern_f64" if model["scalar"] == "double" else "rkern_f32"
     library = directory / "librrt.so"

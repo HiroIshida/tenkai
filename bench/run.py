@@ -18,7 +18,8 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
 import numpy as np
 
-from common import toolchain
+from common import codegen_command, compiler_sources, toolchain
+from rkern import Options
 
 BENCH = Path(__file__).resolve().parent
 ROOT = BENCH.parent
@@ -133,16 +134,8 @@ def prepare(args):
     for filename in ["summary.csv", "summary.json", "validation.json", *THROUGHPUT_PLOTS]:
         (output / filename).unlink(missing_ok=True)
     nvcc, compiler, nvcc_version = toolchain()
-    codegen_options = {
-        "f32-sfu": ["--float", "--sfu"],
-        "f32": ["--float", "--no-sfu"],
-        "f64": ["--double"],
-    }[args.math]
-    codegen_options += ["--optimization", args.optimization]
-    if args.live_budget is not None:
-        codegen_options += ["--live-budget", str(args.live_budget)]
-    command = ["cargo", "run", "--locked", "--quiet", "--release", "--example", "bench_generate",
-               "--", *codegen_options, str(build)]
+    options = Options(args.math, args.optimization, args.live_budget)
+    command = codegen_command(build, options)
     subprocess.run(command, cwd=ROOT, check=True)
     model = json.loads((build / "model.json").read_text())
     dtype = np.float32 if model["scalar"] == "float" else np.float64
@@ -187,7 +180,7 @@ def prepare(args):
         "input_sha256": sha256(output / "configurations.bin"),
         "scene_sha256": sha256(output / "scene.bin"),
         "source_sha256": {str(path.relative_to(ROOT)): sha256(path) for path in [
-            URDF, ROOT / "assets/fetch/collision.yaml", BENCH / "generate.rs",
+            URDF, ROOT / "assets/fetch/collision.yaml", BENCH / "generate.py", *compiler_sources(),
             BENCH / "collision.cu", BENCH / "run.py",
             BENCH / "plainmp_bench.cpp", BENCH / "CMakeLists.txt", BENCH / "workload.hpp",
         ]},
