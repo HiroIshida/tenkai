@@ -58,7 +58,7 @@ def test_binding_round_trip_and_lifetime(
 ) -> None:
     native = ct.CDLL(str(binding.library))
     assert native.live_contexts() == 0
-    geometry = [[10, 10, 10, 1, 1, 1, -10], [20, 20, 20, 1, 1, 1, -20]]
+    geometry = [[10, 10, 10, 1, 1, 1, 10], [20, 20, 20, 1, 1, 1, 20]]
     config = RRTConfig(
         max_nodes=16, max_rounds=9, samples_per_round=1, step_size=0.5, goal_bias=0.25
     )
@@ -99,7 +99,7 @@ def test_binding_round_trip_and_lifetime(
 
 def test_context_closes_on_exception(binding: RRTBuild) -> None:
     with pytest.raises(ValueError, match="user exception"):
-        with binding.planner([[10, 10, 10, 1, 1, 1, -10]]):
+        with binding.planner([[10, 10, 10, 1, 1, 1, 10]]):
             raise ValueError("user exception")
     assert ct.CDLL(str(binding.library)).live_contexts() == 0
 
@@ -145,13 +145,13 @@ def test_invalid_geometry_before_load(binding: RRTBuild, geometry: list[list[flo
 def test_invalid_ids_and_seeds(
     binding: RRTBuild, bad_ids: list[int | float], bad_seeds: list[int | float]
 ) -> None:
-    with binding.planner([[10, 10, 10, 1, 1, 1, -10]]) as planner:
+    with binding.planner([[10, 10, 10, 1, 1, 1, 10]]) as planner:
         with pytest.raises(ValueError):
             planner.solve([[0, 0]], [[1, 1]], bad_ids, bad_seeds)
 
 
 def test_invalid_shapes_and_problem_ids(binding: RRTBuild) -> None:
-    with binding.planner([[10, 10, 10, 1, 1, 1, -10]]) as planner:
+    with binding.planner([[10, 10, 10, 1, 1, 1, 10]]) as planner:
         with pytest.raises(ValueError, match="shape"):
             planner.solve([[0, 0, 0]], [[1, 1]], [0], [0])
         with pytest.raises(ValueError, match="shape"):
@@ -228,7 +228,7 @@ def test_public_planner_on_gpu(
 ) -> None:
     config = RRTConfig(max_nodes=256, max_rounds=512, samples_per_round=samples, goal_bias=1.0)
     with compiled.planner(
-        [[10, 10, 10, 1, 1, 1, -10]], config=config, warps=warps, algorithm=algorithm
+        [[10, 10, 10, 1, 1, 1, 10]], config=config, warps=warps, algorithm=algorithm
     ) as planner:
         inputs = ([[-0.5, -0.5]], [[0.5, 0.5]], [0], [42])
         results = planner.solve(*inputs)

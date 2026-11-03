@@ -4,10 +4,8 @@
 import argparse
 from dataclasses import asdict
 import json
-import os
 from pathlib import Path
 import re
-import subprocess
 import time
 
 import numpy as np
@@ -47,29 +45,6 @@ def interpolate(path, resolution):
     return np.concatenate(points)
 
 
-def validate_plainmp(output):
-    directory = output / "build/plainmp"
-    commands = [
-        ["cmake", "-S", str(BENCH), "-B", str(directory), "-DCMAKE_BUILD_TYPE=Release",
-         "-DCMAKE_CXX_COMPILER=" + os.environ.get("CPU_CXX", "c++"),
-         "-DWORKLOAD_DIR=" + str(output / "build")],
-        ["cmake", "--build", str(directory), "--target", "rrt_validate", "--parallel", "4"],
-    ]
-    with (output / "build/plainmp.log").open("w") as log:
-        for command in commands:
-            if subprocess.run(command, stdout=log, stderr=log).returncode:
-                raise RuntimeError((output / "build/plainmp.log").read_text())
-    result = subprocess.run([str(directory / "rrt_validate"), str(ROOT), str(output)],
-                            capture_output=True, text=True)
-    if not result.stdout.strip():
-        raise RuntimeError("plainmp validation failed: " + result.stderr)
-    validation = json.loads(result.stdout)
-    validation["returncode"] = result.returncode
-    validation["revision"] = subprocess.check_output(
-        ["git", "-C", str(BENCH / "plainmp"), "rev-parse", "HEAD"], text=True).strip()
-    return validation
-
-
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--algorithm", choices=["rrt", "rrtc"], default="rrt")
@@ -94,7 +69,7 @@ def main():
     parser.add_argument("--seed", type=int, default=20261012)
     parser.add_argument("--repetitions", type=int, default=3)
     parser.add_argument("--validate-plainmp", action="store_true",
-                        help="also validate paths with the separately built plainmp reference")
+                        help="also validate paths with the installed plainmp Python API")
     args = parser.parse_args()
     if any(not 0 < getattr(args, name) < 2**32 for name in [
             "problems", "environments", "samples_per_round", "max_nodes", "max_rounds", "repetitions"]):
@@ -170,14 +145,15 @@ def main():
                "validation_points": len(all_points), "collision_count": collisions,
                "self_collision": False, "uncontrolled_joint_positions": 0}
     write_json(output / "paths.json", {"joint_names": [j["name"] for j in model["control_joints"]], "paths": paths})
-    np.ascontiguousarray(all_points[:, controls], dtype=np.float64).tofile(output / "validation_q.bin")
-    all_ids.tofile(output / "validation_env_ids.bin")
-    geometry.tofile(output / "geometry.bin")
     write_json(output / "summary.json", summary)
     validation_failed = False
     if args.validate_plainmp:
-        summary["plainmp_validation"] = validate_plainmp(output)
-        validation_failed = bool(summary["plainmp_validation"]["returncode"])
+        from reference import package_info, validate_points
+
+        names = [joint["name"] for joint in model["control_joints"]]
+        validation = validate_points(all_points[:, controls], all_ids, geometry, names)
+        summary["plainmp_validation"] = {**validation, "package": package_info()}
+        validation_failed = bool(validation["collisions"])
         write_json(output / "summary.json", summary)
     print(f"Solved {success}/{args.problems}; batch median {np.median(times):.3f} ms; "
           f"checked {len(all_points)} path points, {collisions} collisions.")

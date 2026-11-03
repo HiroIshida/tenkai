@@ -11,7 +11,7 @@ uv sync --all-extras
 ```
 
 `src/tenkai` contains the Python package, CUDA templates, and planner bindings.
-The package depends on PyYAML and NumPy; the `bench` extra adds Matplotlib.
+The package depends on PyYAML and NumPy; the `bench` extra adds plainmp and Matplotlib.
 
 ## Generate kernels
 
@@ -98,17 +98,18 @@ same inputs are deterministic. `path(i)` retrieves the last solve's path.
 `compiled.model["input_joint_names"]` order.
 
 The current binding accepts one axis-aligned box and one ground plane per
-environment: each geometry row is `[cx, cy, cz, hx, hy, hz, ground_z]`, with box
-half extents `hx/hy/hz`. Uncontrolled joints stay at zero; self-collision is not
-checked. Model inputs and scene geometry are supplied by the caller.
+environment: each geometry row is `[cx, cy, cz, sx, sy, sz, ground_offset]`, with
+full box side lengths `sx/sy/sz` and the ground plane at `z = -ground_offset`.
+Uncontrolled joints stay at zero; self-collision is not checked. Model inputs and
+scene geometry are supplied by the caller.
 
 ## Check
 
 ```sh
 uv run pytest
 uv run mypy
-uv run ruff check src tests bench/common.py bench/generate.py bench/compiler.py bench/verify_migration.py
-uv run ruff format --check src tests bench/common.py bench/generate.py bench/compiler.py bench/verify_migration.py
+uv run ruff check src tests bench/common.py bench/generate.py bench/compiler.py bench/verify_migration.py bench/reference.py bench/compare_rrtc.py
+uv run ruff format --check src tests bench/common.py bench/generate.py bench/compiler.py bench/verify_migration.py bench/reference.py bench/compare_rrtc.py
 uv build
 ```
 
@@ -122,14 +123,16 @@ the tenkai/TENKAI names back to rkern/RKERN, and CPU execution of generated kern
 
 ```sh
 uv run python bench/compiler.py
-uv run python bench/run.py
+uv run --extra bench python bench/run.py
 uv run python bench/rrt.py --algorithm rrtc
+uv run --extra bench python bench/compare_rrtc.py
 ```
 
 See [benchmark details](bench/README.md) for workloads and measurement boundaries.
 The existing benchmarks now generate kernels with the installed Python package.
-The RRT benchmark uses the public planner API. Add `--validate-plainmp` to also
-build and run the independent plainmp path checker; it is optional.
+The RRT benchmark uses the public planner API. With the `bench` extra installed,
+add `--validate-plainmp` to check paths through plainmp's Python API. Benchmarks
+do not need a plainmp checkout or a separate CMake project.
 
 The pre-migration Rust generators, source snapshot, generated CUDA, and compiled
 binaries are saved locally in `artifacts/rust-reference/`. `source-manifest.json`

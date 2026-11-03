@@ -1,5 +1,6 @@
 """Compiler selection shared by the CUDA benchmarks."""
 
+import hashlib
 import sys
 from pathlib import Path
 
@@ -7,6 +8,14 @@ import tenkai
 from tenkai import Options
 from tenkai.build import copy_rrt_bindings as copy_rrt_bindings
 from tenkai.build import toolchain as toolchain
+
+
+def sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for block in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
 
 
 def codegen_command(output: Path, options: Options) -> list[str]:

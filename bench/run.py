@@ -3,27 +3,24 @@
 
 import argparse
 import csv
-import hashlib
 import json
 import math
 import os
 from pathlib import Path
 import re
-import shutil
 import subprocess
 import sys
 import time
 
-from matplotlib.backends.backend_agg import FigureCanvasAgg
-from matplotlib.figure import Figure
 import numpy as np
 
-from common import codegen_command, compiler_sources, toolchain
+from common import codegen_command, compiler_sources, sha256, toolchain
+from reference import make_checker, package_info
 from tenkai import Options
+from tenkai.compiler import ModelMetadata
 
 BENCH = Path(__file__).resolve().parent
 ROOT = BENCH.parent
-PLAINMP = BENCH / "plainmp"
 URDF = ROOT / "assets/fetch/fetch.urdf"
 BATCHES = [1, 16, 64, 256, 1024, 4096, 8192, 16384, 65536, 262144, 1048576]
 THROUGHPUT_PLOTS = {"throughput.png": "log", "throughput_linear.png": "linear"}
@@ -69,62 +66,60 @@ def write_json(path, value):
     path.write_text(json.dumps(value, indent=2, allow_nan=False) + "\n")
 
 
-def sha256(path):
-    digest = hashlib.sha256()
-    with path.open("rb") as source:
-        for block in iter(lambda: source.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
-
-
-def plainmp_revision():
-    if not (PLAINMP / ".git").exists():
-        subprocess.run(["git", "submodule", "update", "--init", "--recursive", "--", "bench/plainmp"],
-                       cwd=ROOT, check=True)
-    revision = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=PLAINMP, text=True).strip()
-    entry = subprocess.check_output(["git", "ls-files", "--stage", "--", "bench/plainmp"], cwd=ROOT, text=True).split()
-    if len(entry) < 2 or entry[0] != "160000" or entry[1] != revision:
-        raise RuntimeError("plainmp HEAD differs from the pinned submodule; run git submodule update --init bench/plainmp")
-    status = subprocess.check_output(["git", "status", "--porcelain", "--untracked-files=no"], cwd=PLAINMP, text=True)
-    if status:
-        raise RuntimeError("plainmp has tracked changes; the benchmark requires an unmodified submodule")
-    return revision
-
-
-def prepare_plainmp(args, revision):
-    available = sorted(os.sched_getaffinity(0))
-    core = available[0] if args.cpu_core is None else args.cpu_core
-    if core not in available:
-        raise ValueError(f"CPU {core} is not in this process's allowed affinity: {available}")
-    compiler = shutil.which(os.environ.get("CPU_CXX", "c++"))
-    if compiler is None:
-        raise RuntimeError("plainmp compiler not found; set CPU_CXX to a C++17 compiler")
-    build = args.output / "build/plainmp"
-    commands = [
-        ["cmake", "-S", str(BENCH), "-B", str(build), "-DCMAKE_BUILD_TYPE=Release",
-         "-DCMAKE_CXX_COMPILER=" + compiler, "-DWORKLOAD_DIR=" + str(args.output / "build")],
-        ["cmake", "--build", str(build), "--parallel", str(min(4, len(available)))],
-    ]
-    print(f"Building plainmp {revision[:7]} (CPU {core}, one thread, double precision).", flush=True)
-    with (args.output / "build/plainmp.log").open("w") as log:
-        try:
-            for command in commands:
-                subprocess.run(command, stdout=log, stderr=log, check=True)
-        except subprocess.CalledProcessError:
-            raise RuntimeError("plainmp build failed:\n" + (args.output / "build/plainmp.log").read_text()) from None
-    return {
-        "revision": revision, "threads": 1, "pinned_logical_cpu": core,
+def benchmark_plainmp(args: argparse.Namespace, model: ModelMetadata) -> dict[str, object]:
+    allowed = os.sched_getaffinity(0)
+    core = min(allowed) if args.cpu_core is None else args.cpu_core
+    if core not in allowed:
+        raise ValueError(f"CPU {core} is not in the allowed affinity: {sorted(allowed)}")
+    dtype = np.float32 if model["scalar"] == "float" else np.float64
+    raw = np.fromfile(args.output / "configurations.bin", dtype=dtype)
+    raw = raw.reshape(args.pool, len(model["input_joint_names"]))
+    controls = model["control_joints"]
+    configurations = np.ascontiguousarray(raw[:, [j["index"] for j in controls]], dtype=np.float64)
+    geometry = np.fromfile(args.output / "scene.bin", dtype=dtype).astype(np.float64)
+    checker = make_checker([j["name"] for j in controls], geometry)
+    flags = np.empty(args.pool, dtype=np.uint8)
+    info = {
+        **package_info(), "threads": 1, "pinned_logical_cpu": core,
         "cpu_info": subprocess.check_output(["lscpu"], text=True),
-        "compiler_version": subprocess.check_output([compiler, "--version"], text=True),
-        "build_commands": commands,
-        "command": ["taskset", "-c", str(core), str(build / "plainmp_bench"), str(ROOT), str(args.output)],
-        "timed_call": "SphereCollisionCst::is_valid(const Eigen::VectorXd&)",
-        "precision": "double", "trigonometry": "native polynomial approximation (high_accuracy=false)",
-        "optimizations_preserved": ["AABB", "broad/narrow phase", "lazy FK cache", "early exit", "sphere reordering"],
-        "build": "Release -O3 -DNDEBUG -march=native LTO; EIGEN_NO_DEBUG EIGEN_DONT_VECTORIZE",
-        "math_header": "preinclude math.h to preserve floating-point abs overloads normally supplied by Python.h",
-        "excluded": ["Python", "setup", "file IO", "float-to-double conversion", "Eigen allocation", "validation"],
+        "timed_call": "SphereCollisionCst.is_valid(q) through Python",
+        "precision": "double", "trigonometry": "plainmp native approximation",
+        "included": ["Python loop", "row access", "native binding", "collision check", "flag store"],
+        "excluded": ["setup", "float-to-double conversion", "validation", "file IO"],
     }
+
+    def measure(batch: int, round_index: int, repetitions: int) -> float:
+        begin = time.perf_counter()
+        for iteration in range(repetitions):
+            offset = ((round_index * 104729 + iteration) % (args.pool // batch)) * batch
+            for index in range(offset, offset + batch):
+                flags[index] = not checker.is_valid(configurations[index])
+        return (time.perf_counter() - begin) * 1000 / repetitions
+
+    print(f"Measuring plainmp {info['version']} Python API on CPU {core}.", flush=True)
+    os.sched_setaffinity(0, {core})
+    try:
+        begin = time.perf_counter()
+        while True:
+            measure(min(args.pool, 65536), 0, 8)
+            if time.perf_counter() - begin >= args.warmup_seconds:
+                break
+        with (args.output / "plainmp_raw.csv").open("w", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow(["mode", "batch", "round", "repetitions", "gpu_ms", "wall_ms"])
+            for round_index in range(args.rounds):
+                for index in range(len(args.batches)):
+                    batch = args.batches[(index + round_index * 5) % len(args.batches)]
+                    repetitions = max(2, min(args.max_repetitions, math.ceil(args.queries_per_round / batch)))
+                    measure(batch, round_index, 2)
+                    elapsed = measure(batch, round_index, repetitions)
+                    writer.writerow(["plainmp", batch, round_index, repetitions, "", elapsed])
+        for index, q in enumerate(configurations):
+            flags[index] = not checker.is_valid(q)
+        flags.tofile(args.output / "plainmp_collision.u8")
+    finally:
+        os.sched_setaffinity(0, allowed)
+    return info
 
 
 def prepare(args):
@@ -167,7 +162,7 @@ def prepare(args):
     if not config_path.exists() or config_path.read_text() != config:
         config_path.write_text(config)
     compile_command = [nvcc, "-ccbin", compiler, "-std=c++14", "-O3", "-arch=" + args.arch,
-                       "-code=" + args.arch, "-I", str(build), str(BENCH / "collision.cu"),
+                       "-code=" + args.arch, "-I", str(build), str(BENCH / "cuda/collision.cu"),
                        "-o", str(build / "collision_bench")]
     metadata = {
         "arguments": {**vars(args), "output": str(output)},
@@ -181,8 +176,8 @@ def prepare(args):
         "scene_sha256": sha256(output / "scene.bin"),
         "source_sha256": {str(path.relative_to(ROOT)): sha256(path) for path in [
             URDF, ROOT / "assets/fetch/collision.yaml", BENCH / "generate.py", *compiler_sources(),
-            BENCH / "collision.cu", BENCH / "run.py",
-            BENCH / "plainmp_bench.cpp", BENCH / "CMakeLists.txt", BENCH / "workload.hpp",
+            BENCH / "cuda/collision.cu", BENCH / "run.py",
+            BENCH / "reference.py", BENCH / "cuda/workload.hpp",
         ]},
         "generated_kernel_sha256": sha256(build / "collision.cuh"),
         "codegen_command": command, "compile_command": compile_command,
@@ -191,7 +186,7 @@ def prepare(args):
         "timing": {
             "kernel": "CUDA events around repeated launches; configurations and environment on device",
             "transfer": "wall time / repetitions; pinned H2D configurations + kernel + D2H flags, one stream",
-            "plainmp": "C++ wall time / repetitions; loop over original is_valid calls and byte flag stores",
+            "plainmp": "Python wall time / repetitions; is_valid calls, row access, and byte flag stores",
             "environment_and_ids": "uploaded once, excluded from both timings",
             "repetitions": "max(2, min(max_repetitions, ceil(queries_per_round / batch)))",
             "job_order": "GPU: batch order, kernel then transfer; CPU: batch order; each rotated by round * 5 jobs",
@@ -251,11 +246,14 @@ def validate(args):
 
 
 def plot_throughput(args, summaries, device):
+    from matplotlib.backends.backend_agg import FigureCanvasAgg
+    from matplotlib.figure import Figure
+
     figure = Figure(figsize=(9, 5.5), constrained_layout=True)
     FigureCanvasAgg(figure)
     axes = figure.subplots()
     for mode, label in [
-        ("plainmp", "plainmp (CPU, 1 thread, FP64)"),
+        ("plainmp", "plainmp (Python API, CPU, FP64)"),
         ("kernel", "tenkai (GPU kernel)"),
         ("transfer", "tenkai (H2D + kernel + D2H)"),
     ]:
@@ -324,7 +322,7 @@ def summarize(args):
         writer.writerows(summaries)
     plot_throughput(args, summaries, device)
     print(f"\n{device['name']} | {args.math} | block {args.block_size} | {args.rounds} rounds")
-    print(f"plainmp: FP64, one thread, CPU {metadata['plainmp']['pinned_logical_cpu']}, native trig approximation")
+    print(f"plainmp Python API: FP64, one thread, CPU {metadata['plainmp']['pinned_logical_cpu']}")
     print("mode          batch   batch us      us/query       Mquery/s       [min, max]       vs CPU")
     for row in summaries:
         print("{mode:9s} {batch:9,d} {median_batch_us:10.3f} {median_amortized_us_per_query:13.6f} "
@@ -338,19 +336,11 @@ def summarize(args):
 
 def main():
     args = arguments()
-    revision = plainmp_revision()
     metadata = prepare(args)
-    metadata["plainmp"] = prepare_plainmp(args, revision)
-    write_json(args.output / "metadata.json", metadata)
-    for name, command in [
-        ("gpu", [str(args.output / "build/collision_bench"), str(args.output)]),
-        ("plainmp", metadata["plainmp"]["command"]),
-    ]:
-        with (args.output / f"{name}_raw.csv").open("w") as raw:
-            subprocess.run(command, stdout=raw, check=True)
-    if plainmp_revision() != revision:
-        raise RuntimeError("plainmp revision changed during the benchmark")
-    metadata["plainmp"]["source_unchanged"] = True
+    with (args.output / "gpu_raw.csv").open("w") as raw:
+        subprocess.run([str(args.output / "build/collision_bench"), str(args.output)],
+                       stdout=raw, check=True)
+    metadata["plainmp"] = benchmark_plainmp(args, metadata["model"])
     write_json(args.output / "metadata.json", metadata)
     with (args.output / "raw.csv").open("w") as raw:
         writer = None

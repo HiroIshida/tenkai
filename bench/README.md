@@ -3,39 +3,28 @@
 From the repository root:
 
 ```sh
-uv run python bench/run.py
+uv run --extra bench python bench/run.py
 ```
 
-Run `uv sync --all-extras` first. Requires Linux, Git, Python 3.12, an NVIDIA GPU, the CUDA
+Run `uv sync --extra bench` first. Requires Linux, Python 3.12, an NVIDIA GPU, the CUDA
 toolkit (`nvcc`), and a host C++ compiler supported by that toolkit. `NVCC` and `CXX` override the
 compiler paths. CUDA 10 uses `g++-8` by default; newer toolkits use `c++`.
 The default PTX target is `compute_75` (GPU compute capability 7.5 or newer).
 Use `--arch compute_86`, for example, when both the toolkit and GPU support it.
 
-The CPU comparison additionally requires CMake 3.15+, a C++17 compiler with LTO,
-Eigen3, yaml-cpp, and `taskset`/`lscpu` (util-linux). On Ubuntu, the development
-packages are `libeigen3-dev` and `libyaml-cpp-dev`. `CPU_CXX` overrides the CPU
-compiler independently of the CUDA host compiler; it defaults to `c++`.
-
-The command initializes the pinned `bench/plainmp` submodule when needed, builds
-both executables, prepares the shared inputs, warms up and measures the GPU and
-CPU sequentially, validates outputs, prints the comparison table, and saves
-throughput plots. The SSH submodule URL requires GitHub SSH access on first
-initialization. No Python
-plainmp installation, OMPL, nanobind, or files from `tmp/` are needed.
-
-The submodule is pinned to `f1151eb16c282934a1b2b8d1cd599829eb294247`.
-An existing checkout must match the recorded gitlink and have no tracked changes;
-the runner will not reset edits. No patch is applied to plainmp. The standalone
-CMake target compiles its original kinematics/collision sources and bundled URDF
-parser. It preincludes `math.h` to reproduce the floating-point `abs` overloads
-normally made available by `Python.h` in the bindings.
+Plainmp is installed by uv with the `bench` extra, at the version recorded in
+`uv.lock`. There is no submodule checkout or benchmark-specific CMake build.
+The runner compiles the GPU timing harness, prepares shared inputs, measures
+GPU and CPU sequentially, compares collision flags, and saves throughput plots.
+CPU metadata records the installed plainmp version and native module hash.
 
 ## Workload and timing
 
 - Bundled Fetch URDF and all 69 collision spheres from `assets/fetch/collision.yaml`.
 - Table: center `(0.95, 0, 0.8)`, full extents `(1, 2, 0.05)`; floor: `z = 0`.
   Environment collision only; self-collision and self-body primitives are excluded.
+  The plainmp reference requires ground offset zero because its ground AABB is
+  fixed at `z = 0`; other offsets are rejected rather than silently misvalidated.
 - 1,048,576 configurations sampled uniformly with NumPy PCG64, seed `20261011`.
   The eight control joints use URDF bounds; continuous joints use `[-2π, 2π)`.
   Other joint inputs are zero. All modes use the same pool in the FK input order.
@@ -56,15 +45,18 @@ normally made available by `Python.h` in the bindings.
 - `transfer`: wall time for repeated pinned-memory H2D configurations, kernel,
   and D2H one-byte flags. One stream, no transfer/compute overlap. Environment and
   environment IDs stay on the GPU in both modes.
-- `plainmp`: single-threaded C++ wall time around the loop calling
-  `SphereCollisionCst::is_valid()`, including FK. All input vectors, conversions
-  from the input precision to double, and model/environment setup precede timing.
+- `plainmp`: single-threaded Python wall time around the loop calling
+  `SphereCollisionCst.is_valid()`, including FK, Python dispatch, row access, and
+  flag stores. These timings differ from the earlier C++-only baseline. All input
+  vectors, conversions from the input precision to double, and model/environment
+  setup precede timing.
   AABB, broad/narrow phase, early exit, lazy FK caches, sphere reordering, and
   native polynomial sin/cos remain enabled. The implementation is unmodified.
   The process is pinned to the first allowed logical CPU, or `--cpu-core N`.
 - Both backends use the same batch sizes, input offsets, and repetition counts
-  from `workload.hpp`. CPU input values match GPU inputs, but plainmp always
-  computes in double; `--math` only controls tenkai. GPU/CPU runs do not overlap.
+  (the CUDA schedule is in `cuda/workload.hpp`, with the same formulas in Python).
+  CPU input values match GPU inputs, but plainmp always computes in double;
+  `--math` only controls tenkai. GPU/CPU runs do not overlap.
 - Sampling, compilation/JIT, allocation, initialization, validation, and file I/O
   are outside timing. Batch times are per-launch averages within each round;
   the table reports the median over rounds and the throughput range. `us/query`
@@ -84,17 +76,17 @@ separately for plainmp-collision/tenkai-free and plainmp-free/tenkai-collision, 
 every differing index and pair of flags is recorded in `plainmp_differences.csv`.
 `validation.json` records the agreement rate, directional counts, and pass/fail
 result even if the threshold is not met. Existing analytical unit tests retain
-their strict checks. NumPy is used for sampling and statistics only.
+their strict checks. NumPy supplies input arrays, sampling, and statistics.
 
 ## Options and results
 
 ```sh
-uv run python bench/run.py --math f64 --output bench/results/double
-uv run python bench/run.py --math f32 --live-budget 64 --output bench/results/scheduled
-uv run python bench/run.py --cpu-core 8
-uv run python bench/run.py --pool 4096 --batches 1 256 4096 --rounds 3 \
+uv run --extra bench python bench/run.py --math f64 --output bench/results/double
+uv run --extra bench python bench/run.py --math f32 --live-budget 64 --output bench/results/scheduled
+uv run --extra bench python bench/run.py --cpu-core 8
+uv run --extra bench python bench/run.py --pool 4096 --batches 1 256 4096 --rounds 3 \
   --warmup-seconds 0.2 --queries-per-round 4096 --max-repetitions 16
-uv run python bench/run.py --help
+uv run --extra bench python bench/run.py --help
 ```
 
 Outputs are in the git-ignored `bench/results/` by default. A run replaces files
@@ -117,10 +109,11 @@ with the same names; use a separate `--output` directory to retain comparisons.
 - `build/`: generated CUDA source, model metadata, configuration header,
   compiler log, and executable.
 
-`generate.py` prepares the code and model metadata; `collision.cu` and
-`plainmp_bench.cpp` own GPU/CPU execution and timers; `workload.hpp` shares the
-sampling schedule and binary input handling; `run.py` coordinates preparation,
-execution, validation, and aggregation.
+`run.py` coordinates inputs, measurements, validation, and plotting.
+`reference.py` constructs the matching plainmp scene through its Python API.
+`cuda/collision.cu` and `cuda/workload.hpp` are the remaining native benchmark
+files: they measure GPU-resident kernel time and pinned-memory transfers with
+CUDA events. They are not planner implementations.
 
 ## Batched CUDA RRT and RRT-Connect
 
@@ -129,12 +122,12 @@ uv run python bench/rrt.py
 uv run python bench/rrt.py --problems 32 --environments 2 --warps-per-problem 4
 uv run python bench/rrt.py --math f64 --output bench/results/rrt-f64
 uv run python bench/rrt.py --algorithm rrtc --problems 32 --environments 2 --resolution 0.01
-uv run python bench/rrt.py --algorithm rrtc --validate-plainmp
+uv run --extra bench python bench/rrt.py --algorithm rrtc --validate-plainmp
 ```
 
 Uses the installed `tenkai` package and the same CUDA/C++ toolchains as the collision
-benchmark. Plainmp build dependencies are needed only with `--validate-plainmp`.
-`NVCC`, `CXX`, `CPU_CXX`, and `--arch` have the same meaning. The package owns
+benchmark. The `bench` extra is needed only with `--validate-plainmp`.
+`NVCC`, `CXX`, and `--arch` have the same meaning. The package owns
 code generation, compilation, and the Python/native planner binding; the benchmark
 supplies the Fetch inputs and measures solves. Python constructs an `RRTConfig`
 dataclass and calls the planner through `build/librrt.so`; sampling, nearest-neighbor
@@ -166,7 +159,7 @@ keeps DAG order. The budget counts live scalar DAG values, whereas
 independent inputs to code generation and compilation; tune their combination.
 A budget of zero always prioritizes the next output's dependencies.
 
-The start/goal are copied from `plainmp/example/bench/fetch_plan.py`, using the
+The start/goal come from plainmp's Fetch planning example, using the
 eight control joints and default per-joint resolution 0.05. Bounds and collision geometry
 match the collision benchmark: all 69 spheres, uncontrolled joints at zero,
 environment collisions only, no self-collision. The full collision setup therefore
@@ -237,7 +230,7 @@ to check replay; they are timing repetitions, not additional independent trials.
 checks bounds/endpoints and rechecks both the planning grid and a five-times finer
 grid with CUDA, and independently with plainmp when `--validate-plainmp` is set.
 These remain discrete checks, not a continuous collision certificate.
-Validation arrays and build logs are saved
+Validation counts and build logs are saved
 alongside the results. The command fails if any problem fails or any checked path
 point collides.
 
@@ -256,8 +249,30 @@ for the original CUDA 10 host. `tenkai.generate_collision_function` exposes the
 single-configuration device predicate. `tenkai.generate_rrt_kernel` emits
 both specialized kernels and native `RrtPlanner`; pass
 `tenkai::RrtAlgorithm::RrtConnect` as its final constructor argument to select RRTC.
-The Python `Planner` accepts `algorithm="rrtc"`. Common planner config/result types are
+The Python `tenkai.Planner` accepts `algorithm="rrtc"`. Common planner config/result types are
 in `src/tenkai/templates/planning/rrt.hpp`, separate from CUDA execution configuration and storage.
+
+## RRT-Connect comparison
+
+```sh
+uv run --extra bench python bench/compare_rrtc.py
+```
+
+Both sides use their installed Python APIs. The CPU side calls
+`OMPLSolver.solve(Problem(...))`, with plainmp's RRT-Connect implementation,
+range 1, no smoothing, the same joint bounds, all 69 spheres, and the same scene.
+The GPU side calls `tenkai.Planner.solve` in batches. Python wall time includes
+CPU planner construction and trajectory conversion; GPU buffers are reused.
+Compilation, warmup, and independent path checking are outside the measurements.
+This replaces the old native CPU loop, so old and new CPU timings are different
+measurement boundaries.
+
+CPU sampling uses one seeded OMPL stream and fresh trials, including warmup;
+GPU repetitions replay a fixed seed pool. CPU and GPU paths need not match.
+`plainmp.json` retains per-round success counts and the last pool's paths.
+Each side's paths are checked with both collision implementations on the planning
+grid and a five-times finer grid. `summary.json` and `throughput.png` report
+successful solves per second; failures are retained and make the command fail.
 
 ## Compile-time comparison
 
