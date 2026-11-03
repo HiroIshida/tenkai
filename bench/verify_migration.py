@@ -9,6 +9,8 @@ import subprocess
 from pathlib import Path
 from typing import TypedDict
 
+from common import copy_rrt_bindings
+
 from rkern import Options
 from rkern.compiler import generate
 from rkern.cuda import MathMode
@@ -58,7 +60,12 @@ def verify(reference: Path, report: Path) -> None:
         ):
             raise RuntimeError("metadata differs: " + mode)
         shutil.copyfile(reference / mode / "config.h", output / "config.h")
-        for target, command in record["commands"].items():
+        for target, recorded_command in record["commands"].items():
+            command = recorded_command.copy()
+            if target == "rrt":
+                source = copy_rrt_bindings(output)
+                source_index = command.index(str(ROOT / "bench/rrt.cu"))
+                command[source_index] = str(source)
             keep_dir = Path(command[command.index("--keep-dir") + 1])
             keep_dir.mkdir(parents=True, exist_ok=True)
             filename = "collision_bench" if target == "collision" else "librrt.so"

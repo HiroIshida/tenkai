@@ -13,7 +13,7 @@ import time
 from pathlib import Path
 from typing import TextIO
 
-from common import codegen_command, compiler_sources, toolchain
+from common import codegen_command, compiler_sources, copy_rrt_bindings, toolchain
 
 from rkern import Options
 from rkern.compiler import generate
@@ -95,7 +95,7 @@ def compiler_commands(
         "-Xcompiler",
         "-fPIC",
         "-DRKERN_MODEL_NAMESPACE=" + options.namespace,
-        str(ROOT / "bench/rrt.cu"),
+        str(copy_rrt_bindings(directory)),
         "-o",
         str(directory / "librrt.so"),
     ]

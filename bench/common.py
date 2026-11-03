@@ -9,6 +9,7 @@ from pathlib import Path
 
 import rkern
 from rkern import Options
+from rkern.cuda import TEMPLATES
 
 
 def toolchain() -> tuple[str, str, str]:
@@ -42,6 +43,15 @@ def codegen_command(output: Path, options: Options) -> list[str]:
     return command
 
 
+def copy_rrt_bindings(directory: Path) -> Path:
+    # Compile beside the generated rrt.cuh, not the adjacent source template.
+    source = directory / "rrt.cu"
+    shutil.copyfile(TEMPLATES / "cuda/rrt_bindings.cu", source)
+    return source
+
+
 def compiler_sources() -> list[Path]:
     package = Path(rkern.__file__).parent
-    return sorted(path for path in package.rglob("*") if path.suffix in (".py", ".cuh", ".hpp"))
+    return sorted(
+        path for path in package.rglob("*") if path.suffix in (".py", ".cu", ".cuh", ".hpp")
+    )
