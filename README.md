@@ -10,8 +10,8 @@ kernels and native planner runtime.
 uv sync --all-extras
 ```
 
-`src/tenkai` contains the Python package and its CUDA templates. The `bench` extra
-installs NumPy and Matplotlib. Code generation itself only requires PyYAML.
+`src/tenkai` contains the Python package, CUDA templates, and planner bindings.
+The package depends on PyYAML and NumPy; the `bench` extra adds Matplotlib.
 
 ## Generate kernels
 
@@ -37,6 +37,70 @@ fk = FkDag.from_robot(robot)
 spheres = read_spheres(Path("assets/fetch/collision.yaml").read_text(), fk)
 source = generate_collision_kernel(fk, spheres, Options(math="f32"))
 ```
+
+## Run and time a planner
+
+RRT and RRT-Connect can be used from one script with the installed package and
+your model files. No code from `bench/` or `examples/` is needed. For the included
+Fetch model, this is a complete example:
+
+```python
+from time import perf_counter
+
+import numpy as np
+
+from tenkai import RRTConfig, build_rrt
+
+compiled = build_rrt(
+    "assets/fetch/fetch.urdf",
+    "assets/fetch/collision.yaml",
+    "build/fetch",
+)
+starts = [[0.0, 1.32, 1.40, -0.20, 1.72, 0.0, 1.66, 0.0]]
+goals = [[0.386, 0.205, 1.41, 0.308, -1.82, 0.245, 0.417, 6.01]]
+geometry = [[0.95, 0, 0.8, 1, 2, 0.05, 0]]
+
+with compiled.planner(
+    geometry,
+    algorithm="rrtc",
+    config=RRTConfig(max_rounds=8192),
+    problem_count=len(starts),
+    resolution=0.01,
+) as planner:
+    planner.solve(starts, goals, [0], [42])  # Warm up the CUDA driver and kernels.
+    times = []
+    for _ in range(10):
+        begin = perf_counter()
+        results = planner.solve(starts, goals, [0], [42])
+        times.append((perf_counter() - begin) * 1000)
+    print(f"Median solve: {np.median(times):.3f} ms", results)
+    path = planner.path(0)
+```
+
+`build_rrt` generates CUDA, runs `nvcc` via `subprocess`, and writes `librrt.so`,
+`model.json`, and a compiler log under the output directory. Each call rebuilds;
+use a separate directory for each distinct build. Import `Options` from `tenkai`
+and pass, for example, `options=Options(math="f64")` to select precision
+(`f32`, `f32-sfu`, or `f64`). Set the target with `arch="compute_75"`.
+The build needs a CUDA toolkit and compatible C++ compiler (`NVCC` and `CXX` may
+override discovery). Creating or running a planner also needs a CUDA GPU/driver.
+
+`compiled.planner(...)` loads the shared library through `ctypes.CDLL` and owns
+the native scene and search buffers until `close()` or context exit. Use
+`algorithm="rrt"` for single-tree RRT. Solves reuse these buffers and finish copying
+results to the host before returning, so the timer above includes Python and
+host/device transfers, and excludes compilation, setup, and first-use driver JIT.
+
+Starts, goals, and returned paths use `compiled.model["control_joints"]` order.
+Pass one environment ID and uint64 seed per problem; repeated solves with the
+same inputs are deterministic. `path(i)` retrieves the last solve's path.
+`collisions(q, ids)` accepts full configurations in
+`compiled.model["input_joint_names"]` order.
+
+The current binding accepts one axis-aligned box and one ground plane per
+environment: each geometry row is `[cx, cy, cz, hx, hy, hz, ground_z]`, with box
+half extents `hx/hy/hz`. Uncontrolled joints stay at zero; self-collision is not
+checked. Model inputs and scene geometry are supplied by the caller.
 
 ## Check
 
@@ -64,6 +128,8 @@ uv run python bench/rrt.py --algorithm rrtc
 
 See [benchmark details](bench/README.md) for workloads and measurement boundaries.
 The existing benchmarks now generate kernels with the installed Python package.
+The RRT benchmark uses the public planner API. Add `--validate-plainmp` to also
+build and run the independent plainmp path checker; it is optional.
 
 The pre-migration Rust generators, source snapshot, generated CUDA, and compiled
 binaries are saved locally in `artifacts/rust-reference/`. `source-manifest.json`
