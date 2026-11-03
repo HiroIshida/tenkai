@@ -1,3 +1,0 @@
-[submodule "bench/plainmp"]
-	path = bench/plainmp
-	url = git@github.com:HiroIshida/plainmp.git

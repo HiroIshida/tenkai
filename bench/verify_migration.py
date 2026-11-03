@@ -66,6 +66,9 @@ def verify(reference: Path, report: Path) -> None:
                 source = copy_rrt_bindings(output)
                 source_index = command.index(str(ROOT / "bench/rrt.cu"))
                 command[source_index] = str(source)
+            elif target == "collision":
+                source_index = command.index(str(ROOT / "bench/collision.cu"))
+                command[source_index] = str(ROOT / "bench/cuda/collision.cu")
             keep_dir = Path(command[command.index("--keep-dir") + 1])
             keep_dir.mkdir(parents=True, exist_ok=True)
             filename = "collision_bench" if target == "collision" else "librrt.so"

@@ -187,9 +187,10 @@ def unsigned_array[T: (np.uint32, np.uint64)](
 class Planner:
     """A reusable batch of RRT problems with owned GPU search and scene buffers.
 
-    Geometry has shape (environments, 7): box center x/y/z, box half extents
-    x/y/z, and ground height. Each environment contains one axis-aligned box
-    and one horizontal ground plane. Uncontrolled joints remain at zero.
+    Geometry has shape (environments, 7): box center x/y/z, box full extents
+    x/y/z, and ground offset. The ground plane is z = -offset. Each environment
+    contains one axis-aligned box and one horizontal ground plane. Uncontrolled
+    joints remain at zero.
     """
 
     def __init__(
@@ -219,7 +220,7 @@ class Planner:
         if not np.isfinite(scene).all():
             raise ValueError("geometry must be finite")
         if (scene[:, 3:6] < 0).any():
-            raise ValueError("box half extents must be nonnegative")
+            raise ValueError("box full extents must be nonnegative")
         self.problem_count = problem_count
         self.environment_count = len(scene)
         self.dimension = len(model["control_joints"])

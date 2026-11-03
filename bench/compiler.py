@@ -86,7 +86,7 @@ def compiler_commands(
         str(directory),
     ]
     collision = common + [
-        str(ROOT / "bench/collision.cu"),
+        str(ROOT / "bench/cuda/collision.cu"),
         "-o",
         str(directory / "collision_bench"),
     ]
