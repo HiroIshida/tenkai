@@ -5,7 +5,8 @@ import json
 import math
 import re
 import subprocess
-from dataclasses import asdict, dataclass
+import time
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from types import TracebackType
 from typing import Literal, Self, TypedDict
@@ -74,6 +75,7 @@ class RRTBuild:
     library: Path
     model: ModelMetadata
     toolchain: BuildInfo
+    timings: dict[str, float] = field(default_factory=dict)
 
     def planner(
         self,
@@ -104,7 +106,9 @@ def build_rrt(
 
     Requires a CUDA toolkit and a supported C++ compiler, but no GPU. Each call
     rebuilds the library. Use separate output directories for distinct builds.
+    The result includes codegen, nvcc, and total wall times in seconds.
     """
+    begin = time.perf_counter()
     if re.fullmatch(r"compute_[0-9]+", arch) is None:
         raise ValueError("arch must be a virtual architecture such as compute_75")
     if max_registers is None:
@@ -113,7 +117,7 @@ def build_rrt(
     if max_registers != 0 and not 32 <= max_registers <= 255:
         raise ValueError("max_registers must be 0 or between 32 and 255")
     directory = Path(output).resolve()
-    generate(Path(urdf), Path(spheres), directory, options)
+    stages = generate(Path(urdf), Path(spheres), directory, options)
     model: ModelMetadata = json.loads((directory / "model.json").read_text())
     if not model["control_joints"]:
         raise ValueError("RRT requires at least one control_joint_names entry")
@@ -142,11 +146,18 @@ def build_rrt(
         command.append("--maxrregcount=" + str(max_registers))
     log_path = directory / "compile.log"
     with log_path.open("w") as log:
+        compile_begin = time.perf_counter()
         result = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT)
+        compile_seconds = time.perf_counter() - compile_begin
     if result.returncode:
         raise RuntimeError(f"nvcc failed; see {log_path}\n{log_path.read_text()}")
     info = BuildInfo(nvcc=version, compile_command=command, max_registers=max_registers or None)
-    return RRTBuild(library, model, info)
+    timings = {
+        "codegen": stages["total"],
+        "nvcc": compile_seconds,
+        "total": time.perf_counter() - begin,
+    }
+    return RRTBuild(library, model, info, timings)
 
 
 class NativeConfig(ct.Structure):

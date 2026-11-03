@@ -32,8 +32,8 @@ jobs:
 
       - name: Check formatting, lint and types
         run: |
-          uv run --frozen ruff format --check src tests bench/common.py bench/generate.py bench/compiler.py bench/verify_migration.py bench/reference.py bench/compare_rrtc.py
-          uv run --frozen ruff check src tests bench/common.py bench/generate.py bench/compiler.py bench/verify_migration.py bench/reference.py bench/compare_rrtc.py
+          uv run --frozen ruff format --check src tests bench tools
+          uv run --frozen ruff check src tests bench tools
           uv run --frozen mypy
 
       - name: Install CUDA compiler

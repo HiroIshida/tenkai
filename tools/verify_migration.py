@@ -9,9 +9,8 @@ import subprocess
 from pathlib import Path
 from typing import TypedDict
 
-from common import copy_rrt_bindings
-
 from rkern import Options
+from rkern.build import copy_rrt_bindings
 from rkern.compiler import generate
 from rkern.cuda import MathMode
 
@@ -68,7 +67,7 @@ def verify(reference: Path, report: Path) -> None:
                 command[source_index] = str(source)
             elif target == "collision":
                 source_index = command.index(str(ROOT / "bench/collision.cu"))
-                command[source_index] = str(ROOT / "bench/cuda/collision.cu")
+                command[source_index] = str(ROOT / "tests/reference/migration/collision.cu")
             keep_dir = Path(command[command.index("--keep-dir") + 1])
             keep_dir.mkdir(parents=True, exist_ok=True)
             filename = "collision_bench" if target == "collision" else "librrt.so"

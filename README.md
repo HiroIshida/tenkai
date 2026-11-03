@@ -11,7 +11,7 @@ uv sync --all-extras
 ```
 
 `src/rkern` contains the Python package, CUDA templates, and planner bindings.
-The package depends on PyYAML and NumPy; the `bench` extra adds plainmp and Matplotlib.
+The package depends on PyYAML and NumPy; the `bench` extra adds plainmp.
 
 ## Generate kernels
 
@@ -78,7 +78,8 @@ with compiled.planner(
 ```
 
 `build_rrt` generates CUDA, runs `nvcc` via `subprocess`, and writes `librrt.so`,
-`model.json`, and a compiler log under the output directory. Each call rebuilds;
+`model.json`, and a compiler log under the output directory. `compiled.timings`
+reports `codegen`, `nvcc`, and `total` wall times in seconds. Each call rebuilds;
 use a separate directory for each distinct build. Import `Options` from `rkern`
 and pass, for example, `options=Options(math="f64")` to select precision
 (`f32`, `f32-sfu`, or `f64`). Set the target with `arch="compute_75"`.
@@ -108,8 +109,8 @@ scene geometry are supplied by the caller.
 ```sh
 uv run pytest
 uv run mypy
-uv run ruff check src tests bench/common.py bench/generate.py bench/compiler.py bench/verify_migration.py bench/reference.py bench/compare_rrtc.py
-uv run ruff format --check src tests bench/common.py bench/generate.py bench/compiler.py bench/verify_migration.py bench/reference.py bench/compare_rrtc.py
+uv run ruff check src tests bench tools
+uv run ruff format --check src tests bench tools
 uv build
 ```
 
@@ -122,23 +123,19 @@ of generated kernels. `uv run pytest --run-cuda` also compiles with nvcc.
 
 ```sh
 uv run python bench/compiler.py
-uv run --extra bench python bench/run.py
-uv run python bench/rrt.py --algorithm rrtc
 uv run --extra bench python bench/compare_rrtc.py
 ```
 
+These are independent, single-file benchmarks: compilation time and Python API
+RRT-Connect throughput against plainmp. Results and builds go under `artifacts/`.
 See [benchmark details](bench/README.md) for workloads and measurement boundaries.
-The existing benchmarks now generate kernels with the installed Python package.
-The RRT benchmark uses the public planner API. With the `bench` extra installed,
-add `--validate-plainmp` to check paths through plainmp's Python API. Benchmarks
-do not need a plainmp checkout or a separate CMake project.
 
 The pre-migration Rust generators, source snapshot, generated CUDA, and compiled
 binaries are saved locally in `artifacts/rust-reference/`. `source-manifest.json`
 records their checksums. They are outside `target/` and ignored by Git.
 
 ```sh
-uv run python bench/verify_migration.py
+uv run python tools/verify_migration.py
 ```
 
 This uses the saved build commands and paths to compare whole executable/shared
@@ -147,4 +144,5 @@ fixed intermediate paths and a fixed host compiler seed to make the comparison
 reproducible. No binary fields are stripped or normalized. The recorded toolkit
 is required for this check; the portable source parity tests need no Rust compiler.
 The original Rust source also remains available in the local source archive and
-Git history.
+Git history. The historical reports and native comparison fixtures are kept in
+`tests/reference/migration/`.
