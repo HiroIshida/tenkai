@@ -13,7 +13,7 @@ import time
 
 import numpy as np
 
-from common import codegen_command, toolchain
+from common import codegen_command, copy_rrt_bindings, toolchain
 from tenkai import Options
 
 BENCH = Path(__file__).resolve().parent
@@ -153,9 +153,10 @@ def build(output, math_mode, arch, max_registers=None, live_budget=None):
     model = json.loads((directory / "model.json").read_text())
     namespace = "tenkai_f64" if model["scalar"] == "double" else "tenkai_f32"
     library = directory / "librrt.so"
+    source = copy_rrt_bindings(directory)
     command = [nvcc, "-ccbin", compiler, "-std=c++14", "-O3", "-arch=" + arch, "-code=" + arch,
                "-shared", "-Xcompiler", "-fPIC", "-DTENKAI_MODEL_NAMESPACE=" + namespace,
-               "-I", str(directory), str(BENCH / "rrt.cu"), "-o", str(library)]
+               "-I", str(directory), str(source), "-o", str(library)]
     if max_registers:
         command.append("--maxrregcount=" + str(max_registers))
     with (directory / "compile.log").open("w") as log:
