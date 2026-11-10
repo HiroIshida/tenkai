@@ -11,6 +11,7 @@ import numpy as np
 import pytest
 
 from rkern import Options, Planner, RRTBuild, RRTConfig, build_rrt
+from rkern.build import Backend
 from rkern.compiler import ModelMetadata
 from rkern.cuda import MathMode
 from rkern.rrt import Algorithm, BuildInfo
@@ -186,30 +187,74 @@ def test_build_rejects_missing_controls(tmp_path: Path) -> None:
         build_rrt(urdf, spheres, tmp_path / "build")
 
 
-def test_compiler_failure_includes_log(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize("backend", ["cuda", "hip"])
+def test_compiler_failure_includes_log(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, backend: Backend
+) -> None:
     urdf, spheres = robot_inputs(tmp_path)
-    monkeypatch.setattr("rkern.rrt.toolchain", lambda: (sys.executable, "c++", "test"))
-    with pytest.raises(RuntimeError, match="nvcc failed; see") as failure:
-        build_rrt(urdf, spheres, tmp_path / "build")
+    monkeypatch.setattr("rkern.rrt.compiler_command", lambda *_: ([sys.executable], "test"))
+    compiler_name = "hipcc" if backend == "hip" else "nvcc"
+    with pytest.raises(RuntimeError, match=compiler_name + " failed; see") as failure:
+        build_rrt(urdf, spheres, tmp_path / "build", backend=backend)
     log = tmp_path / "build/compile.log"
     assert log.read_text().strip()
     assert log.read_text() in str(failure.value)
 
 
+@pytest.mark.parametrize(
+    "backend,arch,max_registers,message",
+    [
+        ("other", None, None, "backend"),
+        ("hip", "compute_75", None, "arch"),
+        ("cuda", "gfx1201", None, "arch"),
+        ("hip", "gfx1201; false", None, "arch"),
+        ("hip", None, 128, "only supported by the CUDA"),
+    ],
+)
+def test_invalid_build_options_before_generation(
+    tmp_path: Path, backend: Backend, arch: str | None, max_registers: int | None, message: str
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        build_rrt(
+            "missing.urdf",
+            "missing.yaml",
+            tmp_path / "build",
+            backend=backend,
+            arch=arch,
+            max_registers=max_registers,
+        )
+    assert not (tmp_path / "build").exists()
+
+
 @pytest.fixture(scope="module", params=["f32", "f32-sfu", "f64"])
-def compiled(request: pytest.FixtureRequest, tmp_path_factory: pytest.TempPathFactory) -> RRTBuild:
+def compiled(
+    request: pytest.FixtureRequest,
+    tmp_path_factory: pytest.TempPathFactory,
+    gpu_backend: Backend,
+    gpu_arch: str,
+) -> RRTBuild:
     directory = tmp_path_factory.mktemp("rrt " + request.param)
     urdf, spheres = robot_inputs(directory)
     mode: MathMode = request.param
-    return build_rrt(urdf, spheres, directory / "build", options=Options(mode))
+    return build_rrt(
+        urdf,
+        spheres,
+        directory / "build",
+        options=Options(mode),
+        backend=gpu_backend,
+        arch=gpu_arch,
+    )
 
 
-@pytest.mark.cuda
-def test_public_build(compiled: RRTBuild) -> None:
+@pytest.mark.gpu_compile
+def test_public_build(compiled: RRTBuild, gpu_backend: Backend) -> None:
+    compiler_name = "hipcc" if gpu_backend == "hip" else "nvcc"
     assert compiled.library.is_file()
     assert compiled.timings["codegen"] > 0
-    assert compiled.timings["nvcc"] > 0
-    assert compiled.timings["total"] >= compiled.timings["codegen"] + compiled.timings["nvcc"]
+    assert compiled.timings[compiler_name] > 0
+    assert (
+        compiled.timings["total"] >= compiled.timings["codegen"] + compiled.timings[compiler_name]
+    )
     assert compiled.model == json.loads((compiled.library.parent / "model.json").read_text())
     assert [j["name"] for j in compiled.model["control_joints"]] == ["y", "x"]
     library = ct.CDLL(str(compiled.library))
