@@ -6,7 +6,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from .compiler import generate
-from .cuda import MathMode, Options
+from .cuda import Options
 from .dag import Optimization
 
 
@@ -19,12 +19,6 @@ def optimization(value: str) -> Optimization:
 
 def main(argv: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--float", action="store_true", help="use float kernels (the default)")
-
-    sfu = parser.add_mutually_exclusive_group()
-    sfu.add_argument("--sfu", dest="sfu", action="store_true")
-    sfu.add_argument("--no-sfu", dest="sfu", action="store_false")
-    parser.set_defaults(sfu=None)
     parser.add_argument("--optimization", type=optimization, default="algebraic")
 
     scheduling = parser.add_mutually_exclusive_group()
@@ -41,11 +35,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     if args.live_budget is not None and args.live_budget < 0:
         parser.error("live budget must be nonnegative")
 
-    math_mode: MathMode = "f32-sfu"
-    if args.sfu is False:
-        math_mode = "f32"
-
-    options = Options(math_mode, args.optimization, args.live_budget)
+    options = Options(optimization=args.optimization, live_budget=args.live_budget)
     timings = generate(args.urdf, args.spheres, args.output, options, args.all_kernels)
     print(json.dumps(timings))
 

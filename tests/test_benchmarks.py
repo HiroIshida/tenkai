@@ -91,7 +91,7 @@ def test_standalone_benchmark_report(
         command.extend(["--cpu-ms-per-problem", str(cpu_ms_per_problem)])
     result = subprocess.run(command, cwd=tmp_path, check=True, capture_output=True, text=True)
     report = json.loads((tmp_path / "results/results.json").read_text())
-    assert report["math"] == "f32"
+    assert report["math"] == "f32-sfu"
     assert report["backend"] == gpu_backend
     if script == "compiler.py":
         compiler_name = "hipcc" if gpu_backend == "hip" else "nvcc"

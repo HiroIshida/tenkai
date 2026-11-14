@@ -4,26 +4,22 @@ import math
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal, assert_never
+from typing import assert_never
 
 from .collision import Sphere, center_expressions
 from .dag import Binary, BinaryOp, Constant, Dag, Input, Optimization, Trig, TrigOp, f32
 from .model import FkDag
-from .scheduling import Evaluate, Store, schedule
+from .scheduling import Store, schedule
 
-type MathMode = Literal["f32", "f32-sfu"]
 TEMPLATES = Path(__file__).with_name("templates")
 
 
 @dataclass(frozen=True)
 class Options:
-    math: MathMode = "f32-sfu"
     optimization: Optimization = "algebraic"
     live_budget: int | None = None
 
     def __post_init__(self) -> None:
-        if self.math not in ("f32", "f32-sfu"):
-            raise ValueError("math mode must be f32 or f32-sfu")
         if self.optimization not in ("none", "basic", "algebraic"):
             raise ValueError("invalid optimization")
         if self.live_budget is not None and self.live_budget < 0:
@@ -68,23 +64,11 @@ class DagEmitter:
         def store(index: int, value: int) -> str:
             return f"    output[batch * {count} + {index}] = v{value};\n"
 
-        body = self.body(f"(configurations + batch * {self.dof})", False, store)
+        body = self.body(f"(configurations + batch * {self.dof})", store)
         return template(
             "kinematics_batch_kernel.cuh",
             (("NAME", self.name), ("BODY", body)),
         )
-
-    def trig_pair(self, index: int, next_id: int) -> tuple[int, int, int] | None:
-        node = self.dag.nodes[index]
-        following = self.dag.nodes[next_id]
-        if not isinstance(node, Trig) or not isinstance(following, Trig):
-            return None
-        if node.angle != following.angle or node.op == following.op:
-            return None
-
-        if node.op == TrigOp.SIN:
-            return node.angle, index, next_id
-        return node.angle, next_id, index
 
     def expression(self, index: int, input_name: str) -> str:
         node = self.dag.nodes[index]
@@ -94,37 +78,18 @@ class DagEmitter:
             case Input(index):
                 return f"{input_name}[{index}]"
             case Trig(op, angle):
-                function = op.value + "f"
-                if self.options.math == "f32-sfu":
-                    function = "__" + function
-                return f"{function}(v{angle})"
+                return f"__{op.value}f(v{angle})"
             case Binary(op, a, b):
                 operator = {BinaryOp.ADD: "+", BinaryOp.SUB: "-", BinaryOp.MUL: "*"}[op]
                 return f"v{a} {operator} v{b}"
         assert_never(node)
 
-    def body(self, input_name: str, pair_trig: bool, store: Callable[[int, int], str]) -> str:
+    def body(self, input_name: str, store: Callable[[int, int], str]) -> str:
         source: list[str] = []
-        steps = self.schedule.steps
-        position = 0
 
-        while position < len(steps):
-            step = steps[position]
-            position += 1
+        for step in self.schedule.steps:
             if isinstance(step, Store):
                 source.append(store(step.index, step.node))
-                continue
-
-            pair: tuple[int, int, int] | None = None
-            if pair_trig and self.options.math == "f32" and position < len(steps):
-                following = steps[position]
-                if isinstance(following, Evaluate):
-                    pair = self.trig_pair(step.node, following.node)
-            if pair is not None:
-                angle, sin, cos = pair
-                source.append(f"    float v{sin}, v{cos};\n")
-                source.append(f"    sincosf(v{angle}, &v{sin}, &v{cos});\n")
-                position += 1
                 continue
 
             expression = self.expression(step.node, input_name)
@@ -233,7 +198,7 @@ def collision_function(emitter: DagEmitter, spheres: Sequence[Sphere], qualifier
             "    bool collision = false;\n"
             "    tenkai_f32::Vec3 center;\n"
         )
-        body += emitter.body("q", False, store)
+        body += emitter.body("q", store)
         body += "    return collision;\n"
     else:
         body = "    return false;\n"
@@ -281,7 +246,7 @@ def streaming_replacements(
 
         return text
 
-    body = emitter.body("q", True, store)
+    body = emitter.body("q", store)
     return [("STREAMABLE_BODY", streamable_body), ("STREAMING_BODY", body)]
 
 

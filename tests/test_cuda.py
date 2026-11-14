@@ -18,7 +18,6 @@ from tenkai import (
     generate_rrt_sources,
 )
 from tenkai.build import Backend, compiler_command
-from tenkai.cuda import MathMode
 from tenkai.dag import Optimization
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -84,7 +83,6 @@ def static_planner_source(directory: Path, options: Options, sphere_count: int) 
 
 def run_planner_fixture(
     directory: Path,
-    options: Options,
     backend: Backend,
     arch: str,
     fixture: str,
@@ -92,8 +90,6 @@ def run_planner_fixture(
 ) -> None:
     binary = directory / "planner-test"
     command, _ = compiler_command(backend, arch)
-    if options.math == "f32":
-        command.append("-DTEST_STANDARD_FP32")
     command.extend("-D" + define for define in defines)
     run(
         [
@@ -117,7 +113,7 @@ def test_host_arithmetic(tmp_path: Path, optimization: Optimization, budget: int
     compiler = shutil.which(os.environ.get("CXX", "c++"))
     if compiler is None:
         pytest.skip("host arithmetic requires a C++ compiler")
-    options = Options("f32", optimization, budget)
+    options = Options(optimization=optimization, live_budget=budget)
     chain_sources(tmp_path, options)
     binary = tmp_path / "arithmetic"
     run(
@@ -138,11 +134,8 @@ def test_host_arithmetic(tmp_path: Path, optimization: Optimization, budget: int
 
 
 @pytest.mark.gpu_compile
-@pytest.mark.parametrize("math_mode", ["f32", "f32-sfu"])
-def test_all_kernels_compile(
-    tmp_path: Path, math_mode: MathMode, gpu_backend: Backend, gpu_arch: str
-) -> None:
-    options = Options(math_mode)
+def test_all_kernels_compile(tmp_path: Path, gpu_backend: Backend, gpu_arch: str) -> None:
+    options = Options()
     chain_sources(tmp_path, options)
     planner_source(tmp_path, options)
     arithmetic = tmp_path / "arithmetic.cu"
@@ -154,11 +147,10 @@ def test_all_kernels_compile(
 
 
 @pytest.mark.gpu_compile
-@pytest.mark.parametrize("math_mode", ["f32", "f32-sfu"])
 def test_planner_headers_are_self_contained(
-    tmp_path: Path, math_mode: MathMode, gpu_backend: Backend, gpu_arch: str
+    tmp_path: Path, gpu_backend: Backend, gpu_arch: str
 ) -> None:
-    planner_source(tmp_path, Options(math_mode))
+    planner_source(tmp_path, Options())
     command, _ = compiler_command(gpu_backend, gpu_arch)
     compile_only = "-c" if gpu_backend == "hip" else "--ptx"
     headers = sorted(path for path in tmp_path.rglob("*") if path.suffix in (".cuh", ".hpp"))
@@ -170,11 +162,8 @@ def test_planner_headers_are_self_contained(
 
 
 @pytest.mark.gpu
-@pytest.mark.parametrize("math_mode", ["f32", "f32-sfu"])
-def test_arithmetic_on_gpu(
-    tmp_path: Path, math_mode: MathMode, gpu_backend: Backend, gpu_arch: str
-) -> None:
-    chain_sources(tmp_path, Options(math_mode))
+def test_arithmetic_on_gpu(tmp_path: Path, gpu_backend: Backend, gpu_arch: str) -> None:
+    chain_sources(tmp_path, Options())
     command, _ = compiler_command(gpu_backend, gpu_arch)
     if gpu_backend == "cuda":
         command.extend(["-x", "cu"])
@@ -195,40 +184,30 @@ def test_arithmetic_on_gpu(
 
 
 @pytest.mark.gpu
-@pytest.mark.parametrize("math_mode", ["f32", "f32-sfu"])
-def test_planner_on_gpu(
-    tmp_path: Path, math_mode: MathMode, gpu_backend: Backend, gpu_arch: str
-) -> None:
-    options = Options(math_mode)
-    planner_source(tmp_path, options)
-    run_planner_fixture(tmp_path, options, gpu_backend, gpu_arch, "rrt.cu")
+def test_planner_on_gpu(tmp_path: Path, gpu_backend: Backend, gpu_arch: str) -> None:
+    planner_source(tmp_path, Options())
+    run_planner_fixture(tmp_path, gpu_backend, gpu_arch, "rrt.cu")
 
 
 @pytest.mark.gpu
-@pytest.mark.parametrize("math_mode", ["f32", "f32-sfu"])
 def test_streaming_and_fallback_paths_on_gpu(
-    tmp_path: Path, math_mode: MathMode, gpu_backend: Backend, gpu_arch: str
+    tmp_path: Path, gpu_backend: Backend, gpu_arch: str
 ) -> None:
-    options = Options(math_mode)
-    planner_source(tmp_path, options, (2, 0, 1))
-    run_planner_fixture(tmp_path, options, gpu_backend, gpu_arch, "rrtc_streaming.cu")
+    planner_source(tmp_path, Options(), (2, 0, 1))
+    run_planner_fixture(tmp_path, gpu_backend, gpu_arch, "rrtc_streaming.cu")
 
 
 @pytest.mark.gpu
-@pytest.mark.parametrize("math_mode", ["f32", "f32-sfu"])
 @pytest.mark.parametrize("sphere_count", [0, 3, 4])
 def test_fixed_spheres_and_reference_joints_on_gpu(
     tmp_path: Path,
-    math_mode: MathMode,
     sphere_count: int,
     gpu_backend: Backend,
     gpu_arch: str,
 ) -> None:
-    options = Options(math_mode)
-    static_planner_source(tmp_path, options, sphere_count)
+    static_planner_source(tmp_path, Options(), sphere_count)
     run_planner_fixture(
         tmp_path,
-        options,
         gpu_backend,
         gpu_arch,
         "rrt_static.cu",

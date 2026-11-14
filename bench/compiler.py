@@ -6,7 +6,7 @@ import json
 import statistics
 from pathlib import Path
 
-from tenkai import Options, build_rrt
+from tenkai import build_rrt
 from tenkai.build import target_arch
 
 ASSETS = Path(__file__).resolve().parents[1] / "assets/fetch"
@@ -16,7 +16,6 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--urdf", type=Path, default=ASSETS / "fetch.urdf")
     parser.add_argument("--spheres", type=Path, default=ASSETS / "collision.yaml")
-    parser.add_argument("--math", choices=["f32", "f32-sfu"], default="f32")
     parser.add_argument("--backend", choices=["cuda", "hip"], default="cuda")
     parser.add_argument("--arch")
     parser.add_argument("--repeats", type=int, default=3)
@@ -32,7 +31,6 @@ def main() -> None:
             args.urdf,
             args.spheres,
             args.output / "build",
-            options=Options(args.math),
             backend=args.backend,
             arch=arch,
         )
@@ -43,7 +41,7 @@ def main() -> None:
         for stage in ("codegen", compiler_name, "total")
     }
     report = {
-        "math": args.math,
+        "math": compiled.model["math"],
         "backend": args.backend,
         "arch": arch,
         "samples_seconds": samples,

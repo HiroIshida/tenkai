@@ -107,7 +107,7 @@ def build_rrt(
     begin = time.perf_counter()
     arch = target_arch(backend, arch)
     if max_registers is None:
-        max_registers = 128 if backend == "cuda" and options.math == "f32" else 0
+        max_registers = 0
     check_count(max_registers, "max_registers", 0)
     if max_registers != 0 and not 32 <= max_registers <= 255:
         raise ValueError("max_registers must be 0 or between 32 and 255")

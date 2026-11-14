@@ -9,7 +9,7 @@ from typing import TypedDict
 import pytest
 
 from tenkai.compiler import ModelMetadata, generate
-from tenkai.cuda import MathMode, Options
+from tenkai.cuda import Options
 from tenkai.dag import Optimization
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -19,7 +19,6 @@ class Reference(TypedDict):
     name: str
     urdf: str
     spheres: str
-    math: MathMode
     optimization: Optimization
     live_budget: int | None
     sha256: dict[str, str]
@@ -31,7 +30,7 @@ REFERENCES: list[Reference] = json.loads((ROOT / "tests/reference/compiler.json"
 
 @pytest.mark.parametrize("reference", REFERENCES, ids=[item["name"] for item in REFERENCES])
 def test_generated_sources_match_reference(reference: Reference, tmp_path: Path) -> None:
-    options = Options(reference["math"], reference["optimization"], reference["live_budget"])
+    options = Options(optimization=reference["optimization"], live_budget=reference["live_budget"])
     generate(ROOT / reference["urdf"], ROOT / reference["spheres"], tmp_path, options, True)
     actual: dict[str, str] = {}
     for path in tmp_path.rglob("*"):

@@ -4,11 +4,10 @@ import json
 import math
 import time
 from pathlib import Path
-from typing import TypedDict
+from typing import Literal, TypedDict
 
 from .collision import read_config
 from .cuda import (
-    MathMode,
     Options,
     generate_centers_kernel,
     generate_collision_function,
@@ -32,7 +31,7 @@ class ModelMetadata(TypedDict):
     control_joints: list[ControlJoint]
     sphere_count: int
     scalar: str
-    math: MathMode
+    math: Literal["f32-sfu"]
     optimization: Optimization
     live_budget: int | None
 
@@ -113,7 +112,7 @@ def generate(
         control_joints=bounds,
         sphere_count=len(spheres),
         scalar="float",
-        math=options.math,
+        math="f32-sfu",
         optimization=options.optimization,
         live_budget=options.live_budget,
     )

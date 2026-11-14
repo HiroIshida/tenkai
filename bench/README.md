@@ -27,8 +27,8 @@ Every repetition rebuilds; the first sample is retained. Python imports and GPU
 driver JIT are excluded. Only the selected toolkit and a compatible C++ compiler are
 required; no GPU is needed.
 
-Both scripts accept `--backend cuda|hip` (default `cuda`),
-`--math f32|f32-sfu` (default `f32`) and `--arch`
+Both scripts use FP32 with SFU trigonometric intrinsics and accept
+`--backend cuda|hip` (default `cuda`) and `--arch`
 (default `compute_75` for CUDA, `gfx1201` for HIP). For RX 9070 XT:
 
 ```sh

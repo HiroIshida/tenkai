@@ -8,6 +8,9 @@
 #else
 #define __device__
 #define __global__
+// Host tests check generated arithmetic; intrinsic accuracy is tested on GPUs.
+#define __sinf sinf
+#define __cosf cosf
 struct Dim { unsigned int x; };
 Dim blockIdx{}, blockDim{}, threadIdx{};
 #endif

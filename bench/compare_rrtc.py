@@ -24,7 +24,7 @@ from plainmp.ompl_solver import (
 from plainmp.problem import Problem
 from plainmp.psdf import BoxSDF, GroundSDF, Pose, UnionSDF
 
-from tenkai import Options, RRTConfig, build_rrt, sdf
+from tenkai import RRTConfig, build_rrt, sdf
 from tenkai.build import target_arch
 from tenkai.collision import read_config
 from tenkai.compiler import ModelMetadata
@@ -90,7 +90,6 @@ def main() -> None:
         type=float,
         help="skip CPU solves and extrapolate from this measured time per problem",
     )
-    parser.add_argument("--math", choices=["f32", "f32-sfu"], default="f32")
     parser.add_argument("--backend", choices=["cuda", "hip"], default="cuda")
     parser.add_argument("--arch")
     parser.add_argument("--output", type=Path, default=Path("artifacts/rrtc-bench"))
@@ -106,7 +105,6 @@ def main() -> None:
         args.urdf,
         args.spheres,
         args.output / "build",
-        options=Options(args.math),
         backend=args.backend,
         arch=arch,
     )
@@ -163,7 +161,7 @@ def main() -> None:
     gpu_ms = statistics.median(gpu_times)
     report = {
         "batch": args.batch,
-        "math": args.math,
+        "math": compiled.model["math"],
         "backend": args.backend,
         "arch": arch,
         "plainmp_version": version("plainmp"),

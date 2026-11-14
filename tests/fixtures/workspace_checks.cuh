@@ -12,11 +12,7 @@ __global__ void check_workspace_trigonometry() {
         assert(m::workspace_finite(bounds));
         for (unsigned i = threadIdx.x; i <= 4096; i += blockDim.x) {
             const float angle = inside * (float(i) / 2048 - 1);
-#ifdef TEST_STANDARD_FP32
-            const float value = cosine ? cosf(angle) : sinf(angle);
-#else
             const float value = cosine ? __cosf(angle) : __sinf(angle);
-#endif
             assert(bounds.lower <= value && value <= bounds.upper);
         }
         assert(!m::workspace_finite(m::workspace_trig({-INFINITY, INFINITY}, cosine)));

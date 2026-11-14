@@ -1,880 +1,6 @@
 [
   {
     "live_budget": null,
-    "math": "f32",
-    "model": {
-      "control_joints": [
-        {
-          "index": 2,
-          "lower": 0.0,
-          "name": "torso_lift_joint",
-          "upper": 0.38615
-        },
-        {
-          "index": 5,
-          "lower": -1.6056,
-          "name": "shoulder_pan_joint",
-          "upper": 1.6056
-        },
-        {
-          "index": 6,
-          "lower": -1.221,
-          "name": "shoulder_lift_joint",
-          "upper": 1.518
-        },
-        {
-          "index": 7,
-          "lower": -6.283185307179586,
-          "name": "upperarm_roll_joint",
-          "upper": 6.283185307179586
-        },
-        {
-          "index": 8,
-          "lower": -2.251,
-          "name": "elbow_flex_joint",
-          "upper": 2.251
-        },
-        {
-          "index": 9,
-          "lower": -6.283185307179586,
-          "name": "forearm_roll_joint",
-          "upper": 6.283185307179586
-        },
-        {
-          "index": 10,
-          "lower": -2.16,
-          "name": "wrist_flex_joint",
-          "upper": 2.16
-        },
-        {
-          "index": 11,
-          "lower": -6.283185307179586,
-          "name": "wrist_roll_joint",
-          "upper": 6.283185307179586
-        }
-      ],
-      "input_joint_names": [
-        "r_wheel_joint",
-        "l_wheel_joint",
-        "torso_lift_joint",
-        "head_pan_joint",
-        "head_tilt_joint",
-        "shoulder_pan_joint",
-        "shoulder_lift_joint",
-        "upperarm_roll_joint",
-        "elbow_flex_joint",
-        "forearm_roll_joint",
-        "wrist_flex_joint",
-        "wrist_roll_joint",
-        "r_gripper_finger_joint",
-        "l_gripper_finger_joint",
-        "bellows_joint"
-      ],
-      "live_budget": null,
-      "math": "f32",
-      "optimization": "none",
-      "scalar": "float",
-      "sphere_count": 69
-    },
-    "name": "fetch-f32-none-None",
-    "optimization": "none",
-    "sha256": {
-      "centers.cuh": "0a596633403bf71018130f2b97005058fb837fcdabe72ef4e59b1a9eae285bfc",
-      "collision.cuh": "bd4c25e7bb46e40dec63974a6ece49a0a9cbae45d643e599a3d5a8ae68e2d4b8",
-      "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
-      "collision/streaming.cuh": "3fe3a4bce48501dc672c11649facbd9240514d774f0ca8f86b0b9c40bed34b94",
-      "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision_function.cuh": "2fa8cac01537517e799d8c6fb3aa03f9784897ab3c6bd921eb1779b3da64164f",
-      "fk.cuh": "9d1502341df39be70483a475f10920cbce8dcb1a702b49e4f737bc16b043b546",
-      "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
-      "rrt/common.cuh": "2b354efd240cc6ceeec5d2b8a0315b5aaeaa4cfa53c0469d447d34fa37aac93c",
-      "rrt/generated_model.cuh": "2cd20855429bbd6af5ffe7054a908127bd0737d6205eb7698d97c81f31f7b7dd",
-      "rrt/planner.cuh": "64d37ea186cb96c5b80b215b39d30cfefb7f195fb5b384a69835b72ff4476b6c",
-      "rrt/rrtc.cuh": "da8e12c551e814d7f9c0589a5ae608c3339ddc1bf8654b3f8922be9a444ab9e8",
-      "rrt/types.hpp": "f00db951b8d9df4265ed7b4f1afd15029c2719d541c55b476bbb301355be71e6"
-    },
-    "spheres": "assets/fetch/collision.yaml",
-    "urdf": "assets/fetch/fetch.urdf"
-  },
-  {
-    "live_budget": 0,
-    "math": "f32",
-    "model": {
-      "control_joints": [
-        {
-          "index": 2,
-          "lower": 0.0,
-          "name": "torso_lift_joint",
-          "upper": 0.38615
-        },
-        {
-          "index": 5,
-          "lower": -1.6056,
-          "name": "shoulder_pan_joint",
-          "upper": 1.6056
-        },
-        {
-          "index": 6,
-          "lower": -1.221,
-          "name": "shoulder_lift_joint",
-          "upper": 1.518
-        },
-        {
-          "index": 7,
-          "lower": -6.283185307179586,
-          "name": "upperarm_roll_joint",
-          "upper": 6.283185307179586
-        },
-        {
-          "index": 8,
-          "lower": -2.251,
-          "name": "elbow_flex_joint",
-          "upper": 2.251
-        },
-        {
-          "index": 9,
-          "lower": -6.283185307179586,
-          "name": "forearm_roll_joint",
-          "upper": 6.283185307179586
-        },
-        {
-          "index": 10,
-          "lower": -2.16,
-          "name": "wrist_flex_joint",
-          "upper": 2.16
-        },
-        {
-          "index": 11,
-          "lower": -6.283185307179586,
-          "name": "wrist_roll_joint",
-          "upper": 6.283185307179586
-        }
-      ],
-      "input_joint_names": [
-        "r_wheel_joint",
-        "l_wheel_joint",
-        "torso_lift_joint",
-        "head_pan_joint",
-        "head_tilt_joint",
-        "shoulder_pan_joint",
-        "shoulder_lift_joint",
-        "upperarm_roll_joint",
-        "elbow_flex_joint",
-        "forearm_roll_joint",
-        "wrist_flex_joint",
-        "wrist_roll_joint",
-        "r_gripper_finger_joint",
-        "l_gripper_finger_joint",
-        "bellows_joint"
-      ],
-      "live_budget": 0,
-      "math": "f32",
-      "optimization": "none",
-      "scalar": "float",
-      "sphere_count": 69
-    },
-    "name": "fetch-f32-none-0",
-    "optimization": "none",
-    "sha256": {
-      "centers.cuh": "96a5e070a2a24479e5d72c19040e814e6f2d2a7c4878e3717a021f2f30f72129",
-      "collision.cuh": "dc69ef3f3b7b979139c2bc4cbe7cbb3f00ba052e3e594d9e548f552cfb7ac776",
-      "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
-      "collision/streaming.cuh": "3fe3a4bce48501dc672c11649facbd9240514d774f0ca8f86b0b9c40bed34b94",
-      "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision_function.cuh": "3aa4a7f954c5955433c6e3cb4516752812def470a0e22559da2fd81effd5dc1d",
-      "fk.cuh": "1d03f93b07abfbcebba807e371d9e7e317c65de31573f4558cf4e0d334d5a3e3",
-      "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
-      "rrt/common.cuh": "2b354efd240cc6ceeec5d2b8a0315b5aaeaa4cfa53c0469d447d34fa37aac93c",
-      "rrt/generated_model.cuh": "87794b2c0b2dedb65bc9bd88334862cf9caee9686b4123164666802dfcf9e816",
-      "rrt/planner.cuh": "64d37ea186cb96c5b80b215b39d30cfefb7f195fb5b384a69835b72ff4476b6c",
-      "rrt/rrtc.cuh": "da8e12c551e814d7f9c0589a5ae608c3339ddc1bf8654b3f8922be9a444ab9e8",
-      "rrt/types.hpp": "f00db951b8d9df4265ed7b4f1afd15029c2719d541c55b476bbb301355be71e6"
-    },
-    "spheres": "assets/fetch/collision.yaml",
-    "urdf": "assets/fetch/fetch.urdf"
-  },
-  {
-    "live_budget": 64,
-    "math": "f32",
-    "model": {
-      "control_joints": [
-        {
-          "index": 2,
-          "lower": 0.0,
-          "name": "torso_lift_joint",
-          "upper": 0.38615
-        },
-        {
-          "index": 5,
-          "lower": -1.6056,
-          "name": "shoulder_pan_joint",
-          "upper": 1.6056
-        },
-        {
-          "index": 6,
-          "lower": -1.221,
-          "name": "shoulder_lift_joint",
-          "upper": 1.518
-        },
-        {
-          "index": 7,
-          "lower": -6.283185307179586,
-          "name": "upperarm_roll_joint",
-          "upper": 6.283185307179586
-        },
-        {
-          "index": 8,
-          "lower": -2.251,
-          "name": "elbow_flex_joint",
-          "upper": 2.251
-        },
-        {
-          "index": 9,
-          "lower": -6.283185307179586,
-          "name": "forearm_roll_joint",
-          "upper": 6.283185307179586
-        },
-        {
-          "index": 10,
-          "lower": -2.16,
-          "name": "wrist_flex_joint",
-          "upper": 2.16
-        },
-        {
-          "index": 11,
-          "lower": -6.283185307179586,
-          "name": "wrist_roll_joint",
-          "upper": 6.283185307179586
-        }
-      ],
-      "input_joint_names": [
-        "r_wheel_joint",
-        "l_wheel_joint",
-        "torso_lift_joint",
-        "head_pan_joint",
-        "head_tilt_joint",
-        "shoulder_pan_joint",
-        "shoulder_lift_joint",
-        "upperarm_roll_joint",
-        "elbow_flex_joint",
-        "forearm_roll_joint",
-        "wrist_flex_joint",
-        "wrist_roll_joint",
-        "r_gripper_finger_joint",
-        "l_gripper_finger_joint",
-        "bellows_joint"
-      ],
-      "live_budget": 64,
-      "math": "f32",
-      "optimization": "none",
-      "scalar": "float",
-      "sphere_count": 69
-    },
-    "name": "fetch-f32-none-64",
-    "optimization": "none",
-    "sha256": {
-      "centers.cuh": "b64083b116dc16aa0ccdd781dc80d34988c4e286690bdaab7cf52bf5832c4cae",
-      "collision.cuh": "e84402a248b99c6d89277f1513b56c3ab6cb342cee22622f4888641894d7b45b",
-      "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
-      "collision/streaming.cuh": "3fe3a4bce48501dc672c11649facbd9240514d774f0ca8f86b0b9c40bed34b94",
-      "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision_function.cuh": "6627a0a8576c9f094927efc84a75f77730bf619fdeffd18075f19d0478164d1d",
-      "fk.cuh": "1ba3bdc51c854ce464d03acf1f39e60640d106caa90e9e4b9a5d07574a458a39",
-      "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
-      "rrt/common.cuh": "2b354efd240cc6ceeec5d2b8a0315b5aaeaa4cfa53c0469d447d34fa37aac93c",
-      "rrt/generated_model.cuh": "ab8741302261e636ae38ed8edacb989660efed7e5eb5e61288667f63ab0434b4",
-      "rrt/planner.cuh": "64d37ea186cb96c5b80b215b39d30cfefb7f195fb5b384a69835b72ff4476b6c",
-      "rrt/rrtc.cuh": "da8e12c551e814d7f9c0589a5ae608c3339ddc1bf8654b3f8922be9a444ab9e8",
-      "rrt/types.hpp": "f00db951b8d9df4265ed7b4f1afd15029c2719d541c55b476bbb301355be71e6"
-    },
-    "spheres": "assets/fetch/collision.yaml",
-    "urdf": "assets/fetch/fetch.urdf"
-  },
-  {
-    "live_budget": null,
-    "math": "f32",
-    "model": {
-      "control_joints": [
-        {
-          "index": 2,
-          "lower": 0.0,
-          "name": "torso_lift_joint",
-          "upper": 0.38615
-        },
-        {
-          "index": 5,
-          "lower": -1.6056,
-          "name": "shoulder_pan_joint",
-          "upper": 1.6056
-        },
-        {
-          "index": 6,
-          "lower": -1.221,
-          "name": "shoulder_lift_joint",
-          "upper": 1.518
-        },
-        {
-          "index": 7,
-          "lower": -6.283185307179586,
-          "name": "upperarm_roll_joint",
-          "upper": 6.283185307179586
-        },
-        {
-          "index": 8,
-          "lower": -2.251,
-          "name": "elbow_flex_joint",
-          "upper": 2.251
-        },
-        {
-          "index": 9,
-          "lower": -6.283185307179586,
-          "name": "forearm_roll_joint",
-          "upper": 6.283185307179586
-        },
-        {
-          "index": 10,
-          "lower": -2.16,
-          "name": "wrist_flex_joint",
-          "upper": 2.16
-        },
-        {
-          "index": 11,
-          "lower": -6.283185307179586,
-          "name": "wrist_roll_joint",
-          "upper": 6.283185307179586
-        }
-      ],
-      "input_joint_names": [
-        "r_wheel_joint",
-        "l_wheel_joint",
-        "torso_lift_joint",
-        "head_pan_joint",
-        "head_tilt_joint",
-        "shoulder_pan_joint",
-        "shoulder_lift_joint",
-        "upperarm_roll_joint",
-        "elbow_flex_joint",
-        "forearm_roll_joint",
-        "wrist_flex_joint",
-        "wrist_roll_joint",
-        "r_gripper_finger_joint",
-        "l_gripper_finger_joint",
-        "bellows_joint"
-      ],
-      "live_budget": null,
-      "math": "f32",
-      "optimization": "basic",
-      "scalar": "float",
-      "sphere_count": 69
-    },
-    "name": "fetch-f32-basic-None",
-    "optimization": "basic",
-    "sha256": {
-      "centers.cuh": "4353d48c0ab0dee3a4c7ab644f340c21ad6a09f95412b17f224a74bf55a50361",
-      "collision.cuh": "28a4373d9c7da6cdf4a997a68566199c9e3c98aee1516be3e30167aa02c83174",
-      "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
-      "collision/streaming.cuh": "3fe3a4bce48501dc672c11649facbd9240514d774f0ca8f86b0b9c40bed34b94",
-      "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision_function.cuh": "f3b17e9eca23ef27a4bcf9dd6149f73d19a855e49180fbdef4b24fc1fe2894c7",
-      "fk.cuh": "45a6fe6590f3955a717e5af299667d1b6f5d97712dbd4e152d48742e53e6e292",
-      "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
-      "rrt/common.cuh": "2b354efd240cc6ceeec5d2b8a0315b5aaeaa4cfa53c0469d447d34fa37aac93c",
-      "rrt/generated_model.cuh": "65d3d85c26a225000f15c1097b9df43b52aee078fc36355eedf29140fefde135",
-      "rrt/planner.cuh": "64d37ea186cb96c5b80b215b39d30cfefb7f195fb5b384a69835b72ff4476b6c",
-      "rrt/rrtc.cuh": "da8e12c551e814d7f9c0589a5ae608c3339ddc1bf8654b3f8922be9a444ab9e8",
-      "rrt/types.hpp": "f00db951b8d9df4265ed7b4f1afd15029c2719d541c55b476bbb301355be71e6"
-    },
-    "spheres": "assets/fetch/collision.yaml",
-    "urdf": "assets/fetch/fetch.urdf"
-  },
-  {
-    "live_budget": 0,
-    "math": "f32",
-    "model": {
-      "control_joints": [
-        {
-          "index": 2,
-          "lower": 0.0,
-          "name": "torso_lift_joint",
-          "upper": 0.38615
-        },
-        {
-          "index": 5,
-          "lower": -1.6056,
-          "name": "shoulder_pan_joint",
-          "upper": 1.6056
-        },
-        {
-          "index": 6,
-          "lower": -1.221,
-          "name": "shoulder_lift_joint",
-          "upper": 1.518
-        },
-        {
-          "index": 7,
-          "lower": -6.283185307179586,
-          "name": "upperarm_roll_joint",
-          "upper": 6.283185307179586
-        },
-        {
-          "index": 8,
-          "lower": -2.251,
-          "name": "elbow_flex_joint",
-          "upper": 2.251
-        },
-        {
-          "index": 9,
-          "lower": -6.283185307179586,
-          "name": "forearm_roll_joint",
-          "upper": 6.283185307179586
-        },
-        {
-          "index": 10,
-          "lower": -2.16,
-          "name": "wrist_flex_joint",
-          "upper": 2.16
-        },
-        {
-          "index": 11,
-          "lower": -6.283185307179586,
-          "name": "wrist_roll_joint",
-          "upper": 6.283185307179586
-        }
-      ],
-      "input_joint_names": [
-        "r_wheel_joint",
-        "l_wheel_joint",
-        "torso_lift_joint",
-        "head_pan_joint",
-        "head_tilt_joint",
-        "shoulder_pan_joint",
-        "shoulder_lift_joint",
-        "upperarm_roll_joint",
-        "elbow_flex_joint",
-        "forearm_roll_joint",
-        "wrist_flex_joint",
-        "wrist_roll_joint",
-        "r_gripper_finger_joint",
-        "l_gripper_finger_joint",
-        "bellows_joint"
-      ],
-      "live_budget": 0,
-      "math": "f32",
-      "optimization": "basic",
-      "scalar": "float",
-      "sphere_count": 69
-    },
-    "name": "fetch-f32-basic-0",
-    "optimization": "basic",
-    "sha256": {
-      "centers.cuh": "9d2312d52d9ff2fcd382226f32a701d5b5e19be85fd8d7a47cf260fa8bd4a2c2",
-      "collision.cuh": "4c60d2119468f739dce1e525ac29baf78248dafb5a8ac538b1c6d238112835d6",
-      "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
-      "collision/streaming.cuh": "3fe3a4bce48501dc672c11649facbd9240514d774f0ca8f86b0b9c40bed34b94",
-      "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision_function.cuh": "1703fd388684755e123e5a9d57ee5ab90a711d5fcd032079f0ce048174a2eee7",
-      "fk.cuh": "48525620965479e4ed9884f2d4da8eac6e577a73788adc87b5271d846e619c25",
-      "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
-      "rrt/common.cuh": "2b354efd240cc6ceeec5d2b8a0315b5aaeaa4cfa53c0469d447d34fa37aac93c",
-      "rrt/generated_model.cuh": "dd9f43c9e5331ad9158de5b263fca28dd2861c1028cee36059057e5e9c697438",
-      "rrt/planner.cuh": "64d37ea186cb96c5b80b215b39d30cfefb7f195fb5b384a69835b72ff4476b6c",
-      "rrt/rrtc.cuh": "da8e12c551e814d7f9c0589a5ae608c3339ddc1bf8654b3f8922be9a444ab9e8",
-      "rrt/types.hpp": "f00db951b8d9df4265ed7b4f1afd15029c2719d541c55b476bbb301355be71e6"
-    },
-    "spheres": "assets/fetch/collision.yaml",
-    "urdf": "assets/fetch/fetch.urdf"
-  },
-  {
-    "live_budget": 64,
-    "math": "f32",
-    "model": {
-      "control_joints": [
-        {
-          "index": 2,
-          "lower": 0.0,
-          "name": "torso_lift_joint",
-          "upper": 0.38615
-        },
-        {
-          "index": 5,
-          "lower": -1.6056,
-          "name": "shoulder_pan_joint",
-          "upper": 1.6056
-        },
-        {
-          "index": 6,
-          "lower": -1.221,
-          "name": "shoulder_lift_joint",
-          "upper": 1.518
-        },
-        {
-          "index": 7,
-          "lower": -6.283185307179586,
-          "name": "upperarm_roll_joint",
-          "upper": 6.283185307179586
-        },
-        {
-          "index": 8,
-          "lower": -2.251,
-          "name": "elbow_flex_joint",
-          "upper": 2.251
-        },
-        {
-          "index": 9,
-          "lower": -6.283185307179586,
-          "name": "forearm_roll_joint",
-          "upper": 6.283185307179586
-        },
-        {
-          "index": 10,
-          "lower": -2.16,
-          "name": "wrist_flex_joint",
-          "upper": 2.16
-        },
-        {
-          "index": 11,
-          "lower": -6.283185307179586,
-          "name": "wrist_roll_joint",
-          "upper": 6.283185307179586
-        }
-      ],
-      "input_joint_names": [
-        "r_wheel_joint",
-        "l_wheel_joint",
-        "torso_lift_joint",
-        "head_pan_joint",
-        "head_tilt_joint",
-        "shoulder_pan_joint",
-        "shoulder_lift_joint",
-        "upperarm_roll_joint",
-        "elbow_flex_joint",
-        "forearm_roll_joint",
-        "wrist_flex_joint",
-        "wrist_roll_joint",
-        "r_gripper_finger_joint",
-        "l_gripper_finger_joint",
-        "bellows_joint"
-      ],
-      "live_budget": 64,
-      "math": "f32",
-      "optimization": "basic",
-      "scalar": "float",
-      "sphere_count": 69
-    },
-    "name": "fetch-f32-basic-64",
-    "optimization": "basic",
-    "sha256": {
-      "centers.cuh": "16e6a79aad96716a7c980139936bb08cf5af10835e44461269354ce56246c15a",
-      "collision.cuh": "79504c0073e1ca8f113b5194d673b56c740a9336edb790d3ac24220b608325ee",
-      "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
-      "collision/streaming.cuh": "3fe3a4bce48501dc672c11649facbd9240514d774f0ca8f86b0b9c40bed34b94",
-      "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision_function.cuh": "b1dd50d4e1ab1b3e73eea3fdcc382991e30b7740c28a612ba72a4fea0748c310",
-      "fk.cuh": "1b674330d91cae351858cb447ccf3ac4f9b35559378191cd86206ba8abe66eda",
-      "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
-      "rrt/common.cuh": "2b354efd240cc6ceeec5d2b8a0315b5aaeaa4cfa53c0469d447d34fa37aac93c",
-      "rrt/generated_model.cuh": "818ae46f9afc44c5cd742ab56c52c528fcd040cdf68991414f1dc8bcbf634908",
-      "rrt/planner.cuh": "64d37ea186cb96c5b80b215b39d30cfefb7f195fb5b384a69835b72ff4476b6c",
-      "rrt/rrtc.cuh": "da8e12c551e814d7f9c0589a5ae608c3339ddc1bf8654b3f8922be9a444ab9e8",
-      "rrt/types.hpp": "f00db951b8d9df4265ed7b4f1afd15029c2719d541c55b476bbb301355be71e6"
-    },
-    "spheres": "assets/fetch/collision.yaml",
-    "urdf": "assets/fetch/fetch.urdf"
-  },
-  {
-    "live_budget": null,
-    "math": "f32",
-    "model": {
-      "control_joints": [
-        {
-          "index": 2,
-          "lower": 0.0,
-          "name": "torso_lift_joint",
-          "upper": 0.38615
-        },
-        {
-          "index": 5,
-          "lower": -1.6056,
-          "name": "shoulder_pan_joint",
-          "upper": 1.6056
-        },
-        {
-          "index": 6,
-          "lower": -1.221,
-          "name": "shoulder_lift_joint",
-          "upper": 1.518
-        },
-        {
-          "index": 7,
-          "lower": -6.283185307179586,
-          "name": "upperarm_roll_joint",
-          "upper": 6.283185307179586
-        },
-        {
-          "index": 8,
-          "lower": -2.251,
-          "name": "elbow_flex_joint",
-          "upper": 2.251
-        },
-        {
-          "index": 9,
-          "lower": -6.283185307179586,
-          "name": "forearm_roll_joint",
-          "upper": 6.283185307179586
-        },
-        {
-          "index": 10,
-          "lower": -2.16,
-          "name": "wrist_flex_joint",
-          "upper": 2.16
-        },
-        {
-          "index": 11,
-          "lower": -6.283185307179586,
-          "name": "wrist_roll_joint",
-          "upper": 6.283185307179586
-        }
-      ],
-      "input_joint_names": [
-        "r_wheel_joint",
-        "l_wheel_joint",
-        "torso_lift_joint",
-        "head_pan_joint",
-        "head_tilt_joint",
-        "shoulder_pan_joint",
-        "shoulder_lift_joint",
-        "upperarm_roll_joint",
-        "elbow_flex_joint",
-        "forearm_roll_joint",
-        "wrist_flex_joint",
-        "wrist_roll_joint",
-        "r_gripper_finger_joint",
-        "l_gripper_finger_joint",
-        "bellows_joint"
-      ],
-      "live_budget": null,
-      "math": "f32",
-      "optimization": "algebraic",
-      "scalar": "float",
-      "sphere_count": 69
-    },
-    "name": "fetch-f32-algebraic-None",
-    "optimization": "algebraic",
-    "sha256": {
-      "centers.cuh": "cf725aac4ba7dcb22de824123a170351846230ea55dbe60ad796783845800f57",
-      "collision.cuh": "e78a76f97a026c760a85d83cfd9f81fdfefd8b3f5add06b7ac35f004b89e58ea",
-      "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
-      "collision/streaming.cuh": "3fe3a4bce48501dc672c11649facbd9240514d774f0ca8f86b0b9c40bed34b94",
-      "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision_function.cuh": "076f1866b46644cf8663172f5e8c7756dccd53829f6b7c88cbe22bfa22ec161b",
-      "fk.cuh": "5292099f42448ceb0a44e71a62b9c45351a90a89fd7d9cab1002120fb680961c",
-      "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
-      "rrt/common.cuh": "2b354efd240cc6ceeec5d2b8a0315b5aaeaa4cfa53c0469d447d34fa37aac93c",
-      "rrt/generated_model.cuh": "073b568a3fac3bed0f698f77a8299a3d8dff3eaf3e3754c4ab3cb82dc3a345c7",
-      "rrt/planner.cuh": "64d37ea186cb96c5b80b215b39d30cfefb7f195fb5b384a69835b72ff4476b6c",
-      "rrt/rrtc.cuh": "da8e12c551e814d7f9c0589a5ae608c3339ddc1bf8654b3f8922be9a444ab9e8",
-      "rrt/types.hpp": "f00db951b8d9df4265ed7b4f1afd15029c2719d541c55b476bbb301355be71e6"
-    },
-    "spheres": "assets/fetch/collision.yaml",
-    "urdf": "assets/fetch/fetch.urdf"
-  },
-  {
-    "live_budget": 0,
-    "math": "f32",
-    "model": {
-      "control_joints": [
-        {
-          "index": 2,
-          "lower": 0.0,
-          "name": "torso_lift_joint",
-          "upper": 0.38615
-        },
-        {
-          "index": 5,
-          "lower": -1.6056,
-          "name": "shoulder_pan_joint",
-          "upper": 1.6056
-        },
-        {
-          "index": 6,
-          "lower": -1.221,
-          "name": "shoulder_lift_joint",
-          "upper": 1.518
-        },
-        {
-          "index": 7,
-          "lower": -6.283185307179586,
-          "name": "upperarm_roll_joint",
-          "upper": 6.283185307179586
-        },
-        {
-          "index": 8,
-          "lower": -2.251,
-          "name": "elbow_flex_joint",
-          "upper": 2.251
-        },
-        {
-          "index": 9,
-          "lower": -6.283185307179586,
-          "name": "forearm_roll_joint",
-          "upper": 6.283185307179586
-        },
-        {
-          "index": 10,
-          "lower": -2.16,
-          "name": "wrist_flex_joint",
-          "upper": 2.16
-        },
-        {
-          "index": 11,
-          "lower": -6.283185307179586,
-          "name": "wrist_roll_joint",
-          "upper": 6.283185307179586
-        }
-      ],
-      "input_joint_names": [
-        "r_wheel_joint",
-        "l_wheel_joint",
-        "torso_lift_joint",
-        "head_pan_joint",
-        "head_tilt_joint",
-        "shoulder_pan_joint",
-        "shoulder_lift_joint",
-        "upperarm_roll_joint",
-        "elbow_flex_joint",
-        "forearm_roll_joint",
-        "wrist_flex_joint",
-        "wrist_roll_joint",
-        "r_gripper_finger_joint",
-        "l_gripper_finger_joint",
-        "bellows_joint"
-      ],
-      "live_budget": 0,
-      "math": "f32",
-      "optimization": "algebraic",
-      "scalar": "float",
-      "sphere_count": 69
-    },
-    "name": "fetch-f32-algebraic-0",
-    "optimization": "algebraic",
-    "sha256": {
-      "centers.cuh": "6f56cca3adb18f44f10cd85eabecc75bc2bea21f7a54fbefe1290e57204adf2f",
-      "collision.cuh": "0652680c72cb7f43eb8b82ca9e99009c6bbf9afae2101ade041b8559fa7f19da",
-      "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
-      "collision/streaming.cuh": "3fe3a4bce48501dc672c11649facbd9240514d774f0ca8f86b0b9c40bed34b94",
-      "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision_function.cuh": "185e49c02fef00507269285e419bf531c594a17a441299d8d4082f944bda2076",
-      "fk.cuh": "42a309b68c0679e80de7e2cd52d628a77f1261b287aaf3784d9dbb55cf29b519",
-      "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
-      "rrt/common.cuh": "2b354efd240cc6ceeec5d2b8a0315b5aaeaa4cfa53c0469d447d34fa37aac93c",
-      "rrt/generated_model.cuh": "bd7f0951c86c528df721d2987146cda1a1fdc525c60e79a174a6daa2268b1e7e",
-      "rrt/planner.cuh": "64d37ea186cb96c5b80b215b39d30cfefb7f195fb5b384a69835b72ff4476b6c",
-      "rrt/rrtc.cuh": "da8e12c551e814d7f9c0589a5ae608c3339ddc1bf8654b3f8922be9a444ab9e8",
-      "rrt/types.hpp": "f00db951b8d9df4265ed7b4f1afd15029c2719d541c55b476bbb301355be71e6"
-    },
-    "spheres": "assets/fetch/collision.yaml",
-    "urdf": "assets/fetch/fetch.urdf"
-  },
-  {
-    "live_budget": 64,
-    "math": "f32",
-    "model": {
-      "control_joints": [
-        {
-          "index": 2,
-          "lower": 0.0,
-          "name": "torso_lift_joint",
-          "upper": 0.38615
-        },
-        {
-          "index": 5,
-          "lower": -1.6056,
-          "name": "shoulder_pan_joint",
-          "upper": 1.6056
-        },
-        {
-          "index": 6,
-          "lower": -1.221,
-          "name": "shoulder_lift_joint",
-          "upper": 1.518
-        },
-        {
-          "index": 7,
-          "lower": -6.283185307179586,
-          "name": "upperarm_roll_joint",
-          "upper": 6.283185307179586
-        },
-        {
-          "index": 8,
-          "lower": -2.251,
-          "name": "elbow_flex_joint",
-          "upper": 2.251
-        },
-        {
-          "index": 9,
-          "lower": -6.283185307179586,
-          "name": "forearm_roll_joint",
-          "upper": 6.283185307179586
-        },
-        {
-          "index": 10,
-          "lower": -2.16,
-          "name": "wrist_flex_joint",
-          "upper": 2.16
-        },
-        {
-          "index": 11,
-          "lower": -6.283185307179586,
-          "name": "wrist_roll_joint",
-          "upper": 6.283185307179586
-        }
-      ],
-      "input_joint_names": [
-        "r_wheel_joint",
-        "l_wheel_joint",
-        "torso_lift_joint",
-        "head_pan_joint",
-        "head_tilt_joint",
-        "shoulder_pan_joint",
-        "shoulder_lift_joint",
-        "upperarm_roll_joint",
-        "elbow_flex_joint",
-        "forearm_roll_joint",
-        "wrist_flex_joint",
-        "wrist_roll_joint",
-        "r_gripper_finger_joint",
-        "l_gripper_finger_joint",
-        "bellows_joint"
-      ],
-      "live_budget": 64,
-      "math": "f32",
-      "optimization": "algebraic",
-      "scalar": "float",
-      "sphere_count": 69
-    },
-    "name": "fetch-f32-algebraic-64",
-    "optimization": "algebraic",
-    "sha256": {
-      "centers.cuh": "755a19c1b14fd3d7a63420a651eaff5fdca4b503edcbf0a80254183cac074683",
-      "collision.cuh": "684abbe7da3da958177e8434c57e68c961769a4a3a57e11f2e349957f68ec6e1",
-      "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
-      "collision/streaming.cuh": "3fe3a4bce48501dc672c11649facbd9240514d774f0ca8f86b0b9c40bed34b94",
-      "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision_function.cuh": "56e2dccb4bd690ade54c810d119481213ee5abda71cad66001ff140dd0ca548a",
-      "fk.cuh": "4ec629fc8b69d98f1217a67bbdbd56364f42e5f4ceeac33563fa3ea63cee2fc3",
-      "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
-      "rrt/common.cuh": "2b354efd240cc6ceeec5d2b8a0315b5aaeaa4cfa53c0469d447d34fa37aac93c",
-      "rrt/generated_model.cuh": "c57f5f7281b917720e8f0d876088adac4ef7ca7c8910f7750c74850e3b6c10d1",
-      "rrt/planner.cuh": "64d37ea186cb96c5b80b215b39d30cfefb7f195fb5b384a69835b72ff4476b6c",
-      "rrt/rrtc.cuh": "da8e12c551e814d7f9c0589a5ae608c3339ddc1bf8654b3f8922be9a444ab9e8",
-      "rrt/types.hpp": "f00db951b8d9df4265ed7b4f1afd15029c2719d541c55b476bbb301355be71e6"
-    },
-    "spheres": "assets/fetch/collision.yaml",
-    "urdf": "assets/fetch/fetch.urdf"
-  },
-  {
-    "live_budget": null,
-    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -949,7 +75,7 @@
       "scalar": "float",
       "sphere_count": 69
     },
-    "name": "fetch-f32-sfu-none-None",
+    "name": "fetch-none-None",
     "optimization": "none",
     "sha256": {
       "centers.cuh": "1367be27e79fd6cd4097b0b8a1c5f887850f0ad5e60154f8d5f7aeab7db6447c",
@@ -971,7 +97,6 @@
   },
   {
     "live_budget": 0,
-    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -1046,7 +171,7 @@
       "scalar": "float",
       "sphere_count": 69
     },
-    "name": "fetch-f32-sfu-none-0",
+    "name": "fetch-none-0",
     "optimization": "none",
     "sha256": {
       "centers.cuh": "13adb8e7388a42dadbb2e27b1b7034b702cca3cad8fc98bf0e058d7b7ee38161",
@@ -1068,7 +193,6 @@
   },
   {
     "live_budget": 64,
-    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -1143,7 +267,7 @@
       "scalar": "float",
       "sphere_count": 69
     },
-    "name": "fetch-f32-sfu-none-64",
+    "name": "fetch-none-64",
     "optimization": "none",
     "sha256": {
       "centers.cuh": "add21d772ffb0626d8ddc473c02c24f26b664e0edc59672ec45d5d61d95b9932",
@@ -1165,7 +289,6 @@
   },
   {
     "live_budget": null,
-    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -1240,7 +363,7 @@
       "scalar": "float",
       "sphere_count": 69
     },
-    "name": "fetch-f32-sfu-basic-None",
+    "name": "fetch-basic-None",
     "optimization": "basic",
     "sha256": {
       "centers.cuh": "dd7baf686621b5024d081da98765b650f875f556a4288ab151f127a7ae241fbd",
@@ -1262,7 +385,6 @@
   },
   {
     "live_budget": 0,
-    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -1337,7 +459,7 @@
       "scalar": "float",
       "sphere_count": 69
     },
-    "name": "fetch-f32-sfu-basic-0",
+    "name": "fetch-basic-0",
     "optimization": "basic",
     "sha256": {
       "centers.cuh": "4fde64de8ccd05916c6632ed46ccc8f73f969496cfc2c2f17576d86fd6bafe54",
@@ -1359,7 +481,6 @@
   },
   {
     "live_budget": 64,
-    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -1434,7 +555,7 @@
       "scalar": "float",
       "sphere_count": 69
     },
-    "name": "fetch-f32-sfu-basic-64",
+    "name": "fetch-basic-64",
     "optimization": "basic",
     "sha256": {
       "centers.cuh": "130c8db4b2f841047df3f05b6ffc564fe6b7f06292df092bf332b2584c7003ff",
@@ -1456,7 +577,6 @@
   },
   {
     "live_budget": null,
-    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -1531,7 +651,7 @@
       "scalar": "float",
       "sphere_count": 69
     },
-    "name": "fetch-f32-sfu-algebraic-None",
+    "name": "fetch-algebraic-None",
     "optimization": "algebraic",
     "sha256": {
       "centers.cuh": "1ef92a834bc61b54d0db777b03029ca867b1448eac367b24fb81f99d08519e15",
@@ -1553,7 +673,6 @@
   },
   {
     "live_budget": 0,
-    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -1628,7 +747,7 @@
       "scalar": "float",
       "sphere_count": 69
     },
-    "name": "fetch-f32-sfu-algebraic-0",
+    "name": "fetch-algebraic-0",
     "optimization": "algebraic",
     "sha256": {
       "centers.cuh": "9bb15f9e93be3ffda410bf213b9d5d8debc6a4847884b5feb9f5b9ce87c16380",
@@ -1650,7 +769,6 @@
   },
   {
     "live_budget": 64,
-    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -1725,7 +843,7 @@
       "scalar": "float",
       "sphere_count": 69
     },
-    "name": "fetch-f32-sfu-algebraic-64",
+    "name": "fetch-algebraic-64",
     "optimization": "algebraic",
     "sha256": {
       "centers.cuh": "845069d34be965ce278765e2747ba7f5ee2f607361d727551d0a6a499da5dfef",
@@ -1747,457 +865,6 @@
   },
   {
     "live_budget": null,
-    "math": "f32",
-    "model": {
-      "control_joints": [
-        {
-          "index": 0,
-          "lower": -3.2,
-          "name": "yaw",
-          "upper": 3.2
-        },
-        {
-          "index": 3,
-          "lower": -1.0,
-          "name": "slide",
-          "upper": 1.0
-        }
-      ],
-      "input_joint_names": [
-        "yaw",
-        "pitch",
-        "roll",
-        "slide"
-      ],
-      "live_budget": null,
-      "math": "f32",
-      "optimization": "none",
-      "scalar": "float",
-      "sphere_count": 23
-    },
-    "name": "chain-f32-none-None",
-    "optimization": "none",
-    "sha256": {
-      "centers.cuh": "20725b5878341eb9eba95995b4cec8a46a9376fcd64a1f8c745d4231b445e7ef",
-      "collision.cuh": "58f3af3343944ce9f9e82bf41666f2dfac967d73ef5a9bd4a7ac4216db6d2dee",
-      "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
-      "collision/streaming.cuh": "3fe3a4bce48501dc672c11649facbd9240514d774f0ca8f86b0b9c40bed34b94",
-      "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision_function.cuh": "65d793f4ecdf829b524652decb0ce04dcfec896a453a83523f99d1413dcc3648",
-      "fk.cuh": "f848c3c86b1729bb7d72c53d11ddf4eb5c938f4e5446c6886c69a70cd6929a43",
-      "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
-      "rrt/common.cuh": "2aaab8dde291d2f4f08aa25821d06545aa469161031cf76dd4040f86b8cd8c08",
-      "rrt/generated_model.cuh": "a2d3c57d1841d670754eb4a1069a9fd03e0fbb81a3f44541d130a471a9012c65",
-      "rrt/planner.cuh": "64d37ea186cb96c5b80b215b39d30cfefb7f195fb5b384a69835b72ff4476b6c",
-      "rrt/rrtc.cuh": "9d7c5c5410d09747a8354819b3c110ce82a534e8b1753cfedb630230bb283400",
-      "rrt/types.hpp": "f00db951b8d9df4265ed7b4f1afd15029c2719d541c55b476bbb301355be71e6"
-    },
-    "spheres": "tests/fixtures/compiler/chain.yaml",
-    "urdf": "tests/fixtures/fk_chain.urdf"
-  },
-  {
-    "live_budget": 0,
-    "math": "f32",
-    "model": {
-      "control_joints": [
-        {
-          "index": 0,
-          "lower": -3.2,
-          "name": "yaw",
-          "upper": 3.2
-        },
-        {
-          "index": 3,
-          "lower": -1.0,
-          "name": "slide",
-          "upper": 1.0
-        }
-      ],
-      "input_joint_names": [
-        "yaw",
-        "pitch",
-        "roll",
-        "slide"
-      ],
-      "live_budget": 0,
-      "math": "f32",
-      "optimization": "none",
-      "scalar": "float",
-      "sphere_count": 23
-    },
-    "name": "chain-f32-none-0",
-    "optimization": "none",
-    "sha256": {
-      "centers.cuh": "094ac97573fe10bd3deabd997352fc27a13bef2cdaf2b76f73451f8bc5474463",
-      "collision.cuh": "1e44bf38f6dc3cd52a9ff93d6b7016f8be1f7efc1452c48494a6a13aa0cdb1fd",
-      "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
-      "collision/streaming.cuh": "3fe3a4bce48501dc672c11649facbd9240514d774f0ca8f86b0b9c40bed34b94",
-      "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision_function.cuh": "67ebec11b15afd5767753e2b6d752c1945a269461b668a306db33fe72eab4796",
-      "fk.cuh": "cb0f01593cec0f02cc622fe09443753346f54b9111e70aa35d54f8e7c7d5e523",
-      "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
-      "rrt/common.cuh": "2aaab8dde291d2f4f08aa25821d06545aa469161031cf76dd4040f86b8cd8c08",
-      "rrt/generated_model.cuh": "44d61aaa0212ab1214a2ab9f55cbbab3dcceb80f37397796b36175d8bc537271",
-      "rrt/planner.cuh": "64d37ea186cb96c5b80b215b39d30cfefb7f195fb5b384a69835b72ff4476b6c",
-      "rrt/rrtc.cuh": "9d7c5c5410d09747a8354819b3c110ce82a534e8b1753cfedb630230bb283400",
-      "rrt/types.hpp": "f00db951b8d9df4265ed7b4f1afd15029c2719d541c55b476bbb301355be71e6"
-    },
-    "spheres": "tests/fixtures/compiler/chain.yaml",
-    "urdf": "tests/fixtures/fk_chain.urdf"
-  },
-  {
-    "live_budget": 64,
-    "math": "f32",
-    "model": {
-      "control_joints": [
-        {
-          "index": 0,
-          "lower": -3.2,
-          "name": "yaw",
-          "upper": 3.2
-        },
-        {
-          "index": 3,
-          "lower": -1.0,
-          "name": "slide",
-          "upper": 1.0
-        }
-      ],
-      "input_joint_names": [
-        "yaw",
-        "pitch",
-        "roll",
-        "slide"
-      ],
-      "live_budget": 64,
-      "math": "f32",
-      "optimization": "none",
-      "scalar": "float",
-      "sphere_count": 23
-    },
-    "name": "chain-f32-none-64",
-    "optimization": "none",
-    "sha256": {
-      "centers.cuh": "e20535d7679f2cc86d6abd48c2f2c6aa2d08304354f9801f44166c1b0d2b18d9",
-      "collision.cuh": "2d1e83044692e7f7343f727d61c9b764c7ff8541daa4e26ea87908d960fc5875",
-      "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
-      "collision/streaming.cuh": "3fe3a4bce48501dc672c11649facbd9240514d774f0ca8f86b0b9c40bed34b94",
-      "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision_function.cuh": "97dba43f27c4e70fdf52b7776bcc4b630860ce1d6b1b417579f818ade6b2453f",
-      "fk.cuh": "5c03c52aa7820901254433af45b0a0bc97fd7741d6d8cb3ed640f7e93b234294",
-      "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
-      "rrt/common.cuh": "2aaab8dde291d2f4f08aa25821d06545aa469161031cf76dd4040f86b8cd8c08",
-      "rrt/generated_model.cuh": "37ca74df329d1e8aa972c04bc05ac6dddf58e3e147d669007dc21c4db3bef879",
-      "rrt/planner.cuh": "64d37ea186cb96c5b80b215b39d30cfefb7f195fb5b384a69835b72ff4476b6c",
-      "rrt/rrtc.cuh": "9d7c5c5410d09747a8354819b3c110ce82a534e8b1753cfedb630230bb283400",
-      "rrt/types.hpp": "f00db951b8d9df4265ed7b4f1afd15029c2719d541c55b476bbb301355be71e6"
-    },
-    "spheres": "tests/fixtures/compiler/chain.yaml",
-    "urdf": "tests/fixtures/fk_chain.urdf"
-  },
-  {
-    "live_budget": null,
-    "math": "f32",
-    "model": {
-      "control_joints": [
-        {
-          "index": 0,
-          "lower": -3.2,
-          "name": "yaw",
-          "upper": 3.2
-        },
-        {
-          "index": 3,
-          "lower": -1.0,
-          "name": "slide",
-          "upper": 1.0
-        }
-      ],
-      "input_joint_names": [
-        "yaw",
-        "pitch",
-        "roll",
-        "slide"
-      ],
-      "live_budget": null,
-      "math": "f32",
-      "optimization": "basic",
-      "scalar": "float",
-      "sphere_count": 23
-    },
-    "name": "chain-f32-basic-None",
-    "optimization": "basic",
-    "sha256": {
-      "centers.cuh": "5d172cbd99366d986f630eaa70e04630e64081620814f879e5ec688b304ad2ea",
-      "collision.cuh": "225974ae78f43adf1bf87b9dc84d103524d4ff32f1dc640cda6b9effe0ad8f1a",
-      "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
-      "collision/streaming.cuh": "3fe3a4bce48501dc672c11649facbd9240514d774f0ca8f86b0b9c40bed34b94",
-      "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision_function.cuh": "b560c8f4c87fabb70f44eaad6eb8d6c95abe100dbd3abd7bd4ca06e9dffe5626",
-      "fk.cuh": "91e634a95a344227ae9a351175e3c12bb2c81c3db06dc2b94e79566c542d4bfb",
-      "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
-      "rrt/common.cuh": "2aaab8dde291d2f4f08aa25821d06545aa469161031cf76dd4040f86b8cd8c08",
-      "rrt/generated_model.cuh": "49236099e9dfb797873b5f54a4d7ebaf6762a6eefd68313b07e0bb9c91aa2a49",
-      "rrt/planner.cuh": "64d37ea186cb96c5b80b215b39d30cfefb7f195fb5b384a69835b72ff4476b6c",
-      "rrt/rrtc.cuh": "9d7c5c5410d09747a8354819b3c110ce82a534e8b1753cfedb630230bb283400",
-      "rrt/types.hpp": "f00db951b8d9df4265ed7b4f1afd15029c2719d541c55b476bbb301355be71e6"
-    },
-    "spheres": "tests/fixtures/compiler/chain.yaml",
-    "urdf": "tests/fixtures/fk_chain.urdf"
-  },
-  {
-    "live_budget": 0,
-    "math": "f32",
-    "model": {
-      "control_joints": [
-        {
-          "index": 0,
-          "lower": -3.2,
-          "name": "yaw",
-          "upper": 3.2
-        },
-        {
-          "index": 3,
-          "lower": -1.0,
-          "name": "slide",
-          "upper": 1.0
-        }
-      ],
-      "input_joint_names": [
-        "yaw",
-        "pitch",
-        "roll",
-        "slide"
-      ],
-      "live_budget": 0,
-      "math": "f32",
-      "optimization": "basic",
-      "scalar": "float",
-      "sphere_count": 23
-    },
-    "name": "chain-f32-basic-0",
-    "optimization": "basic",
-    "sha256": {
-      "centers.cuh": "66f4b33bfe8e29345e4be72e9d524e3c65686f697ee6257bdffddbdd8a435338",
-      "collision.cuh": "a751d83f2a8652b7acf3642ff8dea193d96f4e20da607ae77b03b3e03d9bee55",
-      "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
-      "collision/streaming.cuh": "3fe3a4bce48501dc672c11649facbd9240514d774f0ca8f86b0b9c40bed34b94",
-      "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision_function.cuh": "186ea3c8e03eae5b27bd0cfc00e52c2b5739af732580368b6ed2ab86121d147e",
-      "fk.cuh": "b291580623313ac286e3d540909c75eeb787141706ed4a566e5dbaae89cdd7ab",
-      "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
-      "rrt/common.cuh": "2aaab8dde291d2f4f08aa25821d06545aa469161031cf76dd4040f86b8cd8c08",
-      "rrt/generated_model.cuh": "e40698aab45b98eb3628e0e8da63d08d83a60d559648ee7211f172b98dba7a18",
-      "rrt/planner.cuh": "64d37ea186cb96c5b80b215b39d30cfefb7f195fb5b384a69835b72ff4476b6c",
-      "rrt/rrtc.cuh": "9d7c5c5410d09747a8354819b3c110ce82a534e8b1753cfedb630230bb283400",
-      "rrt/types.hpp": "f00db951b8d9df4265ed7b4f1afd15029c2719d541c55b476bbb301355be71e6"
-    },
-    "spheres": "tests/fixtures/compiler/chain.yaml",
-    "urdf": "tests/fixtures/fk_chain.urdf"
-  },
-  {
-    "live_budget": 64,
-    "math": "f32",
-    "model": {
-      "control_joints": [
-        {
-          "index": 0,
-          "lower": -3.2,
-          "name": "yaw",
-          "upper": 3.2
-        },
-        {
-          "index": 3,
-          "lower": -1.0,
-          "name": "slide",
-          "upper": 1.0
-        }
-      ],
-      "input_joint_names": [
-        "yaw",
-        "pitch",
-        "roll",
-        "slide"
-      ],
-      "live_budget": 64,
-      "math": "f32",
-      "optimization": "basic",
-      "scalar": "float",
-      "sphere_count": 23
-    },
-    "name": "chain-f32-basic-64",
-    "optimization": "basic",
-    "sha256": {
-      "centers.cuh": "cbc9cd247e2fb4097d034e84c71feb9e7846987b257ea791aa67b97ae76b5108",
-      "collision.cuh": "6bd2644f0df9907c9ded05aa74287dbf0d91ceb519fd829c64af81657dcd801e",
-      "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
-      "collision/streaming.cuh": "3fe3a4bce48501dc672c11649facbd9240514d774f0ca8f86b0b9c40bed34b94",
-      "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision_function.cuh": "8516678d9afa4fced8033b9c60071c2e34e0cf3afb25a13ea8d8b6a6ed902e9c",
-      "fk.cuh": "8111061773f954ef8cb685eb14c4b4737c78c21a34235e9b560c129cbd5d6bc3",
-      "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
-      "rrt/common.cuh": "2aaab8dde291d2f4f08aa25821d06545aa469161031cf76dd4040f86b8cd8c08",
-      "rrt/generated_model.cuh": "06b212850c4427183b828d336e2e2a659ccbec1d2e7203c2c4df12e6f02b5776",
-      "rrt/planner.cuh": "64d37ea186cb96c5b80b215b39d30cfefb7f195fb5b384a69835b72ff4476b6c",
-      "rrt/rrtc.cuh": "9d7c5c5410d09747a8354819b3c110ce82a534e8b1753cfedb630230bb283400",
-      "rrt/types.hpp": "f00db951b8d9df4265ed7b4f1afd15029c2719d541c55b476bbb301355be71e6"
-    },
-    "spheres": "tests/fixtures/compiler/chain.yaml",
-    "urdf": "tests/fixtures/fk_chain.urdf"
-  },
-  {
-    "live_budget": null,
-    "math": "f32",
-    "model": {
-      "control_joints": [
-        {
-          "index": 0,
-          "lower": -3.2,
-          "name": "yaw",
-          "upper": 3.2
-        },
-        {
-          "index": 3,
-          "lower": -1.0,
-          "name": "slide",
-          "upper": 1.0
-        }
-      ],
-      "input_joint_names": [
-        "yaw",
-        "pitch",
-        "roll",
-        "slide"
-      ],
-      "live_budget": null,
-      "math": "f32",
-      "optimization": "algebraic",
-      "scalar": "float",
-      "sphere_count": 23
-    },
-    "name": "chain-f32-algebraic-None",
-    "optimization": "algebraic",
-    "sha256": {
-      "centers.cuh": "b380650365dbca7489e79df53262bb7a670d2437530face2e65a2ccf6fd2bcaf",
-      "collision.cuh": "0c126e5fd11f990e55e9d6ebab6fd6b6553a0a20d24f781bbb2b384364b2f263",
-      "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
-      "collision/streaming.cuh": "3fe3a4bce48501dc672c11649facbd9240514d774f0ca8f86b0b9c40bed34b94",
-      "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision_function.cuh": "a5df542191eec6e9ecdbb7ff2027344f48d01cd60a60a9073bfcd57da79fd3e5",
-      "fk.cuh": "cf9c8e9fcd1ecee2b8337cc85b9c130fbaa00eb7374caf3793aaa0a81b817e34",
-      "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
-      "rrt/common.cuh": "2aaab8dde291d2f4f08aa25821d06545aa469161031cf76dd4040f86b8cd8c08",
-      "rrt/generated_model.cuh": "93bef05d6bd776ac73618a814ea9c123138a12d95212669e93aeb2fa5c556e74",
-      "rrt/planner.cuh": "64d37ea186cb96c5b80b215b39d30cfefb7f195fb5b384a69835b72ff4476b6c",
-      "rrt/rrtc.cuh": "9d7c5c5410d09747a8354819b3c110ce82a534e8b1753cfedb630230bb283400",
-      "rrt/types.hpp": "f00db951b8d9df4265ed7b4f1afd15029c2719d541c55b476bbb301355be71e6"
-    },
-    "spheres": "tests/fixtures/compiler/chain.yaml",
-    "urdf": "tests/fixtures/fk_chain.urdf"
-  },
-  {
-    "live_budget": 0,
-    "math": "f32",
-    "model": {
-      "control_joints": [
-        {
-          "index": 0,
-          "lower": -3.2,
-          "name": "yaw",
-          "upper": 3.2
-        },
-        {
-          "index": 3,
-          "lower": -1.0,
-          "name": "slide",
-          "upper": 1.0
-        }
-      ],
-      "input_joint_names": [
-        "yaw",
-        "pitch",
-        "roll",
-        "slide"
-      ],
-      "live_budget": 0,
-      "math": "f32",
-      "optimization": "algebraic",
-      "scalar": "float",
-      "sphere_count": 23
-    },
-    "name": "chain-f32-algebraic-0",
-    "optimization": "algebraic",
-    "sha256": {
-      "centers.cuh": "2cd860fe22eab3cedcd0da996666533dcb53e8c968b480741c5d1485ba8ed8d1",
-      "collision.cuh": "b467c4120fd1264f333ecf207c6bf4305fdf62039c7613aa9df5d7b75d2c9554",
-      "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
-      "collision/streaming.cuh": "3fe3a4bce48501dc672c11649facbd9240514d774f0ca8f86b0b9c40bed34b94",
-      "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision_function.cuh": "ab31a89108dae0798ddadda667da9ba8d78b45e81f4a4be815721d467fbc3fe6",
-      "fk.cuh": "4641b738b705f0a727552d11cc9645d797e2cdc9488853a382cbdba84ec57138",
-      "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
-      "rrt/common.cuh": "2aaab8dde291d2f4f08aa25821d06545aa469161031cf76dd4040f86b8cd8c08",
-      "rrt/generated_model.cuh": "ca235b74a89784e7c6964871293254519c63cae51297e26001d532d8b576cd2f",
-      "rrt/planner.cuh": "64d37ea186cb96c5b80b215b39d30cfefb7f195fb5b384a69835b72ff4476b6c",
-      "rrt/rrtc.cuh": "9d7c5c5410d09747a8354819b3c110ce82a534e8b1753cfedb630230bb283400",
-      "rrt/types.hpp": "f00db951b8d9df4265ed7b4f1afd15029c2719d541c55b476bbb301355be71e6"
-    },
-    "spheres": "tests/fixtures/compiler/chain.yaml",
-    "urdf": "tests/fixtures/fk_chain.urdf"
-  },
-  {
-    "live_budget": 64,
-    "math": "f32",
-    "model": {
-      "control_joints": [
-        {
-          "index": 0,
-          "lower": -3.2,
-          "name": "yaw",
-          "upper": 3.2
-        },
-        {
-          "index": 3,
-          "lower": -1.0,
-          "name": "slide",
-          "upper": 1.0
-        }
-      ],
-      "input_joint_names": [
-        "yaw",
-        "pitch",
-        "roll",
-        "slide"
-      ],
-      "live_budget": 64,
-      "math": "f32",
-      "optimization": "algebraic",
-      "scalar": "float",
-      "sphere_count": 23
-    },
-    "name": "chain-f32-algebraic-64",
-    "optimization": "algebraic",
-    "sha256": {
-      "centers.cuh": "0feeb93d79d836a8b55178a1b1ff5cc139aece955c9af047a4a0f214bb398542",
-      "collision.cuh": "8681db42be43787ddd81eb538daa75be45a36327f7311b2736fc2903b6feb09e",
-      "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
-      "collision/streaming.cuh": "3fe3a4bce48501dc672c11649facbd9240514d774f0ca8f86b0b9c40bed34b94",
-      "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision_function.cuh": "c6b75ff130aba6ee29a8950ce0a5ed2c8055bebbbcf4af454e31a9ff035eab27",
-      "fk.cuh": "12dab6f62f00a9a5236d3dfff2ff8cb06e657a3e6443a7d1b3d277827db60458",
-      "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
-      "rrt/common.cuh": "2aaab8dde291d2f4f08aa25821d06545aa469161031cf76dd4040f86b8cd8c08",
-      "rrt/generated_model.cuh": "deb3e0d5dc825558d06b12cdc2ba423ace7be5a8a52abcb5fcdeffdc9cee61f6",
-      "rrt/planner.cuh": "64d37ea186cb96c5b80b215b39d30cfefb7f195fb5b384a69835b72ff4476b6c",
-      "rrt/rrtc.cuh": "9d7c5c5410d09747a8354819b3c110ce82a534e8b1753cfedb630230bb283400",
-      "rrt/types.hpp": "f00db951b8d9df4265ed7b4f1afd15029c2719d541c55b476bbb301355be71e6"
-    },
-    "spheres": "tests/fixtures/compiler/chain.yaml",
-    "urdf": "tests/fixtures/fk_chain.urdf"
-  },
-  {
-    "live_budget": null,
-    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -2225,7 +892,7 @@
       "scalar": "float",
       "sphere_count": 23
     },
-    "name": "chain-f32-sfu-none-None",
+    "name": "chain-none-None",
     "optimization": "none",
     "sha256": {
       "centers.cuh": "7fb14a4099bb7f9363f5fac9313140dfc57167d47a7383076c88d95b89372743",
@@ -2247,7 +914,6 @@
   },
   {
     "live_budget": 0,
-    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -2275,7 +941,7 @@
       "scalar": "float",
       "sphere_count": 23
     },
-    "name": "chain-f32-sfu-none-0",
+    "name": "chain-none-0",
     "optimization": "none",
     "sha256": {
       "centers.cuh": "934f4f21b935346050abd347d20dfc0e275de2e97be12dd38486ec38fbcbde0a",
@@ -2297,7 +963,6 @@
   },
   {
     "live_budget": 64,
-    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -2325,7 +990,7 @@
       "scalar": "float",
       "sphere_count": 23
     },
-    "name": "chain-f32-sfu-none-64",
+    "name": "chain-none-64",
     "optimization": "none",
     "sha256": {
       "centers.cuh": "d4c6356c3fddf7567f50b0b173bf3a77ad690c281efabeb7cf1c28fe263e09a0",
@@ -2347,7 +1012,6 @@
   },
   {
     "live_budget": null,
-    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -2375,7 +1039,7 @@
       "scalar": "float",
       "sphere_count": 23
     },
-    "name": "chain-f32-sfu-basic-None",
+    "name": "chain-basic-None",
     "optimization": "basic",
     "sha256": {
       "centers.cuh": "bcdcab0e23a5233581900a8b538dce4f3f80a06e327039733797a73936ccd91d",
@@ -2397,7 +1061,6 @@
   },
   {
     "live_budget": 0,
-    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -2425,7 +1088,7 @@
       "scalar": "float",
       "sphere_count": 23
     },
-    "name": "chain-f32-sfu-basic-0",
+    "name": "chain-basic-0",
     "optimization": "basic",
     "sha256": {
       "centers.cuh": "51a4f75ee54f3127d4c5bde28665dafab1774a8d0fafe6d3b42853d6ff782429",
@@ -2447,7 +1110,6 @@
   },
   {
     "live_budget": 64,
-    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -2475,7 +1137,7 @@
       "scalar": "float",
       "sphere_count": 23
     },
-    "name": "chain-f32-sfu-basic-64",
+    "name": "chain-basic-64",
     "optimization": "basic",
     "sha256": {
       "centers.cuh": "4232288c97b50ebe034b7e955c6b9a0dd2b713d026f93a589235d1e52583bba6",
@@ -2497,7 +1159,6 @@
   },
   {
     "live_budget": null,
-    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -2525,7 +1186,7 @@
       "scalar": "float",
       "sphere_count": 23
     },
-    "name": "chain-f32-sfu-algebraic-None",
+    "name": "chain-algebraic-None",
     "optimization": "algebraic",
     "sha256": {
       "centers.cuh": "1db62be1d6972a603a95a53df24b5777d40660c1a0e2015ba1b954044a74d188",
@@ -2547,7 +1208,6 @@
   },
   {
     "live_budget": 0,
-    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -2575,7 +1235,7 @@
       "scalar": "float",
       "sphere_count": 23
     },
-    "name": "chain-f32-sfu-algebraic-0",
+    "name": "chain-algebraic-0",
     "optimization": "algebraic",
     "sha256": {
       "centers.cuh": "d5513d923697c3dc6adab45fbbf79a4a8346aa0dd6d8a7197035b6c9c0baf0a7",
@@ -2597,7 +1257,6 @@
   },
   {
     "live_budget": 64,
-    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -2625,7 +1284,7 @@
       "scalar": "float",
       "sphere_count": 23
     },
-    "name": "chain-f32-sfu-algebraic-64",
+    "name": "chain-algebraic-64",
     "optimization": "algebraic",
     "sha256": {
       "centers.cuh": "e83981e9dfd811df7d718372c278a0f2b76e3b54620e820048a6dda92cb5ae30",
@@ -2647,403 +1306,6 @@
   },
   {
     "live_budget": null,
-    "math": "f32",
-    "model": {
-      "control_joints": [
-        {
-          "index": 0,
-          "lower": -3.2,
-          "name": "yaw",
-          "upper": 3.2
-        }
-      ],
-      "input_joint_names": [
-        "yaw",
-        "pitch",
-        "roll",
-        "slide"
-      ],
-      "live_budget": null,
-      "math": "f32",
-      "optimization": "none",
-      "scalar": "float",
-      "sphere_count": 0
-    },
-    "name": "empty-f32-none-None",
-    "optimization": "none",
-    "sha256": {
-      "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
-      "collision.cuh": "bc62b6a403fdddf0dcad2f90b049618eea757079cab7dedc938c11f7b5d2ef7e",
-      "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
-      "collision/streaming.cuh": "3fe3a4bce48501dc672c11649facbd9240514d774f0ca8f86b0b9c40bed34b94",
-      "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision_function.cuh": "e2c71c2962b1ef1cb26d1dd14f83d0bf951d8abad2fa912d03802187cf1e7219",
-      "fk.cuh": "f848c3c86b1729bb7d72c53d11ddf4eb5c938f4e5446c6886c69a70cd6929a43",
-      "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
-      "rrt/common.cuh": "e0b01fc0aa81bdf4a9b9b34bab77bd168dc7d29a6657994f333b14a5ded7a282",
-      "rrt/generated_model.cuh": "c718bc452568942be0ee9cecbae2127512ac88192801ee61e8a752050efa46dd",
-      "rrt/planner.cuh": "64d37ea186cb96c5b80b215b39d30cfefb7f195fb5b384a69835b72ff4476b6c",
-      "rrt/rrtc.cuh": "a4dd13bb8933713f75b5e1ed447fdeb69f13476d432b258780065339827ef79f",
-      "rrt/types.hpp": "f00db951b8d9df4265ed7b4f1afd15029c2719d541c55b476bbb301355be71e6"
-    },
-    "spheres": "tests/fixtures/compiler/empty.yaml",
-    "urdf": "tests/fixtures/fk_chain.urdf"
-  },
-  {
-    "live_budget": 0,
-    "math": "f32",
-    "model": {
-      "control_joints": [
-        {
-          "index": 0,
-          "lower": -3.2,
-          "name": "yaw",
-          "upper": 3.2
-        }
-      ],
-      "input_joint_names": [
-        "yaw",
-        "pitch",
-        "roll",
-        "slide"
-      ],
-      "live_budget": 0,
-      "math": "f32",
-      "optimization": "none",
-      "scalar": "float",
-      "sphere_count": 0
-    },
-    "name": "empty-f32-none-0",
-    "optimization": "none",
-    "sha256": {
-      "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
-      "collision.cuh": "bc62b6a403fdddf0dcad2f90b049618eea757079cab7dedc938c11f7b5d2ef7e",
-      "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
-      "collision/streaming.cuh": "3fe3a4bce48501dc672c11649facbd9240514d774f0ca8f86b0b9c40bed34b94",
-      "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision_function.cuh": "e2c71c2962b1ef1cb26d1dd14f83d0bf951d8abad2fa912d03802187cf1e7219",
-      "fk.cuh": "cb0f01593cec0f02cc622fe09443753346f54b9111e70aa35d54f8e7c7d5e523",
-      "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
-      "rrt/common.cuh": "e0b01fc0aa81bdf4a9b9b34bab77bd168dc7d29a6657994f333b14a5ded7a282",
-      "rrt/generated_model.cuh": "c718bc452568942be0ee9cecbae2127512ac88192801ee61e8a752050efa46dd",
-      "rrt/planner.cuh": "64d37ea186cb96c5b80b215b39d30cfefb7f195fb5b384a69835b72ff4476b6c",
-      "rrt/rrtc.cuh": "a4dd13bb8933713f75b5e1ed447fdeb69f13476d432b258780065339827ef79f",
-      "rrt/types.hpp": "f00db951b8d9df4265ed7b4f1afd15029c2719d541c55b476bbb301355be71e6"
-    },
-    "spheres": "tests/fixtures/compiler/empty.yaml",
-    "urdf": "tests/fixtures/fk_chain.urdf"
-  },
-  {
-    "live_budget": 64,
-    "math": "f32",
-    "model": {
-      "control_joints": [
-        {
-          "index": 0,
-          "lower": -3.2,
-          "name": "yaw",
-          "upper": 3.2
-        }
-      ],
-      "input_joint_names": [
-        "yaw",
-        "pitch",
-        "roll",
-        "slide"
-      ],
-      "live_budget": 64,
-      "math": "f32",
-      "optimization": "none",
-      "scalar": "float",
-      "sphere_count": 0
-    },
-    "name": "empty-f32-none-64",
-    "optimization": "none",
-    "sha256": {
-      "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
-      "collision.cuh": "bc62b6a403fdddf0dcad2f90b049618eea757079cab7dedc938c11f7b5d2ef7e",
-      "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
-      "collision/streaming.cuh": "3fe3a4bce48501dc672c11649facbd9240514d774f0ca8f86b0b9c40bed34b94",
-      "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision_function.cuh": "e2c71c2962b1ef1cb26d1dd14f83d0bf951d8abad2fa912d03802187cf1e7219",
-      "fk.cuh": "5c03c52aa7820901254433af45b0a0bc97fd7741d6d8cb3ed640f7e93b234294",
-      "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
-      "rrt/common.cuh": "e0b01fc0aa81bdf4a9b9b34bab77bd168dc7d29a6657994f333b14a5ded7a282",
-      "rrt/generated_model.cuh": "c718bc452568942be0ee9cecbae2127512ac88192801ee61e8a752050efa46dd",
-      "rrt/planner.cuh": "64d37ea186cb96c5b80b215b39d30cfefb7f195fb5b384a69835b72ff4476b6c",
-      "rrt/rrtc.cuh": "a4dd13bb8933713f75b5e1ed447fdeb69f13476d432b258780065339827ef79f",
-      "rrt/types.hpp": "f00db951b8d9df4265ed7b4f1afd15029c2719d541c55b476bbb301355be71e6"
-    },
-    "spheres": "tests/fixtures/compiler/empty.yaml",
-    "urdf": "tests/fixtures/fk_chain.urdf"
-  },
-  {
-    "live_budget": null,
-    "math": "f32",
-    "model": {
-      "control_joints": [
-        {
-          "index": 0,
-          "lower": -3.2,
-          "name": "yaw",
-          "upper": 3.2
-        }
-      ],
-      "input_joint_names": [
-        "yaw",
-        "pitch",
-        "roll",
-        "slide"
-      ],
-      "live_budget": null,
-      "math": "f32",
-      "optimization": "basic",
-      "scalar": "float",
-      "sphere_count": 0
-    },
-    "name": "empty-f32-basic-None",
-    "optimization": "basic",
-    "sha256": {
-      "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
-      "collision.cuh": "bc62b6a403fdddf0dcad2f90b049618eea757079cab7dedc938c11f7b5d2ef7e",
-      "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
-      "collision/streaming.cuh": "3fe3a4bce48501dc672c11649facbd9240514d774f0ca8f86b0b9c40bed34b94",
-      "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision_function.cuh": "e2c71c2962b1ef1cb26d1dd14f83d0bf951d8abad2fa912d03802187cf1e7219",
-      "fk.cuh": "91e634a95a344227ae9a351175e3c12bb2c81c3db06dc2b94e79566c542d4bfb",
-      "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
-      "rrt/common.cuh": "e0b01fc0aa81bdf4a9b9b34bab77bd168dc7d29a6657994f333b14a5ded7a282",
-      "rrt/generated_model.cuh": "c718bc452568942be0ee9cecbae2127512ac88192801ee61e8a752050efa46dd",
-      "rrt/planner.cuh": "64d37ea186cb96c5b80b215b39d30cfefb7f195fb5b384a69835b72ff4476b6c",
-      "rrt/rrtc.cuh": "a4dd13bb8933713f75b5e1ed447fdeb69f13476d432b258780065339827ef79f",
-      "rrt/types.hpp": "f00db951b8d9df4265ed7b4f1afd15029c2719d541c55b476bbb301355be71e6"
-    },
-    "spheres": "tests/fixtures/compiler/empty.yaml",
-    "urdf": "tests/fixtures/fk_chain.urdf"
-  },
-  {
-    "live_budget": 0,
-    "math": "f32",
-    "model": {
-      "control_joints": [
-        {
-          "index": 0,
-          "lower": -3.2,
-          "name": "yaw",
-          "upper": 3.2
-        }
-      ],
-      "input_joint_names": [
-        "yaw",
-        "pitch",
-        "roll",
-        "slide"
-      ],
-      "live_budget": 0,
-      "math": "f32",
-      "optimization": "basic",
-      "scalar": "float",
-      "sphere_count": 0
-    },
-    "name": "empty-f32-basic-0",
-    "optimization": "basic",
-    "sha256": {
-      "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
-      "collision.cuh": "bc62b6a403fdddf0dcad2f90b049618eea757079cab7dedc938c11f7b5d2ef7e",
-      "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
-      "collision/streaming.cuh": "3fe3a4bce48501dc672c11649facbd9240514d774f0ca8f86b0b9c40bed34b94",
-      "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision_function.cuh": "e2c71c2962b1ef1cb26d1dd14f83d0bf951d8abad2fa912d03802187cf1e7219",
-      "fk.cuh": "b291580623313ac286e3d540909c75eeb787141706ed4a566e5dbaae89cdd7ab",
-      "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
-      "rrt/common.cuh": "e0b01fc0aa81bdf4a9b9b34bab77bd168dc7d29a6657994f333b14a5ded7a282",
-      "rrt/generated_model.cuh": "c718bc452568942be0ee9cecbae2127512ac88192801ee61e8a752050efa46dd",
-      "rrt/planner.cuh": "64d37ea186cb96c5b80b215b39d30cfefb7f195fb5b384a69835b72ff4476b6c",
-      "rrt/rrtc.cuh": "a4dd13bb8933713f75b5e1ed447fdeb69f13476d432b258780065339827ef79f",
-      "rrt/types.hpp": "f00db951b8d9df4265ed7b4f1afd15029c2719d541c55b476bbb301355be71e6"
-    },
-    "spheres": "tests/fixtures/compiler/empty.yaml",
-    "urdf": "tests/fixtures/fk_chain.urdf"
-  },
-  {
-    "live_budget": 64,
-    "math": "f32",
-    "model": {
-      "control_joints": [
-        {
-          "index": 0,
-          "lower": -3.2,
-          "name": "yaw",
-          "upper": 3.2
-        }
-      ],
-      "input_joint_names": [
-        "yaw",
-        "pitch",
-        "roll",
-        "slide"
-      ],
-      "live_budget": 64,
-      "math": "f32",
-      "optimization": "basic",
-      "scalar": "float",
-      "sphere_count": 0
-    },
-    "name": "empty-f32-basic-64",
-    "optimization": "basic",
-    "sha256": {
-      "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
-      "collision.cuh": "bc62b6a403fdddf0dcad2f90b049618eea757079cab7dedc938c11f7b5d2ef7e",
-      "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
-      "collision/streaming.cuh": "3fe3a4bce48501dc672c11649facbd9240514d774f0ca8f86b0b9c40bed34b94",
-      "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision_function.cuh": "e2c71c2962b1ef1cb26d1dd14f83d0bf951d8abad2fa912d03802187cf1e7219",
-      "fk.cuh": "8111061773f954ef8cb685eb14c4b4737c78c21a34235e9b560c129cbd5d6bc3",
-      "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
-      "rrt/common.cuh": "e0b01fc0aa81bdf4a9b9b34bab77bd168dc7d29a6657994f333b14a5ded7a282",
-      "rrt/generated_model.cuh": "c718bc452568942be0ee9cecbae2127512ac88192801ee61e8a752050efa46dd",
-      "rrt/planner.cuh": "64d37ea186cb96c5b80b215b39d30cfefb7f195fb5b384a69835b72ff4476b6c",
-      "rrt/rrtc.cuh": "a4dd13bb8933713f75b5e1ed447fdeb69f13476d432b258780065339827ef79f",
-      "rrt/types.hpp": "f00db951b8d9df4265ed7b4f1afd15029c2719d541c55b476bbb301355be71e6"
-    },
-    "spheres": "tests/fixtures/compiler/empty.yaml",
-    "urdf": "tests/fixtures/fk_chain.urdf"
-  },
-  {
-    "live_budget": null,
-    "math": "f32",
-    "model": {
-      "control_joints": [
-        {
-          "index": 0,
-          "lower": -3.2,
-          "name": "yaw",
-          "upper": 3.2
-        }
-      ],
-      "input_joint_names": [
-        "yaw",
-        "pitch",
-        "roll",
-        "slide"
-      ],
-      "live_budget": null,
-      "math": "f32",
-      "optimization": "algebraic",
-      "scalar": "float",
-      "sphere_count": 0
-    },
-    "name": "empty-f32-algebraic-None",
-    "optimization": "algebraic",
-    "sha256": {
-      "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
-      "collision.cuh": "bc62b6a403fdddf0dcad2f90b049618eea757079cab7dedc938c11f7b5d2ef7e",
-      "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
-      "collision/streaming.cuh": "3fe3a4bce48501dc672c11649facbd9240514d774f0ca8f86b0b9c40bed34b94",
-      "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision_function.cuh": "e2c71c2962b1ef1cb26d1dd14f83d0bf951d8abad2fa912d03802187cf1e7219",
-      "fk.cuh": "cf9c8e9fcd1ecee2b8337cc85b9c130fbaa00eb7374caf3793aaa0a81b817e34",
-      "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
-      "rrt/common.cuh": "e0b01fc0aa81bdf4a9b9b34bab77bd168dc7d29a6657994f333b14a5ded7a282",
-      "rrt/generated_model.cuh": "c718bc452568942be0ee9cecbae2127512ac88192801ee61e8a752050efa46dd",
-      "rrt/planner.cuh": "64d37ea186cb96c5b80b215b39d30cfefb7f195fb5b384a69835b72ff4476b6c",
-      "rrt/rrtc.cuh": "a4dd13bb8933713f75b5e1ed447fdeb69f13476d432b258780065339827ef79f",
-      "rrt/types.hpp": "f00db951b8d9df4265ed7b4f1afd15029c2719d541c55b476bbb301355be71e6"
-    },
-    "spheres": "tests/fixtures/compiler/empty.yaml",
-    "urdf": "tests/fixtures/fk_chain.urdf"
-  },
-  {
-    "live_budget": 0,
-    "math": "f32",
-    "model": {
-      "control_joints": [
-        {
-          "index": 0,
-          "lower": -3.2,
-          "name": "yaw",
-          "upper": 3.2
-        }
-      ],
-      "input_joint_names": [
-        "yaw",
-        "pitch",
-        "roll",
-        "slide"
-      ],
-      "live_budget": 0,
-      "math": "f32",
-      "optimization": "algebraic",
-      "scalar": "float",
-      "sphere_count": 0
-    },
-    "name": "empty-f32-algebraic-0",
-    "optimization": "algebraic",
-    "sha256": {
-      "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
-      "collision.cuh": "bc62b6a403fdddf0dcad2f90b049618eea757079cab7dedc938c11f7b5d2ef7e",
-      "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
-      "collision/streaming.cuh": "3fe3a4bce48501dc672c11649facbd9240514d774f0ca8f86b0b9c40bed34b94",
-      "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision_function.cuh": "e2c71c2962b1ef1cb26d1dd14f83d0bf951d8abad2fa912d03802187cf1e7219",
-      "fk.cuh": "4641b738b705f0a727552d11cc9645d797e2cdc9488853a382cbdba84ec57138",
-      "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
-      "rrt/common.cuh": "e0b01fc0aa81bdf4a9b9b34bab77bd168dc7d29a6657994f333b14a5ded7a282",
-      "rrt/generated_model.cuh": "c718bc452568942be0ee9cecbae2127512ac88192801ee61e8a752050efa46dd",
-      "rrt/planner.cuh": "64d37ea186cb96c5b80b215b39d30cfefb7f195fb5b384a69835b72ff4476b6c",
-      "rrt/rrtc.cuh": "a4dd13bb8933713f75b5e1ed447fdeb69f13476d432b258780065339827ef79f",
-      "rrt/types.hpp": "f00db951b8d9df4265ed7b4f1afd15029c2719d541c55b476bbb301355be71e6"
-    },
-    "spheres": "tests/fixtures/compiler/empty.yaml",
-    "urdf": "tests/fixtures/fk_chain.urdf"
-  },
-  {
-    "live_budget": 64,
-    "math": "f32",
-    "model": {
-      "control_joints": [
-        {
-          "index": 0,
-          "lower": -3.2,
-          "name": "yaw",
-          "upper": 3.2
-        }
-      ],
-      "input_joint_names": [
-        "yaw",
-        "pitch",
-        "roll",
-        "slide"
-      ],
-      "live_budget": 64,
-      "math": "f32",
-      "optimization": "algebraic",
-      "scalar": "float",
-      "sphere_count": 0
-    },
-    "name": "empty-f32-algebraic-64",
-    "optimization": "algebraic",
-    "sha256": {
-      "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
-      "collision.cuh": "bc62b6a403fdddf0dcad2f90b049618eea757079cab7dedc938c11f7b5d2ef7e",
-      "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
-      "collision/streaming.cuh": "3fe3a4bce48501dc672c11649facbd9240514d774f0ca8f86b0b9c40bed34b94",
-      "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision_function.cuh": "e2c71c2962b1ef1cb26d1dd14f83d0bf951d8abad2fa912d03802187cf1e7219",
-      "fk.cuh": "12dab6f62f00a9a5236d3dfff2ff8cb06e657a3e6443a7d1b3d277827db60458",
-      "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
-      "rrt/common.cuh": "e0b01fc0aa81bdf4a9b9b34bab77bd168dc7d29a6657994f333b14a5ded7a282",
-      "rrt/generated_model.cuh": "c718bc452568942be0ee9cecbae2127512ac88192801ee61e8a752050efa46dd",
-      "rrt/planner.cuh": "64d37ea186cb96c5b80b215b39d30cfefb7f195fb5b384a69835b72ff4476b6c",
-      "rrt/rrtc.cuh": "a4dd13bb8933713f75b5e1ed447fdeb69f13476d432b258780065339827ef79f",
-      "rrt/types.hpp": "f00db951b8d9df4265ed7b4f1afd15029c2719d541c55b476bbb301355be71e6"
-    },
-    "spheres": "tests/fixtures/compiler/empty.yaml",
-    "urdf": "tests/fixtures/fk_chain.urdf"
-  },
-  {
-    "live_budget": null,
-    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -3065,7 +1327,7 @@
       "scalar": "float",
       "sphere_count": 0
     },
-    "name": "empty-f32-sfu-none-None",
+    "name": "empty-none-None",
     "optimization": "none",
     "sha256": {
       "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
@@ -3087,7 +1349,6 @@
   },
   {
     "live_budget": 0,
-    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -3109,7 +1370,7 @@
       "scalar": "float",
       "sphere_count": 0
     },
-    "name": "empty-f32-sfu-none-0",
+    "name": "empty-none-0",
     "optimization": "none",
     "sha256": {
       "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
@@ -3131,7 +1392,6 @@
   },
   {
     "live_budget": 64,
-    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -3153,7 +1413,7 @@
       "scalar": "float",
       "sphere_count": 0
     },
-    "name": "empty-f32-sfu-none-64",
+    "name": "empty-none-64",
     "optimization": "none",
     "sha256": {
       "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
@@ -3175,7 +1435,6 @@
   },
   {
     "live_budget": null,
-    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -3197,7 +1456,7 @@
       "scalar": "float",
       "sphere_count": 0
     },
-    "name": "empty-f32-sfu-basic-None",
+    "name": "empty-basic-None",
     "optimization": "basic",
     "sha256": {
       "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
@@ -3219,7 +1478,6 @@
   },
   {
     "live_budget": 0,
-    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -3241,7 +1499,7 @@
       "scalar": "float",
       "sphere_count": 0
     },
-    "name": "empty-f32-sfu-basic-0",
+    "name": "empty-basic-0",
     "optimization": "basic",
     "sha256": {
       "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
@@ -3263,7 +1521,6 @@
   },
   {
     "live_budget": 64,
-    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -3285,7 +1542,7 @@
       "scalar": "float",
       "sphere_count": 0
     },
-    "name": "empty-f32-sfu-basic-64",
+    "name": "empty-basic-64",
     "optimization": "basic",
     "sha256": {
       "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
@@ -3307,7 +1564,6 @@
   },
   {
     "live_budget": null,
-    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -3329,7 +1585,7 @@
       "scalar": "float",
       "sphere_count": 0
     },
-    "name": "empty-f32-sfu-algebraic-None",
+    "name": "empty-algebraic-None",
     "optimization": "algebraic",
     "sha256": {
       "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
@@ -3351,7 +1607,6 @@
   },
   {
     "live_budget": 0,
-    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -3373,7 +1628,7 @@
       "scalar": "float",
       "sphere_count": 0
     },
-    "name": "empty-f32-sfu-algebraic-0",
+    "name": "empty-algebraic-0",
     "optimization": "algebraic",
     "sha256": {
       "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
@@ -3395,7 +1650,6 @@
   },
   {
     "live_budget": 64,
-    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -3417,7 +1671,7 @@
       "scalar": "float",
       "sphere_count": 0
     },
-    "name": "empty-f32-sfu-algebraic-64",
+    "name": "empty-algebraic-64",
     "optimization": "algebraic",
     "sha256": {
       "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
@@ -3439,17 +1693,16 @@
   },
   {
     "live_budget": null,
-    "math": "f32",
     "model": {
       "control_joints": [],
       "input_joint_names": [],
       "live_budget": null,
-      "math": "f32",
+      "math": "f32-sfu",
       "optimization": "none",
       "scalar": "float",
       "sphere_count": 1
     },
-    "name": "fixed-f32-none-None",
+    "name": "fixed-none-None",
     "optimization": "none",
     "sha256": {
       "centers.cuh": "4335953b68d239f4c2ae25981da26c3e6c7566943dadba356776ccbed63476dd",
@@ -3462,17 +1715,16 @@
   },
   {
     "live_budget": 0,
-    "math": "f32",
     "model": {
       "control_joints": [],
       "input_joint_names": [],
       "live_budget": 0,
-      "math": "f32",
+      "math": "f32-sfu",
       "optimization": "none",
       "scalar": "float",
       "sphere_count": 1
     },
-    "name": "fixed-f32-none-0",
+    "name": "fixed-none-0",
     "optimization": "none",
     "sha256": {
       "centers.cuh": "7f711c29fa3bfc6b2f5ccd0b1a65c4887bfca58e07e9fb74d159c5cb00a127b4",
@@ -3485,17 +1737,16 @@
   },
   {
     "live_budget": 64,
-    "math": "f32",
     "model": {
       "control_joints": [],
       "input_joint_names": [],
       "live_budget": 64,
-      "math": "f32",
+      "math": "f32-sfu",
       "optimization": "none",
       "scalar": "float",
       "sphere_count": 1
     },
-    "name": "fixed-f32-none-64",
+    "name": "fixed-none-64",
     "optimization": "none",
     "sha256": {
       "centers.cuh": "e43f643935d6d9d05f7abcce173f96136d965e2c8ab3332b47c4fd9ea058418a",
@@ -3508,17 +1759,16 @@
   },
   {
     "live_budget": null,
-    "math": "f32",
     "model": {
       "control_joints": [],
       "input_joint_names": [],
       "live_budget": null,
-      "math": "f32",
+      "math": "f32-sfu",
       "optimization": "basic",
       "scalar": "float",
       "sphere_count": 1
     },
-    "name": "fixed-f32-basic-None",
+    "name": "fixed-basic-None",
     "optimization": "basic",
     "sha256": {
       "centers.cuh": "bb60a6174d15d0234eed44e7f401bb67a590af9ed0369b1e01340246c2644716",
@@ -3531,17 +1781,16 @@
   },
   {
     "live_budget": 0,
-    "math": "f32",
     "model": {
       "control_joints": [],
       "input_joint_names": [],
       "live_budget": 0,
-      "math": "f32",
+      "math": "f32-sfu",
       "optimization": "basic",
       "scalar": "float",
       "sphere_count": 1
     },
-    "name": "fixed-f32-basic-0",
+    "name": "fixed-basic-0",
     "optimization": "basic",
     "sha256": {
       "centers.cuh": "15d84ec651dd6bc8a5d65387dbc8836432f649db45027e8bb424a0ab273af269",
@@ -3554,17 +1803,16 @@
   },
   {
     "live_budget": 64,
-    "math": "f32",
     "model": {
       "control_joints": [],
       "input_joint_names": [],
       "live_budget": 64,
-      "math": "f32",
+      "math": "f32-sfu",
       "optimization": "basic",
       "scalar": "float",
       "sphere_count": 1
     },
-    "name": "fixed-f32-basic-64",
+    "name": "fixed-basic-64",
     "optimization": "basic",
     "sha256": {
       "centers.cuh": "cd6b885d4336f31e97b9a0717ad54db2e6bde412e92d8beab3d8e32f467c0127",
@@ -3577,17 +1825,16 @@
   },
   {
     "live_budget": null,
-    "math": "f32",
     "model": {
       "control_joints": [],
       "input_joint_names": [],
       "live_budget": null,
-      "math": "f32",
+      "math": "f32-sfu",
       "optimization": "algebraic",
       "scalar": "float",
       "sphere_count": 1
     },
-    "name": "fixed-f32-algebraic-None",
+    "name": "fixed-algebraic-None",
     "optimization": "algebraic",
     "sha256": {
       "centers.cuh": "bb60a6174d15d0234eed44e7f401bb67a590af9ed0369b1e01340246c2644716",
@@ -3600,17 +1847,16 @@
   },
   {
     "live_budget": 0,
-    "math": "f32",
     "model": {
       "control_joints": [],
       "input_joint_names": [],
       "live_budget": 0,
-      "math": "f32",
+      "math": "f32-sfu",
       "optimization": "algebraic",
       "scalar": "float",
       "sphere_count": 1
     },
-    "name": "fixed-f32-algebraic-0",
+    "name": "fixed-algebraic-0",
     "optimization": "algebraic",
     "sha256": {
       "centers.cuh": "15d84ec651dd6bc8a5d65387dbc8836432f649db45027e8bb424a0ab273af269",
@@ -3623,214 +1869,6 @@
   },
   {
     "live_budget": 64,
-    "math": "f32",
-    "model": {
-      "control_joints": [],
-      "input_joint_names": [],
-      "live_budget": 64,
-      "math": "f32",
-      "optimization": "algebraic",
-      "scalar": "float",
-      "sphere_count": 1
-    },
-    "name": "fixed-f32-algebraic-64",
-    "optimization": "algebraic",
-    "sha256": {
-      "centers.cuh": "cd6b885d4336f31e97b9a0717ad54db2e6bde412e92d8beab3d8e32f467c0127",
-      "collision.cuh": "f617d5d610e1d9fd0f49780760a57591a8520332e600252472386eef8d51c48a",
-      "collision_function.cuh": "dd39267838f5f982f6c4aa8fbec6c206d2e238cbc791e53f1bdced7cd5f5d58c",
-      "fk.cuh": "4f2ae4fbfa0dfb058582423af26f7a324f2865969dc437e8ac5315cf06233126"
-    },
-    "spheres": "tests/fixtures/compiler/fixed.yaml",
-    "urdf": "tests/fixtures/compiler/fixed.urdf"
-  },
-  {
-    "live_budget": null,
-    "math": "f32-sfu",
-    "model": {
-      "control_joints": [],
-      "input_joint_names": [],
-      "live_budget": null,
-      "math": "f32-sfu",
-      "optimization": "none",
-      "scalar": "float",
-      "sphere_count": 1
-    },
-    "name": "fixed-f32-sfu-none-None",
-    "optimization": "none",
-    "sha256": {
-      "centers.cuh": "4335953b68d239f4c2ae25981da26c3e6c7566943dadba356776ccbed63476dd",
-      "collision.cuh": "aa90c3aa5241e980158b8925964a7a760a1c562c4fcab4ca96c2ef2f846e6606",
-      "collision_function.cuh": "ac30dacbf5ec96e6643fd0ef23ac3c3e534dee5ee408cf616706ad9bcb0658fd",
-      "fk.cuh": "495cd14dd5b952f789c30054efe73fbf11d4d3095b8be2c72382d08b1699f1d8"
-    },
-    "spheres": "tests/fixtures/compiler/fixed.yaml",
-    "urdf": "tests/fixtures/compiler/fixed.urdf"
-  },
-  {
-    "live_budget": 0,
-    "math": "f32-sfu",
-    "model": {
-      "control_joints": [],
-      "input_joint_names": [],
-      "live_budget": 0,
-      "math": "f32-sfu",
-      "optimization": "none",
-      "scalar": "float",
-      "sphere_count": 1
-    },
-    "name": "fixed-f32-sfu-none-0",
-    "optimization": "none",
-    "sha256": {
-      "centers.cuh": "7f711c29fa3bfc6b2f5ccd0b1a65c4887bfca58e07e9fb74d159c5cb00a127b4",
-      "collision.cuh": "4e9684f3d1685949939ed2c7617b4351213673d9ab5413ea95adb56ae51b8b50",
-      "collision_function.cuh": "eba6e61546064c31aa0e2e8fdf862bb892596696191c7edaca8188b2241eb6ad",
-      "fk.cuh": "4f2ae4fbfa0dfb058582423af26f7a324f2865969dc437e8ac5315cf06233126"
-    },
-    "spheres": "tests/fixtures/compiler/fixed.yaml",
-    "urdf": "tests/fixtures/compiler/fixed.urdf"
-  },
-  {
-    "live_budget": 64,
-    "math": "f32-sfu",
-    "model": {
-      "control_joints": [],
-      "input_joint_names": [],
-      "live_budget": 64,
-      "math": "f32-sfu",
-      "optimization": "none",
-      "scalar": "float",
-      "sphere_count": 1
-    },
-    "name": "fixed-f32-sfu-none-64",
-    "optimization": "none",
-    "sha256": {
-      "centers.cuh": "e43f643935d6d9d05f7abcce173f96136d965e2c8ab3332b47c4fd9ea058418a",
-      "collision.cuh": "491d612b231336272f41ade0367eb04160315280dcbb0adb642ffdbfd9f58662",
-      "collision_function.cuh": "c449649e33d30aa52a63a8e0e308cedc87b39a0033f50b4d4bcce661a40176bd",
-      "fk.cuh": "4f2ae4fbfa0dfb058582423af26f7a324f2865969dc437e8ac5315cf06233126"
-    },
-    "spheres": "tests/fixtures/compiler/fixed.yaml",
-    "urdf": "tests/fixtures/compiler/fixed.urdf"
-  },
-  {
-    "live_budget": null,
-    "math": "f32-sfu",
-    "model": {
-      "control_joints": [],
-      "input_joint_names": [],
-      "live_budget": null,
-      "math": "f32-sfu",
-      "optimization": "basic",
-      "scalar": "float",
-      "sphere_count": 1
-    },
-    "name": "fixed-f32-sfu-basic-None",
-    "optimization": "basic",
-    "sha256": {
-      "centers.cuh": "bb60a6174d15d0234eed44e7f401bb67a590af9ed0369b1e01340246c2644716",
-      "collision.cuh": "f617d5d610e1d9fd0f49780760a57591a8520332e600252472386eef8d51c48a",
-      "collision_function.cuh": "dd39267838f5f982f6c4aa8fbec6c206d2e238cbc791e53f1bdced7cd5f5d58c",
-      "fk.cuh": "495cd14dd5b952f789c30054efe73fbf11d4d3095b8be2c72382d08b1699f1d8"
-    },
-    "spheres": "tests/fixtures/compiler/fixed.yaml",
-    "urdf": "tests/fixtures/compiler/fixed.urdf"
-  },
-  {
-    "live_budget": 0,
-    "math": "f32-sfu",
-    "model": {
-      "control_joints": [],
-      "input_joint_names": [],
-      "live_budget": 0,
-      "math": "f32-sfu",
-      "optimization": "basic",
-      "scalar": "float",
-      "sphere_count": 1
-    },
-    "name": "fixed-f32-sfu-basic-0",
-    "optimization": "basic",
-    "sha256": {
-      "centers.cuh": "15d84ec651dd6bc8a5d65387dbc8836432f649db45027e8bb424a0ab273af269",
-      "collision.cuh": "73dc148843287a0ee073c96897bd26472e9765f52b3a871b0b0173276d8928c7",
-      "collision_function.cuh": "69435377c829e037e1d6c3d904667f3ee57590cdbe4ed8d2363fffb8d40462ab",
-      "fk.cuh": "4f2ae4fbfa0dfb058582423af26f7a324f2865969dc437e8ac5315cf06233126"
-    },
-    "spheres": "tests/fixtures/compiler/fixed.yaml",
-    "urdf": "tests/fixtures/compiler/fixed.urdf"
-  },
-  {
-    "live_budget": 64,
-    "math": "f32-sfu",
-    "model": {
-      "control_joints": [],
-      "input_joint_names": [],
-      "live_budget": 64,
-      "math": "f32-sfu",
-      "optimization": "basic",
-      "scalar": "float",
-      "sphere_count": 1
-    },
-    "name": "fixed-f32-sfu-basic-64",
-    "optimization": "basic",
-    "sha256": {
-      "centers.cuh": "cd6b885d4336f31e97b9a0717ad54db2e6bde412e92d8beab3d8e32f467c0127",
-      "collision.cuh": "f617d5d610e1d9fd0f49780760a57591a8520332e600252472386eef8d51c48a",
-      "collision_function.cuh": "dd39267838f5f982f6c4aa8fbec6c206d2e238cbc791e53f1bdced7cd5f5d58c",
-      "fk.cuh": "4f2ae4fbfa0dfb058582423af26f7a324f2865969dc437e8ac5315cf06233126"
-    },
-    "spheres": "tests/fixtures/compiler/fixed.yaml",
-    "urdf": "tests/fixtures/compiler/fixed.urdf"
-  },
-  {
-    "live_budget": null,
-    "math": "f32-sfu",
-    "model": {
-      "control_joints": [],
-      "input_joint_names": [],
-      "live_budget": null,
-      "math": "f32-sfu",
-      "optimization": "algebraic",
-      "scalar": "float",
-      "sphere_count": 1
-    },
-    "name": "fixed-f32-sfu-algebraic-None",
-    "optimization": "algebraic",
-    "sha256": {
-      "centers.cuh": "bb60a6174d15d0234eed44e7f401bb67a590af9ed0369b1e01340246c2644716",
-      "collision.cuh": "f617d5d610e1d9fd0f49780760a57591a8520332e600252472386eef8d51c48a",
-      "collision_function.cuh": "dd39267838f5f982f6c4aa8fbec6c206d2e238cbc791e53f1bdced7cd5f5d58c",
-      "fk.cuh": "495cd14dd5b952f789c30054efe73fbf11d4d3095b8be2c72382d08b1699f1d8"
-    },
-    "spheres": "tests/fixtures/compiler/fixed.yaml",
-    "urdf": "tests/fixtures/compiler/fixed.urdf"
-  },
-  {
-    "live_budget": 0,
-    "math": "f32-sfu",
-    "model": {
-      "control_joints": [],
-      "input_joint_names": [],
-      "live_budget": 0,
-      "math": "f32-sfu",
-      "optimization": "algebraic",
-      "scalar": "float",
-      "sphere_count": 1
-    },
-    "name": "fixed-f32-sfu-algebraic-0",
-    "optimization": "algebraic",
-    "sha256": {
-      "centers.cuh": "15d84ec651dd6bc8a5d65387dbc8836432f649db45027e8bb424a0ab273af269",
-      "collision.cuh": "73dc148843287a0ee073c96897bd26472e9765f52b3a871b0b0173276d8928c7",
-      "collision_function.cuh": "69435377c829e037e1d6c3d904667f3ee57590cdbe4ed8d2363fffb8d40462ab",
-      "fk.cuh": "4f2ae4fbfa0dfb058582423af26f7a324f2865969dc437e8ac5315cf06233126"
-    },
-    "spheres": "tests/fixtures/compiler/fixed.yaml",
-    "urdf": "tests/fixtures/compiler/fixed.urdf"
-  },
-  {
-    "live_budget": 64,
-    "math": "f32-sfu",
     "model": {
       "control_joints": [],
       "input_joint_names": [],
@@ -3840,7 +1878,7 @@
       "scalar": "float",
       "sphere_count": 1
     },
-    "name": "fixed-f32-sfu-algebraic-64",
+    "name": "fixed-algebraic-64",
     "optimization": "algebraic",
     "sha256": {
       "centers.cuh": "cd6b885d4336f31e97b9a0717ad54db2e6bde412e92d8beab3d8e32f467c0127",

@@ -10,10 +10,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from tenkai import Options, Planner, RRTBuild, RRTConfig, build_rrt, sdf
+from tenkai import Planner, RRTBuild, RRTConfig, build_rrt, sdf
 from tenkai.build import Backend
 from tenkai.compiler import ModelMetadata
-from tenkai.cuda import MathMode
 from tenkai.rrt import BuildInfo, NativeConfig, NativeScene
 from tenkai.sdf import pack_geometry
 
@@ -46,7 +45,7 @@ def binding(tmp_path_factory: pytest.TempPathFactory) -> RRTBuild:
         ],
         sphere_count=1,
         scalar="float",
-        math="f32",
+        math="f32-sfu",
         optimization="algebraic",
         live_budget=None,
     )
@@ -218,21 +217,18 @@ def test_invalid_build_options_before_generation(
     assert not (tmp_path / "build").exists()
 
 
-@pytest.fixture(scope="module", params=["f32", "f32-sfu"])
+@pytest.fixture(scope="module")
 def compiled(
-    request: pytest.FixtureRequest,
     tmp_path_factory: pytest.TempPathFactory,
     gpu_backend: Backend,
     gpu_arch: str,
 ) -> RRTBuild:
-    directory = tmp_path_factory.mktemp("rrt " + request.param)
+    directory = tmp_path_factory.mktemp("rrt build")
     urdf, spheres = robot_inputs(directory)
-    mode: MathMode = request.param
     return build_rrt(
         urdf,
         spheres,
         directory / "build",
-        options=Options(mode),
         backend=gpu_backend,
         arch=gpu_arch,
     )
@@ -242,6 +238,10 @@ def compiled(
 def test_public_build(compiled: RRTBuild, gpu_backend: Backend) -> None:
     compiler_name = "hipcc" if gpu_backend == "hip" else "nvcc"
     assert compiled.library.is_file()
+    assert compiled.toolchain["max_registers"] is None
+    assert not any(
+        argument.startswith("--maxrregcount") for argument in compiled.toolchain["compile_command"]
+    )
     assert compiled.timings["codegen"] > 0
     assert compiled.timings[compiler_name] > 0
     assert (

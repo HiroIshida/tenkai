@@ -122,9 +122,8 @@ compiled = build_rrt(
 ```
 
 HIP supports wave32 GPUs; wave64 devices are rejected. Select a device with
-`HIP_VISIBLE_DEVICES` if needed. Both backends use FP32 with SFU intrinsics by
-default. Import `Options` from `tenkai` and pass `options=Options(math="f32")` to
-`build_rrt` for standard FP32 math. Results can differ between backends.
+`HIP_VISIBLE_DEVICES` if needed. Both backends always use FP32 with SFU
+trigonometric intrinsics. Results can differ between backends.
 
 ## Generate kernels without running a planner
 
@@ -136,8 +135,8 @@ uv run tenkai-generate \
 ```
 
 This generates forward-kinematics, sphere-center, collision, and planner sources
-with model metadata. Use `--no-sfu` for standard FP32 math. Keep the generated
-directory tree together when using the sources in your application.
+with model metadata. Keep the generated directory tree together when using
+the sources in your application.
 
 ## Benchmarks
 
