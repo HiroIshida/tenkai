@@ -999,6 +999,7 @@ source = { editable = "." }
 dependencies = [
     { name = "numpy" },
     { name = "pyyaml" },
+    { name = "tyro" },
 ]
 
 [package.optional-dependencies]
@@ -1020,6 +1021,7 @@ requires-dist = [
     { name = "numpy", specifier = ">=2" },
     { name = "plainmp", marker = "extra == 'bench'", specifier = ">=0.3.6,<0.4" },
     { name = "pyyaml", specifier = ">=6.0,<7" },
+    { name = "tyro", specifier = ">=1.0.16" },
 ]
 provides-extras = ["bench"]
 

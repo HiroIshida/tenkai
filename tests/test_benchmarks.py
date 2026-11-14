@@ -10,6 +10,7 @@ from types import ModuleType
 
 import numpy as np
 import pytest
+import tyro
 
 from tenkai import Options
 from tenkai.build import Backend
@@ -166,10 +167,7 @@ def test_failed_solve_is_not_reported_as_speedup(compare: ModuleType, successes:
 
 
 @pytest.mark.parametrize("value", ["0", "-1", "nan", "inf"])
-def test_invalid_cpu_estimate(
-    compare: ModuleType, monkeypatch: pytest.MonkeyPatch, value: str
-) -> None:
-    monkeypatch.setattr(sys, "argv", ["compare_rrtc.py", "--cpu-ms-per-problem", value])
+def test_invalid_cpu_estimate(compare: ModuleType, value: str) -> None:
     with pytest.raises(SystemExit) as failure:
-        compare.main()
+        tyro.cli(compare.main, args=["--cpu-ms-per-problem", value])
     assert failure.value.code == 2

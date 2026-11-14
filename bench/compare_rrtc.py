@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
-"""Compare plainmp and tenkai RRT-Connect on the same Fetch problem through Python."""
-
-import argparse
 import json
 import math
 import statistics
+import sys
 import time
 from collections.abc import Callable
 from dataclasses import asdict
@@ -12,6 +10,7 @@ from importlib.metadata import version
 from pathlib import Path
 
 import numpy as np
+import tyro
 from plainmp.constraint import SphereAttachmentSpec, SphereCollisionCst
 from plainmp.kinematics import BaseType, KinematicModel
 from plainmp.ompl_solver import (
@@ -25,7 +24,7 @@ from plainmp.problem import Problem
 from plainmp.psdf import BoxSDF, GroundSDF, Pose, UnionSDF
 
 from tenkai import RRTConfig, build_rrt, sdf
-from tenkai.build import target_arch
+from tenkai.build import Backend, target_arch
 from tenkai.collision import read_config
 from tenkai.compiler import ModelMetadata
 
@@ -79,39 +78,43 @@ def measure(solve: Callable[[], int], batch: int, repeats: int) -> list[float]:
     return times
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--urdf", type=Path, default=ASSETS / "fetch.urdf")
-    parser.add_argument("--spheres", type=Path, default=ASSETS / "collision.yaml")
-    parser.add_argument("--batch", type=int, default=256)
-    parser.add_argument("--repeats", type=int, default=7)
-    parser.add_argument(
-        "--cpu-ms-per-problem",
-        type=float,
-        help="skip CPU solves and extrapolate from this measured time per problem",
-    )
-    parser.add_argument("--backend", choices=["cuda", "hip"], default="cuda")
-    parser.add_argument("--arch")
-    parser.add_argument("--output", type=Path, default=Path("artifacts/rrtc-bench"))
-    args = parser.parse_args()
-    if not 0 < args.batch < 2**32 or args.repeats < 1:
-        parser.error("batch must fit positive uint32 and repeats must be positive")
-    if args.cpu_ms_per_problem is not None and (
-        not math.isfinite(args.cpu_ms_per_problem) or args.cpu_ms_per_problem <= 0
+def main(
+    urdf: Path = ASSETS / "fetch.urdf",
+    spheres: Path = ASSETS / "collision.yaml",
+    batch: int = 256,
+    repeats: int = 7,
+    cpu_ms_per_problem: float | None = None,
+    backend: Backend = "cuda",
+    arch: str | None = None,
+    output: Path = Path("artifacts/rrtc-bench"),
+) -> None:
+    """Compare plainmp and tenkai RRT-Connect on the same Fetch problem through Python.
+
+    Args:
+        cpu_ms_per_problem: Skip CPU solves and extrapolate from this measured time per problem.
+    """
+    if not 0 < batch < 2**32 or repeats < 1:
+        print("batch must fit positive uint32 and repeats must be positive", file=sys.stderr)
+        raise SystemExit(2)
+    if cpu_ms_per_problem is not None and (
+        not math.isfinite(cpu_ms_per_problem) or cpu_ms_per_problem <= 0
     ):
-        parser.error("cpu-ms-per-problem must be finite and positive")
-    arch = target_arch(args.backend, args.arch)
+        print("cpu-ms-per-problem must be finite and positive", file=sys.stderr)
+        raise SystemExit(2)
+
+    arch = target_arch(backend, arch)
+
     compiled = build_rrt(
-        args.urdf,
-        args.spheres,
-        args.output / "build",
-        backend=args.backend,
+        urdf,
+        spheres,
+        output / "build",
+        backend=backend,
         arch=arch,
     )
     config = RRTConfig(max_rounds=8192, goal_bias=0.0)
     cpu_times: list[float] = []
-    if args.cpu_ms_per_problem is None:
-        problem = make_problem(args.urdf, args.spheres, compiled.model)
+    if cpu_ms_per_problem is None:
+        problem = make_problem(urdf, spheres, compiled.model)
         settings = PlainmpRRTCSettings()
         settings.max_samples = config.max_nodes
         solver = OMPLSolver(
@@ -126,29 +129,29 @@ def main() -> None:
 
         def solve_cpu() -> int:
             successes = 0
-            for _ in range(args.batch):
+            for _ in range(batch):
                 successes += solver.solve(problem).success
             return successes
 
         print("Measuring plainmp...", flush=True)
-        cpu_times = measure(solve_cpu, args.batch, args.repeats)
+        cpu_times = measure(solve_cpu, batch, repeats)
         cpu_ms = statistics.median(cpu_times)
         cpu_timing = (
             "CPU includes native planner creation and trajectory conversion; uses fresh trials. "
         )
     else:
-        cpu_ms = args.cpu_ms_per_problem * args.batch
+        cpu_ms = cpu_ms_per_problem * batch
         cpu_timing = (
             "CPU time is linearly extrapolated from the supplied milliseconds per problem. "
         )
-    starts = np.tile(START, (args.batch, 1))
-    goals = np.tile(GOAL, (args.batch, 1))
-    ids = np.zeros(args.batch, dtype=np.uint32)
-    seeds = np.arange(args.batch, dtype=np.uint64) + 42
+    starts = np.tile(START, (batch, 1))
+    goals = np.tile(GOAL, (batch, 1))
+    ids = np.zeros(batch, dtype=np.uint32)
+    seeds = np.arange(batch, dtype=np.uint64) + 42
     with compiled.planner(
         GEOMETRY,
         config=config,
-        problem_count=args.batch,
+        problem_count=batch,
         resolution=RESOLUTION,
     ) as planner:
 
@@ -157,33 +160,31 @@ def main() -> None:
             return sum(result["status"] == "success" for result in results)
 
         print("Measuring tenkai...", flush=True)
-        gpu_times = measure(solve_gpu, args.batch, args.repeats)
+        gpu_times = measure(solve_gpu, batch, repeats)
     gpu_ms = statistics.median(gpu_times)
     report = {
-        "batch": args.batch,
+        "batch": batch,
         "math": compiled.model["math"],
-        "backend": args.backend,
+        "backend": backend,
         "arch": arch,
         "plainmp_version": version("plainmp"),
         "config": asdict(config),
         "resolution": RESOLUTION,
         "plainmp_ms": cpu_times,
-        "plainmp_ms_per_problem": args.cpu_ms_per_problem,
-        "plainmp_estimated_ms": cpu_ms if args.cpu_ms_per_problem is not None else None,
+        "plainmp_ms_per_problem": cpu_ms_per_problem,
+        "plainmp_estimated_ms": cpu_ms if cpu_ms_per_problem is not None else None,
         "tenkai_ms": gpu_times,
         "speedup": cpu_ms / gpu_ms,
         "timing": "Python API wall time per batch; one warmup batch, builds/setup excluded. "
         + cpu_timing
         + "GPU reuses buffers, includes transfers, and replays fixed seeds.",
     }
-    (args.output / "results.json").write_text(json.dumps(report, indent=2) + "\n")
-    cpu_label = "plainmp (extrapolated)" if args.cpu_ms_per_problem is not None else "plainmp"
+    (output / "results.json").write_text(json.dumps(report, indent=2) + "\n")
+    cpu_label = "plainmp (extrapolated)" if cpu_ms_per_problem is not None else "plainmp"
     for name, milliseconds in ((cpu_label, cpu_ms), ("tenkai", gpu_ms)):
-        print(
-            f"{name}: {milliseconds:.3f} ms/batch, {args.batch * 1000 / milliseconds:.1f} solves/s"
-        )
+        print(f"{name}: {milliseconds:.3f} ms/batch, {batch * 1000 / milliseconds:.1f} solves/s")
     print(f"tenkai speedup: {cpu_ms / gpu_ms:.2f}x")
 
 
 if __name__ == "__main__":
-    main()
+    tyro.cli(main, config=(tyro.conf.DisallowNone,))

@@ -1,44 +1,55 @@
-"""Generate CUDA source from a URDF model and collision sphere configuration."""
-
-import argparse
 import json
+import sys
 from collections.abc import Sequence
 from pathlib import Path
+from typing import Annotated
+
+import tyro
 
 from .compiler import generate
 from .cuda import Options
 from .dag import Optimization
 
-
-def optimization(value: str) -> Optimization:
-    match value:
-        case "none" | "basic" | "algebraic":
-            return value
-    raise argparse.ArgumentTypeError("optimization must be none, basic or algebraic")
+SCHEDULING = tyro.conf.create_mutex_group(required=False, title="scheduling")
 
 
-def main(argv: Sequence[str] | None = None) -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--optimization", type=optimization, default="algebraic")
+def main(
+    urdf: Path,
+    spheres: Path,
+    output: tyro.conf.Positional[Path],
+    optimization: Optimization = "algebraic",
+    all_kernels: bool = False,
+    scheduling: Annotated[bool, SCHEDULING] = False,
+    no_scheduling: Annotated[bool, SCHEDULING] = False,
+    live_budget: Annotated[int | None, SCHEDULING] = None,
+) -> None:
+    """Generate CUDA source from a URDF model and collision sphere configuration.
 
-    scheduling = parser.add_mutually_exclusive_group()
-    scheduling.add_argument("--scheduling", dest="live_budget", action="store_const", const=64)
-    scheduling.add_argument("--no-scheduling", dest="live_budget", action="store_const", const=None)
-    scheduling.add_argument("--live-budget", type=int)
+    Args:
+        scheduling: Schedule with a live budget of 64.
+        no_scheduling: Disable scheduling (the default).
+        live_budget: Schedule with a nonnegative live-value budget.
+    """
+    if live_budget is not None and live_budget < 0:
+        print("live budget must be nonnegative", file=sys.stderr)
+        raise SystemExit(2)
 
-    parser.add_argument("--urdf", type=Path, required=True)
-    parser.add_argument("--spheres", type=Path, required=True)
-    parser.add_argument("--all-kernels", action="store_true")
-    parser.add_argument("output", type=Path)
-    args = parser.parse_args(argv)
-
-    if args.live_budget is not None and args.live_budget < 0:
-        parser.error("live budget must be nonnegative")
-
-    options = Options(optimization=args.optimization, live_budget=args.live_budget)
-    timings = generate(args.urdf, args.spheres, args.output, options, args.all_kernels)
+    if scheduling:
+        live_budget = 64
+    elif no_scheduling:
+        live_budget = None
+    options = Options(optimization=optimization, live_budget=live_budget)
+    timings = generate(urdf, spheres, output, options, all_kernels)
     print(json.dumps(timings))
 
 
+def cli(argv: Sequence[str] | None = None) -> None:
+    tyro.cli(
+        main,
+        args=argv,
+        config=(tyro.conf.DisallowNone, tyro.conf.FlagCreatePairsOff),
+    )
+
+
 if __name__ == "__main__":
-    main()
+    cli()

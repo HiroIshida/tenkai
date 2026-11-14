@@ -1,37 +1,40 @@
 #!/usr/bin/env python3
-"""Measure code generation and GPU compilation time for the planner library."""
-
-import argparse
 import json
 import statistics
+import sys
 from pathlib import Path
 
+import tyro
+
 from tenkai import build_rrt
-from tenkai.build import target_arch
+from tenkai.build import Backend, target_arch
 
 ASSETS = Path(__file__).resolve().parents[1] / "assets/fetch"
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--urdf", type=Path, default=ASSETS / "fetch.urdf")
-    parser.add_argument("--spheres", type=Path, default=ASSETS / "collision.yaml")
-    parser.add_argument("--backend", choices=["cuda", "hip"], default="cuda")
-    parser.add_argument("--arch")
-    parser.add_argument("--repeats", type=int, default=3)
-    parser.add_argument("--output", type=Path, default=Path("artifacts/compiler-bench"))
-    args = parser.parse_args()
-    if args.repeats < 1:
-        parser.error("repeats must be positive")
-    arch = target_arch(args.backend, args.arch)
-    compiler_name = "hipcc" if args.backend == "hip" else "nvcc"
+def main(
+    urdf: Path = ASSETS / "fetch.urdf",
+    spheres: Path = ASSETS / "collision.yaml",
+    backend: Backend = "cuda",
+    arch: str | None = None,
+    repeats: int = 3,
+    output: Path = Path("artifacts/compiler-bench"),
+) -> None:
+    """Measure code generation and GPU compilation time for the planner library."""
+    if repeats < 1:
+        print("repeats must be positive", file=sys.stderr)
+        raise SystemExit(2)
+
+    arch = target_arch(backend, arch)
+    compiler_name = "hipcc" if backend == "hip" else "nvcc"
+
     samples: list[dict[str, float]] = []
-    for repetition in range(args.repeats):
+    for repetition in range(repeats):
         compiled = build_rrt(
-            args.urdf,
-            args.spheres,
-            args.output / "build",
-            backend=args.backend,
+            urdf,
+            spheres,
+            output / "build",
+            backend=backend,
             arch=arch,
         )
         samples.append(compiled.timings)
@@ -42,7 +45,7 @@ def main() -> None:
     }
     report = {
         "math": compiled.model["math"],
-        "backend": args.backend,
+        "backend": backend,
         "arch": arch,
         "samples_seconds": samples,
         "median_seconds": medians,
@@ -50,7 +53,7 @@ def main() -> None:
         "timing": "Uncached build_rrt calls in one Python process; first sample retained. "
         "Includes source/file generation and GPU compilation; excludes Python imports and GPU driver JIT.",
     }
-    (args.output / "results.json").write_text(json.dumps(report, indent=2) + "\n")
+    (output / "results.json").write_text(json.dumps(report, indent=2) + "\n")
     print(
         f"Median: codegen {medians['codegen']:.3f}s, "
         f"{compiler_name} {medians[compiler_name]:.3f}s, total {medians['total']:.3f}s"
@@ -58,4 +61,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    tyro.cli(main, config=(tyro.conf.DisallowNone,))

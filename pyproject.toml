@@ -7,10 +7,14 @@ name = "tenkai"
 version = "0.1.0"
 description = "Generate robot-specialized CUDA kernels from URDF models"
 requires-python = ">=3.12,<3.13"
-dependencies = ["PyYAML>=6.0,<7", "numpy>=2"]
+dependencies = [
+    "PyYAML>=6.0,<7",
+    "numpy>=2",
+    "tyro>=1.0.16",
+]
 
 [project.scripts]
-tenkai-generate = "tenkai.cli:main"
+tenkai-generate = "tenkai.cli:cli"
 
 [project.optional-dependencies]
 bench = ["plainmp>=0.3.6,<0.4"]
