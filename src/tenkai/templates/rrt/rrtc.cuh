@@ -1,3 +1,13 @@
+#ifndef TPL_NAMESPACE_RRT_RRTC_INCLUDED
+#define TPL_NAMESPACE_RRT_RRTC_INCLUDED
+#include <cuda_runtime.h>
+#include <cstddef>
+#include <cstdint>
+
+#include "common.cuh"
+#include "generated_model.cuh"
+#include "types.hpp"
+
 namespace TPL_NAMESPACE {
 enum class RrtPreparation : unsigned char {
   Search,
@@ -468,4 +478,5 @@ extern "C" __global__ void tenkai_rrtc_workspace(TPL_NAMESPACE::RrtSpace space,
         space.lower, space.upper, space.reference, scene, uint32_t(id));
   }
 }
+#endif
 #endif

@@ -14,7 +14,7 @@ from .cuda import (
     generate_collision_function,
     generate_collision_kernel,
     generate_fk_kernel,
-    generate_rrt_kernel,
+    generate_rrt_sources,
 )
 from .dag import Optimization
 from .model import FkDag, Robot
@@ -91,7 +91,7 @@ def generate(
 
     start = time.perf_counter()
     if controls:
-        files["rrt.cuh"] = generate_rrt_kernel(fk, spheres, controls, options)
+        files.update(generate_rrt_sources(fk, spheres, controls, options))
     timings["rrt_codegen"] = time.perf_counter() - start
 
     if all_kernels:
@@ -104,7 +104,9 @@ def generate(
     start = time.perf_counter()
     output.mkdir(parents=True, exist_ok=True)
     for name, contents in files.items():
-        (output / name).write_text(contents)
+        path = output / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(contents)
 
     model = ModelMetadata(
         input_joint_names=fk.joint_names,

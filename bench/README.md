@@ -46,3 +46,6 @@ The report keeps `plainmp_ms` empty and stores the estimate separately as
 the planning benchmark's start, goal, and scene are specific to Fetch.
 JSON results and generated builds go to `artifacts/rrtc-bench/` or
 `artifacts/compiler-bench/`, configurable with `--output`.
+Each build contains `rrt/bindings.cu`, the separate planner headers under `rrt/`,
+and shared collision headers under `collision/`. The compiler timing includes
+writing this source tree and compiling its normal C++ includes.

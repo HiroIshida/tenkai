@@ -1,11 +1,13 @@
-__device__ inline bool tenkai_collision_in_workspace(const float* q,
-                                                     const float* lower,
-                                                     const float* upper) {
-  /* TPL_BOUNDS_CHECKS */
+#ifndef TPL_NAMESPACE_WORKSPACE_INCLUDED
+#define TPL_NAMESPACE_WORKSPACE_INCLUDED
+#include <cuda_runtime.h>
+#include <float.h>
+#include <math.h>
+#include <stddef.h>
 
-  return true;
-}
+#include "sdf.cuh"
 
+#if TPL_FP32
 namespace tenkai_f32 {
 struct WorkspaceInterval {
   float lower;
@@ -119,18 +121,5 @@ __device__ inline bool workspace_clear(WorkspaceInterval x,
 }
 
 }  // namespace tenkai_f32
-
-__device__ __noinline__ bool tenkai_collision_workspace_clear(
-    const float* lower,
-    const float* upper,
-    const float* reference,
-    tenkai_f32::Scene scene,
-    uint32_t environment_id) {
-  using namespace tenkai_f32;
-
-  const Environment environment = scene.environments[environment_id];
-
-  /* TPL_BODY */
-
-  return true;
-}
+#endif
+#endif

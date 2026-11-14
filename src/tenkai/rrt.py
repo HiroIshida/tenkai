@@ -13,7 +13,7 @@ from typing import Literal, NotRequired, Self, TypedDict
 import numpy as np
 import numpy.typing as npt
 
-from .build import Backend, compiler_command, copy_rrt_bindings, target_arch
+from .build import Backend, compiler_command, target_arch
 from .compiler import ModelMetadata, generate
 from .cuda import Options
 
@@ -121,7 +121,7 @@ def build_rrt(
 
     command, version = compiler_command(backend, arch)
     compiler_name = "hipcc" if backend == "hip" else "nvcc"
-    source = copy_rrt_bindings(directory)
+    source = directory / "rrt/bindings.cu"
     library = directory / "librrt.so"
     command.extend(["-O3", "-shared"])
     if backend == "cuda":
@@ -129,7 +129,6 @@ def build_rrt(
     command.extend(
         [
             "-fPIC",
-            "-DTENKAI_MODEL_NAMESPACE=" + options.namespace,
             "-I",
             str(directory),
             str(source),

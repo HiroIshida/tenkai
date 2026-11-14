@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from helpers import evaluate
 
-from tenkai import FkDag, Robot, generate_rrt_kernel, read_spheres
+from tenkai import FkDag, Robot, generate_rrt_sources, read_spheres
 
 ROOT = Path(__file__).resolve().parents[1]
 CHAIN = (ROOT / "tests/fixtures/fk_chain.urdf").read_text()
@@ -111,7 +111,7 @@ def test_invalid_spheres_are_rejected(source: str) -> None:
 def test_invalid_planner_controls(controls: list[int]) -> None:
     fk = FkDag.from_robot(Robot.from_string(CHAIN))
     with pytest.raises(ValueError):
-        generate_rrt_kernel(fk, [], controls)
+        generate_rrt_sources(fk, [], controls)
 
 
 def test_empty_spheres_and_root_pose() -> None:

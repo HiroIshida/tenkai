@@ -7,7 +7,7 @@ from .cuda import (
     generate_collision_function,
     generate_collision_kernel,
     generate_fk_kernel,
-    generate_rrt_kernel,
+    generate_rrt_sources,
 )
 from .model import FkDag, Robot
 from .rrt import Planner, RRTBuild, RRTConfig, RRTResult, build_rrt
@@ -22,7 +22,7 @@ __all__ = [
     "generate_collision_function",
     "generate_collision_kernel",
     "generate_fk_kernel",
-    "generate_rrt_kernel",
+    "generate_rrt_sources",
     "Planner",
     "RRTBuild",
     "RRTConfig",

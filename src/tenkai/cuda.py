@@ -269,7 +269,9 @@ def collision_function(emitter: DagEmitter, spheres: Sequence[Sphere], qualifier
     return collision_definition(emitter.name, qualifier, body, options)
 
 
-def streaming_function(emitter: DagEmitter, spheres: Sequence[Sphere]) -> str:
+def streaming_replacements(
+    emitter: DagEmitter, spheres: Sequence[Sphere]
+) -> list[tuple[str, str | int]]:
     finite_squared_radii = True
     for sphere in spheres:
         radius = f32(sphere.radius)
@@ -308,19 +310,16 @@ def streaming_function(emitter: DagEmitter, spheres: Sequence[Sphere]) -> str:
         return text
 
     body = emitter.body("q", True, store)
-    return template(
-        "collision/streaming.cuh",
-        (("STREAMABLE_BODY", streamable_body), ("BODY", body)),
-    )
+    return [("STREAMABLE_BODY", streamable_body), ("STREAMING_BODY", body)]
 
 
-def planning_functions(
+def planning_replacements(
     emitter: DagEmitter,
     spheres: Sequence[Sphere],
     groups: Sequence[Sequence[int]],
     moving: Sequence[int],
     controls: Sequence[int],
-) -> str:
+) -> list[tuple[str, str | int]]:
     options = emitter.options
     dag = emitter.dag
     dependencies_by_control = [dag.depends_on_inputs([index]) for index in controls]
@@ -347,8 +346,7 @@ def planning_functions(
         options,
         edge_groups,
     )
-    source = collision_function(edge_emitter, edge_spheres, "__forceinline__")
-    source += streaming_function(edge_emitter, edge_spheres)
+    edge_function = collision_function(edge_emitter, edge_spheres, "__forceinline__")
 
     bounds_checks: list[str] = []
     for dimension, flags in enumerate(dependencies_by_control):
@@ -391,83 +389,47 @@ def planning_functions(
             "scene, environment)) return false;\n"
         )
 
-    return source + template(
-        "collision/workspace.cuh",
-        (
-            ("BOUNDS_CHECKS", "".join(bounds_checks)),
-            ("BODY", "".join(body)),
-        ),
-    )
+    return [
+        ("EDGE_FUNCTION", edge_function),
+        *streaming_replacements(edge_emitter, edge_spheres),
+        ("BOUNDS_CHECKS", "".join(bounds_checks)),
+        ("WORKSPACE_BODY", "".join(body)),
+    ]
 
 
-def generate_collision_function(
-    fk: FkDag,
-    spheres: Sequence[Sphere],
-    options: Options = Options(),
-    controls: Sequence[int] | None = None,
-) -> str:
+def prepare_collision(
+    fk: FkDag, spheres: Sequence[Sphere], options: Options
+) -> tuple[DagEmitter, list[list[int]]]:
     for sphere in spheres:
         sphere.validate(fk)
 
     dag, outputs = center_expressions(fk, spheres, options.precision, options.optimization)
     groups = [outputs[i : i + 3] for i in range(0, len(outputs), 3)]
     emitter = DagEmitter("tenkai_collision_one", dag, len(fk.joint_names), outputs, options, groups)
-
-    source = template(
-        "collision/sdf.cuh",
-        (
-            ("NAMESPACE", options.namespace),
-            ("SCALAR", options.scalar),
-            ("FABS", "fabs" + options.suffix),
-            ("FMAX", "fmax" + options.suffix),
-            ("FMIN", "fmin" + options.suffix),
-            ("SQRT", "sqrt" + options.suffix),
-        ),
-    )
-    qualifier = "__noinline__" if controls is not None else "inline"
-    source += collision_function(emitter, spheres, qualifier)
-
-    if controls is not None:
-        dependent = dag.depends_on_inputs(controls)
-        moving: list[int] = []
-        for index, group in enumerate(groups):
-            if any(dependent[node] for node in group):
-                moving.append(index)
-
-        if len(moving) == len(spheres):
-            source += collision_definition(
-                "tenkai_collision_moving",
-                "inline",
-                "    return tenkai_collision_one(q, scene, environment_id);\n",
-                options,
-            )
-        else:
-            moving_groups = [groups[i] for i in moving]
-            moving_outputs = [node for group in moving_groups for node in group]
-            moving_emitter = DagEmitter(
-                "tenkai_collision_moving",
-                dag,
-                emitter.dof,
-                moving_outputs,
-                options,
-                moving_groups,
-            )
-            source += collision_function(moving_emitter, [spheres[i] for i in moving], qualifier)
-
-        if options.precision == "f32":
-            source += planning_functions(emitter, spheres, groups, moving, controls)
-
-    return source
+    return emitter, groups
 
 
-def generate_collision_kernel(
-    fk: FkDag,
-    spheres: Sequence[Sphere],
-    options: Options = Options(),
-    controls: Sequence[int] | None = None,
+def scalar_replacements(options: Options) -> list[tuple[str, str | int]]:
+    return [
+        ("NAMESPACE", options.namespace),
+        ("SCALAR", options.scalar),
+        ("FABS", "fabs" + options.suffix),
+        ("FMAX", "fmax" + options.suffix),
+        ("FMIN", "fmin" + options.suffix),
+        ("SQRT", "sqrt" + options.suffix),
+        ("FP32", int(options.precision == "f32")),
+    ]
+
+
+def generate_collision_function(
+    fk: FkDag, spheres: Sequence[Sphere], options: Options = Options()
 ) -> str:
-    source = generate_collision_function(fk, spheres, options, controls)
+    emitter, _ = prepare_collision(fk, spheres, options)
+    source = template("collision/sdf.cuh", scalar_replacements(options))
+    return source + collision_function(emitter, spheres, "inline")
 
+
+def collision_kernel(fk: FkDag, spheres: Sequence[Sphere], options: Options) -> str:
     configuration = "configurations"
     if fk.joint_names:
         configuration = f"configurations + batch * {len(fk.joint_names)}"
@@ -476,18 +438,26 @@ def generate_collision_kernel(
     if spheres:
         collision = f"tenkai_collision_one({configuration}, scene, environment_ids[batch])"
 
-    return source + template(
+    return template(
         "collision/batch_kernel.cuh",
         (("SCALAR", options.scalar), ("NAMESPACE", options.namespace), ("COLLISION", collision)),
     )
 
 
-def generate_rrt_kernel(
+def generate_collision_kernel(
+    fk: FkDag, spheres: Sequence[Sphere], options: Options = Options()
+) -> str:
+    source = generate_collision_function(fk, spheres, options)
+    return source + collision_kernel(fk, spheres, options)
+
+
+def generate_rrt_sources(
     fk: FkDag,
     spheres: Sequence[Sphere],
     controls: Sequence[int],
     options: Options = Options(),
-) -> str:
+) -> dict[str, str]:
+    """Return relative paths and source text for a model-specific native planner."""
     if not controls:
         raise ValueError("RRT requires at least one controlled joint")
     if any(not 0 <= i < len(fk.joint_names) for i in controls):
@@ -495,22 +465,61 @@ def generate_rrt_kernel(
     if len(set(controls)) != len(controls):
         raise ValueError("duplicate RRT control index")
 
-    source = generate_collision_kernel(fk, spheres, options, controls)
-    source += template("rrt/types.hpp")
-
-    indices = ", ".join(map(str, controls))
-    fp32 = options.precision == "f32"
-    files = ["rrt/common.cuh", "rrt/rrtc.cuh", "rrt/runtime.cuh"]
-    for name in files:
-        source += template(
-            name,
-            (
-                ("NAMESPACE", options.namespace),
-                ("DIMENSION", len(controls)),
-                ("FK_DOF", len(fk.joint_names)),
-                ("CONTROLS", indices),
-                ("FP32", int(fp32)),
-            ),
+    emitter, groups = prepare_collision(fk, spheres, options)
+    dependent = emitter.dag.depends_on_inputs(controls)
+    moving = [index for index, group in enumerate(groups) if any(dependent[node] for node in group)]
+    functions = collision_function(emitter, spheres, "__noinline__")
+    if len(moving) == len(spheres):
+        functions += collision_definition(
+            "tenkai_collision_moving",
+            "inline",
+            "    return tenkai_collision_one(q, scene, environment_id);\n",
+            options,
+        )
+    else:
+        moving_groups = [groups[i] for i in moving]
+        moving_outputs = [node for group in moving_groups for node in group]
+        moving_emitter = DagEmitter(
+            "tenkai_collision_moving",
+            emitter.dag,
+            emitter.dof,
+            moving_outputs,
+            options,
+            moving_groups,
+        )
+        functions += collision_function(
+            moving_emitter, [spheres[i] for i in moving], "__noinline__"
         )
 
-    return source
+    replacements = scalar_replacements(options)
+    replacements.extend(
+        [
+            ("DIMENSION", len(controls)),
+            ("FK_DOF", len(fk.joint_names)),
+            ("CONTROLS", ", ".join(map(str, controls))),
+            ("COLLISION_FUNCTIONS", functions),
+            ("COLLISION_KERNEL", collision_kernel(fk, spheres, options)),
+        ]
+    )
+    if options.precision == "f32":
+        replacements.extend(planning_replacements(emitter, spheres, groups, moving, controls))
+    else:
+        replacements.extend(
+            (key, "")
+            for key in (
+                "EDGE_FUNCTION",
+                "STREAMABLE_BODY",
+                "STREAMING_BODY",
+                "BOUNDS_CHECKS",
+                "WORKSPACE_BODY",
+            )
+        )
+
+    files: dict[str, str] = {}
+    for path in sorted((TEMPLATES / "rrt").iterdir()):
+        name = path.relative_to(TEMPLATES).as_posix()
+        files[name] = template(name, replacements)
+    for name in ("sdf", "streaming", "workspace"):
+        output_name = f"collision/{name}.cuh"
+        files[output_name] = template(output_name, replacements)
+    return files

@@ -1,12 +1,17 @@
 #include <cuda_runtime.h>
 #include <algorithm>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
-#include "rrt.cuh"
+#include "planner.cuh"
 
-namespace model = TENKAI_MODEL_NAMESPACE;
+namespace model = TPL_NAMESPACE;
 using Scalar = model::Scalar;
 
 namespace {

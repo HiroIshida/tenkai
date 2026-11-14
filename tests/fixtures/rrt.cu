@@ -2,7 +2,7 @@
 #include <cassert>
 #include <iostream>
 #include <random>
-#include "rrt.cuh"
+#include "rrt/planner.cuh"
 
 namespace m = TENKAI_MODEL_NAMESPACE;
 using Scalar = m::Scalar;

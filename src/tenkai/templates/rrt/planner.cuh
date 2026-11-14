@@ -1,6 +1,17 @@
+#ifndef TPL_NAMESPACE_RRT_PLANNER_INCLUDED
+#define TPL_NAMESPACE_RRT_PLANNER_INCLUDED
 #include <cuda_runtime.h>
+#include <cstddef>
+#include <cstdint>
+#include <limits>
+#include <stdexcept>
 #include <string>
 #include <vector>
+
+#include "common.cuh"
+#include "generated_model.cuh"
+#include "rrtc.cuh"
+#include "types.hpp"
 
 namespace TPL_NAMESPACE {
 inline void cuda_check(cudaError_t error, const char* operation) {
@@ -249,3 +260,4 @@ class RrtPlanner {
 };
 
 }  // namespace TPL_NAMESPACE
+#endif

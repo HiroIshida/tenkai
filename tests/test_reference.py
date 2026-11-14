@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import re
 from pathlib import Path
 from typing import TypedDict
 
@@ -33,7 +34,14 @@ def test_generated_sources_match_reference(reference: Reference, tmp_path: Path)
     options = Options(reference["math"], reference["optimization"], reference["live_budget"])
     generate(ROOT / reference["urdf"], ROOT / reference["spheres"], tmp_path, options, True)
     actual: dict[str, str] = {}
-    for path in tmp_path.glob("*.cuh"):
-        actual[path.name] = hashlib.sha256(path.read_bytes()).hexdigest()
+    for path in tmp_path.rglob("*"):
+        if path.is_file() and path.suffix in (".cu", ".cuh", ".hpp"):
+            source = path.read_text()
+            assert "TPL_" not in source
+            for include in re.findall(r'^#include "([^"]+)"', source, re.MULTILINE):
+                assert (path.parent / include).is_file(), (path, include)
+            actual[path.relative_to(tmp_path).as_posix()] = hashlib.sha256(
+                path.read_bytes()
+            ).hexdigest()
     assert actual == reference["sha256"]
     assert json.loads((tmp_path / "model.json").read_text()) == reference["model"]

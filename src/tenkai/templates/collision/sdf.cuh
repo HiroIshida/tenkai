@@ -3,6 +3,9 @@
 // licenses/tenkai2-MPL-2.0.txt. License text: https://mozilla.org/MPL/2.0/.
 #ifndef TPL_NAMESPACE_SDF_INCLUDED
 #define TPL_NAMESPACE_SDF_INCLUDED
+#if defined(__CUDACC__) || defined(__HIPCC__)
+#include <cuda_runtime.h>
+#endif
 #include <float.h>
 #include <math.h>
 #include <stddef.h>

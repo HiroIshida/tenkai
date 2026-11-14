@@ -15,7 +15,7 @@ from tenkai import (
     generate_centers_kernel,
     generate_collision_kernel,
     generate_fk_kernel,
-    generate_rrt_kernel,
+    generate_rrt_sources,
 )
 from tenkai.build import Backend, compiler_command
 from tenkai.cuda import MathMode
@@ -28,6 +28,13 @@ FIXTURES = ROOT / "tests/fixtures"
 def run(command: list[str]) -> None:
     result = subprocess.run(command, capture_output=True, text=True)
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def write_sources(directory: Path, files: dict[str, str]) -> None:
+    for name, contents in files.items():
+        path = directory / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(contents)
 
 
 def chain_sources(directory: Path, options: Options) -> None:
@@ -54,7 +61,7 @@ def planner_source(directory: Path, options: Options, controls: tuple[int, ...] 
     robot += "</robot>"
     fk = FkDag.from_robot(Robot.from_string(robot))
     spheres = [Sphere(3, (0, 0, 0), 0.05), Sphere(3, (0, 0, 0.025), 0.025)]
-    (directory / "rrt.cuh").write_text(generate_rrt_kernel(fk, spheres, controls, options))
+    write_sources(directory, generate_rrt_sources(fk, spheres, controls, options))
 
 
 def static_planner_source(directory: Path, options: Options, sphere_count: int) -> None:
@@ -74,9 +81,7 @@ def static_planner_source(directory: Path, options: Options, sphere_count: int) 
         Sphere(fk.link_names.index("lift"), (0, 0, 0.5), 0.05),
         Sphere(fk.link_names.index("arm"), (2, 0, 0), 0.05),
     ]
-    (directory / "rrt.cuh").write_text(
-        generate_rrt_kernel(fk, spheres[:sphere_count], [0], options)
-    )
+    write_sources(directory, generate_rrt_sources(fk, spheres[:sphere_count], [0], options))
 
 
 def run_planner_fixture(
@@ -147,12 +152,26 @@ def test_all_kernels_compile(
     planner_source(tmp_path, options)
     arithmetic = tmp_path / "arithmetic.cu"
     arithmetic.write_text('#include "fk.cuh"\n#include "centers.cuh"\n#include "collision.cuh"\n')
-    planner = tmp_path / "planner.cu"
-    planner.write_text('#include "rrt.cuh"\n')
     command, _ = compiler_command(gpu_backend, gpu_arch)
     compile_only = "-c" if gpu_backend == "hip" else "--ptx"
-    for source in (arithmetic, planner):
+    for source in (arithmetic, tmp_path / "rrt/bindings.cu"):
         run([*command, compile_only, str(source), "-o", str(source.with_suffix(".o"))])
+
+
+@pytest.mark.gpu_compile
+@pytest.mark.parametrize("math_mode", ["f32", "f32-sfu", "f64"])
+def test_planner_headers_are_self_contained(
+    tmp_path: Path, math_mode: MathMode, gpu_backend: Backend, gpu_arch: str
+) -> None:
+    planner_source(tmp_path, Options(math_mode))
+    command, _ = compiler_command(gpu_backend, gpu_arch)
+    compile_only = "-c" if gpu_backend == "hip" else "--ptx"
+    headers = sorted(path for path in tmp_path.rglob("*") if path.suffix in (".cuh", ".hpp"))
+    for header in headers:
+        name = header.relative_to(tmp_path).as_posix()
+        source = tmp_path / "header.cu"
+        source.write_text(f'#include "{name}"\n#include "rrt/planner.cuh"\n#include "{name}"\n')
+        run([*command, compile_only, str(source), "-o", str(tmp_path / "header.o")])
 
 
 @pytest.mark.gpu

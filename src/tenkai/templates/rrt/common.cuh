@@ -1,12 +1,17 @@
+#ifndef TPL_NAMESPACE_RRT_COMMON_INCLUDED
+#define TPL_NAMESPACE_RRT_COMMON_INCLUDED
+#include <cuda_runtime.h>
 #include <cfloat>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <limits>
 #include <stdexcept>
 
-namespace TPL_NAMESPACE {
-constexpr uint32_t rrt_dimension = TPL_DIMENSION;
-constexpr uint32_t rrt_fk_dof = TPL_FK_DOF;
+#include "generated_model.cuh"
+#include "types.hpp"
 
+namespace TPL_NAMESPACE {
 struct RrtSpace {
   Scalar lower[rrt_dimension];
   Scalar upper[rrt_dimension];
@@ -424,3 +429,4 @@ __device__ inline void rrt_initialize(const RrtProblem& problem,
 }
 
 }  // namespace TPL_NAMESPACE
+#endif

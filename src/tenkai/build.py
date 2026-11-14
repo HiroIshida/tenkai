@@ -4,7 +4,6 @@ import os
 import re
 import shutil
 import subprocess
-from pathlib import Path
 from typing import Literal
 
 from .cuda import TEMPLATES
@@ -70,10 +69,3 @@ def toolchain() -> tuple[str, str, str]:
         raise RuntimeError("CUDA host compiler not found; set CXX to a compiler supported by nvcc")
 
     return nvcc, compiler, version
-
-
-def copy_rrt_bindings(directory: Path) -> Path:
-    # Compile beside the generated rrt.cuh, not the adjacent source template.
-    source = directory / "rrt.cu"
-    shutil.copyfile(TEMPLATES / "rrt/bindings.cu", source)
-    return source

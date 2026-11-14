@@ -22,7 +22,8 @@ uv run tenkai-generate \
   --float --no-sfu artifacts/generated
 ```
 
-This writes `collision.cuh`, `rrt.cuh`, and `model.json`. Use `--all-kernels` to
+This writes `collision.cuh`, `model.json`, and the native planner sources below
+when the model has controlled joints. Use `--all-kernels` to
 also emit FK, sphere-center, and collision-predicate sources. `--double`,
 `--optimization none|basic|algebraic`, and `--live-budget N` select the numerical
 and scheduling behavior. The CLI prints stage durations as JSON.
@@ -30,6 +31,30 @@ and scheduling behavior. The CLI prints stage durations as JSON.
 `model.json` records joint and sphere metadata, plus `math`, `optimization`, and
 `live_budget` using the same values as `Options`. A null `live_budget` preserves
 DAG order.
+
+The planner uses ordinary C++ includes, with the same directory structure as
+`src/tenkai/templates`:
+
+```text
+rrt/bindings.cu
+  └─ planner.cuh       GPU buffers, kernel launches, and RrtPlanner
+       └─ rrtc.cuh     single-candidate RRT-Connect kernels
+            └─ common.cuh
+                 ├─ types.hpp
+                 └─ generated_model.cuh
+                      └─ ../collision/{sdf,streaming,workspace}.cuh
+```
+
+Each header includes its direct dependencies. `generated_model.cuh` contains
+model-specific collision predicates, the collision batch kernel, and dimensions.
+Python substitutes model parameters and writes separate files; the GPU compiler
+resolves their includes. Compile `rrt/bindings.cu` to build the native binding,
+or include `rrt/planner.cuh` in a custom native application. Keep the generated
+directory tree together when moving it.
+
+`generate_rrt_sources(fk, spheres, controls, options)` returns a mapping from
+relative file paths to source text. `controls` contains FK joint indices in
+planning order.
 
 ```python
 from pathlib import Path
