@@ -14,6 +14,20 @@
 namespace model = tenkai_f32;
 using Scalar = model::Scalar;
 
+// nvcc propagates hidden visibility from anonymous namespace parameter types
+// to the C entry point, preventing ctypes from finding it.
+struct SceneInput {
+  const uint32_t* ranges;
+  const double* boxes;
+  const double* spheres;
+  const double* cylinders;
+  const double* grounds;
+  uint32_t box_count;
+  uint32_t sphere_count;
+  uint32_t cylinder_count;
+  uint32_t ground_count;
+};
+
 namespace {
 thread_local std::string last_error;
 
@@ -28,18 +42,6 @@ int boundary(F operation) {
     return -1;
   }
 }
-
-struct SceneInput {
-  const uint32_t* ranges;
-  const double* boxes;
-  const double* spheres;
-  const double* cylinders;
-  const double* grounds;
-  uint32_t box_count;
-  uint32_t sphere_count;
-  uint32_t cylinder_count;
-  uint32_t ground_count;
-};
 
 Scalar scene_scalar(double value) {
   const Scalar result = Scalar(value);
