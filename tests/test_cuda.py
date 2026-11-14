@@ -1,7 +1,6 @@
 """Generated kernels compile and preserve the existing numeric/planner checks."""
 
 import os
-import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -18,6 +17,7 @@ from tenkai import (
     generate_fk_kernel,
     generate_rrt_kernel,
 )
+from tenkai.build import Backend, compiler_command
 from tenkai.cuda import MathMode
 from tenkai.dag import Optimization
 
@@ -30,24 +30,6 @@ def run(command: list[str]) -> None:
     assert result.returncode == 0, result.stdout + result.stderr
 
 
-def cuda_command() -> list[str]:
-    nvcc = shutil.which(os.environ.get("NVCC", "nvcc"))
-    if nvcc is None:
-        pytest.fail("nvcc is required for --run-cuda/--run-gpu")
-    version = subprocess.check_output([nvcc, "--version"], text=True)
-    host = "c++"
-    if re.search(r"release 10\.", version):
-        host = "g++-8"
-    return [
-        nvcc,
-        "-ccbin",
-        os.environ.get("CXX", host),
-        "-std=c++14",
-        "-arch=compute_75",
-        "-code=compute_75",
-    ]
-
-
 def chain_sources(directory: Path, options: Options) -> None:
     fk = FkDag.from_robot(Robot.from_string((FIXTURES / "fk_chain.urdf").read_text()))
     tool = fk.link_names.index("tool")
@@ -55,6 +37,11 @@ def chain_sources(directory: Path, options: Options) -> None:
     (directory / "fk.cuh").write_text(generate_fk_kernel(fk, tool, options))
     (directory / "centers.cuh").write_text(generate_centers_kernel(fk, spheres, options))
     (directory / "collision.cuh").write_text(generate_collision_kernel(fk, spheres, options))
+    tolerance = "1e-12" if options.math == "f64" else "1e-5"
+    (directory / "config.h").write_text(
+        f"using Scalar = {options.scalar};\nnamespace sdf = {options.namespace};\n"
+        f"constexpr double tolerance = {tolerance};\n"
+    )
 
 
 def planner_source(directory: Path, options: Options) -> None:
@@ -81,11 +68,6 @@ def test_host_arithmetic(
         pytest.skip("host arithmetic requires a C++ compiler")
     options = Options(math_mode, optimization, budget)
     chain_sources(tmp_path, options)
-    tolerance = "1e-12" if math_mode == "f64" else "1e-5"
-    (tmp_path / "config.h").write_text(
-        f"using Scalar = {options.scalar};\nnamespace sdf = {options.namespace};\n"
-        f"constexpr double tolerance = {tolerance};\n"
-    )
     binary = tmp_path / "arithmetic"
     run(
         [
@@ -104,9 +86,11 @@ def test_host_arithmetic(
     run([str(binary)])
 
 
-@pytest.mark.cuda
+@pytest.mark.gpu_compile
 @pytest.mark.parametrize("math_mode", ["f32", "f32-sfu", "f64"])
-def test_all_kernels_compile(tmp_path: Path, math_mode: MathMode) -> None:
+def test_all_kernels_compile(
+    tmp_path: Path, math_mode: MathMode, gpu_backend: Backend, gpu_arch: str
+) -> None:
     options = Options(math_mode)
     chain_sources(tmp_path, options)
     planner_source(tmp_path, options)
@@ -114,19 +98,51 @@ def test_all_kernels_compile(tmp_path: Path, math_mode: MathMode) -> None:
     arithmetic.write_text('#include "fk.cuh"\n#include "centers.cuh"\n#include "collision.cuh"\n')
     planner = tmp_path / "planner.cu"
     planner.write_text('#include "rrt.cuh"\n')
+    command, _ = compiler_command(gpu_backend, gpu_arch)
+    compile_only = "-c" if gpu_backend == "hip" else "--ptx"
     for source in (arithmetic, planner):
-        run([*cuda_command(), "--ptx", str(source), "-o", str(source.with_suffix(".ptx"))])
+        run([*command, compile_only, str(source), "-o", str(source.with_suffix(".o"))])
 
 
 @pytest.mark.gpu
 @pytest.mark.parametrize("math_mode", ["f32", "f32-sfu", "f64"])
-def test_planner_on_gpu(tmp_path: Path, math_mode: MathMode) -> None:
+def test_arithmetic_on_gpu(
+    tmp_path: Path, math_mode: MathMode, gpu_backend: Backend, gpu_arch: str
+) -> None:
+    chain_sources(tmp_path, Options(math_mode))
+    command, _ = compiler_command(gpu_backend, gpu_arch)
+    if gpu_backend == "cuda":
+        command.extend(["-x", "cu"])
+    binary = tmp_path / "arithmetic"
+    run(
+        [
+            *command,
+            "-I",
+            str(tmp_path),
+            "-I",
+            str(FIXTURES),
+            str(FIXTURES / "python_host.cpp"),
+            "-o",
+            str(binary),
+        ]
+    )
+    run([str(binary)])
+
+
+@pytest.mark.gpu
+@pytest.mark.parametrize("math_mode", ["f32", "f32-sfu", "f64"])
+def test_planner_on_gpu(
+    tmp_path: Path, math_mode: MathMode, gpu_backend: Backend, gpu_arch: str
+) -> None:
     options = Options(math_mode)
     planner_source(tmp_path, options)
     binary = tmp_path / "rrt-test"
+    command, _ = compiler_command(gpu_backend, gpu_arch)
+    if math_mode == "f32":
+        command.append("-DTEST_STANDARD_FP32")
     run(
         [
-            *cuda_command(),
+            *command,
             "-DTENKAI_MODEL_NAMESPACE=" + options.namespace,
             "-I",
             str(tmp_path),

@@ -30,7 +30,11 @@ exclude = ["__pycache__"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-markers = ["cuda: requires nvcc and a supported host compiler", "gpu: requires a CUDA GPU"]
+markers = [
+    "cuda: requires nvcc and a supported host compiler",
+    "gpu_compile: requires the selected CUDA or HIP compiler",
+    "gpu: requires a GPU supported by the selected backend",
+]
 
 [tool.ruff]
 target-version = "py312"

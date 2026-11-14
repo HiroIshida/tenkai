@@ -2,18 +2,50 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdio>
+#if defined(__CUDACC__) || defined(__HIPCC__)
+#include <cuda_runtime.h>
+#include <stdexcept>
+#else
 #define __device__
 #define __global__
 struct Dim { unsigned int x; };
 Dim blockIdx{}, blockDim{}, threadIdx{};
+#endif
 #include "fk.cuh"
 #include "centers.cuh"
 #include "collision.cuh"
 #include "config.h"
+#if !defined(__CUDACC__) && !defined(__HIPCC__)
 #include "sdf_checks.h"
+#endif
+
+#if defined(__CUDACC__) || defined(__HIPCC__)
+void check(cudaError_t error) {
+    if (error != cudaSuccess) throw std::runtime_error(cudaGetErrorString(error));
+}
+
+template <typename T> class Buffer {
+public:
+    T* data = nullptr;
+    Buffer(const T* input, size_t count) : bytes_(count * sizeof(T)) {
+        check(cudaMalloc(&data, bytes_));
+        check(cudaMemcpy(data, input, bytes_, cudaMemcpyHostToDevice));
+    }
+    ~Buffer() { cudaFree(data); }
+    Buffer(const Buffer&) = delete;
+    Buffer& operator=(const Buffer&) = delete;
+    void download(T* output) {
+        check(cudaMemcpy(output, data, bytes_, cudaMemcpyDeviceToHost));
+    }
+private:
+    size_t bytes_;
+};
+#endif
 
 int main() {
+#if !defined(__CUDACC__) && !defined(__HIPCC__)
     if (!check_sdfs()) return 1;
+#endif
     const Scalar q[] = {0,0,0,0.5, Scalar(1.5707963267948966),0,0,0.5,
                         0,Scalar(1.5707963267948966),0,0.5};
     const double expected[][7] = {
@@ -30,12 +62,32 @@ int main() {
     std::fill_n(poses, 28, Scalar(123));
     std::fill_n(centers, 12, Scalar(123));
     std::fill_n(flags, 4, 123);
+#if defined(__CUDACC__) || defined(__HIPCC__)
+    Buffer<Scalar> device_q(q, 12), device_poses(poses, 28), device_centers(centers, 12);
+    Buffer<uint32_t> device_ids(ids, 3);
+    Buffer<unsigned char> device_flags(flags, 4);
+    Buffer<sdf::Sphere> device_obstacle(&obstacle, 1);
+    Buffer<sdf::Ground> device_ground(&ground, 1);
+    Buffer<sdf::Environment> device_environment(&environment, 1);
+    const sdf::Scene device_scene = {device_environment.data, nullptr, device_obstacle.data,
+                                     nullptr, device_ground.data};
+    tenkai_fk<<<1, 32>>>(device_q.data, device_poses.data, 3);
+    check(cudaGetLastError());
+    tenkai_centers<<<1, 32>>>(device_q.data, device_centers.data, 3);
+    check(cudaGetLastError());
+    tenkai_collision<<<1, 32>>>(device_q.data, device_ids.data, device_scene, device_flags.data, 3);
+    check(cudaGetLastError());
+    device_poses.download(poses);
+    device_centers.download(centers);
+    device_flags.download(flags);
+#else
     blockDim.x = 4;
     for (threadIdx.x = 0; threadIdx.x < 4; ++threadIdx.x) {
         tenkai_fk(q, poses, 3);
         tenkai_centers(q, centers, 3);
         tenkai_collision(q, ids, scene, flags, 3);
     }
+#endif
     for (size_t i = 0; i < 3; ++i) {
         for (size_t j = 0; j < 7; ++j)
             if (std::abs(poses[i*7+j] - expected[i][j]) > tolerance) return 2;
