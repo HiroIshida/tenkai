@@ -146,8 +146,16 @@ uv build
 
 Tests include frozen Rust source hashes for 108 configurations and CPU execution
 of generated kernels. `uv run pytest --run-cuda` also compiles with nvcc.
-`--run-gpu` enables the planner execution tests and requires a CUDA GPU. Set
+`--run-gpu` enables GPU execution tests. Set
 `NVCC` and `CXX` when the toolkit requires a specific compiler.
+
+```sh
+uv run pytest --run-hip --run-gpu
+```
+
+`--run-hip` selects HIP and enables compilation tests; `--run-gpu` additionally
+executes them on the GPU. `--gpu-arch gfx1201` overrides the default target.
+CUDA and HIP runs reuse the same arithmetic, collision, planner, and binding tests.
 
 ## Benchmarks and migration reference
 
