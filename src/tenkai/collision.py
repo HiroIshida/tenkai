@@ -10,7 +10,7 @@ from yaml.nodes import MappingNode, Node, ScalarNode, SequenceNode
 
 from .dag import Dag, Optimization
 from .model import FkDag
-from .transform import MatrixNodes, Pose, Vector3
+from .transform import MatrixNodes, PointNodes, Pose, Vector3
 
 
 @dataclass(frozen=True)
@@ -135,6 +135,22 @@ def read_spheres(source: str, fk: FkDag) -> list[Sphere]:
     return read_config(source).resolve(fk)
 
 
+def enclosing_sphere(spheres: Sequence[Sphere]) -> Sphere:
+    if not spheres:
+        raise ValueError("cannot enclose an empty sphere group")
+    link = spheres[0].link_index
+    if any(sphere.link_index != link for sphere in spheres):
+        raise ValueError("enclosing sphere requires a single link")
+
+    count = len(spheres)
+    coordinates = [
+        math.fsum(sphere.position[axis] / count for sphere in spheres) for axis in range(3)
+    ]
+    center = (coordinates[0], coordinates[1], coordinates[2])
+    radius = max(math.dist(sphere.position, center) + sphere.radius for sphere in spheres)
+    return Sphere(link, center, math.nextafter(radius, math.inf))
+
+
 def center_expressions(
     fk: FkDag, spheres: Sequence[Sphere], optimization: Optimization
 ) -> tuple[Dag, list[int]]:
@@ -170,10 +186,18 @@ def center_dag(
 
 
 @dataclass
+class LinkBound:
+    sphere: Sphere
+    center: PointNodes
+    local_scale: float
+
+
+@dataclass
 class CollisionDag:
     dag: Dag
     centers: list[list[int]]
     poses: dict[int, Pose]
+    bounds: dict[int, LinkBound]
 
 
 def collision_expressions(
@@ -181,10 +205,22 @@ def collision_expressions(
 ) -> CollisionDag:
     dag, outputs = center_dag(fk, spheres, optimization)
     center_count = len(outputs)
-    links = list(dict.fromkeys(sphere.link_index for sphere in spheres))
+    links: dict[int, list[Sphere]] = {}
+    for sphere in spheres:
+        links.setdefault(sphere.link_index, []).append(sphere)
     for link in links:
         pose = fk.poses[link]
         outputs.extend((*pose.translation, *pose.rotation))
+
+    enclosing: list[tuple[Sphere, float]] = []
+    for link, members in links.items():
+        if len(members) < 2:
+            continue
+        bound = enclosing_sphere(members)
+        local_scale = max(sum(abs(value) for value in s.position) for s in [*members, bound])
+        x, y, z = [dag.constant(value) for value in bound.position]
+        outputs.extend(fk.poses[link].transform_point(dag, (x, y, z)))
+        enclosing.append((bound, local_scale))
 
     dag, outputs = dag.optimize(outputs, optimization)
     centers = [outputs[i : i + 3] for i in range(0, center_count, 3)]
@@ -193,4 +229,9 @@ def collision_expressions(
         start = center_count + index * 7
         tx, ty, tz, qx, qy, qz, qw = outputs[start : start + 7]
         poses[link] = Pose((tx, ty, tz), (qx, qy, qz, qw))
-    return CollisionDag(dag, centers, poses)
+    bounds: dict[int, LinkBound] = {}
+    for index, (bound, local_scale) in enumerate(enclosing):
+        start = center_count + len(links) * 7 + index * 3
+        x, y, z = outputs[start : start + 3]
+        bounds[bound.link_index] = LinkBound(bound, (x, y, z), local_scale)
+    return CollisionDag(dag, centers, poses, bounds)

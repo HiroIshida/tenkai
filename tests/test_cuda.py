@@ -95,13 +95,13 @@ def run_planner_fixture(
 ) -> None:
     binary = directory / "planner-test"
     command, _ = compiler_command(backend, arch)
+    # Generated headers must precede HIP's template include directory.
+    command[1:1] = ["-I", str(directory)]
     command.extend("-D" + define for define in defines)
     run(
         [
             *command,
             "-DTENKAI_MODEL_NAMESPACE=tenkai_f32",
-            "-I",
-            str(directory),
             "-I",
             str(FIXTURES),
             str(FIXTURES / fixture),

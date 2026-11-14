@@ -194,13 +194,42 @@ def link_collision_body(
     fk = DagEmitter("", emitter.dag, emitter.dof, pose_outputs, emitter.options)
     source = [fk.body("q", lambda _index, _node: "")]
     cached = {step.node for step in fk.schedule.steps if isinstance(step, Evaluate)}
+    streaming_exit = (
+        "    if (__any_sync(mask, collision || retry))\n"
+        "        return retry ? StreamingCollision::Retry : StreamingCollision::Blocked;\n"
+    )
 
     outputs = [step.node for step in emitter.schedule.steps if isinstance(step, Store)]
-    for indices in links.values():
+    for link, indices in links.items():
         members = [spheres[index] for index in indices]
         groups = [outputs[index * 3 : index * 3 + 3] for index in indices]
         points = [node for group in groups for node in group]
         link_emitter = DagEmitter("", emitter.dag, emitter.dof, points, emitter.options, groups)
+        bound = geometry.bounds.get(link)
+        link_cached = cached.copy()
+        source.append("    {\n")
+        if bound is not None:
+            bound_emitter = DagEmitter("", emitter.dag, emitter.dof, bound.center, emitter.options)
+            source.append(bound_emitter.body("q", lambda _index, _node: "", cached))
+            link_cached.update(
+                step.node for step in bound_emitter.schedule.steps if isinstance(step, Evaluate)
+            )
+            pose = geometry.poses[link]
+            arguments = ["{" + ", ".join(f"v{node}" for node in bound.center) + "}"]
+            arguments.append("{" + ", ".join(f"v{node}" for node in pose.translation) + "}")
+            arguments.extend(f"v{node}" for node in pose.rotation)
+            arguments.extend((number(bound.sphere.radius) + "f", number(bound.local_scale) + "f"))
+            source.append(
+                "    const auto enclosing = tenkai_f32::link_sphere("
+                + ", ".join(arguments)
+                + ");\n"
+            )
+            condition = (
+                "streaming_may_intersect(box, enclosing) || may_intersect(ground, enclosing)"
+                if streaming
+                else "tenkai_f32::may_intersect(scene, environment, enclosing)"
+            )
+            source.append(f"    if ({condition}) {{\n")
 
         def store(index: int, value: int) -> str:
             axis = "xyz"[index % 3]
@@ -219,16 +248,19 @@ def link_collision_body(
             end = index // 3 + 1
             if end % 8 == 0 or end == len(members):
                 if streaming:
-                    text += "    if (__any_sync(mask, collision || retry))\n"
-                    text += (
-                        "        return retry ? StreamingCollision::Retry : "
-                        "StreamingCollision::Blocked;\n"
-                    )
+                    if bound is None:
+                        text += streaming_exit
                 else:
                     text += "    if (collision) return true;\n"
             return text
 
-        source.append("    {\n" + link_emitter.body("q", store, cached) + "    }\n")
+        source.append(link_emitter.body("q", store, link_cached))
+        if bound is not None:
+            source.append("    }\n")
+            if streaming:
+                # Skipped lanes must rejoin before a vote using the caller's mask.
+                source.append(streaming_exit)
+        source.append("    }\n")
     return "".join(source)
 
 
@@ -368,6 +400,8 @@ def generate_collision_function(
 ) -> str:
     emitter, geometry = prepare_collision(fk, spheres, options)
     source = template("collision/sdf.cuh")
+    # Standalone collision source embeds its dependencies.
+    source += template("collision/broad.cuh").replace('#include "sdf.cuh"\n', "")
     return source + collision_function(emitter, spheres, geometry, "inline")
 
 
@@ -446,7 +480,7 @@ def generate_rrt_sources(
     for path in sorted((TEMPLATES / "rrt").iterdir()):
         name = path.relative_to(TEMPLATES).as_posix()
         files[name] = template(name, replacements)
-    for name in ("sdf", "streaming", "workspace"):
+    for name in ("sdf", "broad", "streaming", "workspace"):
         output_name = f"collision/{name}.cuh"
         files[output_name] = template(output_name, replacements)
     return files

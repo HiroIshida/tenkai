@@ -3,7 +3,7 @@
 #include <cuda_runtime.h>
 #include <math.h>
 
-#include "sdf.cuh"
+#include "broad.cuh"
 
 namespace tenkai_f32 {
 enum class StreamingCollision { Clear, Blocked, Retry };
@@ -21,6 +21,14 @@ __device__ inline bool streaming_intersects(const Box& box,
                   fabsf(p.y) - box.extents.y * 0.5f,
                   fabsf(p.z) - box.extents.z * 0.5f};
   return squared_outside_distance(d) <= radius * radius;
+}
+
+__device__ inline bool streaming_may_intersect(const Box& box,
+                                               const Sphere& enclosing) {
+  const Scalar radius = enclosing_radius(box, enclosing);
+  bool retry = false;
+  return !isfinite(radius) ||
+         streaming_intersects(box, enclosing.position, radius, retry) || retry;
 }
 
 }  // namespace tenkai_f32

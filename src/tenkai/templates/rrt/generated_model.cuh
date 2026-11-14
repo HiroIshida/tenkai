@@ -4,7 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "../collision/sdf.cuh"
+#include "../collision/broad.cuh"
 #include "../collision/streaming.cuh"
 #include "../collision/workspace.cuh"
 
