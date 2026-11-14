@@ -1,7 +1,7 @@
 """Robot-specialized CUDA code generation and motion planning."""
 
 from . import sdf
-from .collision import Sphere, read_spheres
+from .collision import SelfCollisionRules, Sphere, read_spheres
 from .cuda import (
     Options,
     generate_centers_kernel,
@@ -18,6 +18,7 @@ __all__ = [
     "FkDag",
     "Robot",
     "Sphere",
+    "SelfCollisionRules",
     "read_spheres",
     "Options",
     "generate_centers_kernel",

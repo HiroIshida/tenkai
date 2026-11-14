@@ -11,6 +11,7 @@ from tenkai import (
     FkDag,
     Options,
     Robot,
+    SelfCollisionRules,
     Sphere,
     generate_centers_kernel,
     generate_collision_kernel,
@@ -18,6 +19,7 @@ from tenkai import (
     generate_rrt_sources,
 )
 from tenkai.build import Backend, compiler_command
+from tenkai.collision import read_config
 from tenkai.dag import Optimization
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -105,6 +107,107 @@ def run_planner_fixture(
             "-I",
             str(FIXTURES),
             str(FIXTURES / fixture),
+            "-o",
+            str(binary),
+        ]
+    )
+    run([str(binary)])
+
+
+def self_collision_sources(directory: Path, options: Options, members: int, controls: int) -> None:
+    robot = '<robot name="self"><link name="root"/>'
+    parent = "root"
+    for name, axis in [("x", "1 0 0"), ("y", "0 1 0"), ("z", "0 0 1")]:
+        robot += f'<link name="{name}"/><joint name="{name}" type="prismatic">'
+        robot += f'<parent link="{parent}"/><child link="{name}"/><axis xyz="{axis}"/></joint>'
+        parent = name
+    fk = FkDag.from_robot(Robot.from_string(robot + "</robot>"))
+    spheres = [Sphere(link, (0, i * 0.5, 0), 0.125) for link in (0, 3) for i in range(members)]
+    rules = SelfCollisionRules(((0, 3),), (0,))
+    source = generate_collision_kernel(fk, spheres, options, rules=rules)
+    (directory / "collision.cuh").write_text(source)
+    write_sources(
+        directory, generate_rrt_sources(fk, spheres, list(range(controls)), options, rules=rules)
+    )
+
+
+@pytest.mark.parametrize("optimization", ["none", "basic", "algebraic"])
+@pytest.mark.parametrize("members", [1, 2])
+def test_self_collision_on_host(tmp_path: Path, optimization: Optimization, members: int) -> None:
+    options = Options(optimization=optimization)
+    self_collision_sources(tmp_path, options, members, 3)
+    binary = tmp_path / "self-collision"
+    run(
+        [
+            os.environ.get("CXX", "c++"),
+            "-std=c++14",
+            "-O2",
+            "-x",
+            "c++",
+            "-I",
+            str(tmp_path),
+            f"-DTEST_MEMBERS={members}",
+            str(FIXTURES / "self_collision.cu"),
+            "-o",
+            str(binary),
+        ]
+    )
+    run([str(binary)])
+
+
+@pytest.mark.gpu
+@pytest.mark.parametrize("controls", [1, 3])
+@pytest.mark.parametrize("members", [1, 2])
+def test_self_collision_on_gpu(
+    tmp_path: Path,
+    controls: int,
+    members: int,
+    gpu_backend: Backend,
+    gpu_arch: str,
+) -> None:
+    options = Options()
+    self_collision_sources(tmp_path, options, members, controls)
+    run_planner_fixture(
+        tmp_path, gpu_backend, gpu_arch, "self_collision.cu", (f"TEST_MEMBERS={members}",)
+    )
+
+
+@pytest.mark.parametrize("optimization", ["none", "basic", "algebraic"])
+def test_fetch_collision_against_exhaustive_pairs(
+    tmp_path: Path, optimization: Optimization
+) -> None:
+    assets = ROOT / "assets/fetch"
+    fk = FkDag.from_robot(Robot.from_string((assets / "fetch.urdf").read_text()))
+    config = read_config((assets / "collision.yaml").read_text())
+    spheres = config.resolve(fk)
+    rules = config.resolve_rules(fk, spheres)
+    options = Options(optimization=optimization, live_budget=64)
+    (tmp_path / "centers.cuh").write_text(generate_centers_kernel(fk, spheres, options))
+    (tmp_path / "collision.cuh").write_text(
+        generate_collision_kernel(fk, spheres, options, rules=rules)
+    )
+    pairs = {frozenset(pair) for pair in rules.self_pairs}
+    rows = []
+    for a in spheres:
+        row = [str(int(frozenset((a.link_index, b.link_index)) in pairs)) for b in spheres]
+        rows.append("{" + ",".join(row) + "}")
+    radii = ",".join(f"{sphere.radius}f" for sphere in spheres)
+    external = ",".join(str(int(s.link_index not in rules.self_only_links)) for s in spheres)
+    (tmp_path / "reference.h").write_text(
+        f"constexpr unsigned sphere_count = {len(spheres)};\n"
+        f"constexpr float radii[] = {{{radii}}};\n"
+        f"constexpr bool external[] = {{{external}}};\n"
+        "constexpr bool self_pairs[sphere_count][sphere_count] = {" + ",".join(rows) + "};\n"
+    )
+    binary = tmp_path / "self-reference"
+    run(
+        [
+            os.environ.get("CXX", "c++"),
+            "-std=c++14",
+            "-O2",
+            "-I",
+            str(tmp_path),
+            str(FIXTURES / "self_collision_reference.cpp"),
             "-o",
             str(binary),
         ]

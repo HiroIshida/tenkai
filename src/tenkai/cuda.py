@@ -6,7 +6,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import assert_never
 
-from .collision import CollisionDag, Sphere, center_expressions, collision_expressions
+from .collision import (
+    CollisionDag,
+    SelfCollisionRules,
+    Sphere,
+    center_expressions,
+    collision_expressions,
+)
 from .dag import Binary, BinaryOp, Constant, Dag, Input, Optimization, Trig, TrigOp, f32
 from .model import FkDag
 from .scheduling import Evaluate, Store, schedule
@@ -161,7 +167,7 @@ def collision_definition(name: str, qualifier: str, body: str) -> str:
 def collision_function(
     emitter: DagEmitter, spheres: Sequence[Sphere], geometry: CollisionDag, qualifier: str
 ) -> str:
-    if spheres:
+    if spheres or geometry.rules.self_pairs:
         body = (
             "    const tenkai_f32::Environment environment = "
             "scene.environments[environment_id];\n"
@@ -185,6 +191,8 @@ def link_collision_body(
 ) -> str:
     links: dict[int, list[int]] = {}
     for index, sphere in enumerate(spheres):
+        if sphere.link_index in geometry.rules.self_only_links:
+            continue
         links.setdefault(sphere.link_index, []).append(index)
 
     pose_outputs: list[int] = []
@@ -214,16 +222,7 @@ def link_collision_body(
             link_cached.update(
                 step.node for step in bound_emitter.schedule.steps if isinstance(step, Evaluate)
             )
-            pose = geometry.poses[link]
-            arguments = ["{" + ", ".join(f"v{node}" for node in bound.center) + "}"]
-            arguments.append("{" + ", ".join(f"v{node}" for node in pose.translation) + "}")
-            arguments.extend(f"v{node}" for node in pose.rotation)
-            arguments.extend((number(bound.sphere.radius) + "f", number(bound.local_scale) + "f"))
-            source.append(
-                "    const auto enclosing = tenkai_f32::link_sphere("
-                + ", ".join(arguments)
-                + ");\n"
-            )
+            source.append(link_bound_definition(geometry, link, "enclosing"))
             condition = (
                 "streaming_may_intersect(box, enclosing) || may_intersect(ground, enclosing)"
                 if streaming
@@ -261,6 +260,91 @@ def link_collision_body(
                 # Skipped lanes must rejoin before a vote using the caller's mask.
                 source.append(streaming_exit)
         source.append("    }\n")
+    source.append(self_collision_body(emitter, geometry, cached, streaming=streaming))
+    return "".join(source)
+
+
+def point_expression(nodes: Sequence[int]) -> str:
+    return "{" + ", ".join(f"v{node}" for node in nodes) + "}"
+
+
+def link_bound_definition(geometry: CollisionDag, link: int, name: str) -> str:
+    bound = geometry.bounds[link]
+    pose = geometry.poses[link]
+    arguments = [point_expression(bound.center), point_expression(pose.translation)]
+    arguments.extend(f"v{node}" for node in pose.rotation)
+    arguments.extend((number(bound.sphere.radius) + "f", number(bound.local_scale) + "f"))
+    return f"    const auto {name} = tenkai_f32::link_sphere(" + ", ".join(arguments) + ");\n"
+
+
+def self_collision_body(
+    emitter: DagEmitter,
+    geometry: CollisionDag,
+    cached: set[int],
+    *,
+    streaming: bool,
+) -> str:
+    pairs = geometry.rules.self_pairs
+    if not pairs:
+        return ""
+
+    links = dict.fromkeys(link for pair in pairs for link in pair)
+    members = {
+        link: [i for i, sphere in enumerate(geometry.spheres) if sphere.link_index == link]
+        for link in links
+    }
+    source: list[str] = []
+    shared_outputs: list[int] = []
+    for link in links:
+        pose = geometry.poses[link]
+        shared_outputs.extend((*pose.translation, *pose.rotation))
+        bound = geometry.bounds.get(link)
+        shared_outputs.extend(bound.center if bound else geometry.centers[members[link][0]])
+
+    shared = DagEmitter("", emitter.dag, emitter.dof, shared_outputs, emitter.options)
+    source.append(shared.body("q", lambda _index, _node: "", cached))
+    cached = cached | {step.node for step in shared.schedule.steps if isinstance(step, Evaluate)}
+    for link in links:
+        name = f"self_bound_{link}"
+        if link in geometry.bounds:
+            source.append(link_bound_definition(geometry, link, name))
+        else:
+            index = members[link][0]
+            center = point_expression(geometry.centers[index])
+            radius = number(geometry.spheres[index].radius)
+            source.append(f"    const tenkai_f32::Sphere {name} = {{{center}, {radius}f}};\n")
+
+    # Workspace certificates and moving-only filters cover external obstacles.
+    # Every self pair remains active, including pairs with a fixed link.
+    for a, b in pairs:
+        source.append("    {\n")
+        source.append(f"    if (tenkai_f32::may_intersect(self_bound_{a}, self_bound_{b})) {{\n")
+        indices = members[a] + members[b]
+        outputs = [node for i in indices for node in geometry.centers[i]]
+        narrow = DagEmitter("", emitter.dag, emitter.dof, outputs, emitter.options)
+        source.append(narrow.body("q", lambda _index, _node: "", cached))
+
+        for i in members[a]:
+            center = point_expression(geometry.centers[i])
+            radius = number(geometry.spheres[i].radius)
+            source.append("    {\n")
+            source.append(f"    const tenkai_f32::Sphere self_sphere = {{{center}, {radius}f}};\n")
+            for j in members[b]:
+                center = point_expression(geometry.centers[j])
+                radius = number(geometry.spheres[j].radius)
+                source.append(
+                    f"    collision |= tenkai_f32::intersects(self_sphere, {center}, {radius}f);\n"
+                )
+            if not streaming:
+                source.append("    if (collision) return true;\n")
+            source.append("    }\n")
+        source.append("    }\n")
+        source.append("    }\n")
+        if streaming:
+            # All lanes rejoin after their broad-phase branch before voting.
+            source.append(
+                "    if (__any_sync(mask, collision)) return StreamingCollision::Blocked;\n"
+            )
     return "".join(source)
 
 
@@ -377,12 +461,12 @@ def planning_replacements(
 
 
 def prepare_collision(
-    fk: FkDag, spheres: Sequence[Sphere], options: Options
+    fk: FkDag, spheres: Sequence[Sphere], options: Options, rules: SelfCollisionRules
 ) -> tuple[DagEmitter, CollisionDag]:
     for sphere in spheres:
         sphere.validate(fk)
 
-    geometry = collision_expressions(fk, spheres, options.optimization)
+    geometry = collision_expressions(fk, spheres, options.optimization, rules)
     outputs = [node for center in geometry.centers for node in center]
     emitter = DagEmitter(
         "tenkai_collision_one",
@@ -396,9 +480,13 @@ def prepare_collision(
 
 
 def generate_collision_function(
-    fk: FkDag, spheres: Sequence[Sphere], options: Options = Options()
+    fk: FkDag,
+    spheres: Sequence[Sphere],
+    options: Options = Options(),
+    *,
+    rules: SelfCollisionRules = SelfCollisionRules(),
 ) -> str:
-    emitter, geometry = prepare_collision(fk, spheres, options)
+    emitter, geometry = prepare_collision(fk, spheres, options, rules)
     source = template("collision/sdf.cuh")
     # Standalone collision source embeds its dependencies.
     source += template("collision/broad.cuh").replace('#include "sdf.cuh"\n', "")
@@ -421,9 +509,13 @@ def collision_kernel(fk: FkDag, spheres: Sequence[Sphere]) -> str:
 
 
 def generate_collision_kernel(
-    fk: FkDag, spheres: Sequence[Sphere], options: Options = Options()
+    fk: FkDag,
+    spheres: Sequence[Sphere],
+    options: Options = Options(),
+    *,
+    rules: SelfCollisionRules = SelfCollisionRules(),
 ) -> str:
-    source = generate_collision_function(fk, spheres, options)
+    source = generate_collision_function(fk, spheres, options, rules=rules)
     return source + collision_kernel(fk, spheres)
 
 
@@ -432,6 +524,8 @@ def generate_rrt_sources(
     spheres: Sequence[Sphere],
     controls: Sequence[int],
     options: Options = Options(),
+    *,
+    rules: SelfCollisionRules = SelfCollisionRules(),
 ) -> dict[str, str]:
     """Return relative paths and source text for a model-specific native planner."""
     if not controls:
@@ -441,7 +535,7 @@ def generate_rrt_sources(
     if len(set(controls)) != len(controls):
         raise ValueError("duplicate RRT control index")
 
-    emitter, geometry = prepare_collision(fk, spheres, options)
+    emitter, geometry = prepare_collision(fk, spheres, options, rules)
     groups = geometry.centers
     dependent = emitter.dag.depends_on_inputs(controls)
     moving = [index for index, group in enumerate(groups) if any(dependent[node] for node in group)]

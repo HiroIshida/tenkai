@@ -34,6 +34,8 @@ class ModelMetadata(TypedDict):
     math: Literal["f32-sfu"]
     optimization: Optimization
     live_budget: int | None
+    self_collision_pair_count: int
+    external_sphere_count: int
 
 
 def control_joints(robot: Robot, fk: FkDag, names: list[str]) -> list[ControlJoint]:
@@ -79,25 +81,28 @@ def generate(
     start = time.perf_counter()
     config = read_config(source)
     spheres = config.resolve(fk)
+    rules = config.resolve_rules(fk, spheres)
     bounds = control_joints(robot, fk, config.control_joint_names)
     controls = [joint["index"] for joint in bounds]
     timings["spheres_and_controls"] = time.perf_counter() - start
 
     files: dict[str, str] = {}
     start = time.perf_counter()
-    files["collision.cuh"] = generate_collision_kernel(fk, spheres, options)
+    files["collision.cuh"] = generate_collision_kernel(fk, spheres, options, rules=rules)
     timings["collision_codegen"] = time.perf_counter() - start
 
     start = time.perf_counter()
     if controls:
-        files.update(generate_rrt_sources(fk, spheres, controls, options))
+        files.update(generate_rrt_sources(fk, spheres, controls, options, rules=rules))
     timings["rrt_codegen"] = time.perf_counter() - start
 
     if all_kernels:
         start = time.perf_counter()
         files["fk.cuh"] = generate_fk_kernel(fk, len(fk.poses) - 1, options)
         files["centers.cuh"] = generate_centers_kernel(fk, spheres, options)
-        files["collision_function.cuh"] = generate_collision_function(fk, spheres, options)
+        files["collision_function.cuh"] = generate_collision_function(
+            fk, spheres, options, rules=rules
+        )
         timings["auxiliary_codegen"] = time.perf_counter() - start
 
     start = time.perf_counter()
@@ -115,6 +120,8 @@ def generate(
         math="f32-sfu",
         optimization=options.optimization,
         live_budget=options.live_budget,
+        self_collision_pair_count=len(rules.self_pairs),
+        external_sphere_count=sum(s.link_index not in rules.self_only_links for s in spheres),
     )
     (output / "model.json").write_text(json.dumps(model, indent=2, sort_keys=True, allow_nan=False))
 

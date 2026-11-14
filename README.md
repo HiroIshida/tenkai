@@ -102,8 +102,15 @@ controlled joint names and the collision spheres attached to each robot link;
 see [the Fetch configuration](assets/fetch/collision.yaml) for the format.
 Obstacle spheres (`sdf.Sphere`) describe the environment separately.
 
-Uncontrolled joints stay at zero during planning. Collision checking uses the
-robot's spheres against the environment; self-collision is not checked.
+Uncontrolled joints stay at zero during planning. Collision checking first tests
+the robot against the environment, then checks the link pairs listed in
+`self_collision_pairs` if no external collision was found. Links listed in
+`only_self_collision_links` participate only in self collision. An omitted pair
+list disables self collision; `self_body_collision_primitives` is not evaluated.
+
+Self collision always uses a conservative enclosing sphere per link to reject
+separated link pairs, then tests their individual sphere pairs. This also applies
+during RRT edge checks and when the environment is empty.
 
 ## Choose a GPU backend
 

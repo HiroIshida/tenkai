@@ -37,8 +37,18 @@ def test_cli_generates_sfu_kernels(
     assert model["live_budget"] == live_budget
 
 
-@pytest.mark.parametrize("flag", ["--float", "--double", "--sfu", "--no-sfu"])
-def test_cli_rejects_math_flags(
+@pytest.mark.parametrize(
+    "flag",
+    [
+        "--float",
+        "--double",
+        "--sfu",
+        "--no-sfu",
+        "--self-collision-broad-phase",
+        "--no-self-collision-broad-phase",
+    ],
+)
+def test_cli_rejects_removed_flags(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], flag: str
 ) -> None:
     output = tmp_path / "generated"

@@ -44,11 +44,17 @@ def make_problem(urdf: Path, spheres: Path, model: ModelMetadata) -> Problem:
         values = np.asarray(definitions, dtype=np.float64).reshape(-1, 4)
         centers = np.asfortranarray(values[:, :3].T)
         radii = np.ascontiguousarray(values[:, 3])
-        # FetchSpec's default excludes some spheres from environment checks.
-        attachments.append(SphereAttachmentSpec(link, centers, radii, False))
+        self_only = link in config.only_self_collision_links
+        attachments.append(SphereAttachmentSpec(link, centers, radii, self_only))
     names = [joint["name"] for joint in model["control_joints"]]
     checker = SphereCollisionCst(
-        KinematicModel(urdf.read_text()), names, BaseType.FIXED, attachments, [], None, True
+        KinematicModel(urdf.read_text()),
+        names,
+        BaseType.FIXED,
+        attachments,
+        config.self_collision_pairs,
+        None,
+        True,
     )
     box = BoxSDF(np.array(BOX.size), Pose(np.array(BOX.center), np.array(BOX.rotation)))
     checker.set_sdf(UnionSDF([box, GroundSDF(-GROUND.z)]))
@@ -165,6 +171,8 @@ def main(
     report = {
         "batch": batch,
         "math": compiled.model["math"],
+        "external_sphere_count": compiled.model["external_sphere_count"],
+        "self_collision_pair_count": compiled.model["self_collision_pair_count"],
         "backend": backend,
         "arch": arch,
         "plainmp_version": version("plainmp"),

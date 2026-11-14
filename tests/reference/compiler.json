@@ -52,6 +52,7 @@
           "upper": 6.283185307179586
         }
       ],
+      "external_sphere_count": 51,
       "input_joint_names": [
         "r_wheel_joint",
         "l_wheel_joint",
@@ -73,22 +74,23 @@
       "math": "f32-sfu",
       "optimization": "none",
       "scalar": "float",
+      "self_collision_pair_count": 14,
       "sphere_count": 69
     },
     "name": "fetch-none-None",
     "optimization": "none",
     "sha256": {
       "centers.cuh": "1367be27e79fd6cd4097b0b8a1c5f887850f0ad5e60154f8d5f7aeab7db6447c",
+      "collision.cuh": "1ce146e2c8092edd5e304698ed10484216b14efbf1ba83e0ce9ccd185d162882",
       "collision/broad.cuh": "1a6de4ded871aa7173f8ff8c6a596509823406ea71911aa24bd22db6c941487e",
       "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
       "collision/streaming.cuh": "6ed5bdf2e4cb3e8e54b7e8ec4faeb15a29e4acc3b5e5a2ee123c6899417f6a39",
       "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision.cuh": "fb9dbd743a45964cf10289ca8d3d7ef3a4f2e6fc9697e36f09660f1e666120cd",
-      "collision_function.cuh": "857bfbc7ae1d23044a8706ae911419637533a8bfd3e946ff42900c766741e8b6",
+      "collision_function.cuh": "b39f694e15034b13d068b0f97d4d57e29d748322f19ef02c73264b0f6342dabd",
       "fk.cuh": "88d24a3c8e05288aa2e581ac897f80ec33c53acc0225ef7df48b2c5fbcb48a2f",
       "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
       "rrt/common.cuh": "2b354efd240cc6ceeec5d2b8a0315b5aaeaa4cfa53c0469d447d34fa37aac93c",
-      "rrt/generated_model.cuh": "b1591f5d2db184b081e24e93e9e8b60fed92936ca5f649b0c58ce58bbe16bb39",
+      "rrt/generated_model.cuh": "43e23577c20fed33d7a9a391f5c1615027e0f407a2be5e444c4a1584ae72d48b",
       "rrt/planner.cuh": "64d37ea186cb96c5b80b215b39d30cfefb7f195fb5b384a69835b72ff4476b6c",
       "rrt/rrtc.cuh": "da8e12c551e814d7f9c0589a5ae608c3339ddc1bf8654b3f8922be9a444ab9e8",
       "rrt/types.hpp": "f00db951b8d9df4265ed7b4f1afd15029c2719d541c55b476bbb301355be71e6"
@@ -149,6 +151,7 @@
           "upper": 6.283185307179586
         }
       ],
+      "external_sphere_count": 51,
       "input_joint_names": [
         "r_wheel_joint",
         "l_wheel_joint",
@@ -170,22 +173,23 @@
       "math": "f32-sfu",
       "optimization": "none",
       "scalar": "float",
+      "self_collision_pair_count": 14,
       "sphere_count": 69
     },
     "name": "fetch-none-0",
     "optimization": "none",
     "sha256": {
       "centers.cuh": "13adb8e7388a42dadbb2e27b1b7034b702cca3cad8fc98bf0e058d7b7ee38161",
+      "collision.cuh": "9b63d1470a7c04170b228bda404b259108159d309737b7313570909b3fc3e1a3",
       "collision/broad.cuh": "1a6de4ded871aa7173f8ff8c6a596509823406ea71911aa24bd22db6c941487e",
       "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
       "collision/streaming.cuh": "6ed5bdf2e4cb3e8e54b7e8ec4faeb15a29e4acc3b5e5a2ee123c6899417f6a39",
       "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision.cuh": "b4cefcb47e54029a81860566d2b64a831159522dbba891be8c80b6e67fd3ada0",
-      "collision_function.cuh": "d522dd0b25e53d27db9a0d2c38fbe96c8c4aec6fb227f8c96f3b8882f65cd48d",
+      "collision_function.cuh": "2cb23c15b67b3c8973a37fb9ac35936d063818c96e7e5d83ea2bfc4939157e19",
       "fk.cuh": "059bbcbcaa5cb7427d1f8be1faf84ac5c4f95a1e9755e9dfcc3298f16df20d7d",
       "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
       "rrt/common.cuh": "2b354efd240cc6ceeec5d2b8a0315b5aaeaa4cfa53c0469d447d34fa37aac93c",
-      "rrt/generated_model.cuh": "a6af421e28ab9b06eb465e9d0d1857164222b20a10077bebeb1975fd4d70fe97",
+      "rrt/generated_model.cuh": "5b9a590599da8e060fc5014c08d1ec4f25e822a9edf41f7655f11e23e0d68ecb",
       "rrt/planner.cuh": "64d37ea186cb96c5b80b215b39d30cfefb7f195fb5b384a69835b72ff4476b6c",
       "rrt/rrtc.cuh": "da8e12c551e814d7f9c0589a5ae608c3339ddc1bf8654b3f8922be9a444ab9e8",
       "rrt/types.hpp": "f00db951b8d9df4265ed7b4f1afd15029c2719d541c55b476bbb301355be71e6"
@@ -246,6 +250,7 @@
           "upper": 6.283185307179586
         }
       ],
+      "external_sphere_count": 51,
       "input_joint_names": [
         "r_wheel_joint",
         "l_wheel_joint",
@@ -267,22 +272,23 @@
       "math": "f32-sfu",
       "optimization": "none",
       "scalar": "float",
+      "self_collision_pair_count": 14,
       "sphere_count": 69
     },
     "name": "fetch-none-64",
     "optimization": "none",
     "sha256": {
       "centers.cuh": "add21d772ffb0626d8ddc473c02c24f26b664e0edc59672ec45d5d61d95b9932",
+      "collision.cuh": "fa5afff262ab4fe333002384ce208b0b00478cbd8782be1ce67631a9b67ddf0a",
       "collision/broad.cuh": "1a6de4ded871aa7173f8ff8c6a596509823406ea71911aa24bd22db6c941487e",
       "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
       "collision/streaming.cuh": "6ed5bdf2e4cb3e8e54b7e8ec4faeb15a29e4acc3b5e5a2ee123c6899417f6a39",
       "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision.cuh": "96d7b8e3176bb8c257de78ac64ecf09ea62b0a16e4958e3a28902e554e50b88f",
-      "collision_function.cuh": "9237faf7c96240b39c1c33652c3745a3f04a9bf7377a1cfcf3d1be1569691cbb",
+      "collision_function.cuh": "78d71703ee1a3b3cd397cd89da88a1043238952571c260611ff93bd7ce42f834",
       "fk.cuh": "a5c1d021ce6e655ddb2f1b294b84238963a295150e0984b45900f0868029ef43",
       "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
       "rrt/common.cuh": "2b354efd240cc6ceeec5d2b8a0315b5aaeaa4cfa53c0469d447d34fa37aac93c",
-      "rrt/generated_model.cuh": "426a667de88484affeb0324291c77dfafce53520574922b7b092c8340419674e",
+      "rrt/generated_model.cuh": "f785cbad2ca2db76ecbb519be3f0d400d4f83833882ce56916ce00a7f55dd716",
       "rrt/planner.cuh": "64d37ea186cb96c5b80b215b39d30cfefb7f195fb5b384a69835b72ff4476b6c",
       "rrt/rrtc.cuh": "da8e12c551e814d7f9c0589a5ae608c3339ddc1bf8654b3f8922be9a444ab9e8",
       "rrt/types.hpp": "f00db951b8d9df4265ed7b4f1afd15029c2719d541c55b476bbb301355be71e6"
@@ -343,6 +349,7 @@
           "upper": 6.283185307179586
         }
       ],
+      "external_sphere_count": 51,
       "input_joint_names": [
         "r_wheel_joint",
         "l_wheel_joint",
@@ -364,22 +371,23 @@
       "math": "f32-sfu",
       "optimization": "basic",
       "scalar": "float",
+      "self_collision_pair_count": 14,
       "sphere_count": 69
     },
     "name": "fetch-basic-None",
     "optimization": "basic",
     "sha256": {
       "centers.cuh": "dd7baf686621b5024d081da98765b650f875f556a4288ab151f127a7ae241fbd",
+      "collision.cuh": "06eef905fa0fffdd2e0e0398f8d88ec9561568d839aef0b5e58d8e99981b8c2e",
       "collision/broad.cuh": "1a6de4ded871aa7173f8ff8c6a596509823406ea71911aa24bd22db6c941487e",
       "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
       "collision/streaming.cuh": "6ed5bdf2e4cb3e8e54b7e8ec4faeb15a29e4acc3b5e5a2ee123c6899417f6a39",
       "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision.cuh": "ea0358f7e251a7d21042f70a27613a93fa0eeb369f6fd4ed2b194826f8138bb7",
-      "collision_function.cuh": "7f34c42374bb9ee359226a23f3223825ea457a9f00e428bc5c64018534ad2620",
+      "collision_function.cuh": "6ee8fc13d7454ddc3b2171eabff201641362dd30a2fe1d98d7adb7c988c921ea",
       "fk.cuh": "e7f084db68e361c375fa6ba0aeaeb510872081cd958188d09f56d72ab4a9a93a",
       "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
       "rrt/common.cuh": "2b354efd240cc6ceeec5d2b8a0315b5aaeaa4cfa53c0469d447d34fa37aac93c",
-      "rrt/generated_model.cuh": "95377dda0a79cf33c40f408c33a094015ca3aa3f7994ba24f7cd3d9fa114484f",
+      "rrt/generated_model.cuh": "3047ff20a7e875b1da7be0a5ef44a86dfa6a24b17c8880f6e88504cb32230c6e",
       "rrt/planner.cuh": "64d37ea186cb96c5b80b215b39d30cfefb7f195fb5b384a69835b72ff4476b6c",
       "rrt/rrtc.cuh": "da8e12c551e814d7f9c0589a5ae608c3339ddc1bf8654b3f8922be9a444ab9e8",
       "rrt/types.hpp": "f00db951b8d9df4265ed7b4f1afd15029c2719d541c55b476bbb301355be71e6"
@@ -440,6 +448,7 @@
           "upper": 6.283185307179586
         }
       ],
+      "external_sphere_count": 51,
       "input_joint_names": [
         "r_wheel_joint",
         "l_wheel_joint",
@@ -461,22 +470,23 @@
       "math": "f32-sfu",
       "optimization": "basic",
       "scalar": "float",
+      "self_collision_pair_count": 14,
       "sphere_count": 69
     },
     "name": "fetch-basic-0",
     "optimization": "basic",
     "sha256": {
       "centers.cuh": "4fde64de8ccd05916c6632ed46ccc8f73f969496cfc2c2f17576d86fd6bafe54",
+      "collision.cuh": "b58f6174530e082b06996d2628c56d1078436ed516bc681c30d47c09fa57fcbe",
       "collision/broad.cuh": "1a6de4ded871aa7173f8ff8c6a596509823406ea71911aa24bd22db6c941487e",
       "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
       "collision/streaming.cuh": "6ed5bdf2e4cb3e8e54b7e8ec4faeb15a29e4acc3b5e5a2ee123c6899417f6a39",
       "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision.cuh": "71201cb8c156ea93561206bcc7b27be2e654343e8227a075172761ca7447baab",
-      "collision_function.cuh": "ff5a53647764dc0c05ce68fd43ab33ce3d4c15637272150bf4e7908b66b816df",
+      "collision_function.cuh": "005636748569e8efdb5c54e5949ea234d007505a3ea1d9d82c8befd9932c7161",
       "fk.cuh": "ad2fda7092c88855d1d7c60501b7e7346efe4766595beeffaf7914b6920cd866",
       "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
       "rrt/common.cuh": "2b354efd240cc6ceeec5d2b8a0315b5aaeaa4cfa53c0469d447d34fa37aac93c",
-      "rrt/generated_model.cuh": "5544e9f46d3ccad8ec993bdf3f0d624cde932b2b88a97e50ab86546ef70e3847",
+      "rrt/generated_model.cuh": "c023bf3e25e88b8c1473bc38e020084e767ec62a6ec14f3086989be7ca2f69ac",
       "rrt/planner.cuh": "64d37ea186cb96c5b80b215b39d30cfefb7f195fb5b384a69835b72ff4476b6c",
       "rrt/rrtc.cuh": "da8e12c551e814d7f9c0589a5ae608c3339ddc1bf8654b3f8922be9a444ab9e8",
       "rrt/types.hpp": "f00db951b8d9df4265ed7b4f1afd15029c2719d541c55b476bbb301355be71e6"
@@ -537,6 +547,7 @@
           "upper": 6.283185307179586
         }
       ],
+      "external_sphere_count": 51,
       "input_joint_names": [
         "r_wheel_joint",
         "l_wheel_joint",
@@ -558,22 +569,23 @@
       "math": "f32-sfu",
       "optimization": "basic",
       "scalar": "float",
+      "self_collision_pair_count": 14,
       "sphere_count": 69
     },
     "name": "fetch-basic-64",
     "optimization": "basic",
     "sha256": {
       "centers.cuh": "130c8db4b2f841047df3f05b6ffc564fe6b7f06292df092bf332b2584c7003ff",
+      "collision.cuh": "24685f66b68914bdce21e05da0b8b82918e6cbb7b0015f8b0f78c9584902d920",
       "collision/broad.cuh": "1a6de4ded871aa7173f8ff8c6a596509823406ea71911aa24bd22db6c941487e",
       "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
       "collision/streaming.cuh": "6ed5bdf2e4cb3e8e54b7e8ec4faeb15a29e4acc3b5e5a2ee123c6899417f6a39",
       "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision.cuh": "f057324e7f5cb39a46d790bc224aad233b11f080fa824b7c8cc42a8c3ebf0c1c",
-      "collision_function.cuh": "d1fb82248354a145f528fb7a7047f73395f2abd97414272cc1cb360077a7f601",
+      "collision_function.cuh": "19401d75d3e0550cc4aabd8cfaed50d32d0faf700b82b84c19e5c71e7e6fb7a4",
       "fk.cuh": "9869c88d17bb77e0c213848692f8dad09dae668474269d049813bd7cd14c16ba",
       "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
       "rrt/common.cuh": "2b354efd240cc6ceeec5d2b8a0315b5aaeaa4cfa53c0469d447d34fa37aac93c",
-      "rrt/generated_model.cuh": "8e3e86ba1f178d9369a10331f791a54fddaf5b52f56352169f07f46c1b3a155b",
+      "rrt/generated_model.cuh": "3e51ea1c2ceda0a9b57ba65b497ee5920160147b453c121c5ce0a30425414097",
       "rrt/planner.cuh": "64d37ea186cb96c5b80b215b39d30cfefb7f195fb5b384a69835b72ff4476b6c",
       "rrt/rrtc.cuh": "da8e12c551e814d7f9c0589a5ae608c3339ddc1bf8654b3f8922be9a444ab9e8",
       "rrt/types.hpp": "f00db951b8d9df4265ed7b4f1afd15029c2719d541c55b476bbb301355be71e6"
@@ -634,6 +646,7 @@
           "upper": 6.283185307179586
         }
       ],
+      "external_sphere_count": 51,
       "input_joint_names": [
         "r_wheel_joint",
         "l_wheel_joint",
@@ -655,22 +668,23 @@
       "math": "f32-sfu",
       "optimization": "algebraic",
       "scalar": "float",
+      "self_collision_pair_count": 14,
       "sphere_count": 69
     },
     "name": "fetch-algebraic-None",
     "optimization": "algebraic",
     "sha256": {
       "centers.cuh": "1ef92a834bc61b54d0db777b03029ca867b1448eac367b24fb81f99d08519e15",
+      "collision.cuh": "33ec342fafef655cf2dac2ea63c4e6bdc2e06c90205afa4c3a061c873a24c70c",
       "collision/broad.cuh": "1a6de4ded871aa7173f8ff8c6a596509823406ea71911aa24bd22db6c941487e",
       "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
       "collision/streaming.cuh": "6ed5bdf2e4cb3e8e54b7e8ec4faeb15a29e4acc3b5e5a2ee123c6899417f6a39",
       "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision.cuh": "fdbdbd6550ae52b360acfd376935be365f5631574a41fa8ff97ddffbb2dcad80",
-      "collision_function.cuh": "1e7a810a37e162a5d0e76c5ae37c83205551553a27af25c9b5a66f242b8a87d8",
+      "collision_function.cuh": "483f781b23f025cb07af6f918c83a8781a963776ab6a938ff1f11253b58bc6c7",
       "fk.cuh": "24278d155c9d51b023a4b1d295d3b7ed28f76988575976c23ad44fabff50ee04",
       "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
       "rrt/common.cuh": "2b354efd240cc6ceeec5d2b8a0315b5aaeaa4cfa53c0469d447d34fa37aac93c",
-      "rrt/generated_model.cuh": "9c8843a6bdf536c96de32fba28e6b4b095956a2e1ec1584cfa84b51a1574fb3f",
+      "rrt/generated_model.cuh": "9c14eb4751afa30606bd29bd9c6d5c96198a89e74f141ac486948c6d682916c9",
       "rrt/planner.cuh": "64d37ea186cb96c5b80b215b39d30cfefb7f195fb5b384a69835b72ff4476b6c",
       "rrt/rrtc.cuh": "da8e12c551e814d7f9c0589a5ae608c3339ddc1bf8654b3f8922be9a444ab9e8",
       "rrt/types.hpp": "f00db951b8d9df4265ed7b4f1afd15029c2719d541c55b476bbb301355be71e6"
@@ -731,6 +745,7 @@
           "upper": 6.283185307179586
         }
       ],
+      "external_sphere_count": 51,
       "input_joint_names": [
         "r_wheel_joint",
         "l_wheel_joint",
@@ -752,22 +767,23 @@
       "math": "f32-sfu",
       "optimization": "algebraic",
       "scalar": "float",
+      "self_collision_pair_count": 14,
       "sphere_count": 69
     },
     "name": "fetch-algebraic-0",
     "optimization": "algebraic",
     "sha256": {
       "centers.cuh": "9bb15f9e93be3ffda410bf213b9d5d8debc6a4847884b5feb9f5b9ce87c16380",
+      "collision.cuh": "9fcc1bc31c99233fd150ff457b630a9315b603a4e60c15f11aa01d37223ae521",
       "collision/broad.cuh": "1a6de4ded871aa7173f8ff8c6a596509823406ea71911aa24bd22db6c941487e",
       "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
       "collision/streaming.cuh": "6ed5bdf2e4cb3e8e54b7e8ec4faeb15a29e4acc3b5e5a2ee123c6899417f6a39",
       "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision.cuh": "018cab7e2a510272bd26de0fc0f6d22f19a3272420fbef537982f4a7baf414a6",
-      "collision_function.cuh": "2c49815690f5b9fe0f456441689b501ebf4dd98d37d7314d59e4445c08dd1c4a",
+      "collision_function.cuh": "51d06fc614d41d9aadef9694576aa39bd8ac9ce45aeb6f711da79aaead27c29d",
       "fk.cuh": "17c383657404509187df5e28568489c83eda80e26726ad32f93f13ba467e3657",
       "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
       "rrt/common.cuh": "2b354efd240cc6ceeec5d2b8a0315b5aaeaa4cfa53c0469d447d34fa37aac93c",
-      "rrt/generated_model.cuh": "62611fc3e4915f471093ab19bee0e7f0ba55a2b51b1da735dec51b698e24db0c",
+      "rrt/generated_model.cuh": "edfdb1d220e9586fb5981be49c16fe10315250299508ced3f6ddc516300077c3",
       "rrt/planner.cuh": "64d37ea186cb96c5b80b215b39d30cfefb7f195fb5b384a69835b72ff4476b6c",
       "rrt/rrtc.cuh": "da8e12c551e814d7f9c0589a5ae608c3339ddc1bf8654b3f8922be9a444ab9e8",
       "rrt/types.hpp": "f00db951b8d9df4265ed7b4f1afd15029c2719d541c55b476bbb301355be71e6"
@@ -828,6 +844,7 @@
           "upper": 6.283185307179586
         }
       ],
+      "external_sphere_count": 51,
       "input_joint_names": [
         "r_wheel_joint",
         "l_wheel_joint",
@@ -849,22 +866,23 @@
       "math": "f32-sfu",
       "optimization": "algebraic",
       "scalar": "float",
+      "self_collision_pair_count": 14,
       "sphere_count": 69
     },
     "name": "fetch-algebraic-64",
     "optimization": "algebraic",
     "sha256": {
       "centers.cuh": "845069d34be965ce278765e2747ba7f5ee2f607361d727551d0a6a499da5dfef",
+      "collision.cuh": "542c1d17bba5697427248d59a5fbe7f61ef4721ec336d1bccf4d740e5badb923",
       "collision/broad.cuh": "1a6de4ded871aa7173f8ff8c6a596509823406ea71911aa24bd22db6c941487e",
       "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
       "collision/streaming.cuh": "6ed5bdf2e4cb3e8e54b7e8ec4faeb15a29e4acc3b5e5a2ee123c6899417f6a39",
       "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision.cuh": "b8abd6f01f1f90327198fa58280417072ef7c7fd01f52e3eea2004e6d2bd778c",
-      "collision_function.cuh": "14322fcfd8fa26390b8d3a8f9cb89e6dfe630a7430c6447f5d7df5c8a2c56686",
+      "collision_function.cuh": "c8c6acb24e1f0383fe9e4e13668630283948059b1058042d8c3ccce906e65d5c",
       "fk.cuh": "8ffbd756f7f2b8822db289fab5bfff35b3f19f3be305b88872e00e6a9d72e215",
       "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
       "rrt/common.cuh": "2b354efd240cc6ceeec5d2b8a0315b5aaeaa4cfa53c0469d447d34fa37aac93c",
-      "rrt/generated_model.cuh": "feb504aa82d03ac08037fbe3d984dbeb32180d1720c3219ad5acc0ba97bbbb5e",
+      "rrt/generated_model.cuh": "562e290bfc8c0c55c324f67aa19e7be3abbb5baf3ebfd964252aa998c1938c03",
       "rrt/planner.cuh": "64d37ea186cb96c5b80b215b39d30cfefb7f195fb5b384a69835b72ff4476b6c",
       "rrt/rrtc.cuh": "da8e12c551e814d7f9c0589a5ae608c3339ddc1bf8654b3f8922be9a444ab9e8",
       "rrt/types.hpp": "f00db951b8d9df4265ed7b4f1afd15029c2719d541c55b476bbb301355be71e6"
@@ -889,6 +907,7 @@
           "upper": 1.0
         }
       ],
+      "external_sphere_count": 23,
       "input_joint_names": [
         "yaw",
         "pitch",
@@ -899,17 +918,18 @@
       "math": "f32-sfu",
       "optimization": "none",
       "scalar": "float",
+      "self_collision_pair_count": 0,
       "sphere_count": 23
     },
     "name": "chain-none-None",
     "optimization": "none",
     "sha256": {
       "centers.cuh": "7fb14a4099bb7f9363f5fac9313140dfc57167d47a7383076c88d95b89372743",
+      "collision.cuh": "5f29f65d0c2ca2342f16b5b1e342d58508f21a907fd96a75b97641a2db2dee78",
       "collision/broad.cuh": "1a6de4ded871aa7173f8ff8c6a596509823406ea71911aa24bd22db6c941487e",
       "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
       "collision/streaming.cuh": "6ed5bdf2e4cb3e8e54b7e8ec4faeb15a29e4acc3b5e5a2ee123c6899417f6a39",
       "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision.cuh": "5f29f65d0c2ca2342f16b5b1e342d58508f21a907fd96a75b97641a2db2dee78",
       "collision_function.cuh": "76a5c82980dab2501079786afcf3b18e16171a003ff51fa050bb31cd41d3f371",
       "fk.cuh": "48e6c6fa77e1dc9de85ca5c8d220ef0f33384f20bf7fd2e030e1c0b7c52a9f7a",
       "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
@@ -939,6 +959,7 @@
           "upper": 1.0
         }
       ],
+      "external_sphere_count": 23,
       "input_joint_names": [
         "yaw",
         "pitch",
@@ -949,17 +970,18 @@
       "math": "f32-sfu",
       "optimization": "none",
       "scalar": "float",
+      "self_collision_pair_count": 0,
       "sphere_count": 23
     },
     "name": "chain-none-0",
     "optimization": "none",
     "sha256": {
       "centers.cuh": "934f4f21b935346050abd347d20dfc0e275de2e97be12dd38486ec38fbcbde0a",
+      "collision.cuh": "c65e90aca264648f55491dd51639d1e66e7b388054260eac8320639595a19019",
       "collision/broad.cuh": "1a6de4ded871aa7173f8ff8c6a596509823406ea71911aa24bd22db6c941487e",
       "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
       "collision/streaming.cuh": "6ed5bdf2e4cb3e8e54b7e8ec4faeb15a29e4acc3b5e5a2ee123c6899417f6a39",
       "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision.cuh": "c65e90aca264648f55491dd51639d1e66e7b388054260eac8320639595a19019",
       "collision_function.cuh": "8002a782f89aaeaef76f47fd6d95790de32200f091bf6ffb778741b5c2fafbc4",
       "fk.cuh": "7983a9fb04d901f0cc0eec08153dd9d1c889f2cdaae6bee9418a45522732b795",
       "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
@@ -989,6 +1011,7 @@
           "upper": 1.0
         }
       ],
+      "external_sphere_count": 23,
       "input_joint_names": [
         "yaw",
         "pitch",
@@ -999,17 +1022,18 @@
       "math": "f32-sfu",
       "optimization": "none",
       "scalar": "float",
+      "self_collision_pair_count": 0,
       "sphere_count": 23
     },
     "name": "chain-none-64",
     "optimization": "none",
     "sha256": {
       "centers.cuh": "d4c6356c3fddf7567f50b0b173bf3a77ad690c281efabeb7cf1c28fe263e09a0",
+      "collision.cuh": "24be8f2856d15dc505efc018ecd794f24e23fab403e67036e7df5337f8ca23be",
       "collision/broad.cuh": "1a6de4ded871aa7173f8ff8c6a596509823406ea71911aa24bd22db6c941487e",
       "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
       "collision/streaming.cuh": "6ed5bdf2e4cb3e8e54b7e8ec4faeb15a29e4acc3b5e5a2ee123c6899417f6a39",
       "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision.cuh": "24be8f2856d15dc505efc018ecd794f24e23fab403e67036e7df5337f8ca23be",
       "collision_function.cuh": "89e2724067d7024fe8692551aa1e295e196600bd3821ae4c51ce2ceaededf7b0",
       "fk.cuh": "14abb622a846098b28b0890a74e54b28684157bb2c970c0368d130fb718b588e",
       "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
@@ -1039,6 +1063,7 @@
           "upper": 1.0
         }
       ],
+      "external_sphere_count": 23,
       "input_joint_names": [
         "yaw",
         "pitch",
@@ -1049,17 +1074,18 @@
       "math": "f32-sfu",
       "optimization": "basic",
       "scalar": "float",
+      "self_collision_pair_count": 0,
       "sphere_count": 23
     },
     "name": "chain-basic-None",
     "optimization": "basic",
     "sha256": {
       "centers.cuh": "bcdcab0e23a5233581900a8b538dce4f3f80a06e327039733797a73936ccd91d",
+      "collision.cuh": "af47c80cc85e88a63f4d7803f902ee26c5f851d1c70d29bab3d964878dac7d1e",
       "collision/broad.cuh": "1a6de4ded871aa7173f8ff8c6a596509823406ea71911aa24bd22db6c941487e",
       "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
       "collision/streaming.cuh": "6ed5bdf2e4cb3e8e54b7e8ec4faeb15a29e4acc3b5e5a2ee123c6899417f6a39",
       "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision.cuh": "af47c80cc85e88a63f4d7803f902ee26c5f851d1c70d29bab3d964878dac7d1e",
       "collision_function.cuh": "8e83f1aeabf94639cf14467b735d26d9055fa97c1e3633eeedb23b2ddc8ecf3d",
       "fk.cuh": "5a05c40ef23a1c39e88d6dae2ca130a8a7bc1742a413570ac30b966ad1fe0129",
       "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
@@ -1089,6 +1115,7 @@
           "upper": 1.0
         }
       ],
+      "external_sphere_count": 23,
       "input_joint_names": [
         "yaw",
         "pitch",
@@ -1099,17 +1126,18 @@
       "math": "f32-sfu",
       "optimization": "basic",
       "scalar": "float",
+      "self_collision_pair_count": 0,
       "sphere_count": 23
     },
     "name": "chain-basic-0",
     "optimization": "basic",
     "sha256": {
       "centers.cuh": "51a4f75ee54f3127d4c5bde28665dafab1774a8d0fafe6d3b42853d6ff782429",
+      "collision.cuh": "fbd0cff93362f567218a516b006664afedbcf17ba73318b45b14a378e19030ff",
       "collision/broad.cuh": "1a6de4ded871aa7173f8ff8c6a596509823406ea71911aa24bd22db6c941487e",
       "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
       "collision/streaming.cuh": "6ed5bdf2e4cb3e8e54b7e8ec4faeb15a29e4acc3b5e5a2ee123c6899417f6a39",
       "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision.cuh": "fbd0cff93362f567218a516b006664afedbcf17ba73318b45b14a378e19030ff",
       "collision_function.cuh": "85df466c74a4c94e1140fc187f6c5ebe2349692393026e6a0b975b97c358337c",
       "fk.cuh": "80a37df63e8a6b60b62991ab952b8b703d221659e22693aa5ea201d5efee8fec",
       "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
@@ -1139,6 +1167,7 @@
           "upper": 1.0
         }
       ],
+      "external_sphere_count": 23,
       "input_joint_names": [
         "yaw",
         "pitch",
@@ -1149,17 +1178,18 @@
       "math": "f32-sfu",
       "optimization": "basic",
       "scalar": "float",
+      "self_collision_pair_count": 0,
       "sphere_count": 23
     },
     "name": "chain-basic-64",
     "optimization": "basic",
     "sha256": {
       "centers.cuh": "4232288c97b50ebe034b7e955c6b9a0dd2b713d026f93a589235d1e52583bba6",
+      "collision.cuh": "09485b39d745bbf01d94ed8c2e1db3c514c04e4be6f4443fdec781bceb8d7ba7",
       "collision/broad.cuh": "1a6de4ded871aa7173f8ff8c6a596509823406ea71911aa24bd22db6c941487e",
       "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
       "collision/streaming.cuh": "6ed5bdf2e4cb3e8e54b7e8ec4faeb15a29e4acc3b5e5a2ee123c6899417f6a39",
       "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision.cuh": "09485b39d745bbf01d94ed8c2e1db3c514c04e4be6f4443fdec781bceb8d7ba7",
       "collision_function.cuh": "c0c5832511a447b23931776dbd54293aa6a8e81ef8cd870f4c93f4d4ba43b39c",
       "fk.cuh": "b9c01df5595df811b5ed1c56254c69b892311f073c469bb0de5483613b9adef7",
       "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
@@ -1189,6 +1219,7 @@
           "upper": 1.0
         }
       ],
+      "external_sphere_count": 23,
       "input_joint_names": [
         "yaw",
         "pitch",
@@ -1199,17 +1230,18 @@
       "math": "f32-sfu",
       "optimization": "algebraic",
       "scalar": "float",
+      "self_collision_pair_count": 0,
       "sphere_count": 23
     },
     "name": "chain-algebraic-None",
     "optimization": "algebraic",
     "sha256": {
       "centers.cuh": "1db62be1d6972a603a95a53df24b5777d40660c1a0e2015ba1b954044a74d188",
+      "collision.cuh": "4fb70d3ad296ee3b63d0eba872fc4393495f483a2b41648a86936bd3bc907e21",
       "collision/broad.cuh": "1a6de4ded871aa7173f8ff8c6a596509823406ea71911aa24bd22db6c941487e",
       "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
       "collision/streaming.cuh": "6ed5bdf2e4cb3e8e54b7e8ec4faeb15a29e4acc3b5e5a2ee123c6899417f6a39",
       "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision.cuh": "4fb70d3ad296ee3b63d0eba872fc4393495f483a2b41648a86936bd3bc907e21",
       "collision_function.cuh": "617c9eb8c0b3e6267e7ca8f12af0466834190f4cf0e28914479d60f0ddfd90c0",
       "fk.cuh": "6fca36f7eb337479271441e2cc5803ed9bbefa504cdc2f161fafd1834553bb0b",
       "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
@@ -1239,6 +1271,7 @@
           "upper": 1.0
         }
       ],
+      "external_sphere_count": 23,
       "input_joint_names": [
         "yaw",
         "pitch",
@@ -1249,17 +1282,18 @@
       "math": "f32-sfu",
       "optimization": "algebraic",
       "scalar": "float",
+      "self_collision_pair_count": 0,
       "sphere_count": 23
     },
     "name": "chain-algebraic-0",
     "optimization": "algebraic",
     "sha256": {
       "centers.cuh": "d5513d923697c3dc6adab45fbbf79a4a8346aa0dd6d8a7197035b6c9c0baf0a7",
+      "collision.cuh": "26b88e7286c80129b4740e4c014fc9410a8dd1a6a20c9e21b8f5c14e05f3b85f",
       "collision/broad.cuh": "1a6de4ded871aa7173f8ff8c6a596509823406ea71911aa24bd22db6c941487e",
       "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
       "collision/streaming.cuh": "6ed5bdf2e4cb3e8e54b7e8ec4faeb15a29e4acc3b5e5a2ee123c6899417f6a39",
       "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision.cuh": "26b88e7286c80129b4740e4c014fc9410a8dd1a6a20c9e21b8f5c14e05f3b85f",
       "collision_function.cuh": "26dcd78e39a818350d71b81325932fb0f12717646ff9499c732d6083a36ab8ae",
       "fk.cuh": "cbd9ba1ce1a6fae3c89555d50938a8b9907d18b2ec452f1b8c530601e8133e72",
       "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
@@ -1289,6 +1323,7 @@
           "upper": 1.0
         }
       ],
+      "external_sphere_count": 23,
       "input_joint_names": [
         "yaw",
         "pitch",
@@ -1299,17 +1334,18 @@
       "math": "f32-sfu",
       "optimization": "algebraic",
       "scalar": "float",
+      "self_collision_pair_count": 0,
       "sphere_count": 23
     },
     "name": "chain-algebraic-64",
     "optimization": "algebraic",
     "sha256": {
       "centers.cuh": "e83981e9dfd811df7d718372c278a0f2b76e3b54620e820048a6dda92cb5ae30",
+      "collision.cuh": "dead4b51dfa429a1cc4d795e1c03b337961609595075c2539e360a52f5a6a496",
       "collision/broad.cuh": "1a6de4ded871aa7173f8ff8c6a596509823406ea71911aa24bd22db6c941487e",
       "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
       "collision/streaming.cuh": "6ed5bdf2e4cb3e8e54b7e8ec4faeb15a29e4acc3b5e5a2ee123c6899417f6a39",
       "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision.cuh": "dead4b51dfa429a1cc4d795e1c03b337961609595075c2539e360a52f5a6a496",
       "collision_function.cuh": "75ca8a9f8ff39bd8692bb57f277e00b3dfb8270d8e6710c2ca97bb1c4581801d",
       "fk.cuh": "cf3f11234668599fa7144e7f0234a361659b4fd3ea52ed89a7d36f079c2b5128",
       "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
@@ -1333,6 +1369,7 @@
           "upper": 3.2
         }
       ],
+      "external_sphere_count": 0,
       "input_joint_names": [
         "yaw",
         "pitch",
@@ -1343,17 +1380,18 @@
       "math": "f32-sfu",
       "optimization": "none",
       "scalar": "float",
+      "self_collision_pair_count": 0,
       "sphere_count": 0
     },
     "name": "empty-none-None",
     "optimization": "none",
     "sha256": {
       "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
+      "collision.cuh": "69560f0fa0114f3f1c74aae3df335e211dda399a439801dd173c284d5bade909",
       "collision/broad.cuh": "1a6de4ded871aa7173f8ff8c6a596509823406ea71911aa24bd22db6c941487e",
       "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
       "collision/streaming.cuh": "6ed5bdf2e4cb3e8e54b7e8ec4faeb15a29e4acc3b5e5a2ee123c6899417f6a39",
       "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision.cuh": "69560f0fa0114f3f1c74aae3df335e211dda399a439801dd173c284d5bade909",
       "collision_function.cuh": "90343d4300a3476a10627bbb7c1c7505e987e5f78ae59914b87732a0ea275179",
       "fk.cuh": "48e6c6fa77e1dc9de85ca5c8d220ef0f33384f20bf7fd2e030e1c0b7c52a9f7a",
       "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
@@ -1377,6 +1415,7 @@
           "upper": 3.2
         }
       ],
+      "external_sphere_count": 0,
       "input_joint_names": [
         "yaw",
         "pitch",
@@ -1387,17 +1426,18 @@
       "math": "f32-sfu",
       "optimization": "none",
       "scalar": "float",
+      "self_collision_pair_count": 0,
       "sphere_count": 0
     },
     "name": "empty-none-0",
     "optimization": "none",
     "sha256": {
       "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
+      "collision.cuh": "69560f0fa0114f3f1c74aae3df335e211dda399a439801dd173c284d5bade909",
       "collision/broad.cuh": "1a6de4ded871aa7173f8ff8c6a596509823406ea71911aa24bd22db6c941487e",
       "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
       "collision/streaming.cuh": "6ed5bdf2e4cb3e8e54b7e8ec4faeb15a29e4acc3b5e5a2ee123c6899417f6a39",
       "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision.cuh": "69560f0fa0114f3f1c74aae3df335e211dda399a439801dd173c284d5bade909",
       "collision_function.cuh": "90343d4300a3476a10627bbb7c1c7505e987e5f78ae59914b87732a0ea275179",
       "fk.cuh": "7983a9fb04d901f0cc0eec08153dd9d1c889f2cdaae6bee9418a45522732b795",
       "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
@@ -1421,6 +1461,7 @@
           "upper": 3.2
         }
       ],
+      "external_sphere_count": 0,
       "input_joint_names": [
         "yaw",
         "pitch",
@@ -1431,17 +1472,18 @@
       "math": "f32-sfu",
       "optimization": "none",
       "scalar": "float",
+      "self_collision_pair_count": 0,
       "sphere_count": 0
     },
     "name": "empty-none-64",
     "optimization": "none",
     "sha256": {
       "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
+      "collision.cuh": "69560f0fa0114f3f1c74aae3df335e211dda399a439801dd173c284d5bade909",
       "collision/broad.cuh": "1a6de4ded871aa7173f8ff8c6a596509823406ea71911aa24bd22db6c941487e",
       "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
       "collision/streaming.cuh": "6ed5bdf2e4cb3e8e54b7e8ec4faeb15a29e4acc3b5e5a2ee123c6899417f6a39",
       "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision.cuh": "69560f0fa0114f3f1c74aae3df335e211dda399a439801dd173c284d5bade909",
       "collision_function.cuh": "90343d4300a3476a10627bbb7c1c7505e987e5f78ae59914b87732a0ea275179",
       "fk.cuh": "14abb622a846098b28b0890a74e54b28684157bb2c970c0368d130fb718b588e",
       "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
@@ -1465,6 +1507,7 @@
           "upper": 3.2
         }
       ],
+      "external_sphere_count": 0,
       "input_joint_names": [
         "yaw",
         "pitch",
@@ -1475,17 +1518,18 @@
       "math": "f32-sfu",
       "optimization": "basic",
       "scalar": "float",
+      "self_collision_pair_count": 0,
       "sphere_count": 0
     },
     "name": "empty-basic-None",
     "optimization": "basic",
     "sha256": {
       "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
+      "collision.cuh": "69560f0fa0114f3f1c74aae3df335e211dda399a439801dd173c284d5bade909",
       "collision/broad.cuh": "1a6de4ded871aa7173f8ff8c6a596509823406ea71911aa24bd22db6c941487e",
       "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
       "collision/streaming.cuh": "6ed5bdf2e4cb3e8e54b7e8ec4faeb15a29e4acc3b5e5a2ee123c6899417f6a39",
       "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision.cuh": "69560f0fa0114f3f1c74aae3df335e211dda399a439801dd173c284d5bade909",
       "collision_function.cuh": "90343d4300a3476a10627bbb7c1c7505e987e5f78ae59914b87732a0ea275179",
       "fk.cuh": "5a05c40ef23a1c39e88d6dae2ca130a8a7bc1742a413570ac30b966ad1fe0129",
       "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
@@ -1509,6 +1553,7 @@
           "upper": 3.2
         }
       ],
+      "external_sphere_count": 0,
       "input_joint_names": [
         "yaw",
         "pitch",
@@ -1519,17 +1564,18 @@
       "math": "f32-sfu",
       "optimization": "basic",
       "scalar": "float",
+      "self_collision_pair_count": 0,
       "sphere_count": 0
     },
     "name": "empty-basic-0",
     "optimization": "basic",
     "sha256": {
       "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
+      "collision.cuh": "69560f0fa0114f3f1c74aae3df335e211dda399a439801dd173c284d5bade909",
       "collision/broad.cuh": "1a6de4ded871aa7173f8ff8c6a596509823406ea71911aa24bd22db6c941487e",
       "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
       "collision/streaming.cuh": "6ed5bdf2e4cb3e8e54b7e8ec4faeb15a29e4acc3b5e5a2ee123c6899417f6a39",
       "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision.cuh": "69560f0fa0114f3f1c74aae3df335e211dda399a439801dd173c284d5bade909",
       "collision_function.cuh": "90343d4300a3476a10627bbb7c1c7505e987e5f78ae59914b87732a0ea275179",
       "fk.cuh": "80a37df63e8a6b60b62991ab952b8b703d221659e22693aa5ea201d5efee8fec",
       "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
@@ -1553,6 +1599,7 @@
           "upper": 3.2
         }
       ],
+      "external_sphere_count": 0,
       "input_joint_names": [
         "yaw",
         "pitch",
@@ -1563,17 +1610,18 @@
       "math": "f32-sfu",
       "optimization": "basic",
       "scalar": "float",
+      "self_collision_pair_count": 0,
       "sphere_count": 0
     },
     "name": "empty-basic-64",
     "optimization": "basic",
     "sha256": {
       "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
+      "collision.cuh": "69560f0fa0114f3f1c74aae3df335e211dda399a439801dd173c284d5bade909",
       "collision/broad.cuh": "1a6de4ded871aa7173f8ff8c6a596509823406ea71911aa24bd22db6c941487e",
       "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
       "collision/streaming.cuh": "6ed5bdf2e4cb3e8e54b7e8ec4faeb15a29e4acc3b5e5a2ee123c6899417f6a39",
       "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision.cuh": "69560f0fa0114f3f1c74aae3df335e211dda399a439801dd173c284d5bade909",
       "collision_function.cuh": "90343d4300a3476a10627bbb7c1c7505e987e5f78ae59914b87732a0ea275179",
       "fk.cuh": "b9c01df5595df811b5ed1c56254c69b892311f073c469bb0de5483613b9adef7",
       "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
@@ -1597,6 +1645,7 @@
           "upper": 3.2
         }
       ],
+      "external_sphere_count": 0,
       "input_joint_names": [
         "yaw",
         "pitch",
@@ -1607,17 +1656,18 @@
       "math": "f32-sfu",
       "optimization": "algebraic",
       "scalar": "float",
+      "self_collision_pair_count": 0,
       "sphere_count": 0
     },
     "name": "empty-algebraic-None",
     "optimization": "algebraic",
     "sha256": {
       "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
+      "collision.cuh": "69560f0fa0114f3f1c74aae3df335e211dda399a439801dd173c284d5bade909",
       "collision/broad.cuh": "1a6de4ded871aa7173f8ff8c6a596509823406ea71911aa24bd22db6c941487e",
       "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
       "collision/streaming.cuh": "6ed5bdf2e4cb3e8e54b7e8ec4faeb15a29e4acc3b5e5a2ee123c6899417f6a39",
       "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision.cuh": "69560f0fa0114f3f1c74aae3df335e211dda399a439801dd173c284d5bade909",
       "collision_function.cuh": "90343d4300a3476a10627bbb7c1c7505e987e5f78ae59914b87732a0ea275179",
       "fk.cuh": "6fca36f7eb337479271441e2cc5803ed9bbefa504cdc2f161fafd1834553bb0b",
       "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
@@ -1641,6 +1691,7 @@
           "upper": 3.2
         }
       ],
+      "external_sphere_count": 0,
       "input_joint_names": [
         "yaw",
         "pitch",
@@ -1651,17 +1702,18 @@
       "math": "f32-sfu",
       "optimization": "algebraic",
       "scalar": "float",
+      "self_collision_pair_count": 0,
       "sphere_count": 0
     },
     "name": "empty-algebraic-0",
     "optimization": "algebraic",
     "sha256": {
       "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
+      "collision.cuh": "69560f0fa0114f3f1c74aae3df335e211dda399a439801dd173c284d5bade909",
       "collision/broad.cuh": "1a6de4ded871aa7173f8ff8c6a596509823406ea71911aa24bd22db6c941487e",
       "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
       "collision/streaming.cuh": "6ed5bdf2e4cb3e8e54b7e8ec4faeb15a29e4acc3b5e5a2ee123c6899417f6a39",
       "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision.cuh": "69560f0fa0114f3f1c74aae3df335e211dda399a439801dd173c284d5bade909",
       "collision_function.cuh": "90343d4300a3476a10627bbb7c1c7505e987e5f78ae59914b87732a0ea275179",
       "fk.cuh": "cbd9ba1ce1a6fae3c89555d50938a8b9907d18b2ec452f1b8c530601e8133e72",
       "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
@@ -1685,6 +1737,7 @@
           "upper": 3.2
         }
       ],
+      "external_sphere_count": 0,
       "input_joint_names": [
         "yaw",
         "pitch",
@@ -1695,17 +1748,18 @@
       "math": "f32-sfu",
       "optimization": "algebraic",
       "scalar": "float",
+      "self_collision_pair_count": 0,
       "sphere_count": 0
     },
     "name": "empty-algebraic-64",
     "optimization": "algebraic",
     "sha256": {
       "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
+      "collision.cuh": "69560f0fa0114f3f1c74aae3df335e211dda399a439801dd173c284d5bade909",
       "collision/broad.cuh": "1a6de4ded871aa7173f8ff8c6a596509823406ea71911aa24bd22db6c941487e",
       "collision/sdf.cuh": "3c5fd29d51466434a9915501af4c162cbab9cf4d7d4330684e8730014a9ee298",
       "collision/streaming.cuh": "6ed5bdf2e4cb3e8e54b7e8ec4faeb15a29e4acc3b5e5a2ee123c6899417f6a39",
       "collision/workspace.cuh": "fee50262686fc77f7467ee0c01c20152980f1013e43962ce76c16c192523146d",
-      "collision.cuh": "69560f0fa0114f3f1c74aae3df335e211dda399a439801dd173c284d5bade909",
       "collision_function.cuh": "90343d4300a3476a10627bbb7c1c7505e987e5f78ae59914b87732a0ea275179",
       "fk.cuh": "cf3f11234668599fa7144e7f0234a361659b4fd3ea52ed89a7d36f079c2b5128",
       "rrt/bindings.cu": "a52c3467c02e4d06cbdf14e12b4da4a81bce6302d78241f401e1782b58dadeee",
@@ -1722,11 +1776,13 @@
     "live_budget": null,
     "model": {
       "control_joints": [],
+      "external_sphere_count": 1,
       "input_joint_names": [],
       "live_budget": null,
       "math": "f32-sfu",
       "optimization": "none",
       "scalar": "float",
+      "self_collision_pair_count": 0,
       "sphere_count": 1
     },
     "name": "fixed-none-None",
@@ -1744,11 +1800,13 @@
     "live_budget": 0,
     "model": {
       "control_joints": [],
+      "external_sphere_count": 1,
       "input_joint_names": [],
       "live_budget": 0,
       "math": "f32-sfu",
       "optimization": "none",
       "scalar": "float",
+      "self_collision_pair_count": 0,
       "sphere_count": 1
     },
     "name": "fixed-none-0",
@@ -1766,11 +1824,13 @@
     "live_budget": 64,
     "model": {
       "control_joints": [],
+      "external_sphere_count": 1,
       "input_joint_names": [],
       "live_budget": 64,
       "math": "f32-sfu",
       "optimization": "none",
       "scalar": "float",
+      "self_collision_pair_count": 0,
       "sphere_count": 1
     },
     "name": "fixed-none-64",
@@ -1788,11 +1848,13 @@
     "live_budget": null,
     "model": {
       "control_joints": [],
+      "external_sphere_count": 1,
       "input_joint_names": [],
       "live_budget": null,
       "math": "f32-sfu",
       "optimization": "basic",
       "scalar": "float",
+      "self_collision_pair_count": 0,
       "sphere_count": 1
     },
     "name": "fixed-basic-None",
@@ -1810,11 +1872,13 @@
     "live_budget": 0,
     "model": {
       "control_joints": [],
+      "external_sphere_count": 1,
       "input_joint_names": [],
       "live_budget": 0,
       "math": "f32-sfu",
       "optimization": "basic",
       "scalar": "float",
+      "self_collision_pair_count": 0,
       "sphere_count": 1
     },
     "name": "fixed-basic-0",
@@ -1832,11 +1896,13 @@
     "live_budget": 64,
     "model": {
       "control_joints": [],
+      "external_sphere_count": 1,
       "input_joint_names": [],
       "live_budget": 64,
       "math": "f32-sfu",
       "optimization": "basic",
       "scalar": "float",
+      "self_collision_pair_count": 0,
       "sphere_count": 1
     },
     "name": "fixed-basic-64",
@@ -1854,11 +1920,13 @@
     "live_budget": null,
     "model": {
       "control_joints": [],
+      "external_sphere_count": 1,
       "input_joint_names": [],
       "live_budget": null,
       "math": "f32-sfu",
       "optimization": "algebraic",
       "scalar": "float",
+      "self_collision_pair_count": 0,
       "sphere_count": 1
     },
     "name": "fixed-algebraic-None",
@@ -1876,11 +1944,13 @@
     "live_budget": 0,
     "model": {
       "control_joints": [],
+      "external_sphere_count": 1,
       "input_joint_names": [],
       "live_budget": 0,
       "math": "f32-sfu",
       "optimization": "algebraic",
       "scalar": "float",
+      "self_collision_pair_count": 0,
       "sphere_count": 1
     },
     "name": "fixed-algebraic-0",
@@ -1898,11 +1968,13 @@
     "live_budget": 64,
     "model": {
       "control_joints": [],
+      "external_sphere_count": 1,
       "input_joint_names": [],
       "live_budget": 64,
       "math": "f32-sfu",
       "optimization": "algebraic",
       "scalar": "float",
+      "self_collision_pair_count": 0,
       "sphere_count": 1
     },
     "name": "fixed-algebraic-64",

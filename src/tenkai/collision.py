@@ -3,7 +3,7 @@
 import math
 from collections import Counter
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import yaml
 from yaml.nodes import MappingNode, Node, ScalarNode, SequenceNode
@@ -32,6 +32,8 @@ class Sphere:
 class CollisionConfig:
     groups: dict[str, list[tuple[float, float, float, float]]]
     control_joint_names: list[str]
+    self_collision_pairs: list[tuple[str, str]] = field(default_factory=list)
+    only_self_collision_links: list[str] = field(default_factory=list)
 
     def resolve(self, fk: FkDag) -> list[Sphere]:
         unknown_links = self.groups.keys() - set(fk.link_names)
@@ -48,6 +50,41 @@ class CollisionConfig:
                 spheres.append(sphere)
 
         return spheres
+
+    def resolve_rules(self, fk: FkDag, spheres: Sequence[Sphere]) -> "SelfCollisionRules":
+        def link_index(name: str) -> int:
+            if name not in fk.link_names:
+                raise ValueError("collision rules reference unknown link: " + name)
+            return fk.link_names.index(name)
+
+        pairs = tuple((link_index(a), link_index(b)) for a, b in self.self_collision_pairs)
+        self_only = tuple(link_index(name) for name in self.only_self_collision_links)
+        rules = SelfCollisionRules(pairs, self_only)
+        rules.validate(spheres)
+        return rules
+
+
+@dataclass(frozen=True)
+class SelfCollisionRules:
+    self_pairs: tuple[tuple[int, int], ...] = ()
+    self_only_links: tuple[int, ...] = ()
+
+    def validate(self, spheres: Sequence[Sphere]) -> None:
+        links = {sphere.link_index for sphere in spheres}
+        seen: set[tuple[int, int]] = set()
+        for a, b in self.self_pairs:
+            if a not in links or b not in links:
+                raise ValueError("self collision pair requires spheres on both links")
+            if a == b:
+                raise ValueError("self collision pair requires distinct links")
+            pair = (min(a, b), max(a, b))
+            if pair in seen:
+                raise ValueError("duplicate self collision pair")
+            seen.add(pair)
+        if len(set(self.self_only_links)) != len(self.self_only_links):
+            raise ValueError("duplicate only_self_collision_links entry")
+        if any(link not in links for link in self.self_only_links):
+            raise ValueError("only_self_collision_links requires spheres on each link")
 
 
 def check_unique_keys(node: Node, visited: set[int]) -> None:
@@ -128,7 +165,23 @@ def read_config(source: str) -> CollisionConfig:
             raise ValueError("control joint names must be strings")
         controls.append(control)
 
-    return CollisionConfig(groups, controls)
+    pairs: list[tuple[str, str]] = []
+    for item in sequence(config.get("self_collision_pairs", [])):
+        pair = sequence(item)
+        if len(pair) != 2:
+            raise ValueError("self_collision_pairs entries must contain two link names")
+        a, b = pair
+        if not isinstance(a, str) or not isinstance(b, str):
+            raise ValueError("self_collision_pairs entries must contain two link names")
+        pairs.append((a, b))
+
+    self_only: list[str] = []
+    for self_link in sequence(config.get("only_self_collision_links", [])):
+        if not isinstance(self_link, str):
+            raise ValueError("only_self_collision_links entries must be link names")
+        self_only.append(self_link)
+
+    return CollisionConfig(groups, controls, pairs, self_only)
 
 
 def read_spheres(source: str, fk: FkDag) -> list[Sphere]:
@@ -198,11 +251,17 @@ class CollisionDag:
     centers: list[list[int]]
     poses: dict[int, Pose]
     bounds: dict[int, LinkBound]
+    spheres: list[Sphere]
+    rules: SelfCollisionRules
 
 
 def collision_expressions(
-    fk: FkDag, spheres: Sequence[Sphere], optimization: Optimization
+    fk: FkDag,
+    spheres: Sequence[Sphere],
+    optimization: Optimization,
+    rules: SelfCollisionRules = SelfCollisionRules(),
 ) -> CollisionDag:
+    rules.validate(spheres)
     dag, outputs = center_dag(fk, spheres, optimization)
     center_count = len(outputs)
     links: dict[int, list[Sphere]] = {}
@@ -234,4 +293,4 @@ def collision_expressions(
         start = center_count + len(links) * 7 + index * 3
         x, y, z = outputs[start : start + 3]
         bounds[bound.link_index] = LinkBound(bound, (x, y, z), local_scale)
-    return CollisionDag(dag, centers, poses, bounds)
+    return CollisionDag(dag, centers, poses, bounds, list(spheres), rules)
