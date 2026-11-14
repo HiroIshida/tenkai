@@ -65,6 +65,7 @@ def template(name: str, replacements: Sequence[tuple[str, str | int]] = ()) -> s
         marker = "TPL_" + key
         source = source.replace("/* " + marker + " */", str(value))
         source = source.replace(marker, str(value))
+
     return source
 
 
@@ -103,6 +104,7 @@ class Kernel:
             return None
         if node.angle != following.angle or node.op == following.op:
             return None
+
         if node.op == TrigOp.SIN:
             return node.angle, index, next_id
         return node.angle, next_id, index
@@ -128,62 +130,73 @@ class Kernel:
         source: list[str] = []
         steps = self.schedule.steps
         position = 0
+
         while position < len(steps):
             step = steps[position]
             position += 1
             if isinstance(step, Store):
                 source.append(store(step.index, step.node))
                 continue
+
+            pair: tuple[int, int, int] | None = None
             if pair_trig and self.options.math == "f32" and position < len(steps):
                 following = steps[position]
                 if isinstance(following, Evaluate):
                     pair = self.trig_pair(step.node, following.node)
-                    if pair is not None:
-                        angle, sin, cos = pair
-                        source.append(f"    float v{sin}, v{cos};\n")
-                        source.append(f"    sincosf(v{angle}, &v{sin}, &v{cos});\n")
-                        position += 1
-                        continue
+            if pair is not None:
+                angle, sin, cos = pair
+                source.append(f"    float v{sin}, v{cos};\n")
+                source.append(f"    sincosf(v{angle}, &v{sin}, &v{cos});\n")
+                position += 1
+                continue
+
             expression = self.expression(step.node, input_name)
             source.append(f"    const {self.options.scalar} v{step.node} = {expression};\n")
+
         return "".join(source)
 
 
 def generate_fk_kernel(fk: FkDag, link_index: int, options: Options = Options()) -> str:
     if not 0 <= link_index < len(fk.poses):
         raise ValueError("link index is out of range")
+
     pose = fk.poses[link_index]
     dag, outputs = fk.dag.optimize(
         [*pose.translation, *pose.rotation], options.precision, options.optimization
     )
-    return Kernel("tenkai_fk", dag, len(fk.joint_names), outputs, options).source()
+    kernel = Kernel("tenkai_fk", dag, len(fk.joint_names), outputs, options)
+    return kernel.source()
 
 
 def generate_centers_kernel(
     fk: FkDag, spheres: Sequence[Sphere], options: Options = Options()
 ) -> str:
     dag, outputs = center_expressions(fk, spheres, options.precision, options.optimization)
-    return Kernel("tenkai_centers", dag, len(fk.joint_names), outputs, options).source()
+    kernel = Kernel("tenkai_centers", dag, len(fk.joint_names), outputs, options)
+    return kernel.source()
 
 
 def collision_group(spheres: Sequence[Sphere], start: int, options: Options) -> str:
     namespace = options.namespace
     suffix = options.suffix
-    source = []
+    source: list[str] = []
+
     if len(spheres) > 1:
-        bounds = []
+        bounds: list[str] = []
         for operation in ("fmin", "fmax"):
-            coordinates = []
+            coordinates: list[str] = []
             for axis in "xyz":
                 value = f"point{start}.{axis}"
                 for i in range(start + 1, start + len(spheres)):
                     value = f"{operation}{suffix}({value}, point{i}.{axis})"
                 coordinates.append(value)
             bounds.append("{" + ", ".join(coordinates) + "}")
-        radius = number(max(s.radius for s in spheres))
+        radius = number(max(sphere.radius for sphere in spheres))
         source.append(
-            f"    const {namespace}::SphereBounds bounds{start} = {{{', '.join(bounds)}, {radius}{suffix}}};\n"
+            f"    const {namespace}::SphereBounds bounds{start} = "
+            f"{{{', '.join(bounds)}, {radius}{suffix}}};\n"
         )
+
     for primitive, field in (
         ("Box", "boxes"),
         ("Sphere", "spheres"),
@@ -195,25 +208,33 @@ def collision_group(spheres: Sequence[Sphere], start: int, options: Options) -> 
             "    #pragma unroll 1\n"
             "#endif\n"
             f"    for (size_t i = 0; i < environment.{field}.count; ++i) {{\n"
-            f"        const {namespace}::{primitive}& obstacle = scene.{field}[environment.{field}.offset + i];\n"
+            f"        const {namespace}::{primitive}& obstacle = "
+            f"scene.{field}[environment.{field}.offset + i];\n"
         )
+
         broad_phase = len(spheres) > 1 and primitive != "Ground"
         if broad_phase:
             source.append(f"        if ({namespace}::overlaps(obstacle, bounds{start})) {{\n")
+
         for offset, sphere in enumerate(spheres):
+            radius = number(sphere.radius)
             source.append(
-                f"        collision |= {namespace}::intersects(obstacle, point{start + offset}, {number(sphere.radius)}{suffix});\n"
+                f"        collision |= {namespace}::intersects("
+                f"obstacle, point{start + offset}, {radius}{suffix});\n"
             )
+
         if broad_phase:
             source.append("        }\n")
         source.append("        if (collision) return true;\n    }\n")
+
     return "".join(source)
 
 
 def collision_definition(name: str, qualifier: str, body: str, options: Options) -> str:
     return (
         f"\n__device__ {qualifier} bool {name}(\n"
-        f"    const {options.scalar}* q, {options.namespace}::Scene scene, uint32_t environment_id) {{\n"
+        f"    const {options.scalar}* q, {options.namespace}::Scene scene, "
+        f"uint32_t environment_id) {{\n"
         f"{body}}}\n"
     )
 
@@ -222,7 +243,8 @@ def collision_function(kernel: Kernel, spheres: Sequence[Sphere], qualifier: str
     options = kernel.options
 
     def store(index: int, value: int) -> str:
-        text = f"    center.{'xyz'[index % 3]} = v{value};\n"
+        axis = "xyz"[index % 3]
+        text = f"    center.{axis} = v{value};\n"
         if index % 3 == 2:
             sphere_index = index // 3
             text += f"    const {options.namespace}::Vec3 point{sphere_index} = center;\n"
@@ -230,11 +252,13 @@ def collision_function(kernel: Kernel, spheres: Sequence[Sphere], qualifier: str
             if end % 16 == 0 or end == len(spheres):
                 start = sphere_index // 16 * 16
                 text += collision_group(spheres[start:end], start, options)
+
         return text
 
     if spheres:
         body = (
-            f"    const {options.namespace}::Environment environment = scene.environments[environment_id];\n"
+            f"    const {options.namespace}::Environment environment = "
+            "scene.environments[environment_id];\n"
             "    bool collision = false;\n"
             f"    {options.namespace}::Vec3 center;\n"
         )
@@ -242,11 +266,20 @@ def collision_function(kernel: Kernel, spheres: Sequence[Sphere], qualifier: str
         body += "    return collision;\n"
     else:
         body = "    return false;\n"
+
     return collision_definition(kernel.name, qualifier, body, options)
 
 
 def streaming_function(kernel: Kernel, spheres: Sequence[Sphere]) -> str:
-    if any(not math.isfinite(f32(f32(s.radius) * f32(s.radius))) for s in spheres):
+    finite_squared_radii = True
+    for sphere in spheres:
+        radius = f32(sphere.radius)
+        squared_radius = f32(radius * radius)
+        if not math.isfinite(squared_radius):
+            finite_squared_radii = False
+            break
+
+    if not finite_squared_radii:
         streamable_body = "    return false;\n"
     else:
         streamable_body = (
@@ -260,19 +293,25 @@ def streaming_function(kernel: Kernel, spheres: Sequence[Sphere]) -> str:
         )
 
     def store(index: int, value: int) -> str:
-        text = f"    center.{'xyz'[index % 3]} = v{value};\n"
+        axis = "xyz"[index % 3]
+        text = f"    center.{axis} = v{value};\n"
         if index % 3 == 2:
             radius = number(spheres[index // 3].radius)
             text += f"    collision |= streaming_intersects(box, center, {radius}f, retry);\n"
             text += f"    collision |= intersects(ground, center, {radius}f);\n"
             if (index // 3 + 1) % 8 == 0:
                 text += "    if (__any_sync(mask, collision || retry))\n"
-                text += "        return retry ? StreamingCollision::Retry : StreamingCollision::Blocked;\n"
+                text += (
+                    "        return retry ? StreamingCollision::Retry : "
+                    "StreamingCollision::Blocked;\n"
+                )
+
         return text
 
+    body = kernel.body("q", True, store)
     return template(
         "collision/streaming.cuh",
-        (("STREAMABLE_BODY", streamable_body), ("BODY", kernel.body("q", True, store))),
+        (("STREAMABLE_BODY", streamable_body), ("BODY", body)),
     )
 
 
@@ -285,44 +324,53 @@ def planning_functions(
 ) -> str:
     options = kernel.options
     dag = kernel.dag
-    dependent = [dag.depends_on_inputs([i]) for i in controls]
-    bounded = []
+    dependencies_by_control = [dag.depends_on_inputs([index]) for index in controls]
+
+    bounded_indices: list[int] = []
     if options.math == "f32":
         for index in moving:
             dependency_count = 0
-            for flags in dependent:
+            for flags in dependencies_by_control:
                 if any(flags[node] for node in groups[index]):
                     dependency_count += 1
             if dependency_count <= 2:
-                bounded.append(index)
-    remaining = [i for i in moving if i not in bounded]
-    edge_spheres = [spheres[i] for i in remaining]
-    edge_groups = [groups[i] for i in remaining]
-    edge = Kernel(
+                bounded_indices.append(index)
+
+    remaining_indices = [index for index in moving if index not in bounded_indices]
+    edge_spheres = [spheres[index] for index in remaining_indices]
+    edge_groups = [groups[index] for index in remaining_indices]
+    edge_outputs = [node for group in edge_groups for node in group]
+    edge_kernel = Kernel(
         "tenkai_collision_edge",
         dag,
         kernel.dof,
-        [node for group in edge_groups for node in group],
+        edge_outputs,
         options,
         edge_groups,
     )
-    source = collision_function(edge, edge_spheres, "__forceinline__") + streaming_function(
-        edge, edge_spheres
-    )
-    bounds_checks = []
-    for d, flags in enumerate(dependent):
-        if any(any(flags[node] for node in groups[i]) for i in bounded):
+    source = collision_function(edge_kernel, edge_spheres, "__forceinline__")
+    source += streaming_function(edge_kernel, edge_spheres)
+
+    bounds_checks: list[str] = []
+    for dimension, flags in enumerate(dependencies_by_control):
+        affects_bounds = any(flags[node] for index in bounded_indices for node in groups[index])
+        if affects_bounds:
             bounds_checks.append(
-                f"    if (!(q[{d}] >= lower[{d}] && q[{d}] <= upper[{d}])) return false;\n"
+                f"    if (!(q[{dimension}] >= lower[{dimension}] && "
+                f"q[{dimension}] <= upper[{dimension}])) return false;\n"
             )
-    body = []
-    needed = dag.required_nodes([node for i in bounded for node in groups[i]])
+
+    body: list[str] = []
+    bounded_outputs = [node for index in bounded_indices for node in groups[index]]
+    needed = dag.required_nodes(bounded_outputs)
     for index, node in enumerate(dag.nodes):
         if not needed[index]:
             continue
+
         match node:
             case Constant(value):
-                expression = "{" + number(value) + "f, " + number(value) + "f}"
+                constant = number(value)
+                expression = "{" + constant + "f, " + constant + "f}"
             case Input(input_index):
                 if input_index in controls:
                     dimension = controls.index(input_index)
@@ -335,11 +383,15 @@ def planning_functions(
             case Binary(op, a, b):
                 expression = f"workspace_{op.value}(v{a}, v{b})"
         body.append(f"    const WorkspaceInterval v{index} = {expression};\n")
-    for i in bounded:
-        x, y, z = groups[i]
+
+    for index in bounded_indices:
+        x, y, z = groups[index]
+        radius = number(spheres[index].radius)
         body.append(
-            f"    if (!workspace_clear(v{x}, v{y}, v{z}, {number(spheres[i].radius)}f, scene, environment)) return false;\n"
+            f"    if (!workspace_clear(v{x}, v{y}, v{z}, {radius}f, "
+            "scene, environment)) return false;\n"
         )
+
     return source + template(
         "collision/workspace.cuh",
         (
@@ -357,9 +409,11 @@ def generate_collision_function(
 ) -> str:
     for sphere in spheres:
         sphere.validate(fk)
+
     dag, outputs = center_expressions(fk, spheres, options.precision, options.optimization)
     groups = [outputs[i : i + 3] for i in range(0, len(outputs), 3)]
     kernel = Kernel("tenkai_collision_one", dag, len(fk.joint_names), outputs, options, groups)
+
     source = template(
         "collision/sdf.cuh",
         (
@@ -373,9 +427,14 @@ def generate_collision_function(
     )
     qualifier = "__noinline__" if controls is not None else "inline"
     source += collision_function(kernel, spheres, qualifier)
+
     if controls is not None:
         dependent = dag.depends_on_inputs(controls)
-        moving = [i for i, group in enumerate(groups) if any(dependent[node] for node in group)]
+        moving: list[int] = []
+        for index, group in enumerate(groups):
+            if any(dependent[node] for node in group):
+                moving.append(index)
+
         if len(moving) == len(spheres):
             source += collision_definition(
                 "tenkai_collision_moving",
@@ -385,17 +444,20 @@ def generate_collision_function(
             )
         else:
             moving_groups = [groups[i] for i in moving]
+            moving_outputs = [node for group in moving_groups for node in group]
             moving_kernel = Kernel(
                 "tenkai_collision_moving",
                 dag,
                 kernel.dof,
-                [node for group in moving_groups for node in group],
+                moving_outputs,
                 options,
                 moving_groups,
             )
             source += collision_function(moving_kernel, [spheres[i] for i in moving], qualifier)
+
         if options.precision == "f32":
             source += planning_functions(kernel, spheres, groups, moving, controls)
+
     return source
 
 
@@ -406,14 +468,15 @@ def generate_collision_kernel(
     controls: Sequence[int] | None = None,
 ) -> str:
     source = generate_collision_function(fk, spheres, options, controls)
-    configuration = (
-        f"configurations + batch * {len(fk.joint_names)}" if fk.joint_names else "configurations"
-    )
-    collision = (
-        f"tenkai_collision_one({configuration}, scene, environment_ids[batch])"
-        if spheres
-        else "false"
-    )
+
+    configuration = "configurations"
+    if fk.joint_names:
+        configuration = f"configurations + batch * {len(fk.joint_names)}"
+
+    collision = "false"
+    if spheres:
+        collision = f"tenkai_collision_one({configuration}, scene, environment_ids[batch])"
+
     return source + template(
         "collision/batch_kernel.cuh",
         (("SCALAR", options.scalar), ("NAMESPACE", options.namespace), ("COLLISION", collision)),
@@ -432,7 +495,10 @@ def generate_rrt_kernel(
         raise ValueError("RRT control index exceeds FK joint count")
     if len(set(controls)) != len(controls):
         raise ValueError("duplicate RRT control index")
-    source = generate_collision_kernel(fk, spheres, options, controls) + template("rrt/types.hpp")
+
+    source = generate_collision_kernel(fk, spheres, options, controls)
+    source += template("rrt/types.hpp")
+
     indices = ", ".join(map(str, controls))
     fp32 = options.precision == "f32"
     files = ["rrt/common.cuh", "rrt/rrtc.cuh", "rrt/runtime.cuh"]
@@ -447,4 +513,5 @@ def generate_rrt_kernel(
                 ("FP32", int(fp32)),
             ),
         )
+
     return source

@@ -13,26 +13,29 @@ type MatrixNodes = tuple[PointNodes, PointNodes, PointNodes]
 
 
 def cross(dag: Dag, a: PointNodes, b: PointNodes) -> PointNodes:
-    values = []
+    values: list[int] = []
     for j, k in ((1, 2), (2, 0), (0, 1)):
         positive = dag.mul(a[j], b[k])
         negative = dag.mul(a[k], b[j])
         values.append(dag.sub(positive, negative))
+
     return values[0], values[1], values[2]
 
 
 def quaternion_product(dag: Dag, a: QuaternionNodes, b: QuaternionNodes) -> QuaternionNodes:
     product = cross(dag, (a[0], a[1], a[2]), (b[0], b[1], b[2]))
-    xyz = []
+    xyz: list[int] = []
     for i in range(3):
         left = dag.mul(a[3], b[i])
         right = dag.mul(b[3], a[i])
         total = dag.add(left, right)
         xyz.append(dag.add(total, product[i]))
+
     products = [dag.mul(a[i], b[i]) for i in range(4)]
     total = dag.add(products[0], products[1])
     dot = dag.add(total, products[2])
     w = dag.sub(products[3], dot)
+
     return xyz[0], xyz[1], xyz[2], w
 
 
@@ -41,6 +44,7 @@ def rpy_quaternion(rpy: Vector3) -> tuple[float, float, float, float]:
     sr, cr = math.sin(roll * 0.5), math.cos(roll * 0.5)
     sp, cp = math.sin(pitch * 0.5), math.cos(pitch * 0.5)
     sy, cy = math.sin(yaw * 0.5), math.cos(yaw * 0.5)
+
     return (
         sr * cp * cy - cr * sp * sy,
         cr * sp * cy + sr * cp * sy,
@@ -77,12 +81,14 @@ class Pose:
         product = cross(dag, imaginary, point)
         x, y, z = [dag.mul(two, value) for value in product]
         twice_cross = (x, y, z)
+
         correction = cross(dag, imaginary, twice_cross)
-        offset = []
+        offset: list[int] = []
         for i in range(3):
             scaled = dag.mul(self.rotation[3], twice_cross[i])
             total = dag.add(point[i], scaled)
             offset.append(dag.add(total, correction[i]))
+
         x, y, z = [dag.add(self.translation[i], offset[i]) for i in range(3)]
         return x, y, z
 
@@ -90,15 +96,18 @@ class Pose:
         x, y, z, w = self.rotation
         one = dag.constant(1)
         two = dag.constant(2)
-        products = []
+
+        products: list[int] = []
         for a, b in ((x, x), (y, y), (z, z), (x, y), (x, z), (y, z), (w, x), (w, y), (w, z)):
             product = dag.mul(a, b)
             products.append(dag.mul(two, product))
         xx, yy, zz, xy, xz, yz, wx, wy, wz = products
-        diagonal = []
+
+        diagonal: list[int] = []
         for a, b in ((yy, zz), (xx, zz), (xx, yy)):
             total = dag.add(a, b)
             diagonal.append(dag.sub(one, total))
+
         return (
             (diagonal[0], dag.sub(xy, wz), dag.add(xz, wy)),
             (dag.add(xy, wz), diagonal[1], dag.sub(yz, wx)),
@@ -108,10 +117,11 @@ class Pose:
     def transform_point_by_matrix(
         self, dag: Dag, point: PointNodes, rotation: MatrixNodes
     ) -> PointNodes:
-        result = []
+        result: list[int] = []
         for i in range(3):
             x, y, z = [dag.mul(rotation[i][j], point[j]) for j in range(3)]
             xy = dag.add(x, y)
             offset = dag.add(xy, z)
             result.append(dag.add(self.translation[i], offset))
+
         return result[0], result[1], result[2]

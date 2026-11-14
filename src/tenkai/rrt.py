@@ -45,6 +45,7 @@ class RRTConfig:
     def validate(self) -> None:
         check_count(self.max_nodes, "max_nodes", 2)
         check_count(self.max_rounds, "max_rounds")
+
         if not math.isfinite(self.step_size) or self.step_size <= 0:
             raise ValueError("step_size must be finite and positive")
         if not math.isfinite(self.goal_bias) or not 0 <= self.goal_bias <= 1:
@@ -111,11 +112,13 @@ def build_rrt(
         raise ValueError("max_registers must be 0 or between 32 and 255")
     if backend == "hip" and max_registers:
         raise ValueError("max_registers is only supported by the CUDA backend")
+
     directory = Path(output).resolve()
     stages = generate(Path(urdf), Path(spheres), directory, options)
     model: ModelMetadata = json.loads((directory / "model.json").read_text())
     if not model["control_joints"]:
         raise ValueError("RRT requires at least one control_joint_names entry")
+
     command, version = compiler_command(backend, arch)
     compiler_name = "hipcc" if backend == "hip" else "nvcc"
     source = copy_rrt_bindings(directory)
@@ -136,6 +139,7 @@ def build_rrt(
     )
     if max_registers:
         command.append("--maxrregcount=" + str(max_registers))
+
     log_path = directory / "compile.log"
     with log_path.open("w") as log:
         compile_begin = time.perf_counter()
@@ -143,11 +147,13 @@ def build_rrt(
         compile_seconds = time.perf_counter() - compile_begin
     if result.returncode:
         raise RuntimeError(f"{compiler_name} failed; see {log_path}\n{log_path.read_text()}")
+
     info = BuildInfo(backend=backend, compile_command=command, max_registers=max_registers or None)
     if backend == "hip":
         info["hipcc"] = version
     else:
         info["nvcc"] = version
+
     timings = {
         "codegen": stages["total"],
         compiler_name: compile_seconds,
@@ -185,8 +191,10 @@ def unsigned_array[T: (np.uint32, np.uint64)](
             for value in array.flat:
                 if isinstance(value, (bool, np.bool_)) or not isinstance(value, (int, np.integer)):
                     raise ValueError(f"{name} must contain integers")
+
         if int(array.min()) < 0 or int(array.max()) > np.iinfo(dtype).max:
             raise ValueError(f"{name} values must fit {np.dtype(dtype).name}")
+
     return np.ascontiguousarray(array, dtype=dtype)
 
 
@@ -212,6 +220,7 @@ class Planner:
         check_count(problem_count, "problem_count")
         if not math.isfinite(resolution) or resolution <= 0:
             raise ValueError("resolution must be finite and positive")
+
         scene = np.ascontiguousarray(geometry, dtype=np.float64)
         if scene.ndim != 2 or scene.shape[1] != 7:
             raise ValueError("geometry must have shape (environments, 7)")
@@ -220,72 +229,87 @@ class Planner:
             raise ValueError("geometry must be finite")
         if (scene[:, 3:6] < 0).any():
             raise ValueError("box full extents must be nonnegative")
+
         self.problem_count = problem_count
         self.environment_count = len(scene)
         self.dimension = len(model["control_joints"])
         self.fk_dof = len(model["input_joint_names"])
         if not 0 < self.dimension <= self.fk_dof:
             raise ValueError("model must have movable control joints")
+
         self.max_nodes = config.max_nodes
         lower = np.array([joint["lower"] for joint in model["control_joints"]], dtype=np.float64)
         upper = np.array([joint["upper"] for joint in model["control_joints"]], dtype=np.float64)
         if not np.isfinite(lower).all() or not np.isfinite(upper).all() or (lower >= upper).any():
             raise ValueError("control joint bounds must be finite and increasing")
-        widths = np.full(self.dimension, resolution, dtype=np.float64)
+        resolutions = np.full(self.dimension, resolution, dtype=np.float64)
+
         self.handle = ct.c_void_p()
         self.library = ct.CDLL(str(Path(library).resolve()))
-        floats = np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS")
-        ids = np.ctypeslib.ndpointer(dtype=np.uint32, flags="C_CONTIGUOUS")
-        seeds = np.ctypeslib.ndpointer(dtype=np.uint64, flags="C_CONTIGUOUS")
-        flags = np.ctypeslib.ndpointer(dtype=np.uint8, flags="C_CONTIGUOUS")
+        float_array = np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS")
+        id_array = np.ctypeslib.ndpointer(dtype=np.uint32, flags="C_CONTIGUOUS")
+        seed_array = np.ctypeslib.ndpointer(dtype=np.uint64, flags="C_CONTIGUOUS")
+        flag_array = np.ctypeslib.ndpointer(dtype=np.uint8, flags="C_CONTIGUOUS")
+
         self.library.rrt_error.argtypes = []
         self.library.rrt_error.restype = ct.c_char_p
+
         create = self.library.rrtc_create
         create.argtypes = [
             ct.POINTER(NativeConfig),
             ct.c_uint32,
             ct.c_uint32,
-            floats,
-            floats,
-            floats,
-            floats,
+            float_array,
+            float_array,
+            float_array,
+            float_array,
             ct.POINTER(ct.c_void_p),
         ]
         create.restype = ct.c_int
+
         self.library.rrt_destroy.argtypes = [ct.c_void_p]
         self.library.rrt_destroy.restype = None
+
         self.library.rrt_solve.argtypes = [
             ct.c_void_p,
-            floats,
-            floats,
-            ids,
-            seeds,
+            float_array,
+            float_array,
+            id_array,
+            seed_array,
             ct.POINTER(NativeResult),
         ]
         self.library.rrt_solve.restype = ct.c_int
+
         self.library.rrt_path.argtypes = [
             ct.c_void_p,
             ct.c_uint32,
-            floats,
+            float_array,
             ct.c_uint32,
             ct.POINTER(ct.c_uint32),
         ]
         self.library.rrt_path.restype = ct.c_int
-        self.library.rrt_check.argtypes = [ct.c_void_p, floats, ids, ct.c_uint32, flags]
+
+        self.library.rrt_check.argtypes = [
+            ct.c_void_p,
+            float_array,
+            id_array,
+            ct.c_uint32,
+            flag_array,
+        ]
         self.library.rrt_check.restype = ct.c_int
-        native = NativeConfig(**asdict(config))
-        self.check(
-            create(
-                ct.byref(native),
-                problem_count,
-                len(scene),
-                scene,
-                lower,
-                upper,
-                widths,
-                ct.byref(self.handle),
-            )
+
+        native_config = NativeConfig(**asdict(config))
+        status = create(
+            ct.byref(native_config),
+            problem_count,
+            len(scene),
+            scene,
+            lower,
+            upper,
+            resolutions,
+            ct.byref(self.handle),
         )
+        self.check(status)
 
     def check(self, status: int) -> None:
         if status:
@@ -321,6 +345,7 @@ class Planner:
     ) -> list[RRTResult]:
         """Solve a batch; results and paths replace those from the previous solve."""
         self._require_open()
+
         start = np.ascontiguousarray(starts, dtype=np.float64)
         goal = np.ascontiguousarray(goals, dtype=np.float64)
         ids = unsigned_array(environment_ids, np.uint32, "environment_ids")
@@ -331,16 +356,19 @@ class Planner:
             raise ValueError("environment_ids and seeds must have shape (problem_count,)")
         if (ids >= self.environment_count).any():
             raise ValueError("environment ID out of range")
+
         results = (NativeResult * self.problem_count)()
-        self.check(self.library.rrt_solve(self.handle, start, goal, ids, seed, results))
+        status = self.library.rrt_solve(self.handle, start, goal, ids, seed, results)
+        self.check(status)
+
         return [
             RRTResult(
-                status=STATUSES[r.status],
-                nodes=r.node_count,
-                rounds=r.rounds,
-                path_length=r.path_length,
+                status=STATUSES[result.status],
+                nodes=result.node_count,
+                rounds=result.rounds,
+                path_length=result.path_length,
             )
-            for r in results
+            for result in results
         ]
 
     def path(self, problem_id: int) -> npt.NDArray[np.float64]:
@@ -349,11 +377,14 @@ class Planner:
         check_count(problem_id, "problem_id", 0)
         if problem_id >= self.problem_count:
             raise ValueError("problem_id out of range")
+
         path = np.empty((self.max_nodes, self.dimension), dtype=np.float64)
         length = ct.c_uint32()
-        self.check(
-            self.library.rrt_path(self.handle, problem_id, path, self.max_nodes, ct.byref(length))
+        status = self.library.rrt_path(
+            self.handle, problem_id, path, self.max_nodes, ct.byref(length)
         )
+        self.check(status)
+
         return path[: length.value].copy()
 
     def collisions(
@@ -361,6 +392,7 @@ class Planner:
     ) -> npt.NDArray[np.uint8]:
         """Check full FK configurations, in model['input_joint_names'] order."""
         self._require_open()
+
         q = np.ascontiguousarray(configurations, dtype=np.float64)
         ids = unsigned_array(environment_ids, np.uint32, "environment_ids")
         if q.ndim != 2 or q.shape[1] != self.fk_dof or ids.shape != (len(q),):
@@ -370,6 +402,9 @@ class Planner:
             raise ValueError("configurations must be finite")
         if (ids >= self.environment_count).any():
             raise ValueError("environment ID out of range")
+
         flags = np.empty(len(q), dtype=np.uint8)
-        self.check(self.library.rrt_check(self.handle, q, ids, len(q), flags))
+        status = self.library.rrt_check(self.handle, q, ids, len(q), flags)
+        self.check(status)
+
         return flags

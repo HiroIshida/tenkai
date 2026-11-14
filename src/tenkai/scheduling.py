@@ -33,6 +33,7 @@ class Scheduler:
     def __init__(self, dag: Dag, outputs: Sequence[int]) -> None:
         self.dag = dag
         self.outputs = list(outputs)
+
         size = len(dag.nodes)
         needed = dag.required_nodes(outputs)
         self.users: list[list[int]] = [[] for _ in range(size)]
@@ -42,6 +43,7 @@ class Scheduler:
         for index, node in enumerate(dag.nodes):
             if not needed[index]:
                 continue
+
             for dependency in dependencies(node):
                 self.users[dependency].append(index)
                 self.pending[index] += 1
@@ -50,11 +52,13 @@ class Scheduler:
                 self.ready.append(index)
         for output in outputs:
             self.remaining[output] += 1
+
         self.heights = [0] * size
         for index in range(size - 1, -1, -1):
             if needed[index]:
                 height = max((self.heights[i] for i in self.users[index]), default=0)
                 self.heights[index] = 1 + height
+
         self.defined = [False] * size
         self.next_output = 0
         self.live = 0
@@ -72,6 +76,7 @@ class Scheduler:
     def evaluate(self, index: int) -> None:
         for dependency in dependencies(self.dag.nodes[index]):
             self.consume(dependency)
+
         self.defined[index] = True
         if self.remaining[index] > 0 and self.needs_storage(index):
             self.live += 1
@@ -83,6 +88,7 @@ class Scheduler:
             value = self.outputs[self.next_output]
             if not self.defined[value]:
                 break
+
             self.consume(value)
             self.steps.append(Store(self.next_output, value))
             self.next_output += 1
@@ -95,6 +101,7 @@ class Scheduler:
             if not self.defined[index] and index not in needed:
                 needed.add(index)
                 stack.extend(dependencies(self.dag.nodes[index]))
+
         return needed
 
     def score(self, index: int) -> tuple[int, int, int]:
@@ -102,17 +109,20 @@ class Scheduler:
         for dependency in dependencies(self.dag.nodes[index]):
             if self.remaining[dependency] == 1 and self.needs_storage(dependency):
                 last_uses += 1
+
         return last_uses, self.heights[index], -index
 
     def select_ready(self, live_budget: int) -> int:
-        needed = None
+        needed: set[int] | None = None
         if self.live >= live_budget and self.next_output < len(self.outputs):
             needed = self.next_output_dependencies()
-        candidates = []
+
+        candidate_positions: list[int] = []
         for position, index in enumerate(self.ready):
             if needed is None or index in needed:
-                candidates.append(position)
-        return max(candidates, key=lambda position: self.score(self.ready[position]))
+                candidate_positions.append(position)
+
+        return max(candidate_positions, key=lambda position: self.score(self.ready[position]))
 
     def run(self, live_budget: int | None) -> Schedule:
         if live_budget is None:
@@ -126,12 +136,15 @@ class Scheduler:
                 index = self.ready[position]
                 self.ready[position] = self.ready[-1]
                 self.ready.pop()
+
                 self.evaluate(index)
                 for user in self.users[index]:
                     self.pending[user] -= 1
                     if self.pending[user] == 0:
                         self.ready.append(user)
+
                 self.store_ready_outputs(len(self.outputs))
+
         return self.finish()
 
     def finish(self) -> Schedule:
@@ -146,18 +159,19 @@ def schedule(
 ) -> Schedule:
     if live_budget is not None and live_budget < 0:
         raise ValueError("live budget must be nonnegative")
+
     order = Scheduler(dag, outputs).run(live_budget)
     if groups is None:
         return order
+
     scheduler = Scheduler(dag, outputs)
     for group in groups:
         needed = dag.required_nodes(group)
         for step in order.steps:
-            if (
-                isinstance(step, Evaluate)
-                and needed[step.node]
-                and not scheduler.defined[step.node]
-            ):
+            if not isinstance(step, Evaluate):
+                continue
+            if needed[step.node] and not scheduler.defined[step.node]:
                 scheduler.evaluate(step.node)
         scheduler.store_ready_outputs(scheduler.next_output + len(group))
+
     return scheduler.finish()

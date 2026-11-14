@@ -34,15 +34,19 @@ class CollisionConfig:
     control_joint_names: list[str]
 
     def resolve(self, fk: FkDag) -> list[Sphere]:
-        unknown = self.groups.keys() - set(fk.link_names)
-        if unknown:
-            raise ValueError("collision spheres reference unknown link: " + sorted(unknown)[0])
-        spheres = []
+        unknown_links = self.groups.keys() - set(fk.link_names)
+        if unknown_links:
+            raise ValueError(
+                "collision spheres reference unknown link: " + sorted(unknown_links)[0]
+            )
+
+        spheres: list[Sphere] = []
         for index, name in enumerate(fk.link_names):
             for x, y, z, radius in self.groups.get(name, []):
                 sphere = Sphere(index, (x, y, z), radius)
                 sphere.validate(fk)
                 spheres.append(sphere)
+
         return spheres
 
 
@@ -50,13 +54,15 @@ def check_unique_keys(node: Node, visited: set[int]) -> None:
     if id(node) in visited:
         return
     visited.add(id(node))
+
     if isinstance(node, MappingNode):
-        keys = set()
+        keys: set[str] = set()
         for key, value in node.value:
             if not isinstance(key, ScalarNode) or key.tag != "tag:yaml.org,2002:str":
                 raise ValueError("configuration keys must be strings")
             if key.value in keys:
                 raise ValueError("duplicate YAML key: " + key.value)
+
             keys.add(key.value)
             check_unique_keys(value, visited)
     elif isinstance(node, SequenceNode):
@@ -67,11 +73,13 @@ def check_unique_keys(node: Node, visited: set[int]) -> None:
 def mapping(value: object) -> dict[str, object]:
     if not isinstance(value, dict):
         raise ValueError("expected a mapping")
+
     result: dict[str, object] = {}
     for key, item in value.items():
         if not isinstance(key, str):
             raise ValueError("configuration keys must be strings")
         result[key] = item
+
     return result
 
 
@@ -91,29 +99,35 @@ def read_config(source: str) -> CollisionConfig:
     node = yaml.compose(source, Loader=yaml.SafeLoader)
     if node is None:
         raise ValueError("empty collision configuration")
+
     # safe_load otherwise silently overwrites duplicate sphere groups.
     check_unique_keys(node, set())
     config = mapping(yaml.safe_load(source))
     if "collision_spheres" not in config:
         raise ValueError("missing collision_spheres")
-    groups = {}
+
+    groups: dict[str, list[tuple[float, float, float, float]]] = {}
     for name, value in mapping(config["collision_spheres"]).items():
         group = mapping(value)
         if set(group) != {"spheres"}:
             raise ValueError("expected only spheres in collision group")
-        spheres = []
+
+        spheres: list[tuple[float, float, float, float]] = []
         for item in sequence(group["spheres"]):
             coordinates = sequence(item)
             if len(coordinates) != 4:
                 raise ValueError("expected x, y, z and radius")
+
             x, y, z, radius = [scalar(value) for value in coordinates]
             spheres.append((x, y, z, radius))
         groups[name] = spheres
-    controls = []
+
+    controls: list[str] = []
     for control in sequence(config.get("control_joint_names", [])):
         if not isinstance(control, str):
             raise ValueError("control joint names must be strings")
         controls.append(control)
+
     return CollisionConfig(groups, controls)
 
 
@@ -126,11 +140,13 @@ def center_expressions(
 ) -> tuple[Dag, list[int]]:
     for sphere in spheres:
         sphere.validate(fk)
+
     counts = Counter(sphere.link_index for sphere in spheres)
     dag = Dag(fk.dag.nodes.copy())
     rotations: dict[int, MatrixNodes] = {}
     outputs: list[int] = []
     share_rotations = precision == "f32" and optimization == "algebraic"
+
     for sphere in spheres:
         pose = fk.poses[sphere.link_index]
         x, y, z = [dag.constant(value) for value in sphere.position]
@@ -142,4 +158,5 @@ def center_expressions(
         else:
             center = pose.transform_point(dag, local)
         outputs.extend(center)
+
     return dag.optimize(outputs, precision, optimization)

@@ -67,14 +67,16 @@ def dependencies(node: Node) -> tuple[int, ...]:
 
 def f32(value: float) -> float:
     try:
-        rounded: float = struct.unpack("<f", struct.pack("<f", value))[0]
+        packed = struct.pack("<f", value)
+        rounded: float = struct.unpack("<f", packed)[0]
         return rounded
     except OverflowError:
         return math.copysign(math.inf, value)
 
 
 def bits(value: float) -> int:
-    encoded: int = struct.unpack("<Q", struct.pack("<d", value))[0]
+    packed = struct.pack("<d", value)
+    encoded: int = struct.unpack("<Q", packed)[0]
     return encoded
 
 
@@ -125,10 +127,12 @@ class Dag:
             if not 0 <= index < len(self.nodes):
                 raise ValueError("output node is outside the DAG")
             needed[index] = True
+
         for index in range(len(self.nodes) - 1, -1, -1):
             if needed[index]:
                 for dependency in dependencies(self.nodes[index]):
                     needed[dependency] = True
+
         return needed
 
     def depends_on_inputs(self, inputs: Sequence[int]) -> list[bool]:
@@ -139,6 +143,7 @@ class Dag:
             else:
                 varies = any(dependent[i] for i in dependencies(node))
             dependent.append(varies)
+
         return dependent
 
     def optimize(
@@ -146,31 +151,37 @@ class Dag:
     ) -> tuple["Dag", list[int]]:
         if mode == "none":
             return Dag(self.nodes.copy()), list(outputs)
+
         optimizer = Optimizer(precision, mode)
-        mapping: dict[int, int] = {}
+        remapped_nodes: dict[int, int] = {}
         for index, needed in enumerate(self.required_nodes(outputs)):
             if not needed:
                 continue
+
             node = self.nodes[index]
             match node:
                 case Binary(op, a, b):
-                    node = Binary(op, mapping[a], mapping[b])
+                    node = Binary(op, remapped_nodes[a], remapped_nodes[b])
                 case Trig(op, angle):
-                    node = Trig(op, mapping[angle])
-            mapping[index] = optimizer.insert(node)
-        return optimizer.dag, [mapping[i] for i in outputs]
+                    node = Trig(op, remapped_nodes[angle])
+            remapped_nodes[index] = optimizer.insert(node)
+
+        optimized_outputs = [remapped_nodes[index] for index in outputs]
+        return optimizer.dag, optimized_outputs
 
 
 FIELD = (1 << 61) - 1
 
 
 def atom(kind: bytes, value: int) -> Fingerprint:
-    lanes = []
+    lanes: list[int] = []
     for lane in range(3):
         # Keep the original salt to preserve CSE fingerprints across the rename.
         payload = b"rkern-cse" + bytes([lane]) + kind + value.to_bytes(8, "little")
         digest = hashlib.blake2b(payload, digest_size=8).digest()
-        lanes.append(int.from_bytes(digest, "little") % (FIELD - 1) + 1)
+        hashed_value = int.from_bytes(digest, "little")
+        lanes.append(hashed_value % (FIELD - 1) + 1)
+
     return lanes[0], lanes[1], lanes[2]
 
 
@@ -179,9 +190,11 @@ class Optimizer:
         self.dag = Dag()
         self.precision = precision
         self.structural: dict[Node | tuple[str, int], int] = {}
+
         self.algebraic = mode == "algebraic"
         self.fingerprints: list[Fingerprint] = []
         self.canonical: dict[Fingerprint, int] = {}
+
         if self.algebraic:
             self.intern(Constant(0.0))
             self.intern(Constant(1.0))
@@ -207,9 +220,11 @@ class Optimizer:
         if x is not None and y is not None:
             if self.precision == "f32":
                 x, y = f32(x), f32(y)
+
             value = arithmetic(node.op, x, y)
             if self.precision == "f32":
                 value = f32(value)
+
             if math.isfinite(value):
                 return self.intern(Constant(value))
             return self.intern(node)
@@ -225,6 +240,7 @@ class Optimizer:
                 return node.b
             if y == 1.0:
                 return node.a
+
         return self.intern(node)
 
     def intern(self, node: Node) -> int:
@@ -248,6 +264,7 @@ class Optimizer:
         if fingerprint is not None:
             self.fingerprints.append(fingerprint)
             self.canonical[fingerprint] = index
+
         return index
 
     def fingerprint(self, node: Node) -> Fingerprint:
@@ -255,10 +272,12 @@ class Optimizer:
             case Constant(value):
                 if value == 0.0:
                     return 0, 0, 0
+
                 if abs(value) == 1.0:
                     magnitude = (1, 1, 1)
                 else:
                     magnitude = atom(b"constant", bits(abs(value)))
+
                 if value < 0:
                     return FIELD - magnitude[0], FIELD - magnitude[1], FIELD - magnitude[2]
                 return magnitude
@@ -267,7 +286,7 @@ class Optimizer:
             case Trig(op, angle):
                 return atom(op.value.encode(), angle)
             case Binary(op, a, b):
-                lanes = []
+                lanes: list[int] = []
                 for x, y in zip(self.fingerprints[a], self.fingerprints[b], strict=True):
                     if op == BinaryOp.ADD:
                         value = x + y
@@ -276,5 +295,6 @@ class Optimizer:
                     else:
                         value = x * y
                     lanes.append(value % FIELD)
+
                 return lanes[0], lanes[1], lanes[2]
         assert_never(node)

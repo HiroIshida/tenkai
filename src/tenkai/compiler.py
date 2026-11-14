@@ -36,11 +36,12 @@ class ModelMetadata(TypedDict):
 
 
 def control_joints(robot: Robot, fk: FkDag, names: list[str]) -> list[ControlJoint]:
-    bounds = []
+    bounds: list[ControlJoint] = []
     joints = {joint.name: joint for joint in robot.joints}
     for name in names:
         if name not in fk.joint_names:
             raise ValueError("control is not a movable joint: " + name)
+
         index = fk.joint_names.index(name)
         joint = joints[name]
         if joint.kind == "continuous":
@@ -49,7 +50,9 @@ def control_joints(robot: Robot, fk: FkDag, names: list[str]) -> list[ControlJoi
             lower, upper = joint.lower, joint.upper
         if not math.isfinite(lower) or not math.isfinite(upper) or lower >= upper:
             raise ValueError("invalid sampling bounds for " + name)
+
         bounds.append(ControlJoint(name=name, index=index, lower=lower, upper=upper))
+
     return bounds
 
 
@@ -60,8 +63,10 @@ def generate(
     options: Options = Options(),
     all_kernels: bool = False,
 ) -> dict[str, float]:
-    total = start = time.perf_counter()
-    timings = {}
+    total = time.perf_counter()
+    start = total
+    timings: dict[str, float] = {}
+
     robot = Robot.from_string(urdf_path.read_text())
     source = yaml_path.read_text()
     timings["parse_urdf"] = time.perf_counter() - start
@@ -77,7 +82,7 @@ def generate(
     controls = [joint["index"] for joint in bounds]
     timings["spheres_and_controls"] = time.perf_counter() - start
 
-    files = {}
+    files: dict[str, str] = {}
     start = time.perf_counter()
     files["collision.cuh"] = generate_collision_kernel(fk, spheres, options)
     timings["collision_codegen"] = time.perf_counter() - start
@@ -98,6 +103,7 @@ def generate(
     output.mkdir(parents=True, exist_ok=True)
     for name, contents in files.items():
         (output / name).write_text(contents)
+
     scheduling = "DagOrder"
     if options.live_budget is not None:
         scheduling = f"Live(Options {{ live_budget: {options.live_budget} }})"
@@ -111,6 +117,7 @@ def generate(
         scheduling=scheduling,
     )
     (output / "model.json").write_text(json.dumps(model, indent=2, sort_keys=True, allow_nan=False))
+
     timings["write_outputs"] = time.perf_counter() - start
     timings["total"] = time.perf_counter() - total
     return timings
