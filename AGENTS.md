@@ -20,6 +20,7 @@ Treat questions about reasons (e.g., "Why did you do X?") as requests for explan
 # Structure and testing
 
 - Organize code around cohesive responsibilities. Make high-level control flow, data flow, and dependencies clear without requiring every implementation detail to be read.
+- Use blank lines to separate meaningful groups within functions, such as validation, preparation, computation, and result handling. Flag uninterrupted blocks that obscure these boundaries during review; keep closely related statements together rather than separating every statement.
 - Use modules, types, methods, and free functions where they naturally fit. Prefer clarity over brevity; avoid excessive fragmentation, indirection, and object-oriented abstractions without a concrete need.
 - As features evolve, proactively consolidate related functions, options, and duplicated logic instead of accumulating variants; do not wait for a separate refactoring request.
 - When refactoring, preserve behavior and public APIs unless a change is requested. Add concise comments for non-obvious design choices and invariants.

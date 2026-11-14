@@ -1,44 +1,57 @@
 // Copyright (C) 2024 Hirokazu Ishida. SPDX-License-Identifier: MPL-2.0
 // Adapted from plainmp/collision/primitive_sdf.hpp; see
 // licenses/tenkai2-MPL-2.0.txt. License text: https://mozilla.org/MPL/2.0/.
-#ifndef TENKAI_TEMPLATE_NAMESPACE_SDF_INCLUDED
-#define TENKAI_TEMPLATE_NAMESPACE_SDF_INCLUDED
+#ifndef TPL_NAMESPACE_SDF_INCLUDED
+#define TPL_NAMESPACE_SDF_INCLUDED
 #include <float.h>
 #include <math.h>
 #include <stddef.h>
 #include <stdint.h>
 
-namespace TENKAI_TEMPLATE_NAMESPACE {
-using Scalar = TENKAI_TEMPLATE_SCALAR;
+namespace TPL_NAMESPACE {
+using Scalar = TPL_SCALAR;
 
 struct Vec3 {
   Scalar x, y, z;
 };
+
 struct Pose {
   Vec3 position;
   Scalar world_to_local[9];  // Row-major inverse rigid rotation.
 };
+
 struct Box {
   Pose pose;
   Vec3 extents;
 };  // Full side lengths.
+
 struct Sphere {
   Vec3 position;
   Scalar radius;
 };
+
 struct Cylinder {
   Pose pose;
-  Scalar radius, height;
+  Scalar radius;
+  Scalar height;
 };  // Local Z axis, full height.
+
 struct Ground {
   Scalar height;
 };  // Surface z = -height; negative side is occupied.
+
 struct Range {
-  size_t offset, count;
+  size_t offset;
+  size_t count;
 };
+
 struct Environment {
-  Range boxes, spheres, cylinders, grounds;
+  Range boxes;
+  Range spheres;
+  Range cylinders;
+  Range grounds;
 };
+
 struct Scene {
   const Environment* environments;
   const Box* boxes;
@@ -50,7 +63,8 @@ struct Scene {
 // Bounds of the computed centers, expanded by the group's largest sphere
 // radius.
 struct SphereBounds {
-  Vec3 lower, upper;
+  Vec3 lower;
+  Vec3 upper;
   Scalar radius;
 };
 
@@ -61,22 +75,20 @@ __device__ inline bool overlaps(Vec3 position,
                                                          : Scalar(DBL_EPSILON);
   const Scalar minimum =
       sizeof(Scalar) == sizeof(float) ? Scalar(FLT_MIN) : Scalar(DBL_MIN);
+
   const Scalar scale =
-      fabsTENKAI_TEMPLATE_SUFFIX(position.x) +
-      fabsTENKAI_TEMPLATE_SUFFIX(position.y) +
-      fabsTENKAI_TEMPLATE_SUFFIX(position.z) + half_extents.x + half_extents.y +
-      half_extents.z + bounds.radius +
-      fmaxTENKAI_TEMPLATE_SUFFIX(fabsTENKAI_TEMPLATE_SUFFIX(bounds.lower.x),
-                                 fabsTENKAI_TEMPLATE_SUFFIX(bounds.upper.x)) +
-      fmaxTENKAI_TEMPLATE_SUFFIX(fabsTENKAI_TEMPLATE_SUFFIX(bounds.lower.y),
-                                 fabsTENKAI_TEMPLATE_SUFFIX(bounds.upper.y)) +
-      fmaxTENKAI_TEMPLATE_SUFFIX(fabsTENKAI_TEMPLATE_SUFFIX(bounds.lower.z),
-                                 fabsTENKAI_TEMPLATE_SUFFIX(bounds.upper.z));
+      TPL_FABS(position.x) + TPL_FABS(position.y) + TPL_FABS(position.z) +
+      half_extents.x + half_extents.y + half_extents.z + bounds.radius +
+      TPL_FMAX(TPL_FABS(bounds.lower.x), TPL_FABS(bounds.upper.x)) +
+      TPL_FMAX(TPL_FABS(bounds.lower.y), TPL_FABS(bounds.upper.y)) +
+      TPL_FMAX(TPL_FABS(bounds.lower.z), TPL_FABS(bounds.upper.z));
+
   // Broad-phase rounding must not discard contact accepted by the narrow phase.
   // Its squared distances can also underflow near zero; uncertain bounds fall
   // through.
   const Scalar radius = bounds.radius + Scalar(64) * epsilon * scale +
-                        Scalar(8) * sqrtTENKAI_TEMPLATE_SUFFIX(minimum);
+                        Scalar(8) * TPL_SQRT(minimum);
+
   return !(bounds.lower.x > position.x + half_extents.x + radius ||
            bounds.upper.x < position.x - half_extents.x - radius ||
            bounds.lower.y > position.y + half_extents.y + radius ||
@@ -90,15 +102,13 @@ __device__ inline bool overlaps(const Pose& pose,
                                 const SphereBounds& bounds) {
   const Scalar* r = pose.world_to_local;
   const Vec3 world_half_extents = {
-      fabsTENKAI_TEMPLATE_SUFFIX(r[0]) * half_extents.x +
-          fabsTENKAI_TEMPLATE_SUFFIX(r[3]) * half_extents.y +
-          fabsTENKAI_TEMPLATE_SUFFIX(r[6]) * half_extents.z,
-      fabsTENKAI_TEMPLATE_SUFFIX(r[1]) * half_extents.x +
-          fabsTENKAI_TEMPLATE_SUFFIX(r[4]) * half_extents.y +
-          fabsTENKAI_TEMPLATE_SUFFIX(r[7]) * half_extents.z,
-      fabsTENKAI_TEMPLATE_SUFFIX(r[2]) * half_extents.x +
-          fabsTENKAI_TEMPLATE_SUFFIX(r[5]) * half_extents.y +
-          fabsTENKAI_TEMPLATE_SUFFIX(r[8]) * half_extents.z};
+      TPL_FABS(r[0]) * half_extents.x + TPL_FABS(r[3]) * half_extents.y +
+          TPL_FABS(r[6]) * half_extents.z,
+      TPL_FABS(r[1]) * half_extents.x + TPL_FABS(r[4]) * half_extents.y +
+          TPL_FABS(r[7]) * half_extents.z,
+      TPL_FABS(r[2]) * half_extents.x + TPL_FABS(r[5]) * half_extents.y +
+          TPL_FABS(r[8]) * half_extents.z};
+
   return overlaps(pose.position, world_half_extents, bounds);
 }
 
@@ -127,6 +137,7 @@ __device__ inline Vec3 local_point(const Pose& pose, Vec3 point) {
   const Scalar x = point.x - pose.position.x;
   const Scalar y = point.y - pose.position.y;
   const Scalar z = point.z - pose.position.z;
+
   const Scalar* r = pose.world_to_local;
   return {r[0] * x + r[1] * y + r[2] * z, r[3] * x + r[4] * y + r[5] * z,
           r[6] * x + r[7] * y + r[8] * z};
@@ -134,48 +145,45 @@ __device__ inline Vec3 local_point(const Pose& pose, Vec3 point) {
 
 __device__ inline Vec3 box_face_distances(const Box& box, Vec3 point) {
   const Vec3 p = local_point(box.pose, point);
-  return {fabsTENKAI_TEMPLATE_SUFFIX(p.x) - box.extents.x * Scalar(0.5),
-          fabsTENKAI_TEMPLATE_SUFFIX(p.y) - box.extents.y * Scalar(0.5),
-          fabsTENKAI_TEMPLATE_SUFFIX(p.z) - box.extents.z * Scalar(0.5)};
+  return {TPL_FABS(p.x) - box.extents.x * Scalar(0.5),
+          TPL_FABS(p.y) - box.extents.y * Scalar(0.5),
+          TPL_FABS(p.z) - box.extents.z * Scalar(0.5)};
 }
 
 __device__ inline Scalar squared_outside_distance(Vec3 face_distances) {
-  const Scalar x = fmaxTENKAI_TEMPLATE_SUFFIX(face_distances.x, Scalar(0));
-  const Scalar y = fmaxTENKAI_TEMPLATE_SUFFIX(face_distances.y, Scalar(0));
-  const Scalar z = fmaxTENKAI_TEMPLATE_SUFFIX(face_distances.z, Scalar(0));
+  const Scalar x = TPL_FMAX(face_distances.x, Scalar(0));
+  const Scalar y = TPL_FMAX(face_distances.y, Scalar(0));
+  const Scalar z = TPL_FMAX(face_distances.z, Scalar(0));
+
   return x * x + y * y + z * z;
 }
 
 __device__ inline Scalar squared_distance(Vec3 a, Vec3 b) {
-  const Scalar x = a.x - b.x, y = a.y - b.y, z = a.z - b.z;
+  const Scalar x = a.x - b.x;
+  const Scalar y = a.y - b.y;
+  const Scalar z = a.z - b.z;
+
   return x * x + y * y + z * z;
 }
 
 __device__ inline Scalar distance(const Box& box, Vec3 point) {
   const Vec3 d = box_face_distances(box, point);
-  return sqrtTENKAI_TEMPLATE_SUFFIX(squared_outside_distance(d)) +
-         fminTENKAI_TEMPLATE_SUFFIX(
-             fmaxTENKAI_TEMPLATE_SUFFIX(d.x,
-                                        fmaxTENKAI_TEMPLATE_SUFFIX(d.y, d.z)),
-             Scalar(0));
+  return TPL_SQRT(squared_outside_distance(d)) +
+         TPL_FMIN(TPL_FMAX(d.x, TPL_FMAX(d.y, d.z)), Scalar(0));
 }
 
 __device__ inline Scalar distance(const Sphere& sphere, Vec3 point) {
-  return sqrtTENKAI_TEMPLATE_SUFFIX(squared_distance(point, sphere.position)) -
-         sphere.radius;
+  return TPL_SQRT(squared_distance(point, sphere.position)) - sphere.radius;
 }
 
 __device__ inline Scalar distance(const Cylinder& cylinder, Vec3 point) {
   const Vec3 p = local_point(cylinder.pose, point);
-  const Scalar radial =
-      sqrtTENKAI_TEMPLATE_SUFFIX(p.x * p.x + p.y * p.y) - cylinder.radius;
-  const Scalar axial =
-      fabsTENKAI_TEMPLATE_SUFFIX(p.z) - cylinder.height * Scalar(0.5);
-  const Scalar r = fmaxTENKAI_TEMPLATE_SUFFIX(radial, Scalar(0)),
-               z = fmaxTENKAI_TEMPLATE_SUFFIX(axial, Scalar(0));
-  return sqrtTENKAI_TEMPLATE_SUFFIX(r * r + z * z) +
-         fminTENKAI_TEMPLATE_SUFFIX(fmaxTENKAI_TEMPLATE_SUFFIX(radial, axial),
-                                    Scalar(0));
+  const Scalar radial = TPL_SQRT(p.x * p.x + p.y * p.y) - cylinder.radius;
+  const Scalar axial = TPL_FABS(p.z) - cylinder.height * Scalar(0.5);
+  const Scalar r = TPL_FMAX(radial, Scalar(0));
+  const Scalar z = TPL_FMAX(axial, Scalar(0));
+
+  return TPL_SQRT(r * r + z * z) + TPL_FMIN(TPL_FMAX(radial, axial), Scalar(0));
 }
 
 __device__ inline Scalar distance(const Ground& ground, Vec3 point) {
@@ -186,8 +194,10 @@ __device__ inline bool intersects(const Box& box, Vec3 point, Scalar radius) {
   const Scalar squared_radius = radius * radius;
   // Finite radii can overflow when squared; infinity <= infinity would report a
   // hit.
-  if (isinf(squared_radius))
+  if (isinf(squared_radius)) {
     return distance(box, point) <= radius;
+  }
+
   return squared_outside_distance(box_face_distances(box, point)) <=
          squared_radius;
 }
@@ -197,8 +207,10 @@ __device__ inline bool intersects(const Sphere& sphere,
                                   Scalar radius) {
   const Scalar sum = sphere.radius + radius;
   const Scalar squared_radius = sum * sum;
-  if (isinf(squared_radius))
+  if (isinf(squared_radius)) {
     return distance(sphere, point) <= radius;
+  }
+
   return squared_distance(point, sphere.position) <= squared_radius;
 }
 
@@ -218,21 +230,31 @@ __device__ inline Scalar distance(const Scene& scene,
                                   const Environment& env,
                                   Vec3 point) {
   Scalar result = INFINITY;
+
   // Keep reductions unconditional; short-circuit tests would skip remaining
   // obstacles.
-  for (size_t i = 0; i < env.boxes.count; ++i)
-    result = fminTENKAI_TEMPLATE_SUFFIX(
-        result, distance(scene.boxes[env.boxes.offset + i], point));
-  for (size_t i = 0; i < env.spheres.count; ++i)
-    result = fminTENKAI_TEMPLATE_SUFFIX(
-        result, distance(scene.spheres[env.spheres.offset + i], point));
-  for (size_t i = 0; i < env.cylinders.count; ++i)
-    result = fminTENKAI_TEMPLATE_SUFFIX(
+  for (size_t i = 0; i < env.boxes.count; ++i) {
+    result =
+        TPL_FMIN(result, distance(scene.boxes[env.boxes.offset + i], point));
+  }
+
+  for (size_t i = 0; i < env.spheres.count; ++i) {
+    result = TPL_FMIN(result,
+                      distance(scene.spheres[env.spheres.offset + i], point));
+  }
+
+  for (size_t i = 0; i < env.cylinders.count; ++i) {
+    result = TPL_FMIN(
         result, distance(scene.cylinders[env.cylinders.offset + i], point));
-  for (size_t i = 0; i < env.grounds.count; ++i)
-    result = fminTENKAI_TEMPLATE_SUFFIX(
-        result, distance(scene.grounds[env.grounds.offset + i], point));
+  }
+
+  for (size_t i = 0; i < env.grounds.count; ++i) {
+    result = TPL_FMIN(result,
+                      distance(scene.grounds[env.grounds.offset + i], point));
+  }
+
   return result;
 }
-}  // namespace TENKAI_TEMPLATE_NAMESPACE
+
+}  // namespace TPL_NAMESPACE
 #endif

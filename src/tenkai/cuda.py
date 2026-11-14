@@ -62,7 +62,7 @@ def template(name: str, replacements: Sequence[tuple[str, str | int]] = ()) -> s
     source = (TEMPLATES / name).read_text()
     for key, value in replacements:
         # clang-format splits @KEY@ tokens; identifiers and block comments stay intact.
-        marker = "TENKAI_TEMPLATE_" + key
+        marker = "TPL_" + key
         source = source.replace("/* " + marker + " */", str(value))
         source = source.replace(marker, str(value))
     return source
@@ -362,7 +362,14 @@ def generate_collision_function(
     kernel = Kernel("tenkai_collision_one", dag, len(fk.joint_names), outputs, options, groups)
     source = template(
         "collision/sdf.cuh",
-        (("NAMESPACE", options.namespace), ("SCALAR", options.scalar), ("SUFFIX", options.suffix)),
+        (
+            ("NAMESPACE", options.namespace),
+            ("SCALAR", options.scalar),
+            ("FABS", "fabs" + options.suffix),
+            ("FMAX", "fmax" + options.suffix),
+            ("FMIN", "fmin" + options.suffix),
+            ("SQRT", "sqrt" + options.suffix),
+        ),
     )
     qualifier = "__noinline__" if controls is not None else "inline"
     source += collision_function(kernel, spheres, qualifier)

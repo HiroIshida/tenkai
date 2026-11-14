@@ -24,5 +24,6 @@ struct RrtResult {
   uint32_t rounds;
   uint32_t path_length;
 };
+
 }  // namespace tenkai
 #endif

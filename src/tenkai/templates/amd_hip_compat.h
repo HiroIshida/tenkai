@@ -23,10 +23,13 @@
 inline hipError_t cudaGetDeviceProperties(hipDeviceProp_t* properties,
                                           int device) {
   const hipError_t error = hipGetDeviceProperties(properties, device);
+
   // The planner's groups, masks and shared state assume exactly 32 lanes.
-  if (error == hipSuccess && properties->warpSize != 32)
+  if (error == hipSuccess && properties->warpSize != 32) {
     throw std::invalid_argument(
         "tenkai HIP planners require a wave32 GPU (such as RX 9070 XT)");
+  }
+
   return error;
 }
 

@@ -3,31 +3,36 @@
 #include <limits>
 #include <stdexcept>
 
-namespace TENKAI_TEMPLATE_NAMESPACE {
-constexpr uint32_t rrt_dimension = TENKAI_TEMPLATE_DIMENSION;
-constexpr uint32_t rrt_fk_dof = TENKAI_TEMPLATE_FK_DOF;
+namespace TPL_NAMESPACE {
+constexpr uint32_t rrt_dimension = TPL_DIMENSION;
+constexpr uint32_t rrt_fk_dof = TPL_FK_DOF;
 
 struct RrtSpace {
-  Scalar lower[rrt_dimension], upper[rrt_dimension], resolution[rrt_dimension];
+  Scalar lower[rrt_dimension];
+  Scalar upper[rrt_dimension];
+  Scalar resolution[rrt_dimension];
   Scalar reference[rrt_fk_dof];
 };
 
 struct RrtProblem {
   uint32_t environment_id;
   uint64_t seed;
-  Scalar start[rrt_dimension], goal[rrt_dimension];
+  Scalar start[rrt_dimension];
+  Scalar goal[rrt_dimension];
 };
 
 enum class RrtTree : uint8_t { Start, Goal };
 
 struct RrtNearestCache {
-  uint32_t node, scanned;
+  uint32_t node;
+  uint32_t scanned;
   double squared_distance;
 };
 
 struct RrtCandidate {
   Scalar q[rrt_dimension];
-  uint32_t parent, steps;
+  uint32_t parent;
+  uint32_t steps;
   unsigned int blocked;
   bool reaches_target;
   RrtNearestCache nearest;
@@ -38,24 +43,33 @@ inline void validate_rrt(const tenkai::RrtConfig& config,
   if (config.max_nodes < 2 || !config.max_rounds ||
       !std::isfinite(config.step_size) || config.step_size <= 0 ||
       !std::isfinite(config.goal_bias) || config.goal_bias < 0 ||
-      config.goal_bias > 1)
+      config.goal_bias > 1) {
     throw std::invalid_argument("invalid RRT config");
+  }
+
   double diameter_squared = 0;
   for (uint32_t d = 0; d < rrt_dimension; ++d) {
     const double span = double(space.upper[d]) - double(space.lower[d]);
     diameter_squared += span * span;
+
     if (!std::isfinite(space.lower[d]) || !std::isfinite(space.upper[d]) ||
         !(span > 0) || !std::isfinite(span) ||
         span > double(std::numeric_limits<Scalar>::max()) ||
         !std::isfinite(space.resolution[d]) || space.resolution[d] <= 0 ||
-        std::ceil(span / double(space.resolution[d])) > double(UINT32_MAX - 1))
+        std::ceil(span / double(space.resolution[d])) >
+            double(UINT32_MAX - 1)) {
       throw std::invalid_argument("invalid RRT bounds or resolution");
+    }
   }
-  if (!std::isfinite(diameter_squared))
+  if (!std::isfinite(diameter_squared)) {
     throw std::invalid_argument("RRT distance overflows double precision");
-  for (uint32_t d = 0; d < rrt_fk_dof; ++d)
-    if (!std::isfinite(space.reference[d]))
+  }
+
+  for (uint32_t d = 0; d < rrt_fk_dof; ++d) {
+    if (!std::isfinite(space.reference[d])) {
       throw std::invalid_argument("nonfinite RRT reference configuration");
+    }
+  }
 }
 
 __device__ inline uint64_t rrt_random(uint64_t& state) {
@@ -70,9 +84,12 @@ __device__ inline double rrt_uniform(uint64_t& state) {
 }
 
 __device__ inline bool rrt_in_bounds(const Scalar* q, const RrtSpace& space) {
-  for (uint32_t d = 0; d < rrt_dimension; ++d)
-    if (!isfinite(q[d]) || q[d] < space.lower[d] || q[d] > space.upper[d])
+  for (uint32_t d = 0; d < rrt_dimension; ++d) {
+    if (!isfinite(q[d]) || q[d] < space.lower[d] || q[d] > space.upper[d]) {
       return false;
+    }
+  }
+
   return true;
 }
 
@@ -81,12 +98,15 @@ __device__ inline bool rrt_collision(const Scalar* q,
                                      Scene scene,
                                      uint32_t environment_id,
                                      bool moving_only = false) {
-  const uint32_t controls[rrt_dimension] = {TENKAI_TEMPLATE_CONTROLS};
+  const uint32_t controls[rrt_dimension] = {TPL_CONTROLS};
   Scalar full[rrt_fk_dof];
-  for (uint32_t d = 0; d < rrt_fk_dof; ++d)
+  for (uint32_t d = 0; d < rrt_fk_dof; ++d) {
     full[d] = space.reference[d];
-  for (uint32_t d = 0; d < rrt_dimension; ++d)
+  }
+  for (uint32_t d = 0; d < rrt_dimension; ++d) {
     full[controls[d]] = q[d];
+  }
+
   return moving_only ? tenkai_collision_moving(full, scene, environment_id)
                      : tenkai_collision_one(full, scene, environment_id);
 }
@@ -103,18 +123,22 @@ __device__ inline uint32_t rrt_steps(const Scalar* a,
       uniform &= space.resolution[d] == resolution;
       displacement = fmaxf(displacement, fabsf(b[d] - a[d]));
     }
+
     if (uniform && resolution >= FLT_MIN) {
       const float quotient = displacement / resolution;
       const float error =
           quotient * (4 * FLT_EPSILON) + 8 * FLT_MIN / resolution;
-      const float lower = ceilf(quotient - error),
-                  upper = ceilf(quotient + error);
+      const float lower = ceilf(quotient - error);
+      const float upper = ceilf(quotient + error);
+
       // Subtraction/division rounding must not change the sampling grid.
       // Close integer boundaries and large counts retain the FP64 path.
-      if (lower == upper && upper < 4294967040.0f)
+      if (lower == upper && upper < 4294967040.0f) {
         return static_cast<uint32_t>(fmaxf(1.0f, upper));
+      }
     }
   }
+
   const Scalar resolution = space.resolution[0];
   bool uniform = true;
   double displacement = 0;
@@ -122,13 +146,17 @@ __device__ inline uint32_t rrt_steps(const Scalar* a,
     uniform &= space.resolution[d] == resolution;
     displacement = fmax(displacement, fabs(double(b[d]) - double(a[d])));
   }
-  if (uniform)
+  if (uniform) {
     return static_cast<uint32_t>(
         fmax(1.0, ceil(displacement / double(resolution))));
+  }
+
   double count = 1;
-  for (uint32_t d = 0; d < rrt_dimension; ++d)
+  for (uint32_t d = 0; d < rrt_dimension; ++d) {
     count = fmax(count, ceil(fabs(double(b[d]) - double(a[d])) /
                              double(space.resolution[d])));
+  }
+
   return static_cast<uint32_t>(count);
 }
 
@@ -141,12 +169,16 @@ __device__ inline void rrt_sample(RrtCandidate& candidate,
   // Each problem owns a stream independent of batch size and execution order.
   uint64_t rng = problem.seed + uint64_t(round) * UINT64_C(0xd1342543de82ef95);
   const bool biased = rrt_uniform(rng) < config.goal_bias;
-  for (uint32_t d = 0; d < rrt_dimension; ++d)
-    candidate.q[d] =
-        biased ? bias_target[d]
-               : Scalar(double(space.lower[d]) +
-                        rrt_uniform(rng) *
-                            (double(space.upper[d]) - double(space.lower[d])));
+
+  for (uint32_t d = 0; d < rrt_dimension; ++d) {
+    if (biased) {
+      candidate.q[d] = bias_target[d];
+    } else {
+      candidate.q[d] = Scalar(
+          double(space.lower[d]) +
+          rrt_uniform(rng) * (double(space.upper[d]) - double(space.lower[d])));
+    }
+  }
   candidate.reaches_target = biased;
 }
 
@@ -158,14 +190,17 @@ __device__ inline double rrt_squared_distance(const Scalar* a,
     distance += delta * delta;
   }
   if (sizeof(Scalar) == sizeof(double) ||
-      (isfinite(distance) && distance >= Scalar(FLT_MIN)))
+      (isfinite(distance) && distance >= Scalar(FLT_MIN))) {
     return distance;
+  }
+
   // Valid FP32 bounds can still overflow or underflow a squared distance.
   double wide_distance = 0;
   for (uint32_t d = 0; d < rrt_dimension; ++d) {
     const double delta = double(a[d]) - double(b[d]);
     wide_distance += delta * delta;
   }
+
   return wide_distance;
 }
 
@@ -186,12 +221,15 @@ __device__ inline void rrt_nearest(const Scalar* q,
   const uint32_t lane = threadIdx.x & (width - 1);
   double best_distance = nearest.squared_distance;
   uint32_t best_node = nearest.node;
+
   // With an unchanged target and tree, only appended nodes can improve the
   // answer.
   for (uint64_t n = uint64_t(nearest.scanned) + lane; n < snapshot_size;
        n += width) {
-    if (trees && trees[n] != tree)
+    if (trees && trees[n] != tree) {
       continue;
+    }
+
     const double distance =
         rrt_squared_distance(nodes + size_t(n) * rrt_dimension, q);
     if (distance < best_distance) {
@@ -199,12 +237,14 @@ __device__ inline void rrt_nearest(const Scalar* q,
       best_node = uint32_t(n);
     }
   }
+
   if (width > 1) {
     const unsigned int mask = rrt_group_mask(width);
     for (uint32_t offset = width / 2; offset; offset /= 2) {
       const double distance =
           __shfl_down_sync(mask, best_distance, offset, width);
       const uint32_t node = __shfl_down_sync(mask, best_node, offset, width);
+
       // Equal distances retain the earliest node, matching the serial scan.
       if (lane + offset < width &&
           (distance < best_distance ||
@@ -214,6 +254,7 @@ __device__ inline void rrt_nearest(const Scalar* q,
       }
     }
   }
+
   nearest = {best_node, snapshot_size, best_distance};
 }
 
@@ -229,8 +270,9 @@ __device__ inline void rrt_steer(RrtCandidate& candidate,
     candidate.reaches_target &= best_distance <= 1.0;
     if (best_distance > 1.0) {
       const Scalar ratio = __frsqrt_rn(Scalar(best_distance));
-      for (uint32_t d = 0; d < rrt_dimension; ++d)
+      for (uint32_t d = 0; d < rrt_dimension; ++d) {
         candidate.q[d] = parent[d] + ratio * (candidate.q[d] - parent[d]);
+      }
     }
   } else {
     const double distance = sqrt(best_distance);
@@ -238,17 +280,23 @@ __device__ inline void rrt_steer(RrtCandidate& candidate,
     if (distance > step_size) {
       const double wide_ratio = step_size / distance;
       const Scalar ratio = Scalar(wide_ratio);
-      for (uint32_t d = 0; d < rrt_dimension; ++d)
-        candidate.q[d] = ratio > 0
-                             ? parent[d] + ratio * (candidate.q[d] - parent[d])
-                             : Scalar(double(parent[d]) +
-                                      wide_ratio * (double(candidate.q[d]) -
-                                                    double(parent[d])));
+      for (uint32_t d = 0; d < rrt_dimension; ++d) {
+        if (ratio > 0) {
+          candidate.q[d] = parent[d] + ratio * (candidate.q[d] - parent[d]);
+        } else {
+          candidate.q[d] =
+              Scalar(double(parent[d]) +
+                     wide_ratio * (double(candidate.q[d]) - double(parent[d])));
+        }
+      }
     }
   }
+
   bool moved = false;
-  for (uint32_t d = 0; d < rrt_dimension; ++d)
+  for (uint32_t d = 0; d < rrt_dimension; ++d) {
     moved |= candidate.q[d] != parent[d];
+  }
+
   candidate.blocked = !moved;
   candidate.steps =
       moved ? rrt_steps(parent, candidate.q, space, fp32_control) : 0;
@@ -268,18 +316,23 @@ __device__ inline void rrt_extend(RrtCandidate& candidate,
                                   bool fp32_control = false) {
   RrtNearestCache nearest = cache ? *cache : RrtNearestCache{0, 0, INFINITY};
   rrt_nearest(candidate.q, nodes, snapshot_size, trees, tree, nearest, width);
+
   // Shuffles do not fence the other lanes' reads of the query and shared cache.
-  if (width > 1)
+  if (width > 1) {
     __syncwarp(rrt_group_mask(width));
+  }
+
   if ((threadIdx.x & (width - 1)) == 0) {
-    if (cache)
+    if (cache) {
       *cache = nearest;
+    }
     candidate.parent = nearest.node;
     rrt_steer(candidate, nodes + size_t(nearest.node) * rrt_dimension,
               nearest.squared_distance, space, step_size, fp32_control);
   }
-  if (width > 1)
+  if (width > 1) {
     __syncwarp(rrt_group_mask(width));
+  }
 }
 
 __device__ inline uint32_t rrt_append(const Scalar* q,
@@ -288,9 +341,11 @@ __device__ inline uint32_t rrt_append(const Scalar* q,
                                       uint32_t* parents,
                                       tenkai::RrtResult& result) {
   const uint32_t node = result.node_count++;
-  for (uint32_t d = 0; d < rrt_dimension; ++d)
+  for (uint32_t d = 0; d < rrt_dimension; ++d) {
     nodes[size_t(node) * rrt_dimension + d] = q[d];
+  }
   parents[node] = parent;
+
   return node;
 }
 
@@ -301,9 +356,11 @@ __device__ inline void rrt_start_path(uint32_t node,
   result.status = tenkai::PlanStatus::Success;
   for (uint32_t n = node;; n = parents[n]) {
     path[result.path_length++] = n;
-    if (n == parents[n])
+    if (n == parents[n]) {
       break;
+    }
   }
+
   for (uint32_t i = 0; i < result.path_length / 2; ++i) {
     const uint32_t other = result.path_length - 1 - i;
     const uint32_t value = path[i];
@@ -326,19 +383,23 @@ __device__ inline void rrt_initialize(const RrtProblem& problem,
   if (threadIdx.x == 0) {
     result = {tenkai::PlanStatus::RoundLimit, 0, 0, 0};
     finished = false;
+
     rrt_append(problem.start, 0, nodes, parents, result);
     rrt_append(problem.goal, 1, nodes, parents, result);
     trees[0] = RrtTree::Start;
     trees[1] = RrtTree::Goal;
+
     start_valid =
         rrt_in_bounds(problem.start, space) &&
         !rrt_collision(problem.start, space, scene, problem.environment_id);
   }
-  if (threadIdx.x == 1)
+  if (threadIdx.x == 1) {
     goal_valid = rrt_in_bounds(problem.goal, space) &&
                  !rrt_collision(problem.goal, space, scene,
                                 problem.environment_id, true);
+  }
   __syncthreads();
+
   if (threadIdx.x == 0) {
     if (!start_valid || !goal_valid) {
       result.status = !start_valid ? tenkai::PlanStatus::InvalidStart
@@ -347,8 +408,10 @@ __device__ inline void rrt_initialize(const RrtProblem& problem,
       finished = true;
     } else {
       bool equal = true;
-      for (uint32_t d = 0; d < rrt_dimension; ++d)
+      for (uint32_t d = 0; d < rrt_dimension; ++d) {
         equal &= problem.start[d] == problem.goal[d];
+      }
+
       if (equal) {
         result.status = tenkai::PlanStatus::Success;
         result.path_length = 1;
@@ -359,4 +422,5 @@ __device__ inline void rrt_initialize(const RrtProblem& problem,
   }
   __syncthreads();
 }
-}  // namespace TENKAI_TEMPLATE_NAMESPACE
+
+}  // namespace TPL_NAMESPACE
