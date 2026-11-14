@@ -19,7 +19,6 @@ void compare(m::RrtPlanner& actual, ReferencePlanner& reference,
     }
 }
 
-#ifdef TEST_STANDARD_FP32
 __global__ void check_streaming_votes(m::Scene scene) {
     const unsigned lane = threadIdx.x;
     for (unsigned mask : {1u, 0x80000000u, 15u, 0xaaaaaaaau, 0xffffffffu}) {
@@ -57,7 +56,6 @@ __global__ void check_streaming_votes(m::Scene scene) {
     m::streaming_intersects(box, {FLT_MAX, 0, 0}, 0.03f, retry);
     assert(retry);
 }
-#endif
 
 int main() try {
     const Scalar c = Scalar(std::sqrt(0.5));
@@ -86,11 +84,9 @@ int main() try {
     device_environments.upload(environments, 8);
     const m::Scene scene{device_environments.data(), device_boxes.data(), device_sphere.data(),
                          device_cylinder.data(), device_ground.data()};
-#ifdef TEST_STANDARD_FP32
     check_streaming_votes<<<1,32>>>(scene);
     m::cuda_check(cudaGetLastError(), "check streaming collision masks and contact");
     m::cuda_check(cudaDeviceSynchronize(), "validate streaming collision masks and contact");
-#endif
     const m::RrtSpace space{{Scalar(0.1),-1,-1}, {1,1,1},
                             {Scalar(0.025),Scalar(0.025),Scalar(0.025)}, {0,0,0}};
     tenkai::RrtConfig config;

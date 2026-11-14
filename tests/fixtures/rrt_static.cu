@@ -7,6 +7,23 @@ namespace m = TENKAI_MODEL_NAMESPACE;
 using Scalar = m::Scalar;
 using Status = tenkai::PlanStatus;
 
+__global__ void check_rotating_workspace(m::Scene scene) {
+    if (TEST_SPHERE_COUNT != 4) return;
+    const float reference[3] = {0, 0, 0};
+    const float lower[1] = {-12}, upper[1] = {12};
+    assert(tenkai_collision_workspace_clear(lower, upper, reference, scene, 5));
+    assert(!tenkai_collision_workspace_clear(lower, upper, reference, scene, 6));
+
+    for (unsigned i = threadIdx.x; i <= 256; i += blockDim.x) {
+        const float q[3] = {-12 + 24 * (float(i) / 256), 0, 0};
+        assert(tenkai_collision_in_workspace(q, lower, upper));
+        assert(tenkai_collision_edge(q, scene, 5) == tenkai_collision_moving(q, scene, 5));
+    }
+
+    const float outside[3] = {13, 0, 0};
+    assert(!tenkai_collision_in_workspace(outside, lower, upper));
+}
+
 int main() try {
     m::Sphere obstacles[] = {
         {{-5, 0, 0}, Scalar(0.05)},
@@ -26,6 +43,10 @@ int main() try {
     device_obstacles.upload(obstacles, 6);
     device_environments.upload(environments, 7);
     const m::Scene scene = {device_environments.data(), nullptr, device_obstacles.data(), nullptr, nullptr};
+    check_rotating_workspace<<<1, 32>>>(scene);
+    m::cuda_check(cudaGetLastError(), "check rotating workspace");
+    m::cuda_check(cudaDeviceSynchronize(), "validate rotating workspace");
+
     m::RrtSpace space{{-1}, {1}, {Scalar(0.025)}, {13, 0, 0}};
     tenkai::RrtConfig config;
     config.max_nodes = 128;

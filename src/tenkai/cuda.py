@@ -297,14 +297,13 @@ def planning_replacements(
     dependencies_by_control = [dag.depends_on_inputs([index]) for index in controls]
 
     bounded_indices: list[int] = []
-    if options.math == "f32":
-        for index in moving:
-            dependency_count = 0
-            for flags in dependencies_by_control:
-                if any(flags[node] for node in groups[index]):
-                    dependency_count += 1
-            if dependency_count <= 2:
-                bounded_indices.append(index)
+    for index in moving:
+        dependency_count = 0
+        for flags in dependencies_by_control:
+            if any(flags[node] for node in groups[index]):
+                dependency_count += 1
+        if dependency_count <= 2:
+            bounded_indices.append(index)
 
     remaining_indices = [index for index in moving if index not in bounded_indices]
     edge_spheres = [spheres[index] for index in remaining_indices]

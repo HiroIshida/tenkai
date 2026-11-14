@@ -1,9 +1,30 @@
-#ifdef TEST_STANDARD_FP32
 struct WorkspaceCase {
     float lower[2], upper[2], z;
     uint32_t environment;
     bool clear;
 };
+
+__global__ void check_workspace_trigonometry() {
+    const float limit = float(100 * std::acos(-1.0));
+    const float inside = nextafterf(limit, 0.0f);
+    for (bool cosine : {false, true}) {
+        const auto bounds = m::workspace_trig({-inside, inside}, cosine);
+        assert(m::workspace_finite(bounds));
+        for (unsigned i = threadIdx.x; i <= 4096; i += blockDim.x) {
+            const float angle = inside * (float(i) / 2048 - 1);
+#ifdef TEST_STANDARD_FP32
+            const float value = cosine ? cosf(angle) : sinf(angle);
+#else
+            const float value = cosine ? __cosf(angle) : __sinf(angle);
+#endif
+            assert(bounds.lower <= value && value <= bounds.upper);
+        }
+        assert(!m::workspace_finite(m::workspace_trig({-INFINITY, INFINITY}, cosine)));
+        assert(!m::workspace_finite(m::workspace_trig({NAN, NAN}, cosine)));
+        const auto zero = m::workspace_trig({-0.0f, 0.0f}, cosine);
+        assert(zero.lower == (cosine ? 1 : 0) && zero.upper == zero.lower);
+    }
+}
 
 __global__ void check_workspace_cases(const WorkspaceCase* cases, uint32_t count, m::Scene scene) {
     const uint32_t i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -31,6 +52,10 @@ __global__ void check_workspace_cases(const WorkspaceCase* cases, uint32_t count
 }
 
 void check_workspace_bounds() {
+    check_workspace_trigonometry<<<1, 32>>>();
+    m::cuda_check(cudaGetLastError(), "check workspace trigonometry");
+    m::cuda_check(cudaDeviceSynchronize(), "validate workspace trigonometry");
+
     const float s = std::sqrt(0.5f);
     m::Box boxes[] = {
         {{{0, 0, 0}, {1,0,0,0,1,0,0,0,1}}, {0.2f,0.8f,0.2f}},
@@ -78,6 +103,3 @@ void check_workspace_bounds() {
     m::cuda_check(cudaGetLastError(), "check updated workspace geometry");
     m::cuda_check(cudaDeviceSynchronize(), "validate updated workspace geometry");
 }
-#else
-void check_workspace_bounds() {}
-#endif

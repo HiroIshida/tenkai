@@ -71,10 +71,10 @@ __device__ inline WorkspaceInterval workspace_trig(WorkspaceInterval a,
     return cosine ? WorkspaceInterval{1, 1} : WorkspaceInterval{0, 0};
   }
 
-  // Standard CUDA sinf/cosf have a 2-ULP error bound. Do not use this for SFU
-  // mode. Keeping the whole range avoids trusting rounded extrema/argument
-  // reduction.
-  return {-(1 + 4 * FLT_EPSILON), 1 + 4 * FLT_EPSILON};
+  // Keep the whole range with a shared standard/SFU margin rather than relying
+  // on rounded extrema or argument reduction. The SFU margin covers [-100*pi,
+  // 100*pi].
+  return {-(1 + 512 * FLT_EPSILON), 1 + 512 * FLT_EPSILON};
 }
 
 __device__ inline bool workspace_clear(WorkspaceInterval x,
