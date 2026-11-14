@@ -2,7 +2,7 @@
 #include <hip/hip_runtime.h>
 #include <stdexcept>
 
-// Keep the frozen CUDA sources shared by both compilers.
+// Avoid separate runtime implementations for CUDA and HIP.
 #define cudaError_t hipError_t
 #define cudaSuccess hipSuccess
 #define cudaGetErrorString hipGetErrorString

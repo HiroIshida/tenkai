@@ -1,18 +1,96 @@
 [
   {
+    "live_budget": null,
+    "math": "f32",
+    "model": {
+      "control_joints": [
+        {
+          "index": 2,
+          "lower": 0.0,
+          "name": "torso_lift_joint",
+          "upper": 0.38615
+        },
+        {
+          "index": 5,
+          "lower": -1.6056,
+          "name": "shoulder_pan_joint",
+          "upper": 1.6056
+        },
+        {
+          "index": 6,
+          "lower": -1.221,
+          "name": "shoulder_lift_joint",
+          "upper": 1.518
+        },
+        {
+          "index": 7,
+          "lower": -6.283185307179586,
+          "name": "upperarm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 8,
+          "lower": -2.251,
+          "name": "elbow_flex_joint",
+          "upper": 2.251
+        },
+        {
+          "index": 9,
+          "lower": -6.283185307179586,
+          "name": "forearm_roll_joint",
+          "upper": 6.283185307179586
+        },
+        {
+          "index": 10,
+          "lower": -2.16,
+          "name": "wrist_flex_joint",
+          "upper": 2.16
+        },
+        {
+          "index": 11,
+          "lower": -6.283185307179586,
+          "name": "wrist_roll_joint",
+          "upper": 6.283185307179586
+        }
+      ],
+      "input_joint_names": [
+        "r_wheel_joint",
+        "l_wheel_joint",
+        "torso_lift_joint",
+        "head_pan_joint",
+        "head_tilt_joint",
+        "shoulder_pan_joint",
+        "shoulder_lift_joint",
+        "upperarm_roll_joint",
+        "elbow_flex_joint",
+        "forearm_roll_joint",
+        "wrist_flex_joint",
+        "wrist_roll_joint",
+        "r_gripper_finger_joint",
+        "l_gripper_finger_joint",
+        "bellows_joint"
+      ],
+      "live_budget": null,
+      "math": "f32",
+      "optimization": "none",
+      "scalar": "float",
+      "sphere_count": 69
+    },
     "name": "fetch-f32-none-None",
-    "urdf": "assets/fetch/fetch.urdf",
-    "spheres": "assets/fetch/collision.yaml",
-    "math": "f32",
     "optimization": "none",
-    "live_budget": null,
     "sha256": {
-      "centers.cuh": "49f152206579c2461267fd158ff9942ea6c366d7e7c3cdc9479f4d74eb9c654e",
-      "collision.cuh": "df04532dd7fff591dc32c9818e3f7688fb6a1900dbd8c551d7ca685228a1d05f",
-      "collision_function.cuh": "e45611459a71769b0ccfe593daeb56a79c9575bfa5dafd0c7d87102371ffc2b1",
-      "fk.cuh": "b33d6bf0f67aa3f9945a96262a2175dcfbb39bc4abb9b7aba146fe676adf353a",
-      "rrt.cuh": "b2d1ca2179f13b4aefe537d4edc280a0ea90d4aa8dc3c1685bfb7387e286476b"
+      "centers.cuh": "0a596633403bf71018130f2b97005058fb837fcdabe72ef4e59b1a9eae285bfc",
+      "collision.cuh": "8fb544dd6848741067c9bbb0fd85f0d1982badd4fcf50b8411a570831ea18f32",
+      "collision_function.cuh": "cce304b2ed68c71d1ba9a3bad52fa2ae5b1dbc7655e4dc01e8707ac726eaca09",
+      "fk.cuh": "9d1502341df39be70483a475f10920cbce8dcb1a702b49e4f737bc16b043b546",
+      "rrt.cuh": "c4dfe40d0ca858e0c1d2a9f603fea3afc1f345000137a9d0b30ec792e0de2d76"
     },
+    "spheres": "assets/fetch/collision.yaml",
+    "urdf": "assets/fetch/fetch.urdf"
+  },
+  {
+    "live_budget": 0,
+    "math": "f32",
     "model": {
       "control_joints": [
         {
@@ -81,27 +159,27 @@
         "l_gripper_finger_joint",
         "bellows_joint"
       ],
-      "math": "F32",
-      "optimization": "None",
+      "live_budget": 0,
+      "math": "f32",
+      "optimization": "none",
       "scalar": "float",
-      "scheduling": "DagOrder",
       "sphere_count": 69
-    }
-  },
-  {
+    },
     "name": "fetch-f32-none-0",
-    "urdf": "assets/fetch/fetch.urdf",
-    "spheres": "assets/fetch/collision.yaml",
-    "math": "f32",
     "optimization": "none",
-    "live_budget": 0,
     "sha256": {
-      "centers.cuh": "2d598983d039169c26695d185d3fc17d833f714202ba67ee04c60c21c8cd4741",
-      "collision.cuh": "c4fa92e6c014adbed232e84a3d2fc8162c884014e340d6c797ccce8e9d43b020",
-      "collision_function.cuh": "4bbec3cd1a89940577ebffeb76cddda88be78c27b9f9d326bc4ce5dae27b060b",
-      "fk.cuh": "527dd55db29ef034cee8389358eefc2cdc1faadbe88996ec8c99020c922ddce0",
-      "rrt.cuh": "3a89afac268673c347cb645ef1d4b77cf9182a136bda2ab9fd2af92367891466"
+      "centers.cuh": "96a5e070a2a24479e5d72c19040e814e6f2d2a7c4878e3717a021f2f30f72129",
+      "collision.cuh": "55ac75ba04bfc798d1f3de559756f1027070e35c12b2681d45ff4f63d99cc50e",
+      "collision_function.cuh": "22aa23f8e0f307b8c6a0568f7886d306812d0bc7a3c527f1fa5a276df3fa7448",
+      "fk.cuh": "1d03f93b07abfbcebba807e371d9e7e317c65de31573f4558cf4e0d334d5a3e3",
+      "rrt.cuh": "d7d42900e64db83698970198a2f9782013ca7e0c5e04cc928e6f63d17acbecfe"
     },
+    "spheres": "assets/fetch/collision.yaml",
+    "urdf": "assets/fetch/fetch.urdf"
+  },
+  {
+    "live_budget": 64,
+    "math": "f32",
     "model": {
       "control_joints": [
         {
@@ -170,27 +248,27 @@
         "l_gripper_finger_joint",
         "bellows_joint"
       ],
-      "math": "F32",
-      "optimization": "None",
+      "live_budget": 64,
+      "math": "f32",
+      "optimization": "none",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 0 })",
       "sphere_count": 69
-    }
-  },
-  {
+    },
     "name": "fetch-f32-none-64",
-    "urdf": "assets/fetch/fetch.urdf",
-    "spheres": "assets/fetch/collision.yaml",
-    "math": "f32",
     "optimization": "none",
-    "live_budget": 64,
     "sha256": {
-      "centers.cuh": "70e99ef8cb98439223ab407e9718dc1028f5315f283eab62d96124751d335005",
-      "collision.cuh": "4825e5cb217cb168e4a2d4a38a5d782175a827710991a353b0a7f3985dbe55a4",
-      "collision_function.cuh": "5ef5bda06a1b25276063507ced1610efad7368cf3ec4399a22ee0228e4f7d9ab",
-      "fk.cuh": "d4d73f94d69deaf3f0ee36cdeb21097f3820b0b627537d0ea67e4265f3c4cff0",
-      "rrt.cuh": "b38d4a47ce4ea9f0455e8be6fcef7efe9ec0f965bb64ff75cd9fbbb26689b49c"
+      "centers.cuh": "b64083b116dc16aa0ccdd781dc80d34988c4e286690bdaab7cf52bf5832c4cae",
+      "collision.cuh": "c2bc7753bc73827e3f4c2fe65ecdac8128648ac23732cb34842b15cd069c171f",
+      "collision_function.cuh": "7d47131daef33c4909586423c0c40530c0319aaf870f2bff236bfcd6f3201a8d",
+      "fk.cuh": "1ba3bdc51c854ce464d03acf1f39e60640d106caa90e9e4b9a5d07574a458a39",
+      "rrt.cuh": "b9f5a0110084aec52b63ab2a72402c63d62692ce5c923c207ae1c4ab573c6607"
     },
+    "spheres": "assets/fetch/collision.yaml",
+    "urdf": "assets/fetch/fetch.urdf"
+  },
+  {
+    "live_budget": null,
+    "math": "f32",
     "model": {
       "control_joints": [
         {
@@ -259,27 +337,27 @@
         "l_gripper_finger_joint",
         "bellows_joint"
       ],
-      "math": "F32",
-      "optimization": "None",
+      "live_budget": null,
+      "math": "f32",
+      "optimization": "basic",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 64 })",
       "sphere_count": 69
-    }
-  },
-  {
+    },
     "name": "fetch-f32-basic-None",
-    "urdf": "assets/fetch/fetch.urdf",
-    "spheres": "assets/fetch/collision.yaml",
-    "math": "f32",
     "optimization": "basic",
-    "live_budget": null,
     "sha256": {
-      "centers.cuh": "91ede3bf55d14d933beb8308b88771de90f0bb47486b3499c37f899cbcd34c19",
-      "collision.cuh": "1bc1f60e903ba0d00eb5dfe51fbcfd4bbf7fb4c1cb1671282ec5116653161eb0",
-      "collision_function.cuh": "94578e7b525cbd31b531eccf449452ae43071aa4d1830637849bdf47868f4a9a",
-      "fk.cuh": "ae1547f8ff3b8673a4fb9c1a5e51f8f106f7c8c473b4661209434743b571bb03",
-      "rrt.cuh": "1656fafaa2ed937bfbeaf9b97dd5abd87f21730f029ce18cc3784c228cb132c5"
+      "centers.cuh": "4353d48c0ab0dee3a4c7ab644f340c21ad6a09f95412b17f224a74bf55a50361",
+      "collision.cuh": "ff577befd8b2c5f45575e5286e1d01cabdcbe7c743e728a9d19c6c6a8389b83f",
+      "collision_function.cuh": "1f221a47e727d605f6c213d68bbcefea1881e39a68cace5f78ca00c066060902",
+      "fk.cuh": "45a6fe6590f3955a717e5af299667d1b6f5d97712dbd4e152d48742e53e6e292",
+      "rrt.cuh": "4b0381b09e408b556c8bb6041844f99052c4a70afe8d84743d43140d13c3b876"
     },
+    "spheres": "assets/fetch/collision.yaml",
+    "urdf": "assets/fetch/fetch.urdf"
+  },
+  {
+    "live_budget": 0,
+    "math": "f32",
     "model": {
       "control_joints": [
         {
@@ -348,27 +426,27 @@
         "l_gripper_finger_joint",
         "bellows_joint"
       ],
-      "math": "F32",
-      "optimization": "Basic",
+      "live_budget": 0,
+      "math": "f32",
+      "optimization": "basic",
       "scalar": "float",
-      "scheduling": "DagOrder",
       "sphere_count": 69
-    }
-  },
-  {
+    },
     "name": "fetch-f32-basic-0",
-    "urdf": "assets/fetch/fetch.urdf",
-    "spheres": "assets/fetch/collision.yaml",
-    "math": "f32",
     "optimization": "basic",
-    "live_budget": 0,
     "sha256": {
-      "centers.cuh": "6dae95bc7eb536f98ae4dc0acf06d0a3bc328057afcb2f6ca0a4b575f2cfe0e5",
-      "collision.cuh": "e388c20a5259542746e412396526faf9ea264d2957760037b0fce46f379718de",
-      "collision_function.cuh": "a879c16a16575d5b069dfe6058b5ddb5326823da903bc38a971bffd54712fd67",
-      "fk.cuh": "12367ce6882d700462337b4b13564dc91220a381d1436dac459ebe3f5da4bde9",
-      "rrt.cuh": "99e76157f28b6cf56720a5da9531117e6fc2d61bd684d3efed023ca218d8a78f"
+      "centers.cuh": "9d2312d52d9ff2fcd382226f32a701d5b5e19be85fd8d7a47cf260fa8bd4a2c2",
+      "collision.cuh": "417bde630a4d6e9932b0e3e1d37873104c18aa21bf9865aa851efa6c02d69304",
+      "collision_function.cuh": "b85f395a3aaebd2425184b15ba32173d25cf987b0994b93f3b339d0298f73f5b",
+      "fk.cuh": "48525620965479e4ed9884f2d4da8eac6e577a73788adc87b5271d846e619c25",
+      "rrt.cuh": "04000a30844aafd9c0964072e2096c6028049ec6d35f293a35627910f6463a33"
     },
+    "spheres": "assets/fetch/collision.yaml",
+    "urdf": "assets/fetch/fetch.urdf"
+  },
+  {
+    "live_budget": 64,
+    "math": "f32",
     "model": {
       "control_joints": [
         {
@@ -437,27 +515,27 @@
         "l_gripper_finger_joint",
         "bellows_joint"
       ],
-      "math": "F32",
-      "optimization": "Basic",
+      "live_budget": 64,
+      "math": "f32",
+      "optimization": "basic",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 0 })",
       "sphere_count": 69
-    }
-  },
-  {
+    },
     "name": "fetch-f32-basic-64",
-    "urdf": "assets/fetch/fetch.urdf",
-    "spheres": "assets/fetch/collision.yaml",
-    "math": "f32",
     "optimization": "basic",
-    "live_budget": 64,
     "sha256": {
-      "centers.cuh": "e7b7064b8006fbc88762f3e929517abc3a1d8241bcb8327d42a6a6b87bac7d26",
-      "collision.cuh": "bc8267c25ffaee04519b9e5850ba79839e51adce236012e446129c53099c6641",
-      "collision_function.cuh": "6d8d7fb6ada3240026f05c286a35912fe76ec9c5dff548182a7e438cf6a42e98",
-      "fk.cuh": "6023f19acbfc132f94bbf00313dd594bf610bb3121ecda5fa96b7dcf53d61242",
-      "rrt.cuh": "ea2edf4c2255271c19a4866a7194a333c50207dba14c7689c5c58bb362261f5b"
+      "centers.cuh": "16e6a79aad96716a7c980139936bb08cf5af10835e44461269354ce56246c15a",
+      "collision.cuh": "bc2c08ddf6fa4a060e1b1f3a45a0b9787eff76581af88fd0db7eedfe4a142561",
+      "collision_function.cuh": "705599fb3e4771b15d845723eff560092f6a049094f948dd00bb75d8550c0f20",
+      "fk.cuh": "1b674330d91cae351858cb447ccf3ac4f9b35559378191cd86206ba8abe66eda",
+      "rrt.cuh": "9bcee1dce2c2fc72f2ceaf243f0d574e9f81afc25529c4bd1f777576a4584a9a"
     },
+    "spheres": "assets/fetch/collision.yaml",
+    "urdf": "assets/fetch/fetch.urdf"
+  },
+  {
+    "live_budget": null,
+    "math": "f32",
     "model": {
       "control_joints": [
         {
@@ -526,27 +604,27 @@
         "l_gripper_finger_joint",
         "bellows_joint"
       ],
-      "math": "F32",
-      "optimization": "Basic",
+      "live_budget": null,
+      "math": "f32",
+      "optimization": "algebraic",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 64 })",
       "sphere_count": 69
-    }
-  },
-  {
+    },
     "name": "fetch-f32-algebraic-None",
-    "urdf": "assets/fetch/fetch.urdf",
-    "spheres": "assets/fetch/collision.yaml",
-    "math": "f32",
     "optimization": "algebraic",
-    "live_budget": null,
     "sha256": {
-      "centers.cuh": "92044a6b06a8e592a6d3de662c75e6ae74fbb9eaa9d2b404c65396fa856480e0",
-      "collision.cuh": "a66ce2abbc11770389ee49c2bed557b0d1d74bcb39cf10b01fabe38be52c0475",
-      "collision_function.cuh": "54032a519744697a5725432cce5892baadf4035fbeea4be35b146190e080d00d",
-      "fk.cuh": "a6236dd88727f6f480aadf45c145b66abb232c12eb76e10b7417c0095dc63614",
-      "rrt.cuh": "752a525d191820687e5df00138bdf09f3130e5e5e49afb41aaec7cc15aad6f8d"
+      "centers.cuh": "cf725aac4ba7dcb22de824123a170351846230ea55dbe60ad796783845800f57",
+      "collision.cuh": "1f8e82277ec596e85e6f9305beb819971f54840b0f52b84844b1f28fb293ff0a",
+      "collision_function.cuh": "8c80487c04712cb6a43f81e197234b01035681731e20c4595406a31046a2974c",
+      "fk.cuh": "5292099f42448ceb0a44e71a62b9c45351a90a89fd7d9cab1002120fb680961c",
+      "rrt.cuh": "6826b5d117d77cb346bd92f9c6f508a62152d115e729f6474b38abb3579de570"
     },
+    "spheres": "assets/fetch/collision.yaml",
+    "urdf": "assets/fetch/fetch.urdf"
+  },
+  {
+    "live_budget": 0,
+    "math": "f32",
     "model": {
       "control_joints": [
         {
@@ -615,27 +693,27 @@
         "l_gripper_finger_joint",
         "bellows_joint"
       ],
-      "math": "F32",
-      "optimization": "Algebraic",
+      "live_budget": 0,
+      "math": "f32",
+      "optimization": "algebraic",
       "scalar": "float",
-      "scheduling": "DagOrder",
       "sphere_count": 69
-    }
-  },
-  {
+    },
     "name": "fetch-f32-algebraic-0",
-    "urdf": "assets/fetch/fetch.urdf",
-    "spheres": "assets/fetch/collision.yaml",
-    "math": "f32",
     "optimization": "algebraic",
-    "live_budget": 0,
     "sha256": {
-      "centers.cuh": "adccde1ec262126f83eef0c9a920ad5667aead7735743d00c47aa440a205981a",
-      "collision.cuh": "ab2c5b0a7584398722996ce6515514b5b5c363a34db1c366f0aba03930243b26",
-      "collision_function.cuh": "5c7bd14faf88554bfb0e4b1d77d8e3829d6bbedd25474e7c24cf2c34e5737a5e",
-      "fk.cuh": "d881d292fc7b6ca89b05dc31366d347caf5d5a1474e589b4fb9b45daa0936a91",
-      "rrt.cuh": "66310378e0c232b1831ed2902d634255d9c785940bee4fde9954b7e5883f863b"
+      "centers.cuh": "6f56cca3adb18f44f10cd85eabecc75bc2bea21f7a54fbefe1290e57204adf2f",
+      "collision.cuh": "c898c322fe33ec0e41aee4f5c0982cdb0fd5e87cf23fabe127c37753f936cec0",
+      "collision_function.cuh": "9a822a58304343b831aa474666cafa5a4887304cbd0f388962d2e806ca76790a",
+      "fk.cuh": "42a309b68c0679e80de7e2cd52d628a77f1261b287aaf3784d9dbb55cf29b519",
+      "rrt.cuh": "033163f0ebcecfdfdc1d0a1d4d0874b1f847c2a6ee75c26b8886b41cb91ebd86"
     },
+    "spheres": "assets/fetch/collision.yaml",
+    "urdf": "assets/fetch/fetch.urdf"
+  },
+  {
+    "live_budget": 64,
+    "math": "f32",
     "model": {
       "control_joints": [
         {
@@ -704,27 +782,27 @@
         "l_gripper_finger_joint",
         "bellows_joint"
       ],
-      "math": "F32",
-      "optimization": "Algebraic",
+      "live_budget": 64,
+      "math": "f32",
+      "optimization": "algebraic",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 0 })",
       "sphere_count": 69
-    }
-  },
-  {
+    },
     "name": "fetch-f32-algebraic-64",
-    "urdf": "assets/fetch/fetch.urdf",
-    "spheres": "assets/fetch/collision.yaml",
-    "math": "f32",
     "optimization": "algebraic",
-    "live_budget": 64,
     "sha256": {
-      "centers.cuh": "06c7cb23bf8b27ba372c3d8822ae808ae9e7892ce70db871b7dbdad867bc3869",
-      "collision.cuh": "9bfd273b8a5f79fe03fffb03b4a0fc894572bacec3d6a9a62ee7d2697c16324a",
-      "collision_function.cuh": "0263ad593a4ab8ff1a1bd0c288099326e089f309053d00437f908827a4296278",
-      "fk.cuh": "37834f045f4d9baa9e6ba5a6a4481d35e4bf29ee3eea9ec0113302d9aebf292b",
-      "rrt.cuh": "728140dc5f76642d9d989fa33f4c2f16292bf22af0156da9bba14fba4c5f07c9"
+      "centers.cuh": "755a19c1b14fd3d7a63420a651eaff5fdca4b503edcbf0a80254183cac074683",
+      "collision.cuh": "ddd821a51503add4d73e59ebaf08a42ee8fd8ec425bc02483c47183b9d7ef70b",
+      "collision_function.cuh": "42fca8aee0f187ea81aa922a58855aa89c68805bec2cd5fe33df4c4170f07161",
+      "fk.cuh": "4ec629fc8b69d98f1217a67bbdbd56364f42e5f4ceeac33563fa3ea63cee2fc3",
+      "rrt.cuh": "b697f7d651ac0260fc69712d01f85faf703d58f04eb468216be06edf57b1947e"
     },
+    "spheres": "assets/fetch/collision.yaml",
+    "urdf": "assets/fetch/fetch.urdf"
+  },
+  {
+    "live_budget": null,
+    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -793,27 +871,27 @@
         "l_gripper_finger_joint",
         "bellows_joint"
       ],
-      "math": "F32",
-      "optimization": "Algebraic",
+      "live_budget": null,
+      "math": "f32-sfu",
+      "optimization": "none",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 64 })",
       "sphere_count": 69
-    }
-  },
-  {
+    },
     "name": "fetch-f32-sfu-none-None",
-    "urdf": "assets/fetch/fetch.urdf",
-    "spheres": "assets/fetch/collision.yaml",
-    "math": "f32-sfu",
     "optimization": "none",
-    "live_budget": null,
     "sha256": {
-      "centers.cuh": "acebc343dc453f36e52ed854d428584696c712397364a39dd698c39347ac5c02",
-      "collision.cuh": "f45b5d2829044d1381ebf3e257e4d63a4af4bf3f3bfc785bdebe2505c6021169",
-      "collision_function.cuh": "eda0e1eb5e57ae41c6c1c4cb724f77aa5adb484969109d1191b12b01a7515b97",
-      "fk.cuh": "b92a722a37da131a0ec7a45cc3f49fc7d5e8865e198e437080fbd1fdf4913816",
-      "rrt.cuh": "9c32c5512d3e3e0065370032bff066a851d3d181e2004c33e554a3f6322fd965"
+      "centers.cuh": "1367be27e79fd6cd4097b0b8a1c5f887850f0ad5e60154f8d5f7aeab7db6447c",
+      "collision.cuh": "3c8498a646699f68252b9ebf85352b5ec7c4db6c43339125c0971cab1965ba7d",
+      "collision_function.cuh": "c1cddbd934d708706f9034f60568e2a8db61887564a5e04b56f1eb420c5502a8",
+      "fk.cuh": "88d24a3c8e05288aa2e581ac897f80ec33c53acc0225ef7df48b2c5fbcb48a2f",
+      "rrt.cuh": "c1707fc4a9e50b58b4705479c28518b853a4bf0bce868fa34cb3de0f9d98043e"
     },
+    "spheres": "assets/fetch/collision.yaml",
+    "urdf": "assets/fetch/fetch.urdf"
+  },
+  {
+    "live_budget": 0,
+    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -882,27 +960,27 @@
         "l_gripper_finger_joint",
         "bellows_joint"
       ],
-      "math": "F32Sfu",
-      "optimization": "None",
+      "live_budget": 0,
+      "math": "f32-sfu",
+      "optimization": "none",
       "scalar": "float",
-      "scheduling": "DagOrder",
       "sphere_count": 69
-    }
-  },
-  {
+    },
     "name": "fetch-f32-sfu-none-0",
-    "urdf": "assets/fetch/fetch.urdf",
-    "spheres": "assets/fetch/collision.yaml",
-    "math": "f32-sfu",
     "optimization": "none",
-    "live_budget": 0,
     "sha256": {
-      "centers.cuh": "5f0a993d6b2efc9fe6ec061ccc480d5008c3e301669e4a2573e48dc05c4219bb",
-      "collision.cuh": "3041830e27443bd2d0e071fc453f2a4d5f151c6392d23441d4f586e5b6233399",
-      "collision_function.cuh": "058b55ffbeff9ada990c2b3a0c2c1f02e63f082bd5500059b77083b769577037",
-      "fk.cuh": "62a3beab44179329eefc7d2ef232c06dfcf57164ef254a6ac218a12256a92840",
-      "rrt.cuh": "1c3d88eef1f773245c00a4598cfba185d0b06bfbcfe61771ff9b99bc3aa388e5"
+      "centers.cuh": "13adb8e7388a42dadbb2e27b1b7034b702cca3cad8fc98bf0e058d7b7ee38161",
+      "collision.cuh": "8ba6a18bc24466359c90502d41ac6728f3430f275837d7940126ae6afebe8c12",
+      "collision_function.cuh": "dda6c617669d1c3f098e234e9116a1676c3230f7e86fbe787109565c60b652e8",
+      "fk.cuh": "059bbcbcaa5cb7427d1f8be1faf84ac5c4f95a1e9755e9dfcc3298f16df20d7d",
+      "rrt.cuh": "372bb436c1046efe10def2778604164d20cffe173112ab0c2ba4cd0cc00d75ef"
     },
+    "spheres": "assets/fetch/collision.yaml",
+    "urdf": "assets/fetch/fetch.urdf"
+  },
+  {
+    "live_budget": 64,
+    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -971,27 +1049,27 @@
         "l_gripper_finger_joint",
         "bellows_joint"
       ],
-      "math": "F32Sfu",
-      "optimization": "None",
+      "live_budget": 64,
+      "math": "f32-sfu",
+      "optimization": "none",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 0 })",
       "sphere_count": 69
-    }
-  },
-  {
+    },
     "name": "fetch-f32-sfu-none-64",
-    "urdf": "assets/fetch/fetch.urdf",
-    "spheres": "assets/fetch/collision.yaml",
-    "math": "f32-sfu",
     "optimization": "none",
-    "live_budget": 64,
     "sha256": {
-      "centers.cuh": "47519b4b56b567ea0fb618bcc4606a76762fe43f43a3fec46593bed258abdeab",
-      "collision.cuh": "a4d1ae509330c9b6d469f185285a49583f57dd894589c374b00ae0de1ab103e4",
-      "collision_function.cuh": "072ecb9a59fe955f5ba741cae317234a51c87ff808750e7ec043fe7232e5ecd9",
-      "fk.cuh": "c2566c541f1aa6d71208ec813b28576bb380619836292457257c7243238b71eb",
-      "rrt.cuh": "d03b855d68d9562a60b2415fcb829c3c5e73de67068bc8284d0d00cdd0022a13"
+      "centers.cuh": "add21d772ffb0626d8ddc473c02c24f26b664e0edc59672ec45d5d61d95b9932",
+      "collision.cuh": "ba3b06c0cb755c3ad125611f7c570b9b7e6aa38c009a5bde06a7bf0766a52869",
+      "collision_function.cuh": "2266b604411fd098c5ff30495810eb2c2004d425e3d9edde51347249ea7bb5c3",
+      "fk.cuh": "a5c1d021ce6e655ddb2f1b294b84238963a295150e0984b45900f0868029ef43",
+      "rrt.cuh": "3b132a8fc90f903695cd208b02380197e9ab9d46ac01751f21bf8b77b2dd1215"
     },
+    "spheres": "assets/fetch/collision.yaml",
+    "urdf": "assets/fetch/fetch.urdf"
+  },
+  {
+    "live_budget": null,
+    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -1060,27 +1138,27 @@
         "l_gripper_finger_joint",
         "bellows_joint"
       ],
-      "math": "F32Sfu",
-      "optimization": "None",
+      "live_budget": null,
+      "math": "f32-sfu",
+      "optimization": "basic",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 64 })",
       "sphere_count": 69
-    }
-  },
-  {
+    },
     "name": "fetch-f32-sfu-basic-None",
-    "urdf": "assets/fetch/fetch.urdf",
-    "spheres": "assets/fetch/collision.yaml",
-    "math": "f32-sfu",
     "optimization": "basic",
-    "live_budget": null,
     "sha256": {
-      "centers.cuh": "0d5500e8234f1242e1d7407dff468439d1505f9f27d64ef66e4c10e245df5206",
-      "collision.cuh": "65f94c5b03b0873fcf1cd210065fad209bb410616a8f21a609e75828bf7132be",
-      "collision_function.cuh": "2bc4218c38ae48abc631e3963771d9e317275aaf5affbdaaf478a0625959f2db",
-      "fk.cuh": "9cc7f0039ef4dfab8d70e4f1292f554f061e5db15bab0996a0f2c9b9ac115e7c",
-      "rrt.cuh": "596d8fbf21f75bf4b67b347e1d664bbc6136dc2487a304d39953fb4137f7adc1"
+      "centers.cuh": "dd7baf686621b5024d081da98765b650f875f556a4288ab151f127a7ae241fbd",
+      "collision.cuh": "f0596d3e923708c3feb068d0e529900dde1912fc5a34ddcf8c946a6b6aa12ed2",
+      "collision_function.cuh": "bef0f17e01a53253f0157ec2bf524d8ed2f9887ff5bb581baf50172b76c8a2d0",
+      "fk.cuh": "e7f084db68e361c375fa6ba0aeaeb510872081cd958188d09f56d72ab4a9a93a",
+      "rrt.cuh": "8168449c4576d91f8e1c3d664ccc54e3ef30399ea16ee69ef5c904fe01f6b8c2"
     },
+    "spheres": "assets/fetch/collision.yaml",
+    "urdf": "assets/fetch/fetch.urdf"
+  },
+  {
+    "live_budget": 0,
+    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -1149,27 +1227,27 @@
         "l_gripper_finger_joint",
         "bellows_joint"
       ],
-      "math": "F32Sfu",
-      "optimization": "Basic",
+      "live_budget": 0,
+      "math": "f32-sfu",
+      "optimization": "basic",
       "scalar": "float",
-      "scheduling": "DagOrder",
       "sphere_count": 69
-    }
-  },
-  {
+    },
     "name": "fetch-f32-sfu-basic-0",
-    "urdf": "assets/fetch/fetch.urdf",
-    "spheres": "assets/fetch/collision.yaml",
-    "math": "f32-sfu",
     "optimization": "basic",
-    "live_budget": 0,
     "sha256": {
-      "centers.cuh": "8fd2c2e54a1f5b603bc4730c72436992949870025825ceb37a052685a12c7c14",
-      "collision.cuh": "fa3cdc586bfd4d49c14b0b93d795a724f4c40a48865fc69e07052092ab44265a",
-      "collision_function.cuh": "4aca11bd8a0e425704d5423c3da448b4b901a4d6031b6b56c3ef6f6ac1e3054b",
-      "fk.cuh": "937142585c9c89f1e16bf581dc3c1e04044dbc9181fbe6f630bb24bb752da349",
-      "rrt.cuh": "d541c7827c671da1f1355751c8c8b059035c113afaf8886a4fb2523523d40675"
+      "centers.cuh": "4fde64de8ccd05916c6632ed46ccc8f73f969496cfc2c2f17576d86fd6bafe54",
+      "collision.cuh": "eb3d12d93eac5fbd7b94c751f482b2634e820f3241f0b508850671fe150f080b",
+      "collision_function.cuh": "9ea67df6336e8cc59bdaba88344784ed43992e0b549052be808e1095d30732ef",
+      "fk.cuh": "ad2fda7092c88855d1d7c60501b7e7346efe4766595beeffaf7914b6920cd866",
+      "rrt.cuh": "88dd5d6a2fcc6e6417d6bfad4a2ef368be7fcb1dbf98d67c9457a613de325e56"
     },
+    "spheres": "assets/fetch/collision.yaml",
+    "urdf": "assets/fetch/fetch.urdf"
+  },
+  {
+    "live_budget": 64,
+    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -1238,27 +1316,27 @@
         "l_gripper_finger_joint",
         "bellows_joint"
       ],
-      "math": "F32Sfu",
-      "optimization": "Basic",
+      "live_budget": 64,
+      "math": "f32-sfu",
+      "optimization": "basic",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 0 })",
       "sphere_count": 69
-    }
-  },
-  {
+    },
     "name": "fetch-f32-sfu-basic-64",
-    "urdf": "assets/fetch/fetch.urdf",
-    "spheres": "assets/fetch/collision.yaml",
-    "math": "f32-sfu",
     "optimization": "basic",
-    "live_budget": 64,
     "sha256": {
-      "centers.cuh": "757690a050a8bd418bf27bce32a58a12a7e993644b0b70715fdc15741f2de4d5",
-      "collision.cuh": "dcbf0e7bc0eff7d371da058f5bed2aa227d4a572936c1290cd713d553c3d005c",
-      "collision_function.cuh": "de99a91fa77a783867990da020aec28986fdbea94fe810a1f559fd5bea69c4be",
-      "fk.cuh": "5909072cb86c62816b7b05d67a4e3f9d891b78d4753af67f84fa747a2af293f9",
-      "rrt.cuh": "d6f94876acc8b57d027b32a53b6b9f65f7dcaa573f43f49c6b4d1ae5d320683d"
+      "centers.cuh": "130c8db4b2f841047df3f05b6ffc564fe6b7f06292df092bf332b2584c7003ff",
+      "collision.cuh": "b0251b185258e8280e159b10d087d4aa3fc63902acd732a6d4e33b80184b6fa6",
+      "collision_function.cuh": "9463d20a4ad3d9e3d97404e9e3c48b7e8a4e959f067fa7750729809f453e3664",
+      "fk.cuh": "9869c88d17bb77e0c213848692f8dad09dae668474269d049813bd7cd14c16ba",
+      "rrt.cuh": "a41b7e0730ba2ca5c52cac891daac174420bc620b261c1b8ad0e8d7b470c2c64"
     },
+    "spheres": "assets/fetch/collision.yaml",
+    "urdf": "assets/fetch/fetch.urdf"
+  },
+  {
+    "live_budget": null,
+    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -1327,27 +1405,27 @@
         "l_gripper_finger_joint",
         "bellows_joint"
       ],
-      "math": "F32Sfu",
-      "optimization": "Basic",
+      "live_budget": null,
+      "math": "f32-sfu",
+      "optimization": "algebraic",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 64 })",
       "sphere_count": 69
-    }
-  },
-  {
+    },
     "name": "fetch-f32-sfu-algebraic-None",
-    "urdf": "assets/fetch/fetch.urdf",
-    "spheres": "assets/fetch/collision.yaml",
-    "math": "f32-sfu",
     "optimization": "algebraic",
-    "live_budget": null,
     "sha256": {
-      "centers.cuh": "13341ca8aa562b574314e679c450e35ad48f0f2c028fc4695a9dac56bf33a953",
-      "collision.cuh": "4763eb0ba87f9e3b866348393d5cae3d4989a55c0953f083d1f821cff0c620ee",
-      "collision_function.cuh": "96d103925b94b6bc5509b262374c12b59ae795ce8f508f1af357c64d8f82ea31",
-      "fk.cuh": "6707db1929081df75b19d8ad0620e82abe41e88d8ac83890ebab62ce862ad2fd",
-      "rrt.cuh": "47e3d54d5ba92582940a9a27d1bda8fb99b1005572b22993a7a296498f994ebc"
+      "centers.cuh": "1ef92a834bc61b54d0db777b03029ca867b1448eac367b24fb81f99d08519e15",
+      "collision.cuh": "c17ecb25097d4162f03a1dca51a75507dd7d3fec8b515dc6d0183ab263ecffea",
+      "collision_function.cuh": "78d51d3d134fb2f54f91c74d09d8693857514ab35275b93a70786dfb42461b72",
+      "fk.cuh": "24278d155c9d51b023a4b1d295d3b7ed28f76988575976c23ad44fabff50ee04",
+      "rrt.cuh": "48843943406394ae6bac1a2aa57ae53dd92b31a16726f6a6df10fef469ae8169"
     },
+    "spheres": "assets/fetch/collision.yaml",
+    "urdf": "assets/fetch/fetch.urdf"
+  },
+  {
+    "live_budget": 0,
+    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -1416,27 +1494,27 @@
         "l_gripper_finger_joint",
         "bellows_joint"
       ],
-      "math": "F32Sfu",
-      "optimization": "Algebraic",
+      "live_budget": 0,
+      "math": "f32-sfu",
+      "optimization": "algebraic",
       "scalar": "float",
-      "scheduling": "DagOrder",
       "sphere_count": 69
-    }
-  },
-  {
+    },
     "name": "fetch-f32-sfu-algebraic-0",
-    "urdf": "assets/fetch/fetch.urdf",
-    "spheres": "assets/fetch/collision.yaml",
-    "math": "f32-sfu",
     "optimization": "algebraic",
-    "live_budget": 0,
     "sha256": {
-      "centers.cuh": "246454cb3209baa50f0ac22ff2dffd3e938c837cae07f260b8e4664b72e03883",
-      "collision.cuh": "1dc73b3f41fa5bebab91d0fee456738808b004b9bfe8326f5aea811f2c6523f0",
-      "collision_function.cuh": "ca9f60d4227bce224a31fed3fba4b347c7ee1903ed05f98c7399c8c237dba8c4",
-      "fk.cuh": "ed818831c15d46f3096494e570aad75ff33fda5f142924690eab58ed0d9f2157",
-      "rrt.cuh": "81ec4f21aae377dc5607fc1e8a4637dcc9bdba07e59ab34e14ef5f9351a02ca9"
+      "centers.cuh": "9bb15f9e93be3ffda410bf213b9d5d8debc6a4847884b5feb9f5b9ce87c16380",
+      "collision.cuh": "a060e5aacb0fcb5c53f486fab166bed61fff90693afed568b46ec13b8c52f872",
+      "collision_function.cuh": "cc1f053176599bb449755f4f9eade3c2178644801e21030d3540389ab0b1d06f",
+      "fk.cuh": "17c383657404509187df5e28568489c83eda80e26726ad32f93f13ba467e3657",
+      "rrt.cuh": "ebf7d61304de1d1fd0b32d6ca7742ee8ec0075ee25a349314cf9c33fc7cb1992"
     },
+    "spheres": "assets/fetch/collision.yaml",
+    "urdf": "assets/fetch/fetch.urdf"
+  },
+  {
+    "live_budget": 64,
+    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -1505,27 +1583,27 @@
         "l_gripper_finger_joint",
         "bellows_joint"
       ],
-      "math": "F32Sfu",
-      "optimization": "Algebraic",
+      "live_budget": 64,
+      "math": "f32-sfu",
+      "optimization": "algebraic",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 0 })",
       "sphere_count": 69
-    }
-  },
-  {
+    },
     "name": "fetch-f32-sfu-algebraic-64",
-    "urdf": "assets/fetch/fetch.urdf",
-    "spheres": "assets/fetch/collision.yaml",
-    "math": "f32-sfu",
     "optimization": "algebraic",
-    "live_budget": 64,
     "sha256": {
-      "centers.cuh": "7793075297c0681ffe8c0774d263c458a22b49d9eebe401d27c0dd36fd0e9202",
-      "collision.cuh": "6adfbe73d83ea5e71e493932b160923601d3cb751ea30a976922107f6a580934",
-      "collision_function.cuh": "39628419f99ec84c7c2c92d051042e93c982a00aa8c6d3f3da0c2f6c357fb557",
-      "fk.cuh": "444739a61dda9b89e99d0d7f5118d040ae2ec95d92aad17152aa4fdfdf8b1b0b",
-      "rrt.cuh": "87b6cf26e8601bee25aaf449e86aed99e5c5927672ede5f46ed9bb6209440c97"
+      "centers.cuh": "845069d34be965ce278765e2747ba7f5ee2f607361d727551d0a6a499da5dfef",
+      "collision.cuh": "528e3ffcc0281e09facad5df81c07b48b13dd10a34c8a2669a147a66d62a0792",
+      "collision_function.cuh": "1a0116f6d26484539f54314a026f773baf111704691603ce7897a4d3f25596f6",
+      "fk.cuh": "8ffbd756f7f2b8822db289fab5bfff35b3f19f3be305b88872e00e6a9d72e215",
+      "rrt.cuh": "70f26f905144335d459d22417d48901ee4fb2c67e949cb4ea0827cf0a267b37e"
     },
+    "spheres": "assets/fetch/collision.yaml",
+    "urdf": "assets/fetch/fetch.urdf"
+  },
+  {
+    "live_budget": null,
+    "math": "f64",
     "model": {
       "control_joints": [
         {
@@ -1594,27 +1672,27 @@
         "l_gripper_finger_joint",
         "bellows_joint"
       ],
-      "math": "F32Sfu",
-      "optimization": "Algebraic",
-      "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 64 })",
+      "live_budget": null,
+      "math": "f64",
+      "optimization": "none",
+      "scalar": "double",
       "sphere_count": 69
-    }
-  },
-  {
+    },
     "name": "fetch-f64-none-None",
-    "urdf": "assets/fetch/fetch.urdf",
-    "spheres": "assets/fetch/collision.yaml",
-    "math": "f64",
     "optimization": "none",
-    "live_budget": null,
     "sha256": {
-      "centers.cuh": "3b8d6c157f7a875f5e1205a41a566b9777e039fcde7108f89d49ac738b7dd6a3",
-      "collision.cuh": "dbf332242c1e3ac00ebfdbe7f50f7b1d89464be830548a6d6baf432a52fca115",
-      "collision_function.cuh": "5d332c8d0dedac3d48207696fcfaee51667e31d4dd657e2bba68cf6fd824c53b",
-      "fk.cuh": "acdc22c6635f2ecb769826b640796046e6835b8408d8e03c0f192ba59248eb03",
-      "rrt.cuh": "3f6d3c886e5da2cfdf8955ee87f192af59ff7c59031a5916d9000d8681e9c5b4"
+      "centers.cuh": "3f25268b6da2dd58e577bb40825a5ad179f694d3f6c3f7ce831cf18e1d70d885",
+      "collision.cuh": "83c06708f21f0f953798005496c93d0bdec337127911d4a0b5aa066c67d9333f",
+      "collision_function.cuh": "dc26c101e3a02c39ad55ef253aee0faf19880bcd37aae159105e246cad0ced63",
+      "fk.cuh": "a85240c49850866b613807f710d0aec1e21d81025db742049550d3495b4272bb",
+      "rrt.cuh": "f51c6c239708be5e13c810add794ae1973530b7fa15b782890ea864c48dc4591"
     },
+    "spheres": "assets/fetch/collision.yaml",
+    "urdf": "assets/fetch/fetch.urdf"
+  },
+  {
+    "live_budget": 0,
+    "math": "f64",
     "model": {
       "control_joints": [
         {
@@ -1683,27 +1761,27 @@
         "l_gripper_finger_joint",
         "bellows_joint"
       ],
-      "math": "F64",
-      "optimization": "None",
+      "live_budget": 0,
+      "math": "f64",
+      "optimization": "none",
       "scalar": "double",
-      "scheduling": "DagOrder",
       "sphere_count": 69
-    }
-  },
-  {
+    },
     "name": "fetch-f64-none-0",
-    "urdf": "assets/fetch/fetch.urdf",
-    "spheres": "assets/fetch/collision.yaml",
-    "math": "f64",
     "optimization": "none",
-    "live_budget": 0,
     "sha256": {
-      "centers.cuh": "7d62410a1abd9bc52377fcffc04ad6bc61f6902ad16c7bb3687835cc69b6404e",
-      "collision.cuh": "0830227c1337c1e1eb2df7007830285bad2274dc19deb61684b1a2fab0c6bfba",
-      "collision_function.cuh": "71dc162057e740cbb7c7be86f0a548c5b1b5adc99b5356d79651b0c1688f4379",
-      "fk.cuh": "fac518aea47e80add7525735fe91d94e1083a4c04dbdaa9e496b38df12705f92",
-      "rrt.cuh": "d49ae167b6718d07f2c33669920e4daa6b329a70bc426bde1a33abdc40c999b7"
+      "centers.cuh": "ed4ed03c2af62d2fe445b20f45fa7d19d89888e8b262bf4bd8c8ed81da638f3f",
+      "collision.cuh": "b506011f9b8262380b2e5c2d2b50ff866c5c141d619ae05cf4526c10618cba56",
+      "collision_function.cuh": "ea9ff884120a38398d79a72324d38f199f64f1f221818ebf8ced11c40d96bdfb",
+      "fk.cuh": "04b9bb9e71a0889098ddc428384c51111c748b512ae8df37b1a65b2ef8a34d38",
+      "rrt.cuh": "1bcdf24bb2e2af20eed75b2759030cdb9fe9a19e92ccd1813c74ce614c4b4f65"
     },
+    "spheres": "assets/fetch/collision.yaml",
+    "urdf": "assets/fetch/fetch.urdf"
+  },
+  {
+    "live_budget": 64,
+    "math": "f64",
     "model": {
       "control_joints": [
         {
@@ -1772,27 +1850,27 @@
         "l_gripper_finger_joint",
         "bellows_joint"
       ],
-      "math": "F64",
-      "optimization": "None",
+      "live_budget": 64,
+      "math": "f64",
+      "optimization": "none",
       "scalar": "double",
-      "scheduling": "Live(Options { live_budget: 0 })",
       "sphere_count": 69
-    }
-  },
-  {
+    },
     "name": "fetch-f64-none-64",
-    "urdf": "assets/fetch/fetch.urdf",
-    "spheres": "assets/fetch/collision.yaml",
-    "math": "f64",
     "optimization": "none",
-    "live_budget": 64,
     "sha256": {
-      "centers.cuh": "1aaa1040ef8f0e02871ffc129b8ccff673f8bfd1271251772b0bb9aedd3770c7",
-      "collision.cuh": "2327f6c20d45ea96c8257e7ce11b7c068fe36da72094e42960ac461258543dfb",
-      "collision_function.cuh": "abffcbf930d6cae710b65ad971fe1411773728bdaf57936547f37a076992ff09",
-      "fk.cuh": "5ecf97145422404ae13a669c27e597ff9d819c37e5840ba776e5b17833b43a50",
-      "rrt.cuh": "7434fd98bf380a95dd944bbb528b21cd9ed3372e02e036ed59a4ab71f5f1a28f"
+      "centers.cuh": "7c282535168a0a200a9e2a646de0516c0e6b54f75da8b9c46c38194bf2006f4e",
+      "collision.cuh": "70a404942f9d46d68bd074015738e2cfbdca6f1faf805dbf38d4672c31c3f7de",
+      "collision_function.cuh": "78d75ee9c6ef9e93c7a6076053b1ccd089b43649d627164e3c148d2cc46b7b81",
+      "fk.cuh": "eb3a4f9e3079d8f57399ddaaa57ef650dc2e915719d0129cb8bd618c00f92dfd",
+      "rrt.cuh": "be5b1ca18f65df5031d5f502968d0ebb7be3b1af674bdd0aeefdad64c418ad78"
     },
+    "spheres": "assets/fetch/collision.yaml",
+    "urdf": "assets/fetch/fetch.urdf"
+  },
+  {
+    "live_budget": null,
+    "math": "f64",
     "model": {
       "control_joints": [
         {
@@ -1861,27 +1939,27 @@
         "l_gripper_finger_joint",
         "bellows_joint"
       ],
-      "math": "F64",
-      "optimization": "None",
+      "live_budget": null,
+      "math": "f64",
+      "optimization": "basic",
       "scalar": "double",
-      "scheduling": "Live(Options { live_budget: 64 })",
       "sphere_count": 69
-    }
-  },
-  {
+    },
     "name": "fetch-f64-basic-None",
-    "urdf": "assets/fetch/fetch.urdf",
-    "spheres": "assets/fetch/collision.yaml",
-    "math": "f64",
     "optimization": "basic",
-    "live_budget": null,
     "sha256": {
-      "centers.cuh": "96a5f23c638981869e22f0a54b38993e073ca3aaa89d9e1dcdd5a2745eb38396",
-      "collision.cuh": "856ca04e22c1c1c0439e1bce1ba48c6a990f7c140b77a6908ff286d7e58a721a",
-      "collision_function.cuh": "9c98b9d2d22aed78d15c31851a67e0447bc8c067bf9d630f0cac8b76ebd7c23b",
-      "fk.cuh": "ac12a5cc8c9d7c08890272fd84cd9ad1d5e3e67d4b5f15eb34bce79c13998b6a",
-      "rrt.cuh": "7d502f5accf7f9d68ea365c89d4770c442eb267c91aaecd1dad761d0a3b68f44"
+      "centers.cuh": "5e2a306b2770187a83bd0e4daaa3f9e30fcff29a7c66124fbd5f781735bd795d",
+      "collision.cuh": "be7487a5ada6d20b981657f7e579483190b9bf8a3464c26c57098cbd1db6d6c4",
+      "collision_function.cuh": "47228172d61b121120c71d11bb3f6a6357d94b690b614f59ff22a84047e0592f",
+      "fk.cuh": "ec7997632c557fd8cb9b79befe7359bb10cb76979063d0e3d627de9469e1c115",
+      "rrt.cuh": "67d920e7e4e05ddfe40975366ac3e8e5239d0fdb24d68cefd540aa47ce13629f"
     },
+    "spheres": "assets/fetch/collision.yaml",
+    "urdf": "assets/fetch/fetch.urdf"
+  },
+  {
+    "live_budget": 0,
+    "math": "f64",
     "model": {
       "control_joints": [
         {
@@ -1950,27 +2028,27 @@
         "l_gripper_finger_joint",
         "bellows_joint"
       ],
-      "math": "F64",
-      "optimization": "Basic",
+      "live_budget": 0,
+      "math": "f64",
+      "optimization": "basic",
       "scalar": "double",
-      "scheduling": "DagOrder",
       "sphere_count": 69
-    }
-  },
-  {
+    },
     "name": "fetch-f64-basic-0",
-    "urdf": "assets/fetch/fetch.urdf",
-    "spheres": "assets/fetch/collision.yaml",
-    "math": "f64",
     "optimization": "basic",
-    "live_budget": 0,
     "sha256": {
-      "centers.cuh": "f00ab5e0a03faad57b614b668bb4dc947858a18bda4597d74464d1bdac4eca7c",
-      "collision.cuh": "d24b71fc552b7d7c8d40d02f7e063af89369d65780de4614ddcddc109144bbb4",
-      "collision_function.cuh": "b3c1ef0b482b9cd9d7350c922319a190575ab55cd5ae0d59ec67a1a95ac8fdb9",
-      "fk.cuh": "b7ba10cecc730cae0f3b432356b6d7859d90b271499f674bb88e3cf714278c5e",
-      "rrt.cuh": "a0bf5d83a9ffb7ce9a092d1d8810d853ac75944524fed6a9357d6f96db201b21"
+      "centers.cuh": "a508d1e1a150e9ebd69e943a0ef3bc0b264331ea7620f5531cc5d6eba1582f4b",
+      "collision.cuh": "67d957d882dd11cd6cfc9aa49bb94339f21dc390cbad6d26b528d8f81520b340",
+      "collision_function.cuh": "6bc9b4cdf7993ef82c99c045d26a19c61224f425723cc15257c683e47bd35687",
+      "fk.cuh": "8248c67cb17f585c4c29ed577eb48b7949a22ed240f978a85f7ad06f456a66c5",
+      "rrt.cuh": "6753aa9abab41b4cd9f436ce26cc484403dee67eaea0b0749bd7dbdf1565d579"
     },
+    "spheres": "assets/fetch/collision.yaml",
+    "urdf": "assets/fetch/fetch.urdf"
+  },
+  {
+    "live_budget": 64,
+    "math": "f64",
     "model": {
       "control_joints": [
         {
@@ -2039,27 +2117,27 @@
         "l_gripper_finger_joint",
         "bellows_joint"
       ],
-      "math": "F64",
-      "optimization": "Basic",
+      "live_budget": 64,
+      "math": "f64",
+      "optimization": "basic",
       "scalar": "double",
-      "scheduling": "Live(Options { live_budget: 0 })",
       "sphere_count": 69
-    }
-  },
-  {
+    },
     "name": "fetch-f64-basic-64",
-    "urdf": "assets/fetch/fetch.urdf",
-    "spheres": "assets/fetch/collision.yaml",
-    "math": "f64",
     "optimization": "basic",
-    "live_budget": 64,
     "sha256": {
-      "centers.cuh": "bd1b452b0af5a96ba23b70cd73ab8fa74862f8477caf6c757081945bffa5f2fa",
-      "collision.cuh": "81b59ec43cdf9a8714ac6e6f8875923b37f25cf2fc5f3fb9ed6fa732e88a1e2b",
-      "collision_function.cuh": "120128b9d80c7089b030410b855a3cdd8b59e50fa28c55bd2c4f8c75606c8cb7",
-      "fk.cuh": "3f5f3a7bdcd55f821d3db7eb4aaa88a53056137fdbe5f9404a18327879a5a128",
-      "rrt.cuh": "37d731d62b9e4b02b7cd74a246f1df32a9dd0fee49a213d2f49f535b6ddc892e"
+      "centers.cuh": "a05b0436305648d8fac27d995883f820883d3d32ee841acd74fc54b56886f628",
+      "collision.cuh": "ad3de38c2f2d49225d56f3301f4457ae51a3c8ca93feef02f2a7a813268a8852",
+      "collision_function.cuh": "cedc80adfe455808d16c0928b037b0ac05175f608d126811cbdfc88e44225a95",
+      "fk.cuh": "f597ea303dce5d7a977f0f4ad779683ca32b45610575969fc6fcd35aa75ed405",
+      "rrt.cuh": "6cd00917a3b896e615a6f9f5fe76903e9de399550cf1a025b480eb2b0237390a"
     },
+    "spheres": "assets/fetch/collision.yaml",
+    "urdf": "assets/fetch/fetch.urdf"
+  },
+  {
+    "live_budget": null,
+    "math": "f64",
     "model": {
       "control_joints": [
         {
@@ -2128,27 +2206,27 @@
         "l_gripper_finger_joint",
         "bellows_joint"
       ],
-      "math": "F64",
-      "optimization": "Basic",
+      "live_budget": null,
+      "math": "f64",
+      "optimization": "algebraic",
       "scalar": "double",
-      "scheduling": "Live(Options { live_budget: 64 })",
       "sphere_count": 69
-    }
-  },
-  {
+    },
     "name": "fetch-f64-algebraic-None",
-    "urdf": "assets/fetch/fetch.urdf",
-    "spheres": "assets/fetch/collision.yaml",
-    "math": "f64",
     "optimization": "algebraic",
-    "live_budget": null,
     "sha256": {
-      "centers.cuh": "7955241d00b6bfd9b6f2c0a82ca99a0cec6e8c5119e75a2a0062e18dcb02070b",
-      "collision.cuh": "371e181cbfd16e1e1054195ac81197914b35b8a5902a9f3c1c76707802d27d01",
-      "collision_function.cuh": "dc915d5379ad60a18b45de552a86b7d75d6988ab348181f824d67da9a20d5a27",
-      "fk.cuh": "dbe95594e3ba360975b24fcdd9e8d7eb1a8107612d059bb143f2ce336029feae",
-      "rrt.cuh": "9d73d78b92f1958df028fb23ce85685f19d694190ac1f852c5692546814f3f5c"
+      "centers.cuh": "c7d7c05b0f99a906d861945b5ecc5d37a40491eb7bb75f6b078ac77041b30862",
+      "collision.cuh": "f2b30416b59fad85999673939debe1c2c2a4e37eee3737e48c34b2f11ffdcb5a",
+      "collision_function.cuh": "cf7e3119249dab555299643c24a82296fc08a1a7ed9eb707e6f2eaee00f891c7",
+      "fk.cuh": "ab04f997eb0f1eb5ea2d9da191eda3e84dbe4efe271933d00213fb1331b613e1",
+      "rrt.cuh": "aa77e30b48a3be59e05827d3dbffadd1cb721dd99998bdf56c53bf51b638ea42"
     },
+    "spheres": "assets/fetch/collision.yaml",
+    "urdf": "assets/fetch/fetch.urdf"
+  },
+  {
+    "live_budget": 0,
+    "math": "f64",
     "model": {
       "control_joints": [
         {
@@ -2217,27 +2295,27 @@
         "l_gripper_finger_joint",
         "bellows_joint"
       ],
-      "math": "F64",
-      "optimization": "Algebraic",
+      "live_budget": 0,
+      "math": "f64",
+      "optimization": "algebraic",
       "scalar": "double",
-      "scheduling": "DagOrder",
       "sphere_count": 69
-    }
-  },
-  {
+    },
     "name": "fetch-f64-algebraic-0",
-    "urdf": "assets/fetch/fetch.urdf",
-    "spheres": "assets/fetch/collision.yaml",
-    "math": "f64",
     "optimization": "algebraic",
-    "live_budget": 0,
     "sha256": {
-      "centers.cuh": "6aa1f1df376490297ecbf77235a526fbdb4b105ad260b1308d7c2ba4d0a53821",
-      "collision.cuh": "d3fe6bd8f00c8a51e4085d6f43dd07c2d26003f469ecd1ebb9eac79a1e015582",
-      "collision_function.cuh": "3b7382a8a9ca2a5d41027abd4870348f4d58b4b0e28acdfaba7650eb3e4c2360",
-      "fk.cuh": "1babf5da44a5d16a93113a3ceb4fc38c5029de596e7100f3827149329061a3a5",
-      "rrt.cuh": "93f88a559c84358e77d65817ba1cb71fe2838b6845eb4417994ab973514a9fef"
+      "centers.cuh": "6f4b79ce883e06674346cb79f83539b91e0cc23691e22413d3fc53433b357ddb",
+      "collision.cuh": "bb834112453843927df0d0d5f3083639b8c01165e9618e5ec27daf20834428ae",
+      "collision_function.cuh": "8707c51a0c427a5e671661a49f1be7fae0bd03d311a72c6223afc167b219705d",
+      "fk.cuh": "e85340ecd5053f84660ce7a105201ac8ebcec82b6cbb7e8955977f4d566b6877",
+      "rrt.cuh": "6d3b670234082e20a48c1e82e6dd6a9d434c9e53c0b80a079c6b806e0eadb558"
     },
+    "spheres": "assets/fetch/collision.yaml",
+    "urdf": "assets/fetch/fetch.urdf"
+  },
+  {
+    "live_budget": 64,
+    "math": "f64",
     "model": {
       "control_joints": [
         {
@@ -2306,116 +2384,69 @@
         "l_gripper_finger_joint",
         "bellows_joint"
       ],
-      "math": "F64",
-      "optimization": "Algebraic",
+      "live_budget": 64,
+      "math": "f64",
+      "optimization": "algebraic",
       "scalar": "double",
-      "scheduling": "Live(Options { live_budget: 0 })",
       "sphere_count": 69
-    }
-  },
-  {
+    },
     "name": "fetch-f64-algebraic-64",
-    "urdf": "assets/fetch/fetch.urdf",
+    "optimization": "algebraic",
+    "sha256": {
+      "centers.cuh": "b58fbc44b21335d435528db1b87b6e975fba1a0f282ec8aacfaf7705e3ef025a",
+      "collision.cuh": "9519369ba36676a6e145e803e1b42cd9ff30ed2177f9b5d76771676c2cee2778",
+      "collision_function.cuh": "ea700268d3e8b3f481f8fe1c764d58ef3eecd283f3a59a647d659fda7ef04038",
+      "fk.cuh": "5bf43a3d4d5029fb16150b0b91d233e4b1a9c20627e2924f94bd8eb228896417",
+      "rrt.cuh": "6a8ca4bc5be7164572c61d3a4470f7126f1b61d2968d68af21dc4009e0415a13"
+    },
     "spheres": "assets/fetch/collision.yaml",
-    "math": "f64",
-    "optimization": "algebraic",
-    "live_budget": 64,
-    "sha256": {
-      "centers.cuh": "21decfcdb9ffa5628100e8b813ad0a26621eee1fb07aaea59a4e38d1bc8cfe8f",
-      "collision.cuh": "c0a58691db3fdaaf4b6f721c0d6edfc86a434f82597e6fa8470756b24ae2d9c7",
-      "collision_function.cuh": "5c2c9b0d7eb0304d90b4a68f7118ecb579d345fdd7772efe303bccb34e5f60a8",
-      "fk.cuh": "9543c16df8d9d4882fbf288257da635b7d9ff2281760fe4bb008e34dadd01b5d",
-      "rrt.cuh": "9aaf3a4c21ec23ee8cc81ae783d34673539bbdcf210f6762802f45c81e0cafca"
-    },
+    "urdf": "assets/fetch/fetch.urdf"
+  },
+  {
+    "live_budget": null,
+    "math": "f32",
     "model": {
       "control_joints": [
         {
-          "index": 2,
-          "lower": 0.0,
-          "name": "torso_lift_joint",
-          "upper": 0.38615
+          "index": 0,
+          "lower": -3.2,
+          "name": "yaw",
+          "upper": 3.2
         },
         {
-          "index": 5,
-          "lower": -1.6056,
-          "name": "shoulder_pan_joint",
-          "upper": 1.6056
-        },
-        {
-          "index": 6,
-          "lower": -1.221,
-          "name": "shoulder_lift_joint",
-          "upper": 1.518
-        },
-        {
-          "index": 7,
-          "lower": -6.283185307179586,
-          "name": "upperarm_roll_joint",
-          "upper": 6.283185307179586
-        },
-        {
-          "index": 8,
-          "lower": -2.251,
-          "name": "elbow_flex_joint",
-          "upper": 2.251
-        },
-        {
-          "index": 9,
-          "lower": -6.283185307179586,
-          "name": "forearm_roll_joint",
-          "upper": 6.283185307179586
-        },
-        {
-          "index": 10,
-          "lower": -2.16,
-          "name": "wrist_flex_joint",
-          "upper": 2.16
-        },
-        {
-          "index": 11,
-          "lower": -6.283185307179586,
-          "name": "wrist_roll_joint",
-          "upper": 6.283185307179586
+          "index": 3,
+          "lower": -1.0,
+          "name": "slide",
+          "upper": 1.0
         }
       ],
       "input_joint_names": [
-        "r_wheel_joint",
-        "l_wheel_joint",
-        "torso_lift_joint",
-        "head_pan_joint",
-        "head_tilt_joint",
-        "shoulder_pan_joint",
-        "shoulder_lift_joint",
-        "upperarm_roll_joint",
-        "elbow_flex_joint",
-        "forearm_roll_joint",
-        "wrist_flex_joint",
-        "wrist_roll_joint",
-        "r_gripper_finger_joint",
-        "l_gripper_finger_joint",
-        "bellows_joint"
+        "yaw",
+        "pitch",
+        "roll",
+        "slide"
       ],
-      "math": "F64",
-      "optimization": "Algebraic",
-      "scalar": "double",
-      "scheduling": "Live(Options { live_budget: 64 })",
-      "sphere_count": 69
-    }
-  },
-  {
+      "live_budget": null,
+      "math": "f32",
+      "optimization": "none",
+      "scalar": "float",
+      "sphere_count": 23
+    },
     "name": "chain-f32-none-None",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/chain.yaml",
-    "math": "f32",
     "optimization": "none",
-    "live_budget": null,
     "sha256": {
-      "centers.cuh": "71066b5c0524e1561d0431175a851ceb306303efc0e1b2761498ccb8c789a617",
-      "collision.cuh": "ccbb685ea29cf0d865d273af96f291da3b2d34bd500305a5881aef47ac0859cb",
-      "collision_function.cuh": "9b145e8f6269d70c3fc91dfaba5d0d7f88da858e9bca9ad4d722294d1f73e609",
-      "fk.cuh": "3f27d0a1254f9934f7f31b10439c2402628ebc9f55c97634acd939af2a87f2f1",
-      "rrt.cuh": "a2050d963e130b5c03a1ff378ece70acd2453e8d250effa71d49999481b03b62"
+      "centers.cuh": "20725b5878341eb9eba95995b4cec8a46a9376fcd64a1f8c745d4231b445e7ef",
+      "collision.cuh": "53363935d7d71c4e7e7cb07ea273779c45c6dc8f628f720c2c0247228e478420",
+      "collision_function.cuh": "951202f70bd49ef958b883bf5acdcb114ce8fdd84543e89ba5716106928e3c08",
+      "fk.cuh": "f848c3c86b1729bb7d72c53d11ddf4eb5c938f4e5446c6886c69a70cd6929a43",
+      "rrt.cuh": "4b31146891dcdf4d03db0beab766f76cc0cf79f4c3529a02882dba990aeb234a"
     },
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": 0,
+    "math": "f32",
     "model": {
       "control_joints": [
         {
@@ -2437,27 +2468,27 @@
         "roll",
         "slide"
       ],
-      "math": "F32",
-      "optimization": "None",
+      "live_budget": 0,
+      "math": "f32",
+      "optimization": "none",
       "scalar": "float",
-      "scheduling": "DagOrder",
       "sphere_count": 23
-    }
-  },
-  {
+    },
     "name": "chain-f32-none-0",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/chain.yaml",
-    "math": "f32",
     "optimization": "none",
-    "live_budget": 0,
     "sha256": {
-      "centers.cuh": "8ed43ca0f39a3e970f7649ef2acd4e4e782b0a7334dc69b94872da1bbc9aeaaa",
-      "collision.cuh": "4070147128faeade255171fe5c6d7fcd7e27827cce2d45ac13e0af79e6025ac5",
-      "collision_function.cuh": "914b5fc838c8ab36bc5f051174484ab1010c0eab5892f26a71aa5d553d51acf7",
-      "fk.cuh": "c25f3b5eba2e2d443572a0d2fc8698b13d39980d3c7513d8df2c541fb00ff217",
-      "rrt.cuh": "8b32d5f6a85973ee13016633b6e7607d77a7b897406883997e85bfd664e7deca"
+      "centers.cuh": "094ac97573fe10bd3deabd997352fc27a13bef2cdaf2b76f73451f8bc5474463",
+      "collision.cuh": "920ebcddebadab4214fcb910107725c4584762253c278391b1d67c64fb05464d",
+      "collision_function.cuh": "87acd511da9654f970e0a6f338443af75da7cab11e0debdd88c530ca4ae89082",
+      "fk.cuh": "cb0f01593cec0f02cc622fe09443753346f54b9111e70aa35d54f8e7c7d5e523",
+      "rrt.cuh": "ad3ffd9e2e2cee52cca208c32f0ca6e44ee897de6890d625285ca35a62cd6f08"
     },
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": 64,
+    "math": "f32",
     "model": {
       "control_joints": [
         {
@@ -2479,27 +2510,27 @@
         "roll",
         "slide"
       ],
-      "math": "F32",
-      "optimization": "None",
+      "live_budget": 64,
+      "math": "f32",
+      "optimization": "none",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 0 })",
       "sphere_count": 23
-    }
-  },
-  {
+    },
     "name": "chain-f32-none-64",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/chain.yaml",
-    "math": "f32",
     "optimization": "none",
-    "live_budget": 64,
     "sha256": {
-      "centers.cuh": "a757ee60abdb206d398086269155945e3b2033ef25cee466436045230ebe93a5",
-      "collision.cuh": "3d52a752652d0eb7234ae564273f44bf8521228551ffaae01e83dbb64a1e8d7d",
-      "collision_function.cuh": "cac033c59d4c78e1b4c869e4f379de4593beba3066ec73acc62f633557cffc98",
-      "fk.cuh": "23ed6c545589a4c1ba4a9c4d39a0f65f4589522ac32954cd10c01d4a1e45dd02",
-      "rrt.cuh": "2bfac41403476af7925e7fd31fb794080b82d947510c99af08b6e0011aca43dd"
+      "centers.cuh": "e20535d7679f2cc86d6abd48c2f2c6aa2d08304354f9801f44166c1b0d2b18d9",
+      "collision.cuh": "be1417d52e6f4fd37042a46b74184827b1e64b4a1681ce2bd946cd9dffa68e82",
+      "collision_function.cuh": "6f036004140fa9af33147a5e89f0935029193f6b16514db915de0c44187ab334",
+      "fk.cuh": "5c03c52aa7820901254433af45b0a0bc97fd7741d6d8cb3ed640f7e93b234294",
+      "rrt.cuh": "4e4c9b0d3ac25dd1d1637798f7657cd3ee5b92438736810d0b12ccb83b7b1a71"
     },
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": null,
+    "math": "f32",
     "model": {
       "control_joints": [
         {
@@ -2521,27 +2552,27 @@
         "roll",
         "slide"
       ],
-      "math": "F32",
-      "optimization": "None",
+      "live_budget": null,
+      "math": "f32",
+      "optimization": "basic",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 64 })",
       "sphere_count": 23
-    }
-  },
-  {
+    },
     "name": "chain-f32-basic-None",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/chain.yaml",
-    "math": "f32",
     "optimization": "basic",
-    "live_budget": null,
     "sha256": {
-      "centers.cuh": "d4b7d217a432407d6fd210730701c39f34191b4439eb5e0569fe6ecea3ad68c2",
-      "collision.cuh": "9a59db3ab1cc3ae2a38147b902f6118a4fc92b7dfb76f83cbcbe9f7676d09148",
-      "collision_function.cuh": "0ca0f4f3371e24e5f84fca3fef752011723f0925cb59fe52e58a6ce21038ddd4",
-      "fk.cuh": "99d4441d12f4f52c4b237dc305d147c6fafd0e98138ecf897d6decb630b8fa2f",
-      "rrt.cuh": "affc16a23f8844ddba8c0c8a01281afc15ed93e626482d8514e35670831a0265"
+      "centers.cuh": "5d172cbd99366d986f630eaa70e04630e64081620814f879e5ec688b304ad2ea",
+      "collision.cuh": "b3cca16bb17b7e9ce5db99f1aaf6bd67ca53b308e8a429af21d4574077b9444a",
+      "collision_function.cuh": "d2e75c52e7b6a676421a6883700282794325089e391235d96ac10cc857e9e13f",
+      "fk.cuh": "91e634a95a344227ae9a351175e3c12bb2c81c3db06dc2b94e79566c542d4bfb",
+      "rrt.cuh": "1766b2b14a12dff26dc38d261d066c3c31723153bac1055a8ca61956748b95a2"
     },
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": 0,
+    "math": "f32",
     "model": {
       "control_joints": [
         {
@@ -2563,27 +2594,27 @@
         "roll",
         "slide"
       ],
-      "math": "F32",
-      "optimization": "Basic",
+      "live_budget": 0,
+      "math": "f32",
+      "optimization": "basic",
       "scalar": "float",
-      "scheduling": "DagOrder",
       "sphere_count": 23
-    }
-  },
-  {
+    },
     "name": "chain-f32-basic-0",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/chain.yaml",
-    "math": "f32",
     "optimization": "basic",
-    "live_budget": 0,
     "sha256": {
-      "centers.cuh": "0979e2af88abd93c2aa3869e90e7387915356368a73916f9b20f836633819628",
-      "collision.cuh": "08817c53b2e4c458e86d16991fd6a793a4bce01039d816c8caa781dccdd981e3",
-      "collision_function.cuh": "b0e02a68c1c3ab1b423c0dab6e1d7a78b067ed526016b5bb9e2b089d10d56184",
-      "fk.cuh": "ec059a3b701a53e08b4c684fbb548c643f3fae6c8a2d7a4531264ca96574a5c4",
-      "rrt.cuh": "93d2ee0a2deff1047c5d06cfa379def7ad073781715366a8abcbea407a42baac"
+      "centers.cuh": "66f4b33bfe8e29345e4be72e9d524e3c65686f697ee6257bdffddbdd8a435338",
+      "collision.cuh": "f7274ad09fc88f4673aca03afbded86d8a3465ef458be99e9edbaa4e565f05cf",
+      "collision_function.cuh": "1a388705cea334e819dab7233fe8ee3cade0b92c7971973a2bbdf203493de436",
+      "fk.cuh": "b291580623313ac286e3d540909c75eeb787141706ed4a566e5dbaae89cdd7ab",
+      "rrt.cuh": "16c40cf7544012ca5269715632f96777177e317e362a6098bc38305e0f8df816"
     },
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": 64,
+    "math": "f32",
     "model": {
       "control_joints": [
         {
@@ -2605,27 +2636,27 @@
         "roll",
         "slide"
       ],
-      "math": "F32",
-      "optimization": "Basic",
+      "live_budget": 64,
+      "math": "f32",
+      "optimization": "basic",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 0 })",
       "sphere_count": 23
-    }
-  },
-  {
+    },
     "name": "chain-f32-basic-64",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/chain.yaml",
-    "math": "f32",
     "optimization": "basic",
-    "live_budget": 64,
     "sha256": {
-      "centers.cuh": "fc06216146ed3b09120c2e9f5e609c39e124a0266fd6aa527173f01bd13ed701",
-      "collision.cuh": "87f8a1de21328c3b95877566616d7fefa6055945a0b5230edf91fb59d5a882f5",
-      "collision_function.cuh": "cab0645986765274ca000140967f689fd25c7bfa5251e7824e6e61377d2cdad5",
-      "fk.cuh": "7eeb5ac5e37fbcd1dbd60a3f24c4e394ed6934ebc9dd4774b25345a0d1e88a26",
-      "rrt.cuh": "1df9f2a9d19213f708bf51e98a9013846c7342a4d83bcc8af3cb104610175777"
+      "centers.cuh": "cbc9cd247e2fb4097d034e84c71feb9e7846987b257ea791aa67b97ae76b5108",
+      "collision.cuh": "d15017e5b6d7342e46a98881890ba067f4dc769ca054b49ca090aff80880bc5e",
+      "collision_function.cuh": "6a9f69486c08d1f0bf5b39d6cfb1ab7f175287a7cf1f33cfd81a6b097f507590",
+      "fk.cuh": "8111061773f954ef8cb685eb14c4b4737c78c21a34235e9b560c129cbd5d6bc3",
+      "rrt.cuh": "1868010a89c8ed1ba5690837034b54dd626f4bf793e1fcf6e968048accdd4286"
     },
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": null,
+    "math": "f32",
     "model": {
       "control_joints": [
         {
@@ -2647,27 +2678,27 @@
         "roll",
         "slide"
       ],
-      "math": "F32",
-      "optimization": "Basic",
+      "live_budget": null,
+      "math": "f32",
+      "optimization": "algebraic",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 64 })",
       "sphere_count": 23
-    }
-  },
-  {
+    },
     "name": "chain-f32-algebraic-None",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/chain.yaml",
-    "math": "f32",
     "optimization": "algebraic",
-    "live_budget": null,
     "sha256": {
-      "centers.cuh": "37952844f551fedc4b563c54d6eaa2499bb361cc48f43678730c7d899d68f346",
-      "collision.cuh": "b8797ed504b42bb21281456c6036b1c30af2e0e697d1bfe16a70b2b8b305b9c2",
-      "collision_function.cuh": "c313f882998d301bd3d68b17d481eca0b3a10b1a06c6849a5fb027c43918628d",
-      "fk.cuh": "5d5f34f78a532f4b367fc25c100ea57907b09c16723411fcc5369dc4f95d7baa",
-      "rrt.cuh": "389bb0eee64f5af7664ea50ba08ae15eda8c45618a468a4a7f9934db0b7b398b"
+      "centers.cuh": "b380650365dbca7489e79df53262bb7a670d2437530face2e65a2ccf6fd2bcaf",
+      "collision.cuh": "3fa5a6ed27fbb6c1ed30a7d60bd352efc5d9a9b30d0bcfe7855b35f7ae0c2248",
+      "collision_function.cuh": "a41cafe909c57a813ebd8ff2eedd8e1d2671e41f3d3ddce5544a047365064b71",
+      "fk.cuh": "cf9c8e9fcd1ecee2b8337cc85b9c130fbaa00eb7374caf3793aaa0a81b817e34",
+      "rrt.cuh": "5c1844878e2bd0d8b03e38d313b1f5538d6d60ccd06f49ae8010e63d9622a46d"
     },
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": 0,
+    "math": "f32",
     "model": {
       "control_joints": [
         {
@@ -2689,27 +2720,27 @@
         "roll",
         "slide"
       ],
-      "math": "F32",
-      "optimization": "Algebraic",
+      "live_budget": 0,
+      "math": "f32",
+      "optimization": "algebraic",
       "scalar": "float",
-      "scheduling": "DagOrder",
       "sphere_count": 23
-    }
-  },
-  {
+    },
     "name": "chain-f32-algebraic-0",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/chain.yaml",
-    "math": "f32",
     "optimization": "algebraic",
-    "live_budget": 0,
     "sha256": {
-      "centers.cuh": "60f1121aa9658e1f8394e18d55bfa4339b36573630820497738a6a0e8b3b41bb",
-      "collision.cuh": "fbd13c9f417b270d6e54c57be82ff0fd5e017c1b6c24aafef8929de7e985d465",
-      "collision_function.cuh": "5c8aab95e02463cbf26299f8f5a4f19d6f358a4dfc9df4490643620789e794bd",
-      "fk.cuh": "37f6fbffbac66fd4d7071f90e4ba22466eb51110369eb84fa44d528f7476c392",
-      "rrt.cuh": "c79c6f4dce86c4c2e8db130c20d02fbe3a24d8a8ff82b54fbfd9dc51f070d416"
+      "centers.cuh": "2cd860fe22eab3cedcd0da996666533dcb53e8c968b480741c5d1485ba8ed8d1",
+      "collision.cuh": "49d73dec0991ae92a99956b5e6b76cd2666d47a7ae67f400931405dee1b19465",
+      "collision_function.cuh": "8d8371f97fc98f00a75a5d1f13db265fda0f2cb55a13f27a9745a84586b6586b",
+      "fk.cuh": "4641b738b705f0a727552d11cc9645d797e2cdc9488853a382cbdba84ec57138",
+      "rrt.cuh": "64c2be7f1bd07ddd71cd20d30bb52e53ac923224030ba32dfc760758f74902ee"
     },
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": 64,
+    "math": "f32",
     "model": {
       "control_joints": [
         {
@@ -2731,27 +2762,27 @@
         "roll",
         "slide"
       ],
-      "math": "F32",
-      "optimization": "Algebraic",
+      "live_budget": 64,
+      "math": "f32",
+      "optimization": "algebraic",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 0 })",
       "sphere_count": 23
-    }
-  },
-  {
+    },
     "name": "chain-f32-algebraic-64",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/chain.yaml",
-    "math": "f32",
     "optimization": "algebraic",
-    "live_budget": 64,
     "sha256": {
-      "centers.cuh": "e3e2571ee5b5c1bb926a58c0ab282421334df7960b9a8f6a22a8a179723bef85",
-      "collision.cuh": "87055e4178bf862e90a66222b22dac901cc26df435078820b44e440368035cfb",
-      "collision_function.cuh": "a41994e4970950de9f2a1ab4c738146caa5ffddd6450f7beeb2c5a3e48ece015",
-      "fk.cuh": "95e10282c34315ab677bf62024619305c0486741952811be4af20590c2460c92",
-      "rrt.cuh": "2886a177f78faae2d18d7558481cb6ec463bc9ddb9bb5791716a912a1a686bdf"
+      "centers.cuh": "0feeb93d79d836a8b55178a1b1ff5cc139aece955c9af047a4a0f214bb398542",
+      "collision.cuh": "feb3ddcb60764c0bcd840ca9584e66b89b1aab5f2b81acd2f24f904162cd7bc6",
+      "collision_function.cuh": "711c54b20add822d4864db520659c202e919f21bedaa2aefb4a025215ddb8301",
+      "fk.cuh": "12dab6f62f00a9a5236d3dfff2ff8cb06e657a3e6443a7d1b3d277827db60458",
+      "rrt.cuh": "52eb315f9f8c7eb348c50fb3118ab954e0e6921540ec2e3b93927884de6d1489"
     },
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": null,
+    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -2773,27 +2804,27 @@
         "roll",
         "slide"
       ],
-      "math": "F32",
-      "optimization": "Algebraic",
+      "live_budget": null,
+      "math": "f32-sfu",
+      "optimization": "none",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 64 })",
       "sphere_count": 23
-    }
-  },
-  {
+    },
     "name": "chain-f32-sfu-none-None",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/chain.yaml",
-    "math": "f32-sfu",
     "optimization": "none",
-    "live_budget": null,
     "sha256": {
-      "centers.cuh": "54981089eb891623098d0690ca7df474a6f356cbc07a069318ec3be6bbd2a378",
-      "collision.cuh": "cb2b54a9ac1a1bce9c8dbec13ac5ff5b86e2024f44219755ad56d2806942351d",
-      "collision_function.cuh": "af4b9eda0e52071b33084c0bb41490384a20b2a89847f7923a6e89f03a710aae",
-      "fk.cuh": "37964f60f6675ab2eddbc2729e8e5af6c9bddd967516740a5add58ebdd68af69",
-      "rrt.cuh": "00136bab88766226fe7cd8dbc4edc099a2ea2e0e5b66f68eb1a043cff3fd0333"
+      "centers.cuh": "7fb14a4099bb7f9363f5fac9313140dfc57167d47a7383076c88d95b89372743",
+      "collision.cuh": "25e9834ef41eb15f4d3f86b2eede2f62b1442981beabfee2e6c2bd5e329cd9dd",
+      "collision_function.cuh": "d9cfe5ad4d9504301680adf5a23fce6b3773f6c958107b502cdbe604c06b37fe",
+      "fk.cuh": "48e6c6fa77e1dc9de85ca5c8d220ef0f33384f20bf7fd2e030e1c0b7c52a9f7a",
+      "rrt.cuh": "67600ddfd57964e923dbbd670146256b99f19ce376ad8ee6410264d35734188c"
     },
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": 0,
+    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -2815,27 +2846,27 @@
         "roll",
         "slide"
       ],
-      "math": "F32Sfu",
-      "optimization": "None",
+      "live_budget": 0,
+      "math": "f32-sfu",
+      "optimization": "none",
       "scalar": "float",
-      "scheduling": "DagOrder",
       "sphere_count": 23
-    }
-  },
-  {
+    },
     "name": "chain-f32-sfu-none-0",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/chain.yaml",
-    "math": "f32-sfu",
     "optimization": "none",
-    "live_budget": 0,
     "sha256": {
-      "centers.cuh": "4543f591a064475c078539aaac76d663316d5354c21c193155a5247d36e5aa12",
-      "collision.cuh": "6ba94c3d57d38c62ee5e1608dbeb4c92edd694ac2d48c63d0da7bca8588bbf7e",
-      "collision_function.cuh": "c0af538aa1fb51daccab313ed214f851a11d8fab95c3774ba5ac0935fd654734",
-      "fk.cuh": "1501eb32d3ec47e8ab51a1d13eb33e464030ac638d1d2b8ecd5346817aca30b1",
-      "rrt.cuh": "56dfff82e97f4cdbb030a3f5738ba085f99d2bb15b9bae21c377b47168d4ec9b"
+      "centers.cuh": "934f4f21b935346050abd347d20dfc0e275de2e97be12dd38486ec38fbcbde0a",
+      "collision.cuh": "0236fc60813374086c7d79b07758ec57937b8bd3075013b1725bfc55171caaa0",
+      "collision_function.cuh": "c05cdcb80ad8250bb9f17537570a77dcf1849593f016c5eb7d4cc9416fb6dcc6",
+      "fk.cuh": "7983a9fb04d901f0cc0eec08153dd9d1c889f2cdaae6bee9418a45522732b795",
+      "rrt.cuh": "a1574ee5a4d85de7fa192c79de020797351e0ea5fe3aca44d59c19e53ba18628"
     },
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": 64,
+    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -2857,27 +2888,27 @@
         "roll",
         "slide"
       ],
-      "math": "F32Sfu",
-      "optimization": "None",
+      "live_budget": 64,
+      "math": "f32-sfu",
+      "optimization": "none",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 0 })",
       "sphere_count": 23
-    }
-  },
-  {
+    },
     "name": "chain-f32-sfu-none-64",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/chain.yaml",
-    "math": "f32-sfu",
     "optimization": "none",
-    "live_budget": 64,
     "sha256": {
-      "centers.cuh": "1103edfaf62253efee7d2c070153fc0d34ba5485945e8adcc37989fbd1a52638",
-      "collision.cuh": "d5ce8d413f2c499b7db10de5a738191f2ef879561bdc45d5c51d79ac35f7f623",
-      "collision_function.cuh": "69f035f0a7fceed12abb77467de426b58d24f2b180f3e42cc516afefeeec6af4",
-      "fk.cuh": "23365ca7060be1e46c31473dd3547e1191e075668d2b8aa3af7d658a1dd6a347",
-      "rrt.cuh": "5c96125a67dacfe7600d9fb39897cc011167913ef7eb2d1e3780655c8d4760dd"
+      "centers.cuh": "d4c6356c3fddf7567f50b0b173bf3a77ad690c281efabeb7cf1c28fe263e09a0",
+      "collision.cuh": "185dab78d47ab0e847a05087b84f6bf4cd3fd5da9c02338036133faa221d5e00",
+      "collision_function.cuh": "682cde43ac6c0a24df7285fba0e9155fada9a8c7e644d16118a1d45e2d6083e3",
+      "fk.cuh": "14abb622a846098b28b0890a74e54b28684157bb2c970c0368d130fb718b588e",
+      "rrt.cuh": "a65316ede3a462a132df94533a72ac4bd1e8fdedc65bb19b9357191b862db700"
     },
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": null,
+    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -2899,27 +2930,27 @@
         "roll",
         "slide"
       ],
-      "math": "F32Sfu",
-      "optimization": "None",
+      "live_budget": null,
+      "math": "f32-sfu",
+      "optimization": "basic",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 64 })",
       "sphere_count": 23
-    }
-  },
-  {
+    },
     "name": "chain-f32-sfu-basic-None",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/chain.yaml",
-    "math": "f32-sfu",
     "optimization": "basic",
-    "live_budget": null,
     "sha256": {
-      "centers.cuh": "72ff400a4d787a627374fb56cea543f5b70e925a1a676442bc79f861be2b9c89",
-      "collision.cuh": "e16423b8ec311a050580dbd51ec0253a81eca0b6c62f8c5026f58ce7a7f95be8",
-      "collision_function.cuh": "6a4b056c88c80dd3e1e399f02fabbf9f6096c054b2d62dbb17f6f62801b01b61",
-      "fk.cuh": "873e9d6bc955136837f6706af33637a4c8ccb7e202d1d4c2880a57197bd62590",
-      "rrt.cuh": "0f3dfb87130187df0dcf9623566074e7eac33796c3166dee354a0570e47be2cc"
+      "centers.cuh": "bcdcab0e23a5233581900a8b538dce4f3f80a06e327039733797a73936ccd91d",
+      "collision.cuh": "0aeeab611c68fd6628be250e1d7f551431a22a53eb4b87a663bc7840684ad242",
+      "collision_function.cuh": "c73b48842ee6f5a55d212b2824b8a333c62b6712b163ab4ff930e8a22f4ddc80",
+      "fk.cuh": "5a05c40ef23a1c39e88d6dae2ca130a8a7bc1742a413570ac30b966ad1fe0129",
+      "rrt.cuh": "718ee7aa8f2ed60faf6ae31d7c3a8797ed078bb2670a05577c3310bf393c4567"
     },
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": 0,
+    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -2941,27 +2972,27 @@
         "roll",
         "slide"
       ],
-      "math": "F32Sfu",
-      "optimization": "Basic",
+      "live_budget": 0,
+      "math": "f32-sfu",
+      "optimization": "basic",
       "scalar": "float",
-      "scheduling": "DagOrder",
       "sphere_count": 23
-    }
-  },
-  {
+    },
     "name": "chain-f32-sfu-basic-0",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/chain.yaml",
-    "math": "f32-sfu",
     "optimization": "basic",
-    "live_budget": 0,
     "sha256": {
-      "centers.cuh": "bf3206ef178d67f1ad321f4f904a312096b55489e66e61250bbff82f5ecc73e6",
-      "collision.cuh": "089c48141ce8dc138aff52b0fd47828bf610538da013020ab58cec1dffb18d19",
-      "collision_function.cuh": "090282ba4682af508706602d8b085b7e1bf4dd8116a9cdce837dac43cc5a2418",
-      "fk.cuh": "8c910c956b5c38485716394d5f9556ed60e552b6478c99b6e7e1e0fe9ca16a52",
-      "rrt.cuh": "fc9c017f7d0e8a1500346d7e2c3ddb305496b414d44e97c6bff8a824e4a3e9b0"
+      "centers.cuh": "51a4f75ee54f3127d4c5bde28665dafab1774a8d0fafe6d3b42853d6ff782429",
+      "collision.cuh": "a3b778a881a3b3d6a352d41aa85f2aecbe1627b330e1fbf5dea3b6174917e414",
+      "collision_function.cuh": "8c4f8ac4512e82aa07d106aefb11c5a3b1b384423380864099124a29342da81d",
+      "fk.cuh": "80a37df63e8a6b60b62991ab952b8b703d221659e22693aa5ea201d5efee8fec",
+      "rrt.cuh": "9429910baa51c2c16a6d15ca85a6e912ede59f351c88ecf66a298001a062be82"
     },
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": 64,
+    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -2983,27 +3014,27 @@
         "roll",
         "slide"
       ],
-      "math": "F32Sfu",
-      "optimization": "Basic",
+      "live_budget": 64,
+      "math": "f32-sfu",
+      "optimization": "basic",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 0 })",
       "sphere_count": 23
-    }
-  },
-  {
+    },
     "name": "chain-f32-sfu-basic-64",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/chain.yaml",
-    "math": "f32-sfu",
     "optimization": "basic",
-    "live_budget": 64,
     "sha256": {
-      "centers.cuh": "7a67b1d4235030cc92b661de633f434d0cee31ff76ebc7ce3600621406dbe9e0",
-      "collision.cuh": "518615b39b9254bded613a2694d00b6faf254ab36286847832be84b8a9e1b2c1",
-      "collision_function.cuh": "26ac2ec0ce4f3d6281ae658cc61fdd34bae233062420edb9695dfc997abad2f7",
-      "fk.cuh": "510a4b8fab3b6924401e21ffd0dc05a2c875ddaa382e5f8ae3267c777dfa3d58",
-      "rrt.cuh": "92b48e6350e48ba120ddeee87b6b277db4a3253b3fdc99f7a298ae97c3a29896"
+      "centers.cuh": "4232288c97b50ebe034b7e955c6b9a0dd2b713d026f93a589235d1e52583bba6",
+      "collision.cuh": "a01fd4bea792eb33e7aac2be5b035f9cb690de7d1b3de53a4ffc42d44605ae06",
+      "collision_function.cuh": "d8fbe4f258daa6ef1052e0e3ec82537ec69881f0d257f1790d2b572b3ca7b8e0",
+      "fk.cuh": "b9c01df5595df811b5ed1c56254c69b892311f073c469bb0de5483613b9adef7",
+      "rrt.cuh": "3fbfa9722a0dd03dfd5ade4abe9aea291902c39ba7a0b55a820dff64175d4918"
     },
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": null,
+    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -3025,27 +3056,27 @@
         "roll",
         "slide"
       ],
-      "math": "F32Sfu",
-      "optimization": "Basic",
+      "live_budget": null,
+      "math": "f32-sfu",
+      "optimization": "algebraic",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 64 })",
       "sphere_count": 23
-    }
-  },
-  {
+    },
     "name": "chain-f32-sfu-algebraic-None",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/chain.yaml",
-    "math": "f32-sfu",
     "optimization": "algebraic",
-    "live_budget": null,
     "sha256": {
-      "centers.cuh": "91330cdac82a01e2a9958ee4667a148a7e51b53c76a22c97e427bdb1380505e6",
-      "collision.cuh": "66e99f9329210926df4ba97ea3e40c608b6df2ae49d553f8cf8c058ba986dc71",
-      "collision_function.cuh": "85dc191e26f6696575b583c5519679622d715c71b14f3682d7ed7de47e07c9b9",
-      "fk.cuh": "c795c52ff316f7546607de868e50153e539a9fa2e662457372a6ea76a0b388d0",
-      "rrt.cuh": "71de01e3a2ecbfd08732c8404220ab4893495f5eaf0b1c1ec60bf71160c935de"
+      "centers.cuh": "1db62be1d6972a603a95a53df24b5777d40660c1a0e2015ba1b954044a74d188",
+      "collision.cuh": "ec5e32e19a0573fae70415f19b52e743b7c3a2138e3f704a755b1fc07cd3466f",
+      "collision_function.cuh": "ff8708a740a67ca3f5728b8455492f6bad5482c12e920b880c9ba35ba124898f",
+      "fk.cuh": "6fca36f7eb337479271441e2cc5803ed9bbefa504cdc2f161fafd1834553bb0b",
+      "rrt.cuh": "a95e49bc8a7f37b2b5510fa5a665138a0104f30f3432c91749d9dd4367613308"
     },
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": 0,
+    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -3067,27 +3098,27 @@
         "roll",
         "slide"
       ],
-      "math": "F32Sfu",
-      "optimization": "Algebraic",
+      "live_budget": 0,
+      "math": "f32-sfu",
+      "optimization": "algebraic",
       "scalar": "float",
-      "scheduling": "DagOrder",
       "sphere_count": 23
-    }
-  },
-  {
+    },
     "name": "chain-f32-sfu-algebraic-0",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/chain.yaml",
-    "math": "f32-sfu",
     "optimization": "algebraic",
-    "live_budget": 0,
     "sha256": {
-      "centers.cuh": "8b220499e946695872cd92b7830fdbdc039e9a60724e76ff85f294cd200af95a",
-      "collision.cuh": "fa7ad05d034d99402b5681266b85b182b1bc7f1e88c12366a63428bb9208c7da",
-      "collision_function.cuh": "b19ddf279720d241b019d6a8ba4f84e9a5ed8d6e5fc630d4f06ad1404329ad05",
-      "fk.cuh": "8614c351403cd70ba6623c9b7ed320a1b0dc398c55d7d49c69db5744df41e69a",
-      "rrt.cuh": "01c057304c481a2b0132329bb0bc5afa713f23719e346a868d94aeed468b7dec"
+      "centers.cuh": "d5513d923697c3dc6adab45fbbf79a4a8346aa0dd6d8a7197035b6c9c0baf0a7",
+      "collision.cuh": "2d9ae760eb204c6d76031a7ccae74e9a4f881b1ba4df760fdc6e436c5f318a8e",
+      "collision_function.cuh": "4d972f0749f565c2655ceb512b045e25018e9c0e5e6d294c3729b1852aa28094",
+      "fk.cuh": "cbd9ba1ce1a6fae3c89555d50938a8b9907d18b2ec452f1b8c530601e8133e72",
+      "rrt.cuh": "7cc163a7dc4ba9972bb9abd7b35bcf6e25a7c75a2e959131eeacaef6ba45cd52"
     },
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": 64,
+    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -3109,27 +3140,27 @@
         "roll",
         "slide"
       ],
-      "math": "F32Sfu",
-      "optimization": "Algebraic",
+      "live_budget": 64,
+      "math": "f32-sfu",
+      "optimization": "algebraic",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 0 })",
       "sphere_count": 23
-    }
-  },
-  {
+    },
     "name": "chain-f32-sfu-algebraic-64",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/chain.yaml",
-    "math": "f32-sfu",
     "optimization": "algebraic",
-    "live_budget": 64,
     "sha256": {
-      "centers.cuh": "9b5fb24ae63e767091d8068a4597864c1434cf3bd907a738290b0870faba57bf",
-      "collision.cuh": "9ff89412ddce9f59093780c84a3915afe77e4522c73d2c0d915183e328192a30",
-      "collision_function.cuh": "ff9e096923bcc051bb27364be798546aa32ac6bff8200a0eca77eb1a8d62cdbf",
-      "fk.cuh": "d6f586efc21e3bd5bccfc9fc0bb29f1229ec7e667a4cc9ba757115dcd2ccb0db",
-      "rrt.cuh": "0ca49973f976ecc744f6499f620962008d372cb71a23a9ce55b20d665b62c138"
+      "centers.cuh": "e83981e9dfd811df7d718372c278a0f2b76e3b54620e820048a6dda92cb5ae30",
+      "collision.cuh": "da1ab79d4ac02ff443a6cd2a2fbd219339d91a8fd143517c19263b6db76feb40",
+      "collision_function.cuh": "5ba72c96c338465daf43e4f8f9666b2f2fd223928351ba172e1da761af3308fc",
+      "fk.cuh": "cf3f11234668599fa7144e7f0234a361659b4fd3ea52ed89a7d36f079c2b5128",
+      "rrt.cuh": "5c203cb7f0064a70ef5b5d2e1fe0a96e0551894df0d93f40f0d47aacb8bc5738"
     },
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": null,
+    "math": "f64",
     "model": {
       "control_joints": [
         {
@@ -3151,27 +3182,27 @@
         "roll",
         "slide"
       ],
-      "math": "F32Sfu",
-      "optimization": "Algebraic",
-      "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 64 })",
+      "live_budget": null,
+      "math": "f64",
+      "optimization": "none",
+      "scalar": "double",
       "sphere_count": 23
-    }
-  },
-  {
+    },
     "name": "chain-f64-none-None",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/chain.yaml",
-    "math": "f64",
     "optimization": "none",
-    "live_budget": null,
     "sha256": {
-      "centers.cuh": "9ecb50e8223a5b7d396a27c5ede646fb3164932547f9a7553e61f3b7e0d80757",
-      "collision.cuh": "d1fec8deeebc1c462f49f3f3a863e8b0f5bf4f638c87966c7a5e9bcaa36a9964",
-      "collision_function.cuh": "6faa11d4bed3adc8488721dfb0681ce66205dcbee282caf20f2f666800dfadb1",
-      "fk.cuh": "d00f468e9900349ea845c3e1e277e70ba1974811aee03180a02e41a407fcf7ae",
-      "rrt.cuh": "4e95763349bf47b29a281abc9983e1ba616279ac54d1a94ba6843daeb34357a1"
+      "centers.cuh": "832d3be5c6a4f7bc8a883c4b437fcd0c950e955fcc15482431b483ae5a060bdf",
+      "collision.cuh": "f334fe28b7b4e8e57586eea17e95f810ca869778aa25efb78f3e2d2d82ec0f04",
+      "collision_function.cuh": "81d190ea3d06351ce5c1e2f64c1007725726d1bb672ae7c2c8c1e7466778be89",
+      "fk.cuh": "ec06806ab4c079426668be6e5f5a7b10e3bfa909b1f111718858d8bc5300eee6",
+      "rrt.cuh": "554e7d2f37ac5cd7f548a26a821be8195e107efdb6dda09a7e14e89665103ef2"
     },
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": 0,
+    "math": "f64",
     "model": {
       "control_joints": [
         {
@@ -3193,27 +3224,27 @@
         "roll",
         "slide"
       ],
-      "math": "F64",
-      "optimization": "None",
+      "live_budget": 0,
+      "math": "f64",
+      "optimization": "none",
       "scalar": "double",
-      "scheduling": "DagOrder",
       "sphere_count": 23
-    }
-  },
-  {
+    },
     "name": "chain-f64-none-0",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/chain.yaml",
-    "math": "f64",
     "optimization": "none",
-    "live_budget": 0,
     "sha256": {
-      "centers.cuh": "cb0906d02b7cecfa44fc52b0a2f00a3d2cc8fa400fa4f512de7f46e0317446f1",
-      "collision.cuh": "61b27c94d6937a03f2d45669b560569c8aa5a85643c2fecfa992c09464d2f400",
-      "collision_function.cuh": "28adf9c0e7811ab0e5e5e3584bece6acdfeff0ac4367abb8a74d2f9fe3135fe8",
-      "fk.cuh": "a8856fbd3ec5c1339cabe552823b78cf312374d5118716a3429bc186d535b2b9",
-      "rrt.cuh": "e2d90551911c4590df38670598077b0d9f714803b6e3e9b53352ec0e0b7ed3f8"
+      "centers.cuh": "85b27c9a4781f78ccacdf6d2a4e32cfbe83e51c22b72bd0d9c4453e9bf4da068",
+      "collision.cuh": "8a5084db8c82a45b861305431a9619e53c9b79b57d1b818f9c41cdb90ab4ba8a",
+      "collision_function.cuh": "82faa879aaf9529458817a028493c3eff0a6aab3e318803b5f89eef24b1a6c8d",
+      "fk.cuh": "afd918094ea46d565124a36495a98fc121b60970cbb2153bd46d6f34a50a0c4c",
+      "rrt.cuh": "5fdbfa37b3116209e326dc01ec7666b9a863819446f5618a21ba3af19fda6b42"
     },
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": 64,
+    "math": "f64",
     "model": {
       "control_joints": [
         {
@@ -3235,27 +3266,27 @@
         "roll",
         "slide"
       ],
-      "math": "F64",
-      "optimization": "None",
+      "live_budget": 64,
+      "math": "f64",
+      "optimization": "none",
       "scalar": "double",
-      "scheduling": "Live(Options { live_budget: 0 })",
       "sphere_count": 23
-    }
-  },
-  {
+    },
     "name": "chain-f64-none-64",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/chain.yaml",
-    "math": "f64",
     "optimization": "none",
-    "live_budget": 64,
     "sha256": {
-      "centers.cuh": "3245e623d80fae2d95593e49072c043930fc9ba2854656465bcc3fea57b22238",
-      "collision.cuh": "7e37082ba664f6e01775bc8f2e71cc03cc37ad25e7f58590e31bb6360857fcc9",
-      "collision_function.cuh": "c27eaad1eb115175fb46bdfe05f3180297a3cb656a7117ac041548fae4d2b653",
-      "fk.cuh": "1252a94d18309654c847fe53ef3f0cf16522f67e1b481365f93f14131af286c0",
-      "rrt.cuh": "f02457e77a6c85956374a7c0d49b3399d0dda9c124932a73d11ee8d98945592c"
+      "centers.cuh": "4a8c068b8d636d354aafe9d24400710c90a9245d44f13174afcf355c981c467f",
+      "collision.cuh": "b4796b19c56562e68710119b501c15f8e2da4efd4a8e2eff5b8b0fd154fd82d5",
+      "collision_function.cuh": "c26fe45d69878eb20cf2cfafe5fdbe2b65f109d63e54f69ed35c67e8466a5e87",
+      "fk.cuh": "96700c5cdac1bfa4f9225ae185ddcbbb19206c7f41c9fcce779d732f742eeb21",
+      "rrt.cuh": "240f775a4aeebb6212400b6987756689a9f9b029b5314fc4b23d2d9b5b3236d3"
     },
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": null,
+    "math": "f64",
     "model": {
       "control_joints": [
         {
@@ -3277,27 +3308,27 @@
         "roll",
         "slide"
       ],
-      "math": "F64",
-      "optimization": "None",
+      "live_budget": null,
+      "math": "f64",
+      "optimization": "basic",
       "scalar": "double",
-      "scheduling": "Live(Options { live_budget: 64 })",
       "sphere_count": 23
-    }
-  },
-  {
+    },
     "name": "chain-f64-basic-None",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/chain.yaml",
-    "math": "f64",
     "optimization": "basic",
-    "live_budget": null,
     "sha256": {
-      "centers.cuh": "14b41f830ffa736adbc6f87b07e2febee2b243860fa8ef98918307482256c8e0",
-      "collision.cuh": "3c40f0e7d50758f96194287b64acca5f81c18937436e563532814a32ade29423",
-      "collision_function.cuh": "5dc030b53d2293005231e6647529486b3e3e7b1ab13dd905cd64c27dc592f92c",
-      "fk.cuh": "f515f097f4e88b174f278c0bdc2d2f2557d5f1f3d75bb2275823a0aed7d9c417",
-      "rrt.cuh": "2c449cfd47698675e9a6e419c3a8393994cb88c9905323deee07bdcf5870f605"
+      "centers.cuh": "55530c055d4a8be88eb5a90cbcc586186a695c72fdcedb4d315ae5bafdb24d53",
+      "collision.cuh": "d9863fea9d907f0ee920c65030a6b5b625e8d8ed062354b68eabf25e4074669d",
+      "collision_function.cuh": "50a45161370eaa33d5bcbc0914a0fd323c683cbbd55f07c31f493261f123d27e",
+      "fk.cuh": "27eeec69bfc76fc1ce8f358e480b3dc8e567a62c51d9a020af044b7b9c6f091b",
+      "rrt.cuh": "fbd6d61f39644fd9b846c53c3ecaf48e2fd9390fabc78829c237eae257782612"
     },
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": 0,
+    "math": "f64",
     "model": {
       "control_joints": [
         {
@@ -3319,27 +3350,27 @@
         "roll",
         "slide"
       ],
-      "math": "F64",
-      "optimization": "Basic",
+      "live_budget": 0,
+      "math": "f64",
+      "optimization": "basic",
       "scalar": "double",
-      "scheduling": "DagOrder",
       "sphere_count": 23
-    }
-  },
-  {
+    },
     "name": "chain-f64-basic-0",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/chain.yaml",
-    "math": "f64",
     "optimization": "basic",
-    "live_budget": 0,
     "sha256": {
-      "centers.cuh": "bf3a858b5bcc52ea05a18811ca7499cf206ad374b1559cc35b67a4eea47b008c",
-      "collision.cuh": "faa3060f2286b94f70d88fdac7dba5014811e58e9879d3a8818c5a7e38fd72d3",
-      "collision_function.cuh": "620f4a98b0e59e62866d2519969a8f3c797e3cd1a2aec2266b2d1b401d560390",
-      "fk.cuh": "a830fb650318522935eff57c705ee9793a4816fc8316857b14b35e5b5e7b1326",
-      "rrt.cuh": "7419366e5643de71cae8720fcffbc5215994bd1fe7968df9cf2fc9317d6b9764"
+      "centers.cuh": "0db865a7e5954323d783d457836e8345427ed2dc089cb4a34fc941ac703c4968",
+      "collision.cuh": "4b90546d9224306fc16f7e0e1a8240b95746b60fecac8cd48dab3c730fce7e32",
+      "collision_function.cuh": "8957d729b9c49a5ecad7a1823a1a8e62c905ec9964c6b88d41ed7666539a70ee",
+      "fk.cuh": "98aafe7cf81f0caef8b7501d6da56cb4c200e86feb2a5d8dfb077f077f51d565",
+      "rrt.cuh": "828aa131f0d5d8483a9baa7deb7484ad532bc2613cedab9780c59bdb74d91c62"
     },
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": 64,
+    "math": "f64",
     "model": {
       "control_joints": [
         {
@@ -3361,27 +3392,27 @@
         "roll",
         "slide"
       ],
-      "math": "F64",
-      "optimization": "Basic",
+      "live_budget": 64,
+      "math": "f64",
+      "optimization": "basic",
       "scalar": "double",
-      "scheduling": "Live(Options { live_budget: 0 })",
       "sphere_count": 23
-    }
-  },
-  {
+    },
     "name": "chain-f64-basic-64",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/chain.yaml",
-    "math": "f64",
     "optimization": "basic",
-    "live_budget": 64,
     "sha256": {
-      "centers.cuh": "ba3fe194d112e2b5a29b8d3fccebedf5c543e0c2b2e691f686dc72722ec35bcd",
-      "collision.cuh": "9cc154096bfc2efe94739237bb1c5bdb71fc0b8ac44cd9a44ed37f185e1f196e",
-      "collision_function.cuh": "1400457b5e8b5ca52691dc969a01c3a890b2e5572757ad43985df4023276a7d7",
-      "fk.cuh": "eb9c66b7e88991737e1e8e0e0df5f57401ef34e76715917b21c37a142dcdc641",
-      "rrt.cuh": "69a38a550ab5d196f85f4c36857f25484721c53c5f99636af0a2500f61927f5f"
+      "centers.cuh": "d6fc12027f4916ae45d9f555335eb5ce925bd5d13dfa6d4bcdbb54674cb25555",
+      "collision.cuh": "8c1875964e9a74a43068ebe962c02bdf34efff1b8f8bb76a2202147d41cc5588",
+      "collision_function.cuh": "a935b58fe4329ef291abab42108c070c566147a57ba47aa9b9d884b4f24ca746",
+      "fk.cuh": "0420c25277835838138a0faaaebe6e54e94d6275f72c39e2775405859bf4c7da",
+      "rrt.cuh": "ba26895eb85689bcc487aa7727e947b7b9cf92363c36c8eb128a0e1df5cf501e"
     },
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": null,
+    "math": "f64",
     "model": {
       "control_joints": [
         {
@@ -3403,27 +3434,27 @@
         "roll",
         "slide"
       ],
-      "math": "F64",
-      "optimization": "Basic",
+      "live_budget": null,
+      "math": "f64",
+      "optimization": "algebraic",
       "scalar": "double",
-      "scheduling": "Live(Options { live_budget: 64 })",
       "sphere_count": 23
-    }
-  },
-  {
+    },
     "name": "chain-f64-algebraic-None",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/chain.yaml",
-    "math": "f64",
     "optimization": "algebraic",
-    "live_budget": null,
     "sha256": {
-      "centers.cuh": "aada2436a947f97b8b8dd09f812a7c735ac7e2f24426ad70c4a6fb51f72c9bcd",
-      "collision.cuh": "99acd6ec5fb650c27bd279e84f74335aa4a8842520ffd62095390a989d89bb32",
-      "collision_function.cuh": "5ed4af1213b4299d709512e05ce53c4949a6c130ec33e556066f321b75ae1ac7",
-      "fk.cuh": "02ba4c01c2b1c01967c53de4fb6dc69dda5fd0094b928bd57fa13a2085c34530",
-      "rrt.cuh": "12e15aedc639f2578b3e8b45ac867389d8cf474d7e3a983d66d61e5277907ae3"
+      "centers.cuh": "9ed345e000f59b8f383dde01794903e9c42f666cecc16bc49966d0f3c239e9ce",
+      "collision.cuh": "941ca0f3c5d09e3184eca9ac49e35010ec079b31d6d657d411f232debf57b866",
+      "collision_function.cuh": "14e703b5242b2603fc4c4f8e19bd7b68abf10fdd43d1902b492513562123bec5",
+      "fk.cuh": "1080b48b26613f3665090eb014ff80b4be86db19dfbdbc61bc2f7e0c40c1a0be",
+      "rrt.cuh": "de96fa3e687dc447254fb47d45c07f4cd1de4a59c6e9fc92b9f484b89611f6af"
     },
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": 0,
+    "math": "f64",
     "model": {
       "control_joints": [
         {
@@ -3445,27 +3476,27 @@
         "roll",
         "slide"
       ],
-      "math": "F64",
-      "optimization": "Algebraic",
+      "live_budget": 0,
+      "math": "f64",
+      "optimization": "algebraic",
       "scalar": "double",
-      "scheduling": "DagOrder",
       "sphere_count": 23
-    }
-  },
-  {
+    },
     "name": "chain-f64-algebraic-0",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/chain.yaml",
-    "math": "f64",
     "optimization": "algebraic",
-    "live_budget": 0,
     "sha256": {
-      "centers.cuh": "621f26ab41ba0a38b0d1de5d404aaffdf04161b1a99c6512da1a96e39e5878d3",
-      "collision.cuh": "4ebd93d305620bddba764c993ea5905eaf48a1b37e128b24bd57f9f9ce84dc05",
-      "collision_function.cuh": "8dc918d76dfbf626c3d761bf45d78d7ddea365ca5cd090a50c1797febc6d058a",
-      "fk.cuh": "6ceb2df1c604ee10d40c2853090278fb5f154ef6803a8d3c609e7352bdbf21fe",
-      "rrt.cuh": "203d378e3bedbd79c71b33b5e1e40f063a1d704f5003e49fcd362b9ca0b8e4ec"
+      "centers.cuh": "722b3bfedbddece5ab454b2cc781d9b6eb84942cfa6e23e355d80db77c7cf649",
+      "collision.cuh": "b3e973267229318d268579055ef13eca6623b17b44e4f78def4185de30c4dbe3",
+      "collision_function.cuh": "e7b6565f86e59df28c1fe339b3377dbd991272465b0e91145c4d2cc501e8ad19",
+      "fk.cuh": "ace0d090a7f2211603602717d50eb9223550a1fd7177906675971395a5fa6b12",
+      "rrt.cuh": "103c245ae137e8f85adb891e20eeb9f905c9cb49ec1e729d6b7f75153bb0e478"
     },
+    "spheres": "tests/fixtures/compiler/chain.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": 64,
+    "math": "f64",
     "model": {
       "control_joints": [
         {
@@ -3487,27 +3518,27 @@
         "roll",
         "slide"
       ],
-      "math": "F64",
-      "optimization": "Algebraic",
+      "live_budget": 64,
+      "math": "f64",
+      "optimization": "algebraic",
       "scalar": "double",
-      "scheduling": "Live(Options { live_budget: 0 })",
       "sphere_count": 23
-    }
-  },
-  {
+    },
     "name": "chain-f64-algebraic-64",
-    "urdf": "tests/fixtures/fk_chain.urdf",
+    "optimization": "algebraic",
+    "sha256": {
+      "centers.cuh": "41e6f79012c01f4c57642c2c4922e5c3b8f2c5aefea419df7d7a670185a4d70a",
+      "collision.cuh": "ac73e2df7ea2fb6279e7ec96088049d524e6cdece8f537733492232a244ea1c7",
+      "collision_function.cuh": "04d3b3620525595455eaeb59aa4cd837f98651e77974c3d7b9d53c502046a257",
+      "fk.cuh": "dab02b0ea581873f58a5365f72e5ef2ae2d4bd3fe9de40e35b32e6042db3972f",
+      "rrt.cuh": "fa2a4cb835a54cd2bc6e24a52eddfce05910d9765fa81eb2b6c55723b4adc59a"
+    },
     "spheres": "tests/fixtures/compiler/chain.yaml",
-    "math": "f64",
-    "optimization": "algebraic",
-    "live_budget": 64,
-    "sha256": {
-      "centers.cuh": "bc07bb91758ed23831264028e5e4c47a0804c1fd7a64014f5c3c060a2b6e2446",
-      "collision.cuh": "ea2d3e5b80d3b66daa37789cd0040613ed7edf2c599057905c4069d4bfe5243c",
-      "collision_function.cuh": "1310c31d5d7f13b59ee2d732e1cd48fc3b2505ff1fdf40ceec36d5425cb53470",
-      "fk.cuh": "82f4dfd6273936a4f5fb6df7d25e6163ec0bcedc452db01f6fcaa767eb1ea429",
-      "rrt.cuh": "ac4016aa84cefd9329934c174a53f42128a3acd1a328123f22c0e43fbb280767"
-    },
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": null,
+    "math": "f32",
     "model": {
       "control_joints": [
         {
@@ -3515,12 +3546,6 @@
           "lower": -3.2,
           "name": "yaw",
           "upper": 3.2
-        },
-        {
-          "index": 3,
-          "lower": -1.0,
-          "name": "slide",
-          "upper": 1.0
         }
       ],
       "input_joint_names": [
@@ -3529,27 +3554,27 @@
         "roll",
         "slide"
       ],
-      "math": "F64",
-      "optimization": "Algebraic",
-      "scalar": "double",
-      "scheduling": "Live(Options { live_budget: 64 })",
-      "sphere_count": 23
-    }
-  },
-  {
+      "live_budget": null,
+      "math": "f32",
+      "optimization": "none",
+      "scalar": "float",
+      "sphere_count": 0
+    },
     "name": "empty-f32-none-None",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/empty.yaml",
-    "math": "f32",
     "optimization": "none",
-    "live_budget": null,
     "sha256": {
-      "centers.cuh": "f651c275e041c0e66ea52159700a25b060db7999c5d46e3a188c131eda03758c",
-      "collision.cuh": "a5d95e73f27b618c5fff268eae7925ed5d4bba9e30668b4cc399b1252fa25aa7",
-      "collision_function.cuh": "7f5330598596f7686682b0365c6a76ce6aaac1dc06e3538ed571a6c4bb42b39d",
-      "fk.cuh": "3f27d0a1254f9934f7f31b10439c2402628ebc9f55c97634acd939af2a87f2f1",
-      "rrt.cuh": "735ba5b8853181e026cef93addcb08e6b99adf1d113e4dddc360a51e63325ebf"
+      "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
+      "collision.cuh": "bd1b172fde16f2fd210163ffc9b2321208b87980305067e56f1083af681fef37",
+      "collision_function.cuh": "4c7e2824f80f73804cbb16d208e79eb831ad251bdc44ff6382e3257830b10cf6",
+      "fk.cuh": "f848c3c86b1729bb7d72c53d11ddf4eb5c938f4e5446c6886c69a70cd6929a43",
+      "rrt.cuh": "3eee60f1d646368cbd68684a2cc208ec7d3e4ebf756086fe9be20dc3f85cc548"
     },
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": 0,
+    "math": "f32",
     "model": {
       "control_joints": [
         {
@@ -3565,27 +3590,27 @@
         "roll",
         "slide"
       ],
-      "math": "F32",
-      "optimization": "None",
+      "live_budget": 0,
+      "math": "f32",
+      "optimization": "none",
       "scalar": "float",
-      "scheduling": "DagOrder",
       "sphere_count": 0
-    }
-  },
-  {
+    },
     "name": "empty-f32-none-0",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/empty.yaml",
-    "math": "f32",
     "optimization": "none",
-    "live_budget": 0,
     "sha256": {
-      "centers.cuh": "f651c275e041c0e66ea52159700a25b060db7999c5d46e3a188c131eda03758c",
-      "collision.cuh": "a5d95e73f27b618c5fff268eae7925ed5d4bba9e30668b4cc399b1252fa25aa7",
-      "collision_function.cuh": "7f5330598596f7686682b0365c6a76ce6aaac1dc06e3538ed571a6c4bb42b39d",
-      "fk.cuh": "c25f3b5eba2e2d443572a0d2fc8698b13d39980d3c7513d8df2c541fb00ff217",
-      "rrt.cuh": "735ba5b8853181e026cef93addcb08e6b99adf1d113e4dddc360a51e63325ebf"
+      "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
+      "collision.cuh": "bd1b172fde16f2fd210163ffc9b2321208b87980305067e56f1083af681fef37",
+      "collision_function.cuh": "4c7e2824f80f73804cbb16d208e79eb831ad251bdc44ff6382e3257830b10cf6",
+      "fk.cuh": "cb0f01593cec0f02cc622fe09443753346f54b9111e70aa35d54f8e7c7d5e523",
+      "rrt.cuh": "3eee60f1d646368cbd68684a2cc208ec7d3e4ebf756086fe9be20dc3f85cc548"
     },
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": 64,
+    "math": "f32",
     "model": {
       "control_joints": [
         {
@@ -3601,27 +3626,27 @@
         "roll",
         "slide"
       ],
-      "math": "F32",
-      "optimization": "None",
+      "live_budget": 64,
+      "math": "f32",
+      "optimization": "none",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 0 })",
       "sphere_count": 0
-    }
-  },
-  {
+    },
     "name": "empty-f32-none-64",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/empty.yaml",
-    "math": "f32",
     "optimization": "none",
-    "live_budget": 64,
     "sha256": {
-      "centers.cuh": "f651c275e041c0e66ea52159700a25b060db7999c5d46e3a188c131eda03758c",
-      "collision.cuh": "a5d95e73f27b618c5fff268eae7925ed5d4bba9e30668b4cc399b1252fa25aa7",
-      "collision_function.cuh": "7f5330598596f7686682b0365c6a76ce6aaac1dc06e3538ed571a6c4bb42b39d",
-      "fk.cuh": "23ed6c545589a4c1ba4a9c4d39a0f65f4589522ac32954cd10c01d4a1e45dd02",
-      "rrt.cuh": "735ba5b8853181e026cef93addcb08e6b99adf1d113e4dddc360a51e63325ebf"
+      "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
+      "collision.cuh": "bd1b172fde16f2fd210163ffc9b2321208b87980305067e56f1083af681fef37",
+      "collision_function.cuh": "4c7e2824f80f73804cbb16d208e79eb831ad251bdc44ff6382e3257830b10cf6",
+      "fk.cuh": "5c03c52aa7820901254433af45b0a0bc97fd7741d6d8cb3ed640f7e93b234294",
+      "rrt.cuh": "3eee60f1d646368cbd68684a2cc208ec7d3e4ebf756086fe9be20dc3f85cc548"
     },
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": null,
+    "math": "f32",
     "model": {
       "control_joints": [
         {
@@ -3637,27 +3662,27 @@
         "roll",
         "slide"
       ],
-      "math": "F32",
-      "optimization": "None",
+      "live_budget": null,
+      "math": "f32",
+      "optimization": "basic",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 64 })",
       "sphere_count": 0
-    }
-  },
-  {
+    },
     "name": "empty-f32-basic-None",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/empty.yaml",
-    "math": "f32",
     "optimization": "basic",
-    "live_budget": null,
     "sha256": {
-      "centers.cuh": "f651c275e041c0e66ea52159700a25b060db7999c5d46e3a188c131eda03758c",
-      "collision.cuh": "a5d95e73f27b618c5fff268eae7925ed5d4bba9e30668b4cc399b1252fa25aa7",
-      "collision_function.cuh": "7f5330598596f7686682b0365c6a76ce6aaac1dc06e3538ed571a6c4bb42b39d",
-      "fk.cuh": "99d4441d12f4f52c4b237dc305d147c6fafd0e98138ecf897d6decb630b8fa2f",
-      "rrt.cuh": "735ba5b8853181e026cef93addcb08e6b99adf1d113e4dddc360a51e63325ebf"
+      "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
+      "collision.cuh": "bd1b172fde16f2fd210163ffc9b2321208b87980305067e56f1083af681fef37",
+      "collision_function.cuh": "4c7e2824f80f73804cbb16d208e79eb831ad251bdc44ff6382e3257830b10cf6",
+      "fk.cuh": "91e634a95a344227ae9a351175e3c12bb2c81c3db06dc2b94e79566c542d4bfb",
+      "rrt.cuh": "3eee60f1d646368cbd68684a2cc208ec7d3e4ebf756086fe9be20dc3f85cc548"
     },
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": 0,
+    "math": "f32",
     "model": {
       "control_joints": [
         {
@@ -3673,27 +3698,27 @@
         "roll",
         "slide"
       ],
-      "math": "F32",
-      "optimization": "Basic",
+      "live_budget": 0,
+      "math": "f32",
+      "optimization": "basic",
       "scalar": "float",
-      "scheduling": "DagOrder",
       "sphere_count": 0
-    }
-  },
-  {
+    },
     "name": "empty-f32-basic-0",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/empty.yaml",
-    "math": "f32",
     "optimization": "basic",
-    "live_budget": 0,
     "sha256": {
-      "centers.cuh": "f651c275e041c0e66ea52159700a25b060db7999c5d46e3a188c131eda03758c",
-      "collision.cuh": "a5d95e73f27b618c5fff268eae7925ed5d4bba9e30668b4cc399b1252fa25aa7",
-      "collision_function.cuh": "7f5330598596f7686682b0365c6a76ce6aaac1dc06e3538ed571a6c4bb42b39d",
-      "fk.cuh": "ec059a3b701a53e08b4c684fbb548c643f3fae6c8a2d7a4531264ca96574a5c4",
-      "rrt.cuh": "735ba5b8853181e026cef93addcb08e6b99adf1d113e4dddc360a51e63325ebf"
+      "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
+      "collision.cuh": "bd1b172fde16f2fd210163ffc9b2321208b87980305067e56f1083af681fef37",
+      "collision_function.cuh": "4c7e2824f80f73804cbb16d208e79eb831ad251bdc44ff6382e3257830b10cf6",
+      "fk.cuh": "b291580623313ac286e3d540909c75eeb787141706ed4a566e5dbaae89cdd7ab",
+      "rrt.cuh": "3eee60f1d646368cbd68684a2cc208ec7d3e4ebf756086fe9be20dc3f85cc548"
     },
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": 64,
+    "math": "f32",
     "model": {
       "control_joints": [
         {
@@ -3709,27 +3734,27 @@
         "roll",
         "slide"
       ],
-      "math": "F32",
-      "optimization": "Basic",
+      "live_budget": 64,
+      "math": "f32",
+      "optimization": "basic",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 0 })",
       "sphere_count": 0
-    }
-  },
-  {
+    },
     "name": "empty-f32-basic-64",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/empty.yaml",
-    "math": "f32",
     "optimization": "basic",
-    "live_budget": 64,
     "sha256": {
-      "centers.cuh": "f651c275e041c0e66ea52159700a25b060db7999c5d46e3a188c131eda03758c",
-      "collision.cuh": "a5d95e73f27b618c5fff268eae7925ed5d4bba9e30668b4cc399b1252fa25aa7",
-      "collision_function.cuh": "7f5330598596f7686682b0365c6a76ce6aaac1dc06e3538ed571a6c4bb42b39d",
-      "fk.cuh": "7eeb5ac5e37fbcd1dbd60a3f24c4e394ed6934ebc9dd4774b25345a0d1e88a26",
-      "rrt.cuh": "735ba5b8853181e026cef93addcb08e6b99adf1d113e4dddc360a51e63325ebf"
+      "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
+      "collision.cuh": "bd1b172fde16f2fd210163ffc9b2321208b87980305067e56f1083af681fef37",
+      "collision_function.cuh": "4c7e2824f80f73804cbb16d208e79eb831ad251bdc44ff6382e3257830b10cf6",
+      "fk.cuh": "8111061773f954ef8cb685eb14c4b4737c78c21a34235e9b560c129cbd5d6bc3",
+      "rrt.cuh": "3eee60f1d646368cbd68684a2cc208ec7d3e4ebf756086fe9be20dc3f85cc548"
     },
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": null,
+    "math": "f32",
     "model": {
       "control_joints": [
         {
@@ -3745,27 +3770,27 @@
         "roll",
         "slide"
       ],
-      "math": "F32",
-      "optimization": "Basic",
+      "live_budget": null,
+      "math": "f32",
+      "optimization": "algebraic",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 64 })",
       "sphere_count": 0
-    }
-  },
-  {
+    },
     "name": "empty-f32-algebraic-None",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/empty.yaml",
-    "math": "f32",
     "optimization": "algebraic",
-    "live_budget": null,
     "sha256": {
-      "centers.cuh": "f651c275e041c0e66ea52159700a25b060db7999c5d46e3a188c131eda03758c",
-      "collision.cuh": "a5d95e73f27b618c5fff268eae7925ed5d4bba9e30668b4cc399b1252fa25aa7",
-      "collision_function.cuh": "7f5330598596f7686682b0365c6a76ce6aaac1dc06e3538ed571a6c4bb42b39d",
-      "fk.cuh": "5d5f34f78a532f4b367fc25c100ea57907b09c16723411fcc5369dc4f95d7baa",
-      "rrt.cuh": "735ba5b8853181e026cef93addcb08e6b99adf1d113e4dddc360a51e63325ebf"
+      "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
+      "collision.cuh": "bd1b172fde16f2fd210163ffc9b2321208b87980305067e56f1083af681fef37",
+      "collision_function.cuh": "4c7e2824f80f73804cbb16d208e79eb831ad251bdc44ff6382e3257830b10cf6",
+      "fk.cuh": "cf9c8e9fcd1ecee2b8337cc85b9c130fbaa00eb7374caf3793aaa0a81b817e34",
+      "rrt.cuh": "3eee60f1d646368cbd68684a2cc208ec7d3e4ebf756086fe9be20dc3f85cc548"
     },
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": 0,
+    "math": "f32",
     "model": {
       "control_joints": [
         {
@@ -3781,27 +3806,27 @@
         "roll",
         "slide"
       ],
-      "math": "F32",
-      "optimization": "Algebraic",
+      "live_budget": 0,
+      "math": "f32",
+      "optimization": "algebraic",
       "scalar": "float",
-      "scheduling": "DagOrder",
       "sphere_count": 0
-    }
-  },
-  {
+    },
     "name": "empty-f32-algebraic-0",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/empty.yaml",
-    "math": "f32",
     "optimization": "algebraic",
-    "live_budget": 0,
     "sha256": {
-      "centers.cuh": "f651c275e041c0e66ea52159700a25b060db7999c5d46e3a188c131eda03758c",
-      "collision.cuh": "a5d95e73f27b618c5fff268eae7925ed5d4bba9e30668b4cc399b1252fa25aa7",
-      "collision_function.cuh": "7f5330598596f7686682b0365c6a76ce6aaac1dc06e3538ed571a6c4bb42b39d",
-      "fk.cuh": "37f6fbffbac66fd4d7071f90e4ba22466eb51110369eb84fa44d528f7476c392",
-      "rrt.cuh": "735ba5b8853181e026cef93addcb08e6b99adf1d113e4dddc360a51e63325ebf"
+      "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
+      "collision.cuh": "bd1b172fde16f2fd210163ffc9b2321208b87980305067e56f1083af681fef37",
+      "collision_function.cuh": "4c7e2824f80f73804cbb16d208e79eb831ad251bdc44ff6382e3257830b10cf6",
+      "fk.cuh": "4641b738b705f0a727552d11cc9645d797e2cdc9488853a382cbdba84ec57138",
+      "rrt.cuh": "3eee60f1d646368cbd68684a2cc208ec7d3e4ebf756086fe9be20dc3f85cc548"
     },
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": 64,
+    "math": "f32",
     "model": {
       "control_joints": [
         {
@@ -3817,27 +3842,27 @@
         "roll",
         "slide"
       ],
-      "math": "F32",
-      "optimization": "Algebraic",
+      "live_budget": 64,
+      "math": "f32",
+      "optimization": "algebraic",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 0 })",
       "sphere_count": 0
-    }
-  },
-  {
+    },
     "name": "empty-f32-algebraic-64",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/empty.yaml",
-    "math": "f32",
     "optimization": "algebraic",
-    "live_budget": 64,
     "sha256": {
-      "centers.cuh": "f651c275e041c0e66ea52159700a25b060db7999c5d46e3a188c131eda03758c",
-      "collision.cuh": "a5d95e73f27b618c5fff268eae7925ed5d4bba9e30668b4cc399b1252fa25aa7",
-      "collision_function.cuh": "7f5330598596f7686682b0365c6a76ce6aaac1dc06e3538ed571a6c4bb42b39d",
-      "fk.cuh": "95e10282c34315ab677bf62024619305c0486741952811be4af20590c2460c92",
-      "rrt.cuh": "735ba5b8853181e026cef93addcb08e6b99adf1d113e4dddc360a51e63325ebf"
+      "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
+      "collision.cuh": "bd1b172fde16f2fd210163ffc9b2321208b87980305067e56f1083af681fef37",
+      "collision_function.cuh": "4c7e2824f80f73804cbb16d208e79eb831ad251bdc44ff6382e3257830b10cf6",
+      "fk.cuh": "12dab6f62f00a9a5236d3dfff2ff8cb06e657a3e6443a7d1b3d277827db60458",
+      "rrt.cuh": "3eee60f1d646368cbd68684a2cc208ec7d3e4ebf756086fe9be20dc3f85cc548"
     },
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": null,
+    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -3853,27 +3878,27 @@
         "roll",
         "slide"
       ],
-      "math": "F32",
-      "optimization": "Algebraic",
+      "live_budget": null,
+      "math": "f32-sfu",
+      "optimization": "none",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 64 })",
       "sphere_count": 0
-    }
-  },
-  {
+    },
     "name": "empty-f32-sfu-none-None",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/empty.yaml",
-    "math": "f32-sfu",
     "optimization": "none",
-    "live_budget": null,
     "sha256": {
-      "centers.cuh": "f651c275e041c0e66ea52159700a25b060db7999c5d46e3a188c131eda03758c",
-      "collision.cuh": "a5d95e73f27b618c5fff268eae7925ed5d4bba9e30668b4cc399b1252fa25aa7",
-      "collision_function.cuh": "7f5330598596f7686682b0365c6a76ce6aaac1dc06e3538ed571a6c4bb42b39d",
-      "fk.cuh": "37964f60f6675ab2eddbc2729e8e5af6c9bddd967516740a5add58ebdd68af69",
-      "rrt.cuh": "735ba5b8853181e026cef93addcb08e6b99adf1d113e4dddc360a51e63325ebf"
+      "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
+      "collision.cuh": "bd1b172fde16f2fd210163ffc9b2321208b87980305067e56f1083af681fef37",
+      "collision_function.cuh": "4c7e2824f80f73804cbb16d208e79eb831ad251bdc44ff6382e3257830b10cf6",
+      "fk.cuh": "48e6c6fa77e1dc9de85ca5c8d220ef0f33384f20bf7fd2e030e1c0b7c52a9f7a",
+      "rrt.cuh": "3eee60f1d646368cbd68684a2cc208ec7d3e4ebf756086fe9be20dc3f85cc548"
     },
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": 0,
+    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -3889,27 +3914,27 @@
         "roll",
         "slide"
       ],
-      "math": "F32Sfu",
-      "optimization": "None",
+      "live_budget": 0,
+      "math": "f32-sfu",
+      "optimization": "none",
       "scalar": "float",
-      "scheduling": "DagOrder",
       "sphere_count": 0
-    }
-  },
-  {
+    },
     "name": "empty-f32-sfu-none-0",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/empty.yaml",
-    "math": "f32-sfu",
     "optimization": "none",
-    "live_budget": 0,
     "sha256": {
-      "centers.cuh": "f651c275e041c0e66ea52159700a25b060db7999c5d46e3a188c131eda03758c",
-      "collision.cuh": "a5d95e73f27b618c5fff268eae7925ed5d4bba9e30668b4cc399b1252fa25aa7",
-      "collision_function.cuh": "7f5330598596f7686682b0365c6a76ce6aaac1dc06e3538ed571a6c4bb42b39d",
-      "fk.cuh": "1501eb32d3ec47e8ab51a1d13eb33e464030ac638d1d2b8ecd5346817aca30b1",
-      "rrt.cuh": "735ba5b8853181e026cef93addcb08e6b99adf1d113e4dddc360a51e63325ebf"
+      "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
+      "collision.cuh": "bd1b172fde16f2fd210163ffc9b2321208b87980305067e56f1083af681fef37",
+      "collision_function.cuh": "4c7e2824f80f73804cbb16d208e79eb831ad251bdc44ff6382e3257830b10cf6",
+      "fk.cuh": "7983a9fb04d901f0cc0eec08153dd9d1c889f2cdaae6bee9418a45522732b795",
+      "rrt.cuh": "3eee60f1d646368cbd68684a2cc208ec7d3e4ebf756086fe9be20dc3f85cc548"
     },
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": 64,
+    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -3925,27 +3950,27 @@
         "roll",
         "slide"
       ],
-      "math": "F32Sfu",
-      "optimization": "None",
+      "live_budget": 64,
+      "math": "f32-sfu",
+      "optimization": "none",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 0 })",
       "sphere_count": 0
-    }
-  },
-  {
+    },
     "name": "empty-f32-sfu-none-64",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/empty.yaml",
-    "math": "f32-sfu",
     "optimization": "none",
-    "live_budget": 64,
     "sha256": {
-      "centers.cuh": "f651c275e041c0e66ea52159700a25b060db7999c5d46e3a188c131eda03758c",
-      "collision.cuh": "a5d95e73f27b618c5fff268eae7925ed5d4bba9e30668b4cc399b1252fa25aa7",
-      "collision_function.cuh": "7f5330598596f7686682b0365c6a76ce6aaac1dc06e3538ed571a6c4bb42b39d",
-      "fk.cuh": "23365ca7060be1e46c31473dd3547e1191e075668d2b8aa3af7d658a1dd6a347",
-      "rrt.cuh": "735ba5b8853181e026cef93addcb08e6b99adf1d113e4dddc360a51e63325ebf"
+      "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
+      "collision.cuh": "bd1b172fde16f2fd210163ffc9b2321208b87980305067e56f1083af681fef37",
+      "collision_function.cuh": "4c7e2824f80f73804cbb16d208e79eb831ad251bdc44ff6382e3257830b10cf6",
+      "fk.cuh": "14abb622a846098b28b0890a74e54b28684157bb2c970c0368d130fb718b588e",
+      "rrt.cuh": "3eee60f1d646368cbd68684a2cc208ec7d3e4ebf756086fe9be20dc3f85cc548"
     },
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": null,
+    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -3961,27 +3986,27 @@
         "roll",
         "slide"
       ],
-      "math": "F32Sfu",
-      "optimization": "None",
+      "live_budget": null,
+      "math": "f32-sfu",
+      "optimization": "basic",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 64 })",
       "sphere_count": 0
-    }
-  },
-  {
+    },
     "name": "empty-f32-sfu-basic-None",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/empty.yaml",
-    "math": "f32-sfu",
     "optimization": "basic",
-    "live_budget": null,
     "sha256": {
-      "centers.cuh": "f651c275e041c0e66ea52159700a25b060db7999c5d46e3a188c131eda03758c",
-      "collision.cuh": "a5d95e73f27b618c5fff268eae7925ed5d4bba9e30668b4cc399b1252fa25aa7",
-      "collision_function.cuh": "7f5330598596f7686682b0365c6a76ce6aaac1dc06e3538ed571a6c4bb42b39d",
-      "fk.cuh": "873e9d6bc955136837f6706af33637a4c8ccb7e202d1d4c2880a57197bd62590",
-      "rrt.cuh": "735ba5b8853181e026cef93addcb08e6b99adf1d113e4dddc360a51e63325ebf"
+      "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
+      "collision.cuh": "bd1b172fde16f2fd210163ffc9b2321208b87980305067e56f1083af681fef37",
+      "collision_function.cuh": "4c7e2824f80f73804cbb16d208e79eb831ad251bdc44ff6382e3257830b10cf6",
+      "fk.cuh": "5a05c40ef23a1c39e88d6dae2ca130a8a7bc1742a413570ac30b966ad1fe0129",
+      "rrt.cuh": "3eee60f1d646368cbd68684a2cc208ec7d3e4ebf756086fe9be20dc3f85cc548"
     },
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": 0,
+    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -3997,27 +4022,27 @@
         "roll",
         "slide"
       ],
-      "math": "F32Sfu",
-      "optimization": "Basic",
+      "live_budget": 0,
+      "math": "f32-sfu",
+      "optimization": "basic",
       "scalar": "float",
-      "scheduling": "DagOrder",
       "sphere_count": 0
-    }
-  },
-  {
+    },
     "name": "empty-f32-sfu-basic-0",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/empty.yaml",
-    "math": "f32-sfu",
     "optimization": "basic",
-    "live_budget": 0,
     "sha256": {
-      "centers.cuh": "f651c275e041c0e66ea52159700a25b060db7999c5d46e3a188c131eda03758c",
-      "collision.cuh": "a5d95e73f27b618c5fff268eae7925ed5d4bba9e30668b4cc399b1252fa25aa7",
-      "collision_function.cuh": "7f5330598596f7686682b0365c6a76ce6aaac1dc06e3538ed571a6c4bb42b39d",
-      "fk.cuh": "8c910c956b5c38485716394d5f9556ed60e552b6478c99b6e7e1e0fe9ca16a52",
-      "rrt.cuh": "735ba5b8853181e026cef93addcb08e6b99adf1d113e4dddc360a51e63325ebf"
+      "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
+      "collision.cuh": "bd1b172fde16f2fd210163ffc9b2321208b87980305067e56f1083af681fef37",
+      "collision_function.cuh": "4c7e2824f80f73804cbb16d208e79eb831ad251bdc44ff6382e3257830b10cf6",
+      "fk.cuh": "80a37df63e8a6b60b62991ab952b8b703d221659e22693aa5ea201d5efee8fec",
+      "rrt.cuh": "3eee60f1d646368cbd68684a2cc208ec7d3e4ebf756086fe9be20dc3f85cc548"
     },
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": 64,
+    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -4033,27 +4058,27 @@
         "roll",
         "slide"
       ],
-      "math": "F32Sfu",
-      "optimization": "Basic",
+      "live_budget": 64,
+      "math": "f32-sfu",
+      "optimization": "basic",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 0 })",
       "sphere_count": 0
-    }
-  },
-  {
+    },
     "name": "empty-f32-sfu-basic-64",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/empty.yaml",
-    "math": "f32-sfu",
     "optimization": "basic",
-    "live_budget": 64,
     "sha256": {
-      "centers.cuh": "f651c275e041c0e66ea52159700a25b060db7999c5d46e3a188c131eda03758c",
-      "collision.cuh": "a5d95e73f27b618c5fff268eae7925ed5d4bba9e30668b4cc399b1252fa25aa7",
-      "collision_function.cuh": "7f5330598596f7686682b0365c6a76ce6aaac1dc06e3538ed571a6c4bb42b39d",
-      "fk.cuh": "510a4b8fab3b6924401e21ffd0dc05a2c875ddaa382e5f8ae3267c777dfa3d58",
-      "rrt.cuh": "735ba5b8853181e026cef93addcb08e6b99adf1d113e4dddc360a51e63325ebf"
+      "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
+      "collision.cuh": "bd1b172fde16f2fd210163ffc9b2321208b87980305067e56f1083af681fef37",
+      "collision_function.cuh": "4c7e2824f80f73804cbb16d208e79eb831ad251bdc44ff6382e3257830b10cf6",
+      "fk.cuh": "b9c01df5595df811b5ed1c56254c69b892311f073c469bb0de5483613b9adef7",
+      "rrt.cuh": "3eee60f1d646368cbd68684a2cc208ec7d3e4ebf756086fe9be20dc3f85cc548"
     },
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": null,
+    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -4069,27 +4094,27 @@
         "roll",
         "slide"
       ],
-      "math": "F32Sfu",
-      "optimization": "Basic",
+      "live_budget": null,
+      "math": "f32-sfu",
+      "optimization": "algebraic",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 64 })",
       "sphere_count": 0
-    }
-  },
-  {
+    },
     "name": "empty-f32-sfu-algebraic-None",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/empty.yaml",
-    "math": "f32-sfu",
     "optimization": "algebraic",
-    "live_budget": null,
     "sha256": {
-      "centers.cuh": "f651c275e041c0e66ea52159700a25b060db7999c5d46e3a188c131eda03758c",
-      "collision.cuh": "a5d95e73f27b618c5fff268eae7925ed5d4bba9e30668b4cc399b1252fa25aa7",
-      "collision_function.cuh": "7f5330598596f7686682b0365c6a76ce6aaac1dc06e3538ed571a6c4bb42b39d",
-      "fk.cuh": "c795c52ff316f7546607de868e50153e539a9fa2e662457372a6ea76a0b388d0",
-      "rrt.cuh": "735ba5b8853181e026cef93addcb08e6b99adf1d113e4dddc360a51e63325ebf"
+      "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
+      "collision.cuh": "bd1b172fde16f2fd210163ffc9b2321208b87980305067e56f1083af681fef37",
+      "collision_function.cuh": "4c7e2824f80f73804cbb16d208e79eb831ad251bdc44ff6382e3257830b10cf6",
+      "fk.cuh": "6fca36f7eb337479271441e2cc5803ed9bbefa504cdc2f161fafd1834553bb0b",
+      "rrt.cuh": "3eee60f1d646368cbd68684a2cc208ec7d3e4ebf756086fe9be20dc3f85cc548"
     },
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": 0,
+    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -4105,27 +4130,27 @@
         "roll",
         "slide"
       ],
-      "math": "F32Sfu",
-      "optimization": "Algebraic",
+      "live_budget": 0,
+      "math": "f32-sfu",
+      "optimization": "algebraic",
       "scalar": "float",
-      "scheduling": "DagOrder",
       "sphere_count": 0
-    }
-  },
-  {
+    },
     "name": "empty-f32-sfu-algebraic-0",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/empty.yaml",
-    "math": "f32-sfu",
     "optimization": "algebraic",
-    "live_budget": 0,
     "sha256": {
-      "centers.cuh": "f651c275e041c0e66ea52159700a25b060db7999c5d46e3a188c131eda03758c",
-      "collision.cuh": "a5d95e73f27b618c5fff268eae7925ed5d4bba9e30668b4cc399b1252fa25aa7",
-      "collision_function.cuh": "7f5330598596f7686682b0365c6a76ce6aaac1dc06e3538ed571a6c4bb42b39d",
-      "fk.cuh": "8614c351403cd70ba6623c9b7ed320a1b0dc398c55d7d49c69db5744df41e69a",
-      "rrt.cuh": "735ba5b8853181e026cef93addcb08e6b99adf1d113e4dddc360a51e63325ebf"
+      "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
+      "collision.cuh": "bd1b172fde16f2fd210163ffc9b2321208b87980305067e56f1083af681fef37",
+      "collision_function.cuh": "4c7e2824f80f73804cbb16d208e79eb831ad251bdc44ff6382e3257830b10cf6",
+      "fk.cuh": "cbd9ba1ce1a6fae3c89555d50938a8b9907d18b2ec452f1b8c530601e8133e72",
+      "rrt.cuh": "3eee60f1d646368cbd68684a2cc208ec7d3e4ebf756086fe9be20dc3f85cc548"
     },
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": 64,
+    "math": "f32-sfu",
     "model": {
       "control_joints": [
         {
@@ -4141,27 +4166,27 @@
         "roll",
         "slide"
       ],
-      "math": "F32Sfu",
-      "optimization": "Algebraic",
+      "live_budget": 64,
+      "math": "f32-sfu",
+      "optimization": "algebraic",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 0 })",
       "sphere_count": 0
-    }
-  },
-  {
+    },
     "name": "empty-f32-sfu-algebraic-64",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/empty.yaml",
-    "math": "f32-sfu",
     "optimization": "algebraic",
-    "live_budget": 64,
     "sha256": {
-      "centers.cuh": "f651c275e041c0e66ea52159700a25b060db7999c5d46e3a188c131eda03758c",
-      "collision.cuh": "a5d95e73f27b618c5fff268eae7925ed5d4bba9e30668b4cc399b1252fa25aa7",
-      "collision_function.cuh": "7f5330598596f7686682b0365c6a76ce6aaac1dc06e3538ed571a6c4bb42b39d",
-      "fk.cuh": "d6f586efc21e3bd5bccfc9fc0bb29f1229ec7e667a4cc9ba757115dcd2ccb0db",
-      "rrt.cuh": "735ba5b8853181e026cef93addcb08e6b99adf1d113e4dddc360a51e63325ebf"
+      "centers.cuh": "352e940ab836130bc4d9e2a3339c58241efce620adf90b9d02de7ddf2587b1c4",
+      "collision.cuh": "bd1b172fde16f2fd210163ffc9b2321208b87980305067e56f1083af681fef37",
+      "collision_function.cuh": "4c7e2824f80f73804cbb16d208e79eb831ad251bdc44ff6382e3257830b10cf6",
+      "fk.cuh": "cf3f11234668599fa7144e7f0234a361659b4fd3ea52ed89a7d36f079c2b5128",
+      "rrt.cuh": "3eee60f1d646368cbd68684a2cc208ec7d3e4ebf756086fe9be20dc3f85cc548"
     },
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": null,
+    "math": "f64",
     "model": {
       "control_joints": [
         {
@@ -4177,27 +4202,27 @@
         "roll",
         "slide"
       ],
-      "math": "F32Sfu",
-      "optimization": "Algebraic",
-      "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 64 })",
+      "live_budget": null,
+      "math": "f64",
+      "optimization": "none",
+      "scalar": "double",
       "sphere_count": 0
-    }
-  },
-  {
+    },
     "name": "empty-f64-none-None",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/empty.yaml",
-    "math": "f64",
     "optimization": "none",
-    "live_budget": null,
     "sha256": {
-      "centers.cuh": "fec3a73d7d04857e4dd02a8c35e6e3b9dbd95653fe34f2bc5d0fe0d1ec143071",
-      "collision.cuh": "815ada66843fb9d971909a71cf4deb19517e7dfb707dc0b2f913a4ef978f3c76",
-      "collision_function.cuh": "abfaddc9ad41d2a5255f1feb23a017ab5c5f67283d566a52c1473f146127631e",
-      "fk.cuh": "d00f468e9900349ea845c3e1e277e70ba1974811aee03180a02e41a407fcf7ae",
-      "rrt.cuh": "2d3b4a5c0e630e771353674391532c6221425fe1ea6fb8b07e335b2a4332c722"
+      "centers.cuh": "9657130b6625a59f354d8e2dbf8f813e6af1d9dc926f024a2965e03f2aedd07b",
+      "collision.cuh": "b05ad684e32bd5bae6ad92dcf1ffdbc9c921861c6ffac45f99c88d56da8a08e6",
+      "collision_function.cuh": "604d2c2f62e74670949f4af9e11c0fcbef5535a63b368a12576fe84edfafedb0",
+      "fk.cuh": "ec06806ab4c079426668be6e5f5a7b10e3bfa909b1f111718858d8bc5300eee6",
+      "rrt.cuh": "c4e871f22d618e8751288ff4707caa635e6197f76878abea12f248401c8ab11a"
     },
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": 0,
+    "math": "f64",
     "model": {
       "control_joints": [
         {
@@ -4213,27 +4238,27 @@
         "roll",
         "slide"
       ],
-      "math": "F64",
-      "optimization": "None",
+      "live_budget": 0,
+      "math": "f64",
+      "optimization": "none",
       "scalar": "double",
-      "scheduling": "DagOrder",
       "sphere_count": 0
-    }
-  },
-  {
+    },
     "name": "empty-f64-none-0",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/empty.yaml",
-    "math": "f64",
     "optimization": "none",
-    "live_budget": 0,
     "sha256": {
-      "centers.cuh": "fec3a73d7d04857e4dd02a8c35e6e3b9dbd95653fe34f2bc5d0fe0d1ec143071",
-      "collision.cuh": "815ada66843fb9d971909a71cf4deb19517e7dfb707dc0b2f913a4ef978f3c76",
-      "collision_function.cuh": "abfaddc9ad41d2a5255f1feb23a017ab5c5f67283d566a52c1473f146127631e",
-      "fk.cuh": "a8856fbd3ec5c1339cabe552823b78cf312374d5118716a3429bc186d535b2b9",
-      "rrt.cuh": "2d3b4a5c0e630e771353674391532c6221425fe1ea6fb8b07e335b2a4332c722"
+      "centers.cuh": "9657130b6625a59f354d8e2dbf8f813e6af1d9dc926f024a2965e03f2aedd07b",
+      "collision.cuh": "b05ad684e32bd5bae6ad92dcf1ffdbc9c921861c6ffac45f99c88d56da8a08e6",
+      "collision_function.cuh": "604d2c2f62e74670949f4af9e11c0fcbef5535a63b368a12576fe84edfafedb0",
+      "fk.cuh": "afd918094ea46d565124a36495a98fc121b60970cbb2153bd46d6f34a50a0c4c",
+      "rrt.cuh": "c4e871f22d618e8751288ff4707caa635e6197f76878abea12f248401c8ab11a"
     },
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": 64,
+    "math": "f64",
     "model": {
       "control_joints": [
         {
@@ -4249,27 +4274,27 @@
         "roll",
         "slide"
       ],
-      "math": "F64",
-      "optimization": "None",
+      "live_budget": 64,
+      "math": "f64",
+      "optimization": "none",
       "scalar": "double",
-      "scheduling": "Live(Options { live_budget: 0 })",
       "sphere_count": 0
-    }
-  },
-  {
+    },
     "name": "empty-f64-none-64",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/empty.yaml",
-    "math": "f64",
     "optimization": "none",
-    "live_budget": 64,
     "sha256": {
-      "centers.cuh": "fec3a73d7d04857e4dd02a8c35e6e3b9dbd95653fe34f2bc5d0fe0d1ec143071",
-      "collision.cuh": "815ada66843fb9d971909a71cf4deb19517e7dfb707dc0b2f913a4ef978f3c76",
-      "collision_function.cuh": "abfaddc9ad41d2a5255f1feb23a017ab5c5f67283d566a52c1473f146127631e",
-      "fk.cuh": "1252a94d18309654c847fe53ef3f0cf16522f67e1b481365f93f14131af286c0",
-      "rrt.cuh": "2d3b4a5c0e630e771353674391532c6221425fe1ea6fb8b07e335b2a4332c722"
+      "centers.cuh": "9657130b6625a59f354d8e2dbf8f813e6af1d9dc926f024a2965e03f2aedd07b",
+      "collision.cuh": "b05ad684e32bd5bae6ad92dcf1ffdbc9c921861c6ffac45f99c88d56da8a08e6",
+      "collision_function.cuh": "604d2c2f62e74670949f4af9e11c0fcbef5535a63b368a12576fe84edfafedb0",
+      "fk.cuh": "96700c5cdac1bfa4f9225ae185ddcbbb19206c7f41c9fcce779d732f742eeb21",
+      "rrt.cuh": "c4e871f22d618e8751288ff4707caa635e6197f76878abea12f248401c8ab11a"
     },
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": null,
+    "math": "f64",
     "model": {
       "control_joints": [
         {
@@ -4285,27 +4310,27 @@
         "roll",
         "slide"
       ],
-      "math": "F64",
-      "optimization": "None",
+      "live_budget": null,
+      "math": "f64",
+      "optimization": "basic",
       "scalar": "double",
-      "scheduling": "Live(Options { live_budget: 64 })",
       "sphere_count": 0
-    }
-  },
-  {
+    },
     "name": "empty-f64-basic-None",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/empty.yaml",
-    "math": "f64",
     "optimization": "basic",
-    "live_budget": null,
     "sha256": {
-      "centers.cuh": "fec3a73d7d04857e4dd02a8c35e6e3b9dbd95653fe34f2bc5d0fe0d1ec143071",
-      "collision.cuh": "815ada66843fb9d971909a71cf4deb19517e7dfb707dc0b2f913a4ef978f3c76",
-      "collision_function.cuh": "abfaddc9ad41d2a5255f1feb23a017ab5c5f67283d566a52c1473f146127631e",
-      "fk.cuh": "f515f097f4e88b174f278c0bdc2d2f2557d5f1f3d75bb2275823a0aed7d9c417",
-      "rrt.cuh": "2d3b4a5c0e630e771353674391532c6221425fe1ea6fb8b07e335b2a4332c722"
+      "centers.cuh": "9657130b6625a59f354d8e2dbf8f813e6af1d9dc926f024a2965e03f2aedd07b",
+      "collision.cuh": "b05ad684e32bd5bae6ad92dcf1ffdbc9c921861c6ffac45f99c88d56da8a08e6",
+      "collision_function.cuh": "604d2c2f62e74670949f4af9e11c0fcbef5535a63b368a12576fe84edfafedb0",
+      "fk.cuh": "27eeec69bfc76fc1ce8f358e480b3dc8e567a62c51d9a020af044b7b9c6f091b",
+      "rrt.cuh": "c4e871f22d618e8751288ff4707caa635e6197f76878abea12f248401c8ab11a"
     },
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": 0,
+    "math": "f64",
     "model": {
       "control_joints": [
         {
@@ -4321,27 +4346,27 @@
         "roll",
         "slide"
       ],
-      "math": "F64",
-      "optimization": "Basic",
+      "live_budget": 0,
+      "math": "f64",
+      "optimization": "basic",
       "scalar": "double",
-      "scheduling": "DagOrder",
       "sphere_count": 0
-    }
-  },
-  {
+    },
     "name": "empty-f64-basic-0",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/empty.yaml",
-    "math": "f64",
     "optimization": "basic",
-    "live_budget": 0,
     "sha256": {
-      "centers.cuh": "fec3a73d7d04857e4dd02a8c35e6e3b9dbd95653fe34f2bc5d0fe0d1ec143071",
-      "collision.cuh": "815ada66843fb9d971909a71cf4deb19517e7dfb707dc0b2f913a4ef978f3c76",
-      "collision_function.cuh": "abfaddc9ad41d2a5255f1feb23a017ab5c5f67283d566a52c1473f146127631e",
-      "fk.cuh": "a830fb650318522935eff57c705ee9793a4816fc8316857b14b35e5b5e7b1326",
-      "rrt.cuh": "2d3b4a5c0e630e771353674391532c6221425fe1ea6fb8b07e335b2a4332c722"
+      "centers.cuh": "9657130b6625a59f354d8e2dbf8f813e6af1d9dc926f024a2965e03f2aedd07b",
+      "collision.cuh": "b05ad684e32bd5bae6ad92dcf1ffdbc9c921861c6ffac45f99c88d56da8a08e6",
+      "collision_function.cuh": "604d2c2f62e74670949f4af9e11c0fcbef5535a63b368a12576fe84edfafedb0",
+      "fk.cuh": "98aafe7cf81f0caef8b7501d6da56cb4c200e86feb2a5d8dfb077f077f51d565",
+      "rrt.cuh": "c4e871f22d618e8751288ff4707caa635e6197f76878abea12f248401c8ab11a"
     },
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": 64,
+    "math": "f64",
     "model": {
       "control_joints": [
         {
@@ -4357,27 +4382,27 @@
         "roll",
         "slide"
       ],
-      "math": "F64",
-      "optimization": "Basic",
+      "live_budget": 64,
+      "math": "f64",
+      "optimization": "basic",
       "scalar": "double",
-      "scheduling": "Live(Options { live_budget: 0 })",
       "sphere_count": 0
-    }
-  },
-  {
+    },
     "name": "empty-f64-basic-64",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/empty.yaml",
-    "math": "f64",
     "optimization": "basic",
-    "live_budget": 64,
     "sha256": {
-      "centers.cuh": "fec3a73d7d04857e4dd02a8c35e6e3b9dbd95653fe34f2bc5d0fe0d1ec143071",
-      "collision.cuh": "815ada66843fb9d971909a71cf4deb19517e7dfb707dc0b2f913a4ef978f3c76",
-      "collision_function.cuh": "abfaddc9ad41d2a5255f1feb23a017ab5c5f67283d566a52c1473f146127631e",
-      "fk.cuh": "eb9c66b7e88991737e1e8e0e0df5f57401ef34e76715917b21c37a142dcdc641",
-      "rrt.cuh": "2d3b4a5c0e630e771353674391532c6221425fe1ea6fb8b07e335b2a4332c722"
+      "centers.cuh": "9657130b6625a59f354d8e2dbf8f813e6af1d9dc926f024a2965e03f2aedd07b",
+      "collision.cuh": "b05ad684e32bd5bae6ad92dcf1ffdbc9c921861c6ffac45f99c88d56da8a08e6",
+      "collision_function.cuh": "604d2c2f62e74670949f4af9e11c0fcbef5535a63b368a12576fe84edfafedb0",
+      "fk.cuh": "0420c25277835838138a0faaaebe6e54e94d6275f72c39e2775405859bf4c7da",
+      "rrt.cuh": "c4e871f22d618e8751288ff4707caa635e6197f76878abea12f248401c8ab11a"
     },
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": null,
+    "math": "f64",
     "model": {
       "control_joints": [
         {
@@ -4393,27 +4418,27 @@
         "roll",
         "slide"
       ],
-      "math": "F64",
-      "optimization": "Basic",
+      "live_budget": null,
+      "math": "f64",
+      "optimization": "algebraic",
       "scalar": "double",
-      "scheduling": "Live(Options { live_budget: 64 })",
       "sphere_count": 0
-    }
-  },
-  {
+    },
     "name": "empty-f64-algebraic-None",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/empty.yaml",
-    "math": "f64",
     "optimization": "algebraic",
-    "live_budget": null,
     "sha256": {
-      "centers.cuh": "fec3a73d7d04857e4dd02a8c35e6e3b9dbd95653fe34f2bc5d0fe0d1ec143071",
-      "collision.cuh": "815ada66843fb9d971909a71cf4deb19517e7dfb707dc0b2f913a4ef978f3c76",
-      "collision_function.cuh": "abfaddc9ad41d2a5255f1feb23a017ab5c5f67283d566a52c1473f146127631e",
-      "fk.cuh": "02ba4c01c2b1c01967c53de4fb6dc69dda5fd0094b928bd57fa13a2085c34530",
-      "rrt.cuh": "2d3b4a5c0e630e771353674391532c6221425fe1ea6fb8b07e335b2a4332c722"
+      "centers.cuh": "9657130b6625a59f354d8e2dbf8f813e6af1d9dc926f024a2965e03f2aedd07b",
+      "collision.cuh": "b05ad684e32bd5bae6ad92dcf1ffdbc9c921861c6ffac45f99c88d56da8a08e6",
+      "collision_function.cuh": "604d2c2f62e74670949f4af9e11c0fcbef5535a63b368a12576fe84edfafedb0",
+      "fk.cuh": "1080b48b26613f3665090eb014ff80b4be86db19dfbdbc61bc2f7e0c40c1a0be",
+      "rrt.cuh": "c4e871f22d618e8751288ff4707caa635e6197f76878abea12f248401c8ab11a"
     },
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": 0,
+    "math": "f64",
     "model": {
       "control_joints": [
         {
@@ -4429,27 +4454,27 @@
         "roll",
         "slide"
       ],
-      "math": "F64",
-      "optimization": "Algebraic",
+      "live_budget": 0,
+      "math": "f64",
+      "optimization": "algebraic",
       "scalar": "double",
-      "scheduling": "DagOrder",
       "sphere_count": 0
-    }
-  },
-  {
+    },
     "name": "empty-f64-algebraic-0",
-    "urdf": "tests/fixtures/fk_chain.urdf",
-    "spheres": "tests/fixtures/compiler/empty.yaml",
-    "math": "f64",
     "optimization": "algebraic",
-    "live_budget": 0,
     "sha256": {
-      "centers.cuh": "fec3a73d7d04857e4dd02a8c35e6e3b9dbd95653fe34f2bc5d0fe0d1ec143071",
-      "collision.cuh": "815ada66843fb9d971909a71cf4deb19517e7dfb707dc0b2f913a4ef978f3c76",
-      "collision_function.cuh": "abfaddc9ad41d2a5255f1feb23a017ab5c5f67283d566a52c1473f146127631e",
-      "fk.cuh": "6ceb2df1c604ee10d40c2853090278fb5f154ef6803a8d3c609e7352bdbf21fe",
-      "rrt.cuh": "2d3b4a5c0e630e771353674391532c6221425fe1ea6fb8b07e335b2a4332c722"
+      "centers.cuh": "9657130b6625a59f354d8e2dbf8f813e6af1d9dc926f024a2965e03f2aedd07b",
+      "collision.cuh": "b05ad684e32bd5bae6ad92dcf1ffdbc9c921861c6ffac45f99c88d56da8a08e6",
+      "collision_function.cuh": "604d2c2f62e74670949f4af9e11c0fcbef5535a63b368a12576fe84edfafedb0",
+      "fk.cuh": "ace0d090a7f2211603602717d50eb9223550a1fd7177906675971395a5fa6b12",
+      "rrt.cuh": "c4e871f22d618e8751288ff4707caa635e6197f76878abea12f248401c8ab11a"
     },
+    "spheres": "tests/fixtures/compiler/empty.yaml",
+    "urdf": "tests/fixtures/fk_chain.urdf"
+  },
+  {
+    "live_budget": 64,
+    "math": "f64",
     "model": {
       "control_joints": [
         {
@@ -4465,668 +4490,643 @@
         "roll",
         "slide"
       ],
-      "math": "F64",
-      "optimization": "Algebraic",
+      "live_budget": 64,
+      "math": "f64",
+      "optimization": "algebraic",
       "scalar": "double",
-      "scheduling": "Live(Options { live_budget: 0 })",
       "sphere_count": 0
-    }
-  },
-  {
+    },
     "name": "empty-f64-algebraic-64",
-    "urdf": "tests/fixtures/fk_chain.urdf",
+    "optimization": "algebraic",
+    "sha256": {
+      "centers.cuh": "9657130b6625a59f354d8e2dbf8f813e6af1d9dc926f024a2965e03f2aedd07b",
+      "collision.cuh": "b05ad684e32bd5bae6ad92dcf1ffdbc9c921861c6ffac45f99c88d56da8a08e6",
+      "collision_function.cuh": "604d2c2f62e74670949f4af9e11c0fcbef5535a63b368a12576fe84edfafedb0",
+      "fk.cuh": "dab02b0ea581873f58a5365f72e5ef2ae2d4bd3fe9de40e35b32e6042db3972f",
+      "rrt.cuh": "c4e871f22d618e8751288ff4707caa635e6197f76878abea12f248401c8ab11a"
+    },
     "spheres": "tests/fixtures/compiler/empty.yaml",
-    "math": "f64",
-    "optimization": "algebraic",
-    "live_budget": 64,
-    "sha256": {
-      "centers.cuh": "fec3a73d7d04857e4dd02a8c35e6e3b9dbd95653fe34f2bc5d0fe0d1ec143071",
-      "collision.cuh": "815ada66843fb9d971909a71cf4deb19517e7dfb707dc0b2f913a4ef978f3c76",
-      "collision_function.cuh": "abfaddc9ad41d2a5255f1feb23a017ab5c5f67283d566a52c1473f146127631e",
-      "fk.cuh": "82f4dfd6273936a4f5fb6df7d25e6163ec0bcedc452db01f6fcaa767eb1ea429",
-      "rrt.cuh": "2d3b4a5c0e630e771353674391532c6221425fe1ea6fb8b07e335b2a4332c722"
-    },
-    "model": {
-      "control_joints": [
-        {
-          "index": 0,
-          "lower": -3.2,
-          "name": "yaw",
-          "upper": 3.2
-        }
-      ],
-      "input_joint_names": [
-        "yaw",
-        "pitch",
-        "roll",
-        "slide"
-      ],
-      "math": "F64",
-      "optimization": "Algebraic",
-      "scalar": "double",
-      "scheduling": "Live(Options { live_budget: 64 })",
-      "sphere_count": 0
-    }
+    "urdf": "tests/fixtures/fk_chain.urdf"
   },
   {
+    "live_budget": null,
+    "math": "f32",
+    "model": {
+      "control_joints": [],
+      "input_joint_names": [],
+      "live_budget": null,
+      "math": "f32",
+      "optimization": "none",
+      "scalar": "float",
+      "sphere_count": 1
+    },
     "name": "fixed-f32-none-None",
-    "urdf": "tests/fixtures/compiler/fixed.urdf",
-    "spheres": "tests/fixtures/compiler/fixed.yaml",
-    "math": "f32",
     "optimization": "none",
-    "live_budget": null,
     "sha256": {
-      "centers.cuh": "a88af0b002a50a9abeb77adceb13f961e1d7f0a7601d846c3e5ac2bc2e1c472a",
-      "collision.cuh": "23f5fced5b7dfb89880860d378191359c4be6e830742d227f6286d262bcfd96a",
-      "collision_function.cuh": "2034441c267b807cfea60d8bc267f0e6bb7f354bd1a4afcb0f7419a933cb2e17",
-      "fk.cuh": "128b895e66ebe0d19dd172b69cdb3361bea058a2d31889d43b3198ca975ad759"
+      "centers.cuh": "4335953b68d239f4c2ae25981da26c3e6c7566943dadba356776ccbed63476dd",
+      "collision.cuh": "b58fba00426fda4d21bdf467e930c6f84167954149bf4833ab50bb5268ee8e86",
+      "collision_function.cuh": "441352a04baef93acdc9f0c8e4fd72487c02cece7a1c05854d28d0593dda2b15",
+      "fk.cuh": "495cd14dd5b952f789c30054efe73fbf11d4d3095b8be2c72382d08b1699f1d8"
     },
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "urdf": "tests/fixtures/compiler/fixed.urdf"
+  },
+  {
+    "live_budget": 0,
+    "math": "f32",
     "model": {
       "control_joints": [],
       "input_joint_names": [],
-      "math": "F32",
-      "optimization": "None",
+      "live_budget": 0,
+      "math": "f32",
+      "optimization": "none",
       "scalar": "float",
-      "scheduling": "DagOrder",
       "sphere_count": 1
-    }
-  },
-  {
+    },
     "name": "fixed-f32-none-0",
-    "urdf": "tests/fixtures/compiler/fixed.urdf",
-    "spheres": "tests/fixtures/compiler/fixed.yaml",
-    "math": "f32",
     "optimization": "none",
-    "live_budget": 0,
     "sha256": {
-      "centers.cuh": "46e7cb49a79788e5c4dab8d957d7b73e6f6d2678a8cfe79188570676120d30d8",
-      "collision.cuh": "770f5b11bdca2b0df4142633c1dcb1b86c8a7f48c85f73e20e8bad124b421910",
-      "collision_function.cuh": "b389ee876c6f10174c41e15c331930c1d33215272b23974fd9ea6bb2f7fa0bf0",
-      "fk.cuh": "0797e4491aeaa605d33d662deb1aa4084ccfc4bb8b65b831b25a6cdcd9054552"
+      "centers.cuh": "7f711c29fa3bfc6b2f5ccd0b1a65c4887bfca58e07e9fb74d159c5cb00a127b4",
+      "collision.cuh": "eef802fba6eb817cdb09c237e00edbef0b29debe5975b93d8795efe4f770266c",
+      "collision_function.cuh": "9c35d2e7b8612457854dc6ee0568535cb067a9926c99e121055bed344c10a619",
+      "fk.cuh": "4f2ae4fbfa0dfb058582423af26f7a324f2865969dc437e8ac5315cf06233126"
     },
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "urdf": "tests/fixtures/compiler/fixed.urdf"
+  },
+  {
+    "live_budget": 64,
+    "math": "f32",
     "model": {
       "control_joints": [],
       "input_joint_names": [],
-      "math": "F32",
-      "optimization": "None",
+      "live_budget": 64,
+      "math": "f32",
+      "optimization": "none",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 0 })",
       "sphere_count": 1
-    }
-  },
-  {
+    },
     "name": "fixed-f32-none-64",
-    "urdf": "tests/fixtures/compiler/fixed.urdf",
-    "spheres": "tests/fixtures/compiler/fixed.yaml",
-    "math": "f32",
     "optimization": "none",
-    "live_budget": 64,
     "sha256": {
-      "centers.cuh": "6b0d5aa7ca17532d1d0ec1b1dd337973fde1cdfd0bd8be0be8c7244e94b8ec4d",
-      "collision.cuh": "c69a7e8cfe1aa19e2d1b13a9a36cb79ed9dd0ff20a30006bb79aaa006b31b52a",
-      "collision_function.cuh": "20d8b3752c919225346b29e337e86b0f932dac84fad4bf5f2db9a45d021279f9",
-      "fk.cuh": "0797e4491aeaa605d33d662deb1aa4084ccfc4bb8b65b831b25a6cdcd9054552"
+      "centers.cuh": "e43f643935d6d9d05f7abcce173f96136d965e2c8ab3332b47c4fd9ea058418a",
+      "collision.cuh": "9b2ea7f11dcc6d0766abe489331316bacbdb8bb8a31ef9bd4730f341dad87301",
+      "collision_function.cuh": "e348d472e9667c491db633ba77394c4d9dd05237e996890a9285b4bd74e52f1a",
+      "fk.cuh": "4f2ae4fbfa0dfb058582423af26f7a324f2865969dc437e8ac5315cf06233126"
     },
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "urdf": "tests/fixtures/compiler/fixed.urdf"
+  },
+  {
+    "live_budget": null,
+    "math": "f32",
     "model": {
       "control_joints": [],
       "input_joint_names": [],
-      "math": "F32",
-      "optimization": "None",
+      "live_budget": null,
+      "math": "f32",
+      "optimization": "basic",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 64 })",
       "sphere_count": 1
-    }
-  },
-  {
+    },
     "name": "fixed-f32-basic-None",
-    "urdf": "tests/fixtures/compiler/fixed.urdf",
-    "spheres": "tests/fixtures/compiler/fixed.yaml",
-    "math": "f32",
     "optimization": "basic",
-    "live_budget": null,
     "sha256": {
-      "centers.cuh": "35a2a829f0c48767b6b3c4760e8d1ae9fbf78896fef86ea9aa44f635de79ebad",
-      "collision.cuh": "56b5f619b56e990a50a9f8b6291b42310b9fff892be38cf8ff2c28a2dd8fe5b6",
-      "collision_function.cuh": "1aa275a62a9f642b789363eea19393d3e98370bbe2f390389873d560d4b256ed",
-      "fk.cuh": "128b895e66ebe0d19dd172b69cdb3361bea058a2d31889d43b3198ca975ad759"
+      "centers.cuh": "bb60a6174d15d0234eed44e7f401bb67a590af9ed0369b1e01340246c2644716",
+      "collision.cuh": "84427885793712574ba9fa41993e12458624c398bb5fe5f4050b5a0cb6b98849",
+      "collision_function.cuh": "82438cd452a6eb6d129c07bd0e159d1638d1e3c01faf9a8d4aca6c901de59b66",
+      "fk.cuh": "495cd14dd5b952f789c30054efe73fbf11d4d3095b8be2c72382d08b1699f1d8"
     },
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "urdf": "tests/fixtures/compiler/fixed.urdf"
+  },
+  {
+    "live_budget": 0,
+    "math": "f32",
     "model": {
       "control_joints": [],
       "input_joint_names": [],
-      "math": "F32",
-      "optimization": "Basic",
+      "live_budget": 0,
+      "math": "f32",
+      "optimization": "basic",
       "scalar": "float",
-      "scheduling": "DagOrder",
       "sphere_count": 1
-    }
-  },
-  {
+    },
     "name": "fixed-f32-basic-0",
-    "urdf": "tests/fixtures/compiler/fixed.urdf",
-    "spheres": "tests/fixtures/compiler/fixed.yaml",
-    "math": "f32",
     "optimization": "basic",
-    "live_budget": 0,
     "sha256": {
-      "centers.cuh": "0ce47c90cfa0440df952ebe3fe8554048c73658f39436bd350feb33382976e15",
-      "collision.cuh": "84ad539baac4dcbbdf715342adac56fd6d3a2a7efccc292eeb611e9c4427527b",
-      "collision_function.cuh": "9c91db167c32daebe5986f56a87a0a196181d33f19252701d7267751171b15b6",
-      "fk.cuh": "0797e4491aeaa605d33d662deb1aa4084ccfc4bb8b65b831b25a6cdcd9054552"
+      "centers.cuh": "15d84ec651dd6bc8a5d65387dbc8836432f649db45027e8bb424a0ab273af269",
+      "collision.cuh": "709b0da5c29beb289c356af5a301559228f6068504b0ee900e33fc380618a8dd",
+      "collision_function.cuh": "a4c50ecbb1d92cd5c4dc59aa1a9ef88a9253e928b055e2fdb093f72f5f443332",
+      "fk.cuh": "4f2ae4fbfa0dfb058582423af26f7a324f2865969dc437e8ac5315cf06233126"
     },
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "urdf": "tests/fixtures/compiler/fixed.urdf"
+  },
+  {
+    "live_budget": 64,
+    "math": "f32",
     "model": {
       "control_joints": [],
       "input_joint_names": [],
-      "math": "F32",
-      "optimization": "Basic",
+      "live_budget": 64,
+      "math": "f32",
+      "optimization": "basic",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 0 })",
       "sphere_count": 1
-    }
-  },
-  {
+    },
     "name": "fixed-f32-basic-64",
-    "urdf": "tests/fixtures/compiler/fixed.urdf",
-    "spheres": "tests/fixtures/compiler/fixed.yaml",
-    "math": "f32",
     "optimization": "basic",
-    "live_budget": 64,
     "sha256": {
-      "centers.cuh": "03873e4d934941798812e8a79ee33d663b88ea4c7fc2ef219f5244ee8125f53f",
-      "collision.cuh": "56b5f619b56e990a50a9f8b6291b42310b9fff892be38cf8ff2c28a2dd8fe5b6",
-      "collision_function.cuh": "1aa275a62a9f642b789363eea19393d3e98370bbe2f390389873d560d4b256ed",
-      "fk.cuh": "0797e4491aeaa605d33d662deb1aa4084ccfc4bb8b65b831b25a6cdcd9054552"
+      "centers.cuh": "cd6b885d4336f31e97b9a0717ad54db2e6bde412e92d8beab3d8e32f467c0127",
+      "collision.cuh": "84427885793712574ba9fa41993e12458624c398bb5fe5f4050b5a0cb6b98849",
+      "collision_function.cuh": "82438cd452a6eb6d129c07bd0e159d1638d1e3c01faf9a8d4aca6c901de59b66",
+      "fk.cuh": "4f2ae4fbfa0dfb058582423af26f7a324f2865969dc437e8ac5315cf06233126"
     },
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "urdf": "tests/fixtures/compiler/fixed.urdf"
+  },
+  {
+    "live_budget": null,
+    "math": "f32",
     "model": {
       "control_joints": [],
       "input_joint_names": [],
-      "math": "F32",
-      "optimization": "Basic",
+      "live_budget": null,
+      "math": "f32",
+      "optimization": "algebraic",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 64 })",
       "sphere_count": 1
-    }
-  },
-  {
+    },
     "name": "fixed-f32-algebraic-None",
-    "urdf": "tests/fixtures/compiler/fixed.urdf",
-    "spheres": "tests/fixtures/compiler/fixed.yaml",
-    "math": "f32",
     "optimization": "algebraic",
-    "live_budget": null,
     "sha256": {
-      "centers.cuh": "35a2a829f0c48767b6b3c4760e8d1ae9fbf78896fef86ea9aa44f635de79ebad",
-      "collision.cuh": "56b5f619b56e990a50a9f8b6291b42310b9fff892be38cf8ff2c28a2dd8fe5b6",
-      "collision_function.cuh": "1aa275a62a9f642b789363eea19393d3e98370bbe2f390389873d560d4b256ed",
-      "fk.cuh": "128b895e66ebe0d19dd172b69cdb3361bea058a2d31889d43b3198ca975ad759"
+      "centers.cuh": "bb60a6174d15d0234eed44e7f401bb67a590af9ed0369b1e01340246c2644716",
+      "collision.cuh": "84427885793712574ba9fa41993e12458624c398bb5fe5f4050b5a0cb6b98849",
+      "collision_function.cuh": "82438cd452a6eb6d129c07bd0e159d1638d1e3c01faf9a8d4aca6c901de59b66",
+      "fk.cuh": "495cd14dd5b952f789c30054efe73fbf11d4d3095b8be2c72382d08b1699f1d8"
     },
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "urdf": "tests/fixtures/compiler/fixed.urdf"
+  },
+  {
+    "live_budget": 0,
+    "math": "f32",
     "model": {
       "control_joints": [],
       "input_joint_names": [],
-      "math": "F32",
-      "optimization": "Algebraic",
+      "live_budget": 0,
+      "math": "f32",
+      "optimization": "algebraic",
       "scalar": "float",
-      "scheduling": "DagOrder",
       "sphere_count": 1
-    }
-  },
-  {
+    },
     "name": "fixed-f32-algebraic-0",
-    "urdf": "tests/fixtures/compiler/fixed.urdf",
-    "spheres": "tests/fixtures/compiler/fixed.yaml",
-    "math": "f32",
     "optimization": "algebraic",
-    "live_budget": 0,
     "sha256": {
-      "centers.cuh": "0ce47c90cfa0440df952ebe3fe8554048c73658f39436bd350feb33382976e15",
-      "collision.cuh": "84ad539baac4dcbbdf715342adac56fd6d3a2a7efccc292eeb611e9c4427527b",
-      "collision_function.cuh": "9c91db167c32daebe5986f56a87a0a196181d33f19252701d7267751171b15b6",
-      "fk.cuh": "0797e4491aeaa605d33d662deb1aa4084ccfc4bb8b65b831b25a6cdcd9054552"
+      "centers.cuh": "15d84ec651dd6bc8a5d65387dbc8836432f649db45027e8bb424a0ab273af269",
+      "collision.cuh": "709b0da5c29beb289c356af5a301559228f6068504b0ee900e33fc380618a8dd",
+      "collision_function.cuh": "a4c50ecbb1d92cd5c4dc59aa1a9ef88a9253e928b055e2fdb093f72f5f443332",
+      "fk.cuh": "4f2ae4fbfa0dfb058582423af26f7a324f2865969dc437e8ac5315cf06233126"
     },
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "urdf": "tests/fixtures/compiler/fixed.urdf"
+  },
+  {
+    "live_budget": 64,
+    "math": "f32",
     "model": {
       "control_joints": [],
       "input_joint_names": [],
-      "math": "F32",
-      "optimization": "Algebraic",
+      "live_budget": 64,
+      "math": "f32",
+      "optimization": "algebraic",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 0 })",
       "sphere_count": 1
-    }
-  },
-  {
+    },
     "name": "fixed-f32-algebraic-64",
-    "urdf": "tests/fixtures/compiler/fixed.urdf",
-    "spheres": "tests/fixtures/compiler/fixed.yaml",
-    "math": "f32",
     "optimization": "algebraic",
-    "live_budget": 64,
     "sha256": {
-      "centers.cuh": "03873e4d934941798812e8a79ee33d663b88ea4c7fc2ef219f5244ee8125f53f",
-      "collision.cuh": "56b5f619b56e990a50a9f8b6291b42310b9fff892be38cf8ff2c28a2dd8fe5b6",
-      "collision_function.cuh": "1aa275a62a9f642b789363eea19393d3e98370bbe2f390389873d560d4b256ed",
-      "fk.cuh": "0797e4491aeaa605d33d662deb1aa4084ccfc4bb8b65b831b25a6cdcd9054552"
+      "centers.cuh": "cd6b885d4336f31e97b9a0717ad54db2e6bde412e92d8beab3d8e32f467c0127",
+      "collision.cuh": "84427885793712574ba9fa41993e12458624c398bb5fe5f4050b5a0cb6b98849",
+      "collision_function.cuh": "82438cd452a6eb6d129c07bd0e159d1638d1e3c01faf9a8d4aca6c901de59b66",
+      "fk.cuh": "4f2ae4fbfa0dfb058582423af26f7a324f2865969dc437e8ac5315cf06233126"
     },
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "urdf": "tests/fixtures/compiler/fixed.urdf"
+  },
+  {
+    "live_budget": null,
+    "math": "f32-sfu",
     "model": {
       "control_joints": [],
       "input_joint_names": [],
-      "math": "F32",
-      "optimization": "Algebraic",
+      "live_budget": null,
+      "math": "f32-sfu",
+      "optimization": "none",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 64 })",
       "sphere_count": 1
-    }
-  },
-  {
+    },
     "name": "fixed-f32-sfu-none-None",
-    "urdf": "tests/fixtures/compiler/fixed.urdf",
-    "spheres": "tests/fixtures/compiler/fixed.yaml",
-    "math": "f32-sfu",
     "optimization": "none",
-    "live_budget": null,
     "sha256": {
-      "centers.cuh": "a88af0b002a50a9abeb77adceb13f961e1d7f0a7601d846c3e5ac2bc2e1c472a",
-      "collision.cuh": "23f5fced5b7dfb89880860d378191359c4be6e830742d227f6286d262bcfd96a",
-      "collision_function.cuh": "2034441c267b807cfea60d8bc267f0e6bb7f354bd1a4afcb0f7419a933cb2e17",
-      "fk.cuh": "128b895e66ebe0d19dd172b69cdb3361bea058a2d31889d43b3198ca975ad759"
+      "centers.cuh": "4335953b68d239f4c2ae25981da26c3e6c7566943dadba356776ccbed63476dd",
+      "collision.cuh": "b58fba00426fda4d21bdf467e930c6f84167954149bf4833ab50bb5268ee8e86",
+      "collision_function.cuh": "441352a04baef93acdc9f0c8e4fd72487c02cece7a1c05854d28d0593dda2b15",
+      "fk.cuh": "495cd14dd5b952f789c30054efe73fbf11d4d3095b8be2c72382d08b1699f1d8"
     },
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "urdf": "tests/fixtures/compiler/fixed.urdf"
+  },
+  {
+    "live_budget": 0,
+    "math": "f32-sfu",
     "model": {
       "control_joints": [],
       "input_joint_names": [],
-      "math": "F32Sfu",
-      "optimization": "None",
+      "live_budget": 0,
+      "math": "f32-sfu",
+      "optimization": "none",
       "scalar": "float",
-      "scheduling": "DagOrder",
       "sphere_count": 1
-    }
-  },
-  {
+    },
     "name": "fixed-f32-sfu-none-0",
-    "urdf": "tests/fixtures/compiler/fixed.urdf",
-    "spheres": "tests/fixtures/compiler/fixed.yaml",
-    "math": "f32-sfu",
     "optimization": "none",
-    "live_budget": 0,
     "sha256": {
-      "centers.cuh": "46e7cb49a79788e5c4dab8d957d7b73e6f6d2678a8cfe79188570676120d30d8",
-      "collision.cuh": "770f5b11bdca2b0df4142633c1dcb1b86c8a7f48c85f73e20e8bad124b421910",
-      "collision_function.cuh": "b389ee876c6f10174c41e15c331930c1d33215272b23974fd9ea6bb2f7fa0bf0",
-      "fk.cuh": "0797e4491aeaa605d33d662deb1aa4084ccfc4bb8b65b831b25a6cdcd9054552"
+      "centers.cuh": "7f711c29fa3bfc6b2f5ccd0b1a65c4887bfca58e07e9fb74d159c5cb00a127b4",
+      "collision.cuh": "eef802fba6eb817cdb09c237e00edbef0b29debe5975b93d8795efe4f770266c",
+      "collision_function.cuh": "9c35d2e7b8612457854dc6ee0568535cb067a9926c99e121055bed344c10a619",
+      "fk.cuh": "4f2ae4fbfa0dfb058582423af26f7a324f2865969dc437e8ac5315cf06233126"
     },
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "urdf": "tests/fixtures/compiler/fixed.urdf"
+  },
+  {
+    "live_budget": 64,
+    "math": "f32-sfu",
     "model": {
       "control_joints": [],
       "input_joint_names": [],
-      "math": "F32Sfu",
-      "optimization": "None",
+      "live_budget": 64,
+      "math": "f32-sfu",
+      "optimization": "none",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 0 })",
       "sphere_count": 1
-    }
-  },
-  {
+    },
     "name": "fixed-f32-sfu-none-64",
-    "urdf": "tests/fixtures/compiler/fixed.urdf",
-    "spheres": "tests/fixtures/compiler/fixed.yaml",
-    "math": "f32-sfu",
     "optimization": "none",
-    "live_budget": 64,
     "sha256": {
-      "centers.cuh": "6b0d5aa7ca17532d1d0ec1b1dd337973fde1cdfd0bd8be0be8c7244e94b8ec4d",
-      "collision.cuh": "c69a7e8cfe1aa19e2d1b13a9a36cb79ed9dd0ff20a30006bb79aaa006b31b52a",
-      "collision_function.cuh": "20d8b3752c919225346b29e337e86b0f932dac84fad4bf5f2db9a45d021279f9",
-      "fk.cuh": "0797e4491aeaa605d33d662deb1aa4084ccfc4bb8b65b831b25a6cdcd9054552"
+      "centers.cuh": "e43f643935d6d9d05f7abcce173f96136d965e2c8ab3332b47c4fd9ea058418a",
+      "collision.cuh": "9b2ea7f11dcc6d0766abe489331316bacbdb8bb8a31ef9bd4730f341dad87301",
+      "collision_function.cuh": "e348d472e9667c491db633ba77394c4d9dd05237e996890a9285b4bd74e52f1a",
+      "fk.cuh": "4f2ae4fbfa0dfb058582423af26f7a324f2865969dc437e8ac5315cf06233126"
     },
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "urdf": "tests/fixtures/compiler/fixed.urdf"
+  },
+  {
+    "live_budget": null,
+    "math": "f32-sfu",
     "model": {
       "control_joints": [],
       "input_joint_names": [],
-      "math": "F32Sfu",
-      "optimization": "None",
+      "live_budget": null,
+      "math": "f32-sfu",
+      "optimization": "basic",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 64 })",
       "sphere_count": 1
-    }
-  },
-  {
+    },
     "name": "fixed-f32-sfu-basic-None",
-    "urdf": "tests/fixtures/compiler/fixed.urdf",
-    "spheres": "tests/fixtures/compiler/fixed.yaml",
-    "math": "f32-sfu",
     "optimization": "basic",
-    "live_budget": null,
     "sha256": {
-      "centers.cuh": "35a2a829f0c48767b6b3c4760e8d1ae9fbf78896fef86ea9aa44f635de79ebad",
-      "collision.cuh": "56b5f619b56e990a50a9f8b6291b42310b9fff892be38cf8ff2c28a2dd8fe5b6",
-      "collision_function.cuh": "1aa275a62a9f642b789363eea19393d3e98370bbe2f390389873d560d4b256ed",
-      "fk.cuh": "128b895e66ebe0d19dd172b69cdb3361bea058a2d31889d43b3198ca975ad759"
+      "centers.cuh": "bb60a6174d15d0234eed44e7f401bb67a590af9ed0369b1e01340246c2644716",
+      "collision.cuh": "84427885793712574ba9fa41993e12458624c398bb5fe5f4050b5a0cb6b98849",
+      "collision_function.cuh": "82438cd452a6eb6d129c07bd0e159d1638d1e3c01faf9a8d4aca6c901de59b66",
+      "fk.cuh": "495cd14dd5b952f789c30054efe73fbf11d4d3095b8be2c72382d08b1699f1d8"
     },
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "urdf": "tests/fixtures/compiler/fixed.urdf"
+  },
+  {
+    "live_budget": 0,
+    "math": "f32-sfu",
     "model": {
       "control_joints": [],
       "input_joint_names": [],
-      "math": "F32Sfu",
-      "optimization": "Basic",
+      "live_budget": 0,
+      "math": "f32-sfu",
+      "optimization": "basic",
       "scalar": "float",
-      "scheduling": "DagOrder",
       "sphere_count": 1
-    }
-  },
-  {
+    },
     "name": "fixed-f32-sfu-basic-0",
-    "urdf": "tests/fixtures/compiler/fixed.urdf",
-    "spheres": "tests/fixtures/compiler/fixed.yaml",
-    "math": "f32-sfu",
     "optimization": "basic",
-    "live_budget": 0,
     "sha256": {
-      "centers.cuh": "0ce47c90cfa0440df952ebe3fe8554048c73658f39436bd350feb33382976e15",
-      "collision.cuh": "84ad539baac4dcbbdf715342adac56fd6d3a2a7efccc292eeb611e9c4427527b",
-      "collision_function.cuh": "9c91db167c32daebe5986f56a87a0a196181d33f19252701d7267751171b15b6",
-      "fk.cuh": "0797e4491aeaa605d33d662deb1aa4084ccfc4bb8b65b831b25a6cdcd9054552"
+      "centers.cuh": "15d84ec651dd6bc8a5d65387dbc8836432f649db45027e8bb424a0ab273af269",
+      "collision.cuh": "709b0da5c29beb289c356af5a301559228f6068504b0ee900e33fc380618a8dd",
+      "collision_function.cuh": "a4c50ecbb1d92cd5c4dc59aa1a9ef88a9253e928b055e2fdb093f72f5f443332",
+      "fk.cuh": "4f2ae4fbfa0dfb058582423af26f7a324f2865969dc437e8ac5315cf06233126"
     },
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "urdf": "tests/fixtures/compiler/fixed.urdf"
+  },
+  {
+    "live_budget": 64,
+    "math": "f32-sfu",
     "model": {
       "control_joints": [],
       "input_joint_names": [],
-      "math": "F32Sfu",
-      "optimization": "Basic",
+      "live_budget": 64,
+      "math": "f32-sfu",
+      "optimization": "basic",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 0 })",
       "sphere_count": 1
-    }
-  },
-  {
+    },
     "name": "fixed-f32-sfu-basic-64",
-    "urdf": "tests/fixtures/compiler/fixed.urdf",
-    "spheres": "tests/fixtures/compiler/fixed.yaml",
-    "math": "f32-sfu",
     "optimization": "basic",
-    "live_budget": 64,
     "sha256": {
-      "centers.cuh": "03873e4d934941798812e8a79ee33d663b88ea4c7fc2ef219f5244ee8125f53f",
-      "collision.cuh": "56b5f619b56e990a50a9f8b6291b42310b9fff892be38cf8ff2c28a2dd8fe5b6",
-      "collision_function.cuh": "1aa275a62a9f642b789363eea19393d3e98370bbe2f390389873d560d4b256ed",
-      "fk.cuh": "0797e4491aeaa605d33d662deb1aa4084ccfc4bb8b65b831b25a6cdcd9054552"
+      "centers.cuh": "cd6b885d4336f31e97b9a0717ad54db2e6bde412e92d8beab3d8e32f467c0127",
+      "collision.cuh": "84427885793712574ba9fa41993e12458624c398bb5fe5f4050b5a0cb6b98849",
+      "collision_function.cuh": "82438cd452a6eb6d129c07bd0e159d1638d1e3c01faf9a8d4aca6c901de59b66",
+      "fk.cuh": "4f2ae4fbfa0dfb058582423af26f7a324f2865969dc437e8ac5315cf06233126"
     },
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "urdf": "tests/fixtures/compiler/fixed.urdf"
+  },
+  {
+    "live_budget": null,
+    "math": "f32-sfu",
     "model": {
       "control_joints": [],
       "input_joint_names": [],
-      "math": "F32Sfu",
-      "optimization": "Basic",
+      "live_budget": null,
+      "math": "f32-sfu",
+      "optimization": "algebraic",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 64 })",
       "sphere_count": 1
-    }
-  },
-  {
+    },
     "name": "fixed-f32-sfu-algebraic-None",
-    "urdf": "tests/fixtures/compiler/fixed.urdf",
-    "spheres": "tests/fixtures/compiler/fixed.yaml",
-    "math": "f32-sfu",
     "optimization": "algebraic",
-    "live_budget": null,
     "sha256": {
-      "centers.cuh": "35a2a829f0c48767b6b3c4760e8d1ae9fbf78896fef86ea9aa44f635de79ebad",
-      "collision.cuh": "56b5f619b56e990a50a9f8b6291b42310b9fff892be38cf8ff2c28a2dd8fe5b6",
-      "collision_function.cuh": "1aa275a62a9f642b789363eea19393d3e98370bbe2f390389873d560d4b256ed",
-      "fk.cuh": "128b895e66ebe0d19dd172b69cdb3361bea058a2d31889d43b3198ca975ad759"
+      "centers.cuh": "bb60a6174d15d0234eed44e7f401bb67a590af9ed0369b1e01340246c2644716",
+      "collision.cuh": "84427885793712574ba9fa41993e12458624c398bb5fe5f4050b5a0cb6b98849",
+      "collision_function.cuh": "82438cd452a6eb6d129c07bd0e159d1638d1e3c01faf9a8d4aca6c901de59b66",
+      "fk.cuh": "495cd14dd5b952f789c30054efe73fbf11d4d3095b8be2c72382d08b1699f1d8"
     },
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "urdf": "tests/fixtures/compiler/fixed.urdf"
+  },
+  {
+    "live_budget": 0,
+    "math": "f32-sfu",
     "model": {
       "control_joints": [],
       "input_joint_names": [],
-      "math": "F32Sfu",
-      "optimization": "Algebraic",
+      "live_budget": 0,
+      "math": "f32-sfu",
+      "optimization": "algebraic",
       "scalar": "float",
-      "scheduling": "DagOrder",
       "sphere_count": 1
-    }
-  },
-  {
+    },
     "name": "fixed-f32-sfu-algebraic-0",
-    "urdf": "tests/fixtures/compiler/fixed.urdf",
-    "spheres": "tests/fixtures/compiler/fixed.yaml",
-    "math": "f32-sfu",
     "optimization": "algebraic",
-    "live_budget": 0,
     "sha256": {
-      "centers.cuh": "0ce47c90cfa0440df952ebe3fe8554048c73658f39436bd350feb33382976e15",
-      "collision.cuh": "84ad539baac4dcbbdf715342adac56fd6d3a2a7efccc292eeb611e9c4427527b",
-      "collision_function.cuh": "9c91db167c32daebe5986f56a87a0a196181d33f19252701d7267751171b15b6",
-      "fk.cuh": "0797e4491aeaa605d33d662deb1aa4084ccfc4bb8b65b831b25a6cdcd9054552"
+      "centers.cuh": "15d84ec651dd6bc8a5d65387dbc8836432f649db45027e8bb424a0ab273af269",
+      "collision.cuh": "709b0da5c29beb289c356af5a301559228f6068504b0ee900e33fc380618a8dd",
+      "collision_function.cuh": "a4c50ecbb1d92cd5c4dc59aa1a9ef88a9253e928b055e2fdb093f72f5f443332",
+      "fk.cuh": "4f2ae4fbfa0dfb058582423af26f7a324f2865969dc437e8ac5315cf06233126"
     },
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "urdf": "tests/fixtures/compiler/fixed.urdf"
+  },
+  {
+    "live_budget": 64,
+    "math": "f32-sfu",
     "model": {
       "control_joints": [],
       "input_joint_names": [],
-      "math": "F32Sfu",
-      "optimization": "Algebraic",
+      "live_budget": 64,
+      "math": "f32-sfu",
+      "optimization": "algebraic",
       "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 0 })",
       "sphere_count": 1
-    }
-  },
-  {
+    },
     "name": "fixed-f32-sfu-algebraic-64",
-    "urdf": "tests/fixtures/compiler/fixed.urdf",
-    "spheres": "tests/fixtures/compiler/fixed.yaml",
-    "math": "f32-sfu",
     "optimization": "algebraic",
-    "live_budget": 64,
     "sha256": {
-      "centers.cuh": "03873e4d934941798812e8a79ee33d663b88ea4c7fc2ef219f5244ee8125f53f",
-      "collision.cuh": "56b5f619b56e990a50a9f8b6291b42310b9fff892be38cf8ff2c28a2dd8fe5b6",
-      "collision_function.cuh": "1aa275a62a9f642b789363eea19393d3e98370bbe2f390389873d560d4b256ed",
-      "fk.cuh": "0797e4491aeaa605d33d662deb1aa4084ccfc4bb8b65b831b25a6cdcd9054552"
+      "centers.cuh": "cd6b885d4336f31e97b9a0717ad54db2e6bde412e92d8beab3d8e32f467c0127",
+      "collision.cuh": "84427885793712574ba9fa41993e12458624c398bb5fe5f4050b5a0cb6b98849",
+      "collision_function.cuh": "82438cd452a6eb6d129c07bd0e159d1638d1e3c01faf9a8d4aca6c901de59b66",
+      "fk.cuh": "4f2ae4fbfa0dfb058582423af26f7a324f2865969dc437e8ac5315cf06233126"
     },
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "urdf": "tests/fixtures/compiler/fixed.urdf"
+  },
+  {
+    "live_budget": null,
+    "math": "f64",
     "model": {
       "control_joints": [],
       "input_joint_names": [],
-      "math": "F32Sfu",
-      "optimization": "Algebraic",
-      "scalar": "float",
-      "scheduling": "Live(Options { live_budget: 64 })",
+      "live_budget": null,
+      "math": "f64",
+      "optimization": "none",
+      "scalar": "double",
       "sphere_count": 1
-    }
-  },
-  {
+    },
     "name": "fixed-f64-none-None",
-    "urdf": "tests/fixtures/compiler/fixed.urdf",
-    "spheres": "tests/fixtures/compiler/fixed.yaml",
-    "math": "f64",
     "optimization": "none",
-    "live_budget": null,
     "sha256": {
-      "centers.cuh": "c12217a2e1a5750df8d3703bb30224aa270cb3eb738e16a41074d0f1faa3d793",
-      "collision.cuh": "a205a1ec1ee99fa0b1378ff3f2b59a498d94eee026758655c2468871d74aee65",
-      "collision_function.cuh": "be57345fd4c726f14d42b3c722c91e58731871efae8f5dfa39d083192c0dab33",
-      "fk.cuh": "8d4cd84bb0efcbcda26ceaa6506e0668bbcedf817aa0274a31bf52b331baf039"
+      "centers.cuh": "b62e1d0f0e70743e9f1ea098530df06d750b457b14119a3b2f2cb8d1cf09232b",
+      "collision.cuh": "ab0e451d436b55384fe31efaa1df3b1ea7d4cf5587287193676efeee5d7e78b9",
+      "collision_function.cuh": "46180dd99eb47e0d87c1c6ef3657b9c25034bad0f139195316680f41be080d03",
+      "fk.cuh": "448e583816288ab6f1bc7b619d01715cae14c83a10aa95b2394cad46f7661c40"
     },
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "urdf": "tests/fixtures/compiler/fixed.urdf"
+  },
+  {
+    "live_budget": 0,
+    "math": "f64",
     "model": {
       "control_joints": [],
       "input_joint_names": [],
-      "math": "F64",
-      "optimization": "None",
+      "live_budget": 0,
+      "math": "f64",
+      "optimization": "none",
       "scalar": "double",
-      "scheduling": "DagOrder",
       "sphere_count": 1
-    }
-  },
-  {
+    },
     "name": "fixed-f64-none-0",
-    "urdf": "tests/fixtures/compiler/fixed.urdf",
-    "spheres": "tests/fixtures/compiler/fixed.yaml",
-    "math": "f64",
     "optimization": "none",
-    "live_budget": 0,
     "sha256": {
-      "centers.cuh": "be2bdb49c37a89aa4e2a520d4906fff039c80d00fc451af2fb6623501049713c",
-      "collision.cuh": "70595fb301a06153fd5891911927b658a66a6536e90049e005b95fd1981c5a28",
-      "collision_function.cuh": "f562a88aee54e76ae4761602881f34d1af7d46813a80977a0ff50fc49637f6fd",
-      "fk.cuh": "a5ffc0ac4afda127355d1b5a44a758bd130fec10c41c4c792a9cca35cbe38809"
+      "centers.cuh": "27794b4fec9e0053b01ccb2385cac5e03ebb9d22e3c3f233bd352c34a64354d3",
+      "collision.cuh": "be3bcbf4ab26a3db29135cddc1737e98532874fbb11a94cabb4668a1e0b5e5cd",
+      "collision_function.cuh": "72de3e82b4030b473a1f36532d971eb162b2db2432e141cf6114c6aed8ee34f4",
+      "fk.cuh": "a989d333873f1fbae86e789a7731be3f8f6049a6a357cde86aebb6f75896ba96"
     },
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "urdf": "tests/fixtures/compiler/fixed.urdf"
+  },
+  {
+    "live_budget": 64,
+    "math": "f64",
     "model": {
       "control_joints": [],
       "input_joint_names": [],
-      "math": "F64",
-      "optimization": "None",
+      "live_budget": 64,
+      "math": "f64",
+      "optimization": "none",
       "scalar": "double",
-      "scheduling": "Live(Options { live_budget: 0 })",
       "sphere_count": 1
-    }
-  },
-  {
+    },
     "name": "fixed-f64-none-64",
-    "urdf": "tests/fixtures/compiler/fixed.urdf",
-    "spheres": "tests/fixtures/compiler/fixed.yaml",
-    "math": "f64",
     "optimization": "none",
-    "live_budget": 64,
     "sha256": {
-      "centers.cuh": "6549e91f700f131396035e1ab874df23bf6a2cabbdb9b3b4a9902b8d271fe71c",
-      "collision.cuh": "25c269245d9a3bbb1df7940605303913db3d6e2bd4a9c4d26fee63225f4a1ae5",
-      "collision_function.cuh": "a2e2946b8db1762cbc9ded8f94a2211ad8352e06ad96c9b4554ef671f8bb018c",
-      "fk.cuh": "a5ffc0ac4afda127355d1b5a44a758bd130fec10c41c4c792a9cca35cbe38809"
+      "centers.cuh": "6a2d4c861be7a406569b47034a175ecbd4559429555cc91b84d51a1fa9a76e13",
+      "collision.cuh": "0a43a14f42af7182c0a3f0ae6cf4ca3631446003578cd097dcbfab8fd04e0634",
+      "collision_function.cuh": "d58d68c7adbb5e39134e274518ebb129482a668de0147f417bb0c49c635194bc",
+      "fk.cuh": "a989d333873f1fbae86e789a7731be3f8f6049a6a357cde86aebb6f75896ba96"
     },
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "urdf": "tests/fixtures/compiler/fixed.urdf"
+  },
+  {
+    "live_budget": null,
+    "math": "f64",
     "model": {
       "control_joints": [],
       "input_joint_names": [],
-      "math": "F64",
-      "optimization": "None",
+      "live_budget": null,
+      "math": "f64",
+      "optimization": "basic",
       "scalar": "double",
-      "scheduling": "Live(Options { live_budget: 64 })",
       "sphere_count": 1
-    }
-  },
-  {
+    },
     "name": "fixed-f64-basic-None",
-    "urdf": "tests/fixtures/compiler/fixed.urdf",
-    "spheres": "tests/fixtures/compiler/fixed.yaml",
-    "math": "f64",
     "optimization": "basic",
-    "live_budget": null,
     "sha256": {
-      "centers.cuh": "9a83e7c2233f53ddda05c1d8cbf752add106b44c1ced1027357ce5cc516fbec6",
-      "collision.cuh": "1f4fccc82c1deab5a00c565ff8532c08be9d8c8b310f9f4d8eeb2fc06e71df5b",
-      "collision_function.cuh": "8d157af33067a0a21e1b97df52dca103adaa014e5aaea5d06a453488d9bb0490",
-      "fk.cuh": "8d4cd84bb0efcbcda26ceaa6506e0668bbcedf817aa0274a31bf52b331baf039"
+      "centers.cuh": "740786bb6ff91c3f3963e4a87bba21f66eba6fa730204fb460e4dc25dc946848",
+      "collision.cuh": "58d51a165700711d48a5ea12971251bbd0b80cc6b95c5dbfe277e74fb9357210",
+      "collision_function.cuh": "dc24e071dd9361ec10fef7dd3eb8f088267cef19220aa689f56701561143698d",
+      "fk.cuh": "448e583816288ab6f1bc7b619d01715cae14c83a10aa95b2394cad46f7661c40"
     },
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "urdf": "tests/fixtures/compiler/fixed.urdf"
+  },
+  {
+    "live_budget": 0,
+    "math": "f64",
     "model": {
       "control_joints": [],
       "input_joint_names": [],
-      "math": "F64",
-      "optimization": "Basic",
+      "live_budget": 0,
+      "math": "f64",
+      "optimization": "basic",
       "scalar": "double",
-      "scheduling": "DagOrder",
       "sphere_count": 1
-    }
-  },
-  {
+    },
     "name": "fixed-f64-basic-0",
-    "urdf": "tests/fixtures/compiler/fixed.urdf",
-    "spheres": "tests/fixtures/compiler/fixed.yaml",
-    "math": "f64",
     "optimization": "basic",
-    "live_budget": 0,
     "sha256": {
-      "centers.cuh": "b31e24e9ea378442bfa0ddcdd64fcf216839ee8aab116f8883b2b653c17ca0a4",
-      "collision.cuh": "a6ee5e0b1126da4e9270ceb52aa6f0f8af4bd261bf9ebf88f81a25d734ac0c6f",
-      "collision_function.cuh": "abfc6d88b1c1562ca0af344bfd19f1f0f718425d35b23a1b8ade9ae939dcf66c",
-      "fk.cuh": "a5ffc0ac4afda127355d1b5a44a758bd130fec10c41c4c792a9cca35cbe38809"
+      "centers.cuh": "fd53e5bd730ccad256d726ebb802378a8fea09e2eb0617e0cd135db39db3ffb1",
+      "collision.cuh": "59f9e559ba11774a2872f980520d168131f4793146d1411c0056c256b0db01d1",
+      "collision_function.cuh": "5cb8aa695685402b8b55a2c8c5c5a697b7fc166159bbf67e5eb798d57408ac4c",
+      "fk.cuh": "a989d333873f1fbae86e789a7731be3f8f6049a6a357cde86aebb6f75896ba96"
     },
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "urdf": "tests/fixtures/compiler/fixed.urdf"
+  },
+  {
+    "live_budget": 64,
+    "math": "f64",
     "model": {
       "control_joints": [],
       "input_joint_names": [],
-      "math": "F64",
-      "optimization": "Basic",
+      "live_budget": 64,
+      "math": "f64",
+      "optimization": "basic",
       "scalar": "double",
-      "scheduling": "Live(Options { live_budget: 0 })",
       "sphere_count": 1
-    }
-  },
-  {
+    },
     "name": "fixed-f64-basic-64",
-    "urdf": "tests/fixtures/compiler/fixed.urdf",
-    "spheres": "tests/fixtures/compiler/fixed.yaml",
-    "math": "f64",
     "optimization": "basic",
-    "live_budget": 64,
     "sha256": {
-      "centers.cuh": "0314981bf0efda67d9afe7160e5e1d7609b02b7dff9c0f847e7c99467b04d96a",
-      "collision.cuh": "1f4fccc82c1deab5a00c565ff8532c08be9d8c8b310f9f4d8eeb2fc06e71df5b",
-      "collision_function.cuh": "8d157af33067a0a21e1b97df52dca103adaa014e5aaea5d06a453488d9bb0490",
-      "fk.cuh": "a5ffc0ac4afda127355d1b5a44a758bd130fec10c41c4c792a9cca35cbe38809"
+      "centers.cuh": "266f2a6362c13353c1b03f77ae80fef6d69bba1166cb21ce4680742fbf12c1b3",
+      "collision.cuh": "58d51a165700711d48a5ea12971251bbd0b80cc6b95c5dbfe277e74fb9357210",
+      "collision_function.cuh": "dc24e071dd9361ec10fef7dd3eb8f088267cef19220aa689f56701561143698d",
+      "fk.cuh": "a989d333873f1fbae86e789a7731be3f8f6049a6a357cde86aebb6f75896ba96"
     },
-    "model": {
-      "control_joints": [],
-      "input_joint_names": [],
-      "math": "F64",
-      "optimization": "Basic",
-      "scalar": "double",
-      "scheduling": "Live(Options { live_budget: 64 })",
-      "sphere_count": 1
-    }
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "urdf": "tests/fixtures/compiler/fixed.urdf"
   },
   {
-    "name": "fixed-f64-algebraic-None",
-    "urdf": "tests/fixtures/compiler/fixed.urdf",
-    "spheres": "tests/fixtures/compiler/fixed.yaml",
-    "math": "f64",
-    "optimization": "algebraic",
     "live_budget": null,
-    "sha256": {
-      "centers.cuh": "9a83e7c2233f53ddda05c1d8cbf752add106b44c1ced1027357ce5cc516fbec6",
-      "collision.cuh": "1f4fccc82c1deab5a00c565ff8532c08be9d8c8b310f9f4d8eeb2fc06e71df5b",
-      "collision_function.cuh": "8d157af33067a0a21e1b97df52dca103adaa014e5aaea5d06a453488d9bb0490",
-      "fk.cuh": "8d4cd84bb0efcbcda26ceaa6506e0668bbcedf817aa0274a31bf52b331baf039"
-    },
+    "math": "f64",
     "model": {
       "control_joints": [],
       "input_joint_names": [],
-      "math": "F64",
-      "optimization": "Algebraic",
+      "live_budget": null,
+      "math": "f64",
+      "optimization": "algebraic",
       "scalar": "double",
-      "scheduling": "DagOrder",
       "sphere_count": 1
-    }
+    },
+    "name": "fixed-f64-algebraic-None",
+    "optimization": "algebraic",
+    "sha256": {
+      "centers.cuh": "740786bb6ff91c3f3963e4a87bba21f66eba6fa730204fb460e4dc25dc946848",
+      "collision.cuh": "58d51a165700711d48a5ea12971251bbd0b80cc6b95c5dbfe277e74fb9357210",
+      "collision_function.cuh": "dc24e071dd9361ec10fef7dd3eb8f088267cef19220aa689f56701561143698d",
+      "fk.cuh": "448e583816288ab6f1bc7b619d01715cae14c83a10aa95b2394cad46f7661c40"
+    },
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "urdf": "tests/fixtures/compiler/fixed.urdf"
   },
   {
-    "name": "fixed-f64-algebraic-0",
-    "urdf": "tests/fixtures/compiler/fixed.urdf",
-    "spheres": "tests/fixtures/compiler/fixed.yaml",
-    "math": "f64",
-    "optimization": "algebraic",
     "live_budget": 0,
-    "sha256": {
-      "centers.cuh": "b31e24e9ea378442bfa0ddcdd64fcf216839ee8aab116f8883b2b653c17ca0a4",
-      "collision.cuh": "a6ee5e0b1126da4e9270ceb52aa6f0f8af4bd261bf9ebf88f81a25d734ac0c6f",
-      "collision_function.cuh": "abfc6d88b1c1562ca0af344bfd19f1f0f718425d35b23a1b8ade9ae939dcf66c",
-      "fk.cuh": "a5ffc0ac4afda127355d1b5a44a758bd130fec10c41c4c792a9cca35cbe38809"
-    },
+    "math": "f64",
     "model": {
       "control_joints": [],
       "input_joint_names": [],
-      "math": "F64",
-      "optimization": "Algebraic",
+      "live_budget": 0,
+      "math": "f64",
+      "optimization": "algebraic",
       "scalar": "double",
-      "scheduling": "Live(Options { live_budget: 0 })",
       "sphere_count": 1
-    }
+    },
+    "name": "fixed-f64-algebraic-0",
+    "optimization": "algebraic",
+    "sha256": {
+      "centers.cuh": "fd53e5bd730ccad256d726ebb802378a8fea09e2eb0617e0cd135db39db3ffb1",
+      "collision.cuh": "59f9e559ba11774a2872f980520d168131f4793146d1411c0056c256b0db01d1",
+      "collision_function.cuh": "5cb8aa695685402b8b55a2c8c5c5a697b7fc166159bbf67e5eb798d57408ac4c",
+      "fk.cuh": "a989d333873f1fbae86e789a7731be3f8f6049a6a357cde86aebb6f75896ba96"
+    },
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "urdf": "tests/fixtures/compiler/fixed.urdf"
   },
   {
-    "name": "fixed-f64-algebraic-64",
-    "urdf": "tests/fixtures/compiler/fixed.urdf",
-    "spheres": "tests/fixtures/compiler/fixed.yaml",
-    "math": "f64",
-    "optimization": "algebraic",
     "live_budget": 64,
-    "sha256": {
-      "centers.cuh": "0314981bf0efda67d9afe7160e5e1d7609b02b7dff9c0f847e7c99467b04d96a",
-      "collision.cuh": "1f4fccc82c1deab5a00c565ff8532c08be9d8c8b310f9f4d8eeb2fc06e71df5b",
-      "collision_function.cuh": "8d157af33067a0a21e1b97df52dca103adaa014e5aaea5d06a453488d9bb0490",
-      "fk.cuh": "a5ffc0ac4afda127355d1b5a44a758bd130fec10c41c4c792a9cca35cbe38809"
-    },
+    "math": "f64",
     "model": {
       "control_joints": [],
       "input_joint_names": [],
-      "math": "F64",
-      "optimization": "Algebraic",
+      "live_budget": 64,
+      "math": "f64",
+      "optimization": "algebraic",
       "scalar": "double",
-      "scheduling": "Live(Options { live_budget: 64 })",
       "sphere_count": 1
-    }
+    },
+    "name": "fixed-f64-algebraic-64",
+    "optimization": "algebraic",
+    "sha256": {
+      "centers.cuh": "266f2a6362c13353c1b03f77ae80fef6d69bba1166cb21ce4680742fbf12c1b3",
+      "collision.cuh": "58d51a165700711d48a5ea12971251bbd0b80cc6b95c5dbfe277e74fb9357210",
+      "collision_function.cuh": "dc24e071dd9361ec10fef7dd3eb8f088267cef19220aa689f56701561143698d",
+      "fk.cuh": "a989d333873f1fbae86e789a7731be3f8f6049a6a357cde86aebb6f75896ba96"
+    },
+    "spheres": "tests/fixtures/compiler/fixed.yaml",
+    "urdf": "tests/fixtures/compiler/fixed.urdf"
   }
 ]

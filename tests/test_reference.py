@@ -1,8 +1,7 @@
-"""Recorded compiler outputs remain exact after normalizing the project name."""
+"""Generated source bytes and model metadata match the recorded outputs."""
 
 import hashlib
 import json
-import re
 from pathlib import Path
 from typing import TypedDict
 
@@ -33,13 +32,8 @@ REFERENCES: list[Reference] = json.loads((ROOT / "tests/reference/compiler.json"
 def test_generated_sources_match_reference(reference: Reference, tmp_path: Path) -> None:
     options = Options(reference["math"], reference["optimization"], reference["live_budget"])
     generate(ROOT / reference["urdf"], ROOT / reference["spheres"], tmp_path, options, True)
-    actual = {}
+    actual: dict[str, str] = {}
     for path in tmp_path.glob("*.cuh"):
-        source = path.read_bytes()
-        assert b"rkern" not in source and b"RKERN" not in source
-        # Match identifiers so the existing tenkai2 license reference stays intact.
-        normalized = re.sub(rb"\btenkai(?=\b|_)", b"rkern", source)
-        normalized = re.sub(rb"\bTENKAI(?=\b|_)", b"RKERN", normalized)
-        actual[path.name] = hashlib.sha256(normalized).hexdigest()
+        actual[path.name] = hashlib.sha256(path.read_bytes()).hexdigest()
     assert actual == reference["sha256"]
     assert json.loads((tmp_path / "model.json").read_text()) == reference["model"]

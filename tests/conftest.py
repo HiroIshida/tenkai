@@ -16,8 +16,6 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
     if config.getoption("--run-cuda") and config.getoption("--run-hip"):
         raise pytest.UsageError("select one of --run-cuda or --run-hip per test run")
     for item in items:
-        if "cuda" in item.keywords and not config.getoption("--run-cuda"):
-            item.add_marker(pytest.mark.skip(reason="pass --run-cuda to compile CUDA"))
         if "gpu_compile" in item.keywords and not (
             config.getoption("--run-cuda") or config.getoption("--run-hip")
         ):

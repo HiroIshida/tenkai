@@ -27,6 +27,10 @@ also emit FK, sphere-center, and collision-predicate sources. `--double`,
 `--optimization none|basic|algebraic`, and `--live-budget N` select the numerical
 and scheduling behavior. The CLI prints stage durations as JSON.
 
+`model.json` records joint and sphere metadata, plus `math`, `optimization`, and
+`live_budget` using the same values as `Options`. A null `live_budget` preserves
+DAG order.
+
 ```python
 from pathlib import Path
 
@@ -41,8 +45,7 @@ source = generate_collision_kernel(fk, spheres, Options(math="f32"))
 ## Run and time a planner
 
 RRT-Connect can be used from one script with the installed package and
-your model files. No code from `bench/` or `examples/` is needed. For the included
-Fetch model, this is a complete example:
+your model files. For the included Fetch model, this is a complete example:
 
 ```python
 from time import perf_counter
@@ -142,14 +145,14 @@ format Python with Ruff, and run Ruff lint checks. All tools are managed by uv.
 ```sh
 uv run pytest
 uv run mypy
-uv run ruff check src tests bench tools
-uv run ruff format --check src tests bench tools
+uv run ruff check src tests bench
+uv run ruff format --check src tests bench
 uv build
 ```
 
-Tests include source hashes for 108 configurations, normalizing the tenkai/TENKAI
-names back to rkern/RKERN, and CPU execution of generated kernels. Source hashes
-track the current formatted templates.
+Tests include exact source hashes and model metadata for 108 configurations,
+and CPU execution of generated kernels. Source hashes track the current
+formatted templates.
 `uv run pytest --run-cuda` also compiles with nvcc.
 `--run-gpu` enables GPU execution tests. Set
 `NVCC` and `CXX` when the toolkit requires a specific compiler.
@@ -162,7 +165,7 @@ uv run pytest --run-hip --run-gpu
 executes them on the GPU. `--gpu-arch gfx1201` overrides the default target.
 CUDA and HIP runs reuse the same arithmetic, collision, planner, and binding tests.
 
-## Benchmarks and migration reference
+## Benchmarks
 
 ```sh
 uv run python bench/compiler.py
@@ -172,19 +175,3 @@ uv run --extra bench python bench/compare_rrtc.py
 These are independent, single-file benchmarks: compilation time and Python API
 RRT-Connect throughput against plainmp. Results and builds go under `artifacts/`.
 See [benchmark details](bench/README.md) for workloads and measurement boundaries.
-
-The pre-migration Rust generators, source snapshot, generated CUDA, and compiled
-binaries are saved locally in `artifacts/rust-reference/`. `source-manifest.json`
-records their checksums. They are outside `target/` and ignored by Git.
-
-```sh
-uv run python tools/verify_migration.py
-```
-
-This compares generated CUDA byte-for-byte with the saved Rust sources for f32,
-f32/SFU, and f64 after replacing rkern/RKERN with tenkai/TENKAI in the reference.
-It also checks model metadata and the saved reference checksums. It requires
-neither a Rust compiler nor a CUDA toolkit and does not rebuild binaries.
-The original Rust source also remains available in the local source archive and
-Git history. The historical reports and native comparison fixtures are kept in
-`tests/reference/migration/`.

@@ -46,6 +46,3 @@ The report keeps `plainmp_ms` empty and stores the estimate separately as
 the planning benchmark's start, goal, and scene are specific to Fetch.
 JSON results and generated builds go to `artifacts/rrtc-bench/` or
 `artifacts/compiler-bench/`, configurable with `--output`.
-
-Rust migration checks live in `tools/verify_migration.py`, with historical
-reports and native fixtures under `tests/reference/migration/`.

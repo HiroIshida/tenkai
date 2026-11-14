@@ -53,7 +53,6 @@ class Options:
 
 
 def number(value: float) -> str:
-    # Preserve the Rust reference's exponent spelling for exact source comparisons.
     mantissa, exponent = format(value, ".17e").split("e")
     return mantissa + "e" + str(int(exponent))
 

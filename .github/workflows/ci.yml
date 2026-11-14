@@ -32,8 +32,8 @@ jobs:
 
       - name: Check formatting, lint and types
         run: |
-          uv run --frozen ruff format --check src tests bench tools
-          uv run --frozen ruff check src tests bench tools
+          uv run --frozen ruff format --check src tests bench
+          uv run --frozen ruff check src tests bench
           uv run --frozen mypy
 
       - name: Install CUDA compiler
@@ -47,7 +47,7 @@ jobs:
           "$NVCC" --version
           "$CXX" --version
 
-      - name: Test CPU arithmetic, Rust reference parity and CUDA compilation
+      - name: Test CPU arithmetic, code generation and CUDA compilation
         run: uv run --frozen pytest --run-cuda
 
       - name: Build distribution

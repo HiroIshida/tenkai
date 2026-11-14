@@ -176,8 +176,7 @@ FIELD = (1 << 61) - 1
 def atom(kind: bytes, value: int) -> Fingerprint:
     lanes: list[int] = []
     for lane in range(3):
-        # Keep the original salt to preserve CSE fingerprints across the rename.
-        payload = b"rkern-cse" + bytes([lane]) + kind + value.to_bytes(8, "little")
+        payload = b"tenkai-cse" + bytes([lane]) + kind + value.to_bytes(8, "little")
         digest = hashlib.blake2b(payload, digest_size=8).digest()
         hashed_value = int.from_bytes(digest, "little")
         lanes.append(hashed_value % (FIELD - 1) + 1)

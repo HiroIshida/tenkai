@@ -129,7 +129,7 @@ def test_host_arithmetic(
             str(tmp_path),
             "-I",
             str(FIXTURES),
-            str(FIXTURES / "python_host.cpp"),
+            str(FIXTURES / "arithmetic.cpp"),
             "-o",
             str(binary),
         ]
@@ -172,7 +172,7 @@ def test_arithmetic_on_gpu(
             str(tmp_path),
             "-I",
             str(FIXTURES),
-            str(FIXTURES / "python_host.cpp"),
+            str(FIXTURES / "arithmetic.cpp"),
             "-o",
             str(binary),
         ]

@@ -8,6 +8,7 @@ from typing import TypedDict
 
 from .collision import read_config
 from .cuda import (
+    MathMode,
     Options,
     generate_centers_kernel,
     generate_collision_function,
@@ -15,6 +16,7 @@ from .cuda import (
     generate_fk_kernel,
     generate_rrt_kernel,
 )
+from .dag import Optimization
 from .model import FkDag, Robot
 
 
@@ -30,9 +32,9 @@ class ModelMetadata(TypedDict):
     control_joints: list[ControlJoint]
     sphere_count: int
     scalar: str
-    math: str
-    optimization: str
-    scheduling: str
+    math: MathMode
+    optimization: Optimization
+    live_budget: int | None
 
 
 def control_joints(robot: Robot, fk: FkDag, names: list[str]) -> list[ControlJoint]:
@@ -104,17 +106,14 @@ def generate(
     for name, contents in files.items():
         (output / name).write_text(contents)
 
-    scheduling = "DagOrder"
-    if options.live_budget is not None:
-        scheduling = f"Live(Options {{ live_budget: {options.live_budget} }})"
     model = ModelMetadata(
         input_joint_names=fk.joint_names,
         control_joints=bounds,
         sphere_count=len(spheres),
         scalar=options.scalar,
-        math={"f32": "F32", "f32-sfu": "F32Sfu", "f64": "F64"}[options.math],
-        optimization=options.optimization.capitalize(),
-        scheduling=scheduling,
+        math=options.math,
+        optimization=options.optimization,
+        live_budget=options.live_budget,
     )
     (output / "model.json").write_text(json.dumps(model, indent=2, sort_keys=True, allow_nan=False))
 

@@ -15,7 +15,7 @@ Treat questions about reasons (e.g., "Why did you do X?") as requests for explan
 - Preserve arithmetic order, precision, and deterministic generated output when refactoring the compiler.
 - Add dependencies only when they meaningfully simplify the solution; manage them through uv.
 - After relevant changes, run applicable pytest tests, Ruff formatting/lint checks, and mypy. Fix issues at their cause.
-- CUDA compilation tests use `--run-cuda`; GPU execution tests use `--run-gpu`. The frozen Rust output fixtures run without Rust or CUDA.
+- CUDA compilation tests use `--run-cuda`; GPU execution tests use `--run-gpu`. Generated-source regression tests run without a GPU toolkit.
 
 # Structure and testing
 
