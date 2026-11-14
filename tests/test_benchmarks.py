@@ -12,6 +12,7 @@ import numpy as np
 import pytest
 
 from tenkai import Options
+from tenkai.build import Backend
 from tenkai.compiler import ModelMetadata, generate
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -50,13 +51,20 @@ def test_script_runs_without_sibling_files(script: str, tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    "script",
+    "script,cpu_ms_per_problem",
     [
-        pytest.param("compiler.py", marks=pytest.mark.cuda),
-        pytest.param("compare_rrtc.py", marks=pytest.mark.gpu),
+        pytest.param("compiler.py", None, marks=pytest.mark.gpu_compile),
+        pytest.param("compare_rrtc.py", None, marks=pytest.mark.gpu),
+        pytest.param("compare_rrtc.py", 3.5, marks=pytest.mark.gpu),
     ],
 )
-def test_standalone_benchmark_report(script: str, tmp_path: Path) -> None:
+def test_standalone_benchmark_report(
+    script: str,
+    cpu_ms_per_problem: float | None,
+    tmp_path: Path,
+    gpu_backend: Backend,
+    gpu_arch: str,
+) -> None:
     if script == "compare_rrtc.py":
         pytest.importorskip("plainmp")
     destination = tmp_path / script
@@ -72,22 +80,40 @@ def test_standalone_benchmark_report(script: str, tmp_path: Path) -> None:
         str(tmp_path / "results"),
         "--repeats",
         "1",
+        "--backend",
+        gpu_backend,
+        "--arch",
+        gpu_arch,
     ]
     if script == "compare_rrtc.py":
         command.extend(["--batch", "2"])
-    subprocess.run(command, cwd=tmp_path, check=True, capture_output=True, text=True)
+    if cpu_ms_per_problem is not None:
+        command.extend(["--cpu-ms-per-problem", str(cpu_ms_per_problem)])
+    result = subprocess.run(command, cwd=tmp_path, check=True, capture_output=True, text=True)
     report = json.loads((tmp_path / "results/results.json").read_text())
     assert report["math"] == "f32"
+    assert report["backend"] == gpu_backend
     if script == "compiler.py":
+        compiler_name = "hipcc" if gpu_backend == "hip" else "nvcc"
         sample = report["samples_seconds"][0]
         assert sample["codegen"] > 0
-        assert sample["nvcc"] > 0
-        assert sample["total"] >= sample["codegen"] + sample["nvcc"]
+        assert sample[compiler_name] > 0
+        assert sample["total"] >= sample["codegen"] + sample[compiler_name]
         assert report["median_seconds"] == sample
     else:
-        assert report["plainmp_ms"][0] > 0
+        if cpu_ms_per_problem is None:
+            assert report["plainmp_ms"][0] > 0
+            assert report["plainmp_estimated_ms"] is None
+            cpu_ms = report["plainmp_ms"][0]
+        else:
+            assert report["plainmp_ms"] == []
+            assert report["plainmp_ms_per_problem"] == cpu_ms_per_problem
+            assert report["plainmp_estimated_ms"] == 7.0
+            assert "Measuring plainmp" not in result.stdout
+            assert "plainmp (extrapolated)" in result.stdout
+            cpu_ms = report["plainmp_estimated_ms"]
         assert report["tenkai_ms"][0] > 0
-        assert report["speedup"] == report["plainmp_ms"][0] / report["tenkai_ms"][0]
+        assert report["speedup"] == cpu_ms / report["tenkai_ms"][0]
 
 
 def test_problem_keeps_all_spheres_and_full_box_extents(
@@ -137,3 +163,13 @@ def test_failed_solve_is_not_reported_as_speedup(compare: ModuleType, successes:
     results = iter(successes)
     with pytest.raises(RuntimeError, match="warmup|solved 1/2"):
         compare.measure(lambda: next(results), batch=2, repeats=1)
+
+
+@pytest.mark.parametrize("value", ["0", "-1", "nan", "inf"])
+def test_invalid_cpu_estimate(
+    compare: ModuleType, monkeypatch: pytest.MonkeyPatch, value: str
+) -> None:
+    monkeypatch.setattr(sys, "argv", ["compare_rrtc.py", "--cpu-ms-per-problem", value])
+    with pytest.raises(SystemExit) as failure:
+        compare.main()
+    assert failure.value.code == 2

@@ -3,6 +3,7 @@
 
 import argparse
 import json
+import math
 import statistics
 import time
 from collections.abc import Callable
@@ -24,6 +25,7 @@ from plainmp.problem import Problem
 from plainmp.psdf import BoxSDF, GroundSDF, Pose, UnionSDF
 
 from tenkai import Options, RRTConfig, build_rrt
+from tenkai.build import target_arch
 from tenkai.collision import read_config
 from tenkai.compiler import ModelMetadata
 
@@ -81,35 +83,64 @@ def main() -> None:
     parser.add_argument("--spheres", type=Path, default=ASSETS / "collision.yaml")
     parser.add_argument("--batch", type=int, default=256)
     parser.add_argument("--repeats", type=int, default=7)
+    parser.add_argument(
+        "--cpu-ms-per-problem",
+        type=float,
+        help="skip CPU solves and extrapolate from this measured time per problem",
+    )
     parser.add_argument("--math", choices=["f32", "f32-sfu", "f64"], default="f32")
-    parser.add_argument("--arch", default="compute_75")
+    parser.add_argument("--backend", choices=["cuda", "hip"], default="cuda")
+    parser.add_argument("--arch")
     parser.add_argument("--output", type=Path, default=Path("artifacts/rrtc-bench"))
     args = parser.parse_args()
     if not 0 < args.batch < 2**32 or args.repeats < 1:
         parser.error("batch must fit positive uint32 and repeats must be positive")
+    if args.cpu_ms_per_problem is not None and (
+        not math.isfinite(args.cpu_ms_per_problem) or args.cpu_ms_per_problem <= 0
+    ):
+        parser.error("cpu-ms-per-problem must be finite and positive")
+    arch = target_arch(args.backend, args.arch)
     compiled = build_rrt(
-        args.urdf, args.spheres, args.output / "build", options=Options(args.math), arch=args.arch
+        args.urdf,
+        args.spheres,
+        args.output / "build",
+        options=Options(args.math),
+        backend=args.backend,
+        arch=arch,
     )
     config = RRTConfig(max_rounds=8192, samples_per_round=1, goal_bias=0.0)
-    problem = make_problem(args.urdf, args.spheres, compiled.model)
-    settings = PlainmpRRTCSettings()
-    settings.max_samples = config.max_nodes
-    solver = OMPLSolver(
-        OMPLSolverConfig(
-            n_max_call=10000000, algorithm_range=config.step_size, plainmp_rrtc_settings=settings
+    cpu_times: list[float] = []
+    if args.cpu_ms_per_problem is None:
+        problem = make_problem(args.urdf, args.spheres, compiled.model)
+        settings = PlainmpRRTCSettings()
+        settings.max_samples = config.max_nodes
+        solver = OMPLSolver(
+            OMPLSolverConfig(
+                n_max_call=10000000,
+                algorithm_range=config.step_size,
+                plainmp_rrtc_settings=settings,
+            )
         )
-    )
-    set_log_level_none()
-    set_random_seed(42)
+        set_log_level_none()
+        set_random_seed(42)
 
-    def solve_cpu() -> int:
-        successes = 0
-        for _ in range(args.batch):
-            successes += solver.solve(problem).success
-        return successes
+        def solve_cpu() -> int:
+            successes = 0
+            for _ in range(args.batch):
+                successes += solver.solve(problem).success
+            return successes
 
-    print("Measuring plainmp...", flush=True)
-    cpu_times = measure(solve_cpu, args.batch, args.repeats)
+        print("Measuring plainmp...", flush=True)
+        cpu_times = measure(solve_cpu, args.batch, args.repeats)
+        cpu_ms = statistics.median(cpu_times)
+        cpu_timing = (
+            "CPU includes native planner creation and trajectory conversion; uses fresh trials. "
+        )
+    else:
+        cpu_ms = args.cpu_ms_per_problem * args.batch
+        cpu_timing = (
+            "CPU time is linearly extrapolated from the supplied milliseconds per problem. "
+        )
     starts = np.tile(START, (args.batch, 1))
     goals = np.tile(GOAL, (args.batch, 1))
     ids = np.zeros(args.batch, dtype=np.uint32)
@@ -129,25 +160,28 @@ def main() -> None:
 
         print("Measuring tenkai...", flush=True)
         gpu_times = measure(solve_gpu, args.batch, args.repeats)
-    cpu_ms = statistics.median(cpu_times)
     gpu_ms = statistics.median(gpu_times)
     report = {
         "batch": args.batch,
         "math": args.math,
-        "arch": args.arch,
+        "backend": args.backend,
+        "arch": arch,
         "plainmp_version": version("plainmp"),
         "config": asdict(config),
         "warps": 1,
         "resolution": RESOLUTION,
         "plainmp_ms": cpu_times,
+        "plainmp_ms_per_problem": args.cpu_ms_per_problem,
+        "plainmp_estimated_ms": cpu_ms if args.cpu_ms_per_problem is not None else None,
         "tenkai_ms": gpu_times,
         "speedup": cpu_ms / gpu_ms,
         "timing": "Python API wall time per batch; one warmup batch, builds/setup excluded. "
-        "CPU includes OMPLSolver construction of each native planner and trajectory conversion; "
-        "GPU reuses buffers and includes transfers. CPU uses fresh trials; GPU replays fixed seeds.",
+        + cpu_timing
+        + "GPU reuses buffers, includes transfers, and replays fixed seeds.",
     }
     (args.output / "results.json").write_text(json.dumps(report, indent=2) + "\n")
-    for name, milliseconds in (("plainmp", cpu_ms), ("tenkai", gpu_ms)):
+    cpu_label = "plainmp (extrapolated)" if args.cpu_ms_per_problem is not None else "plainmp"
+    for name, milliseconds in ((cpu_label, cpu_ms), ("tenkai", gpu_ms)):
         print(
             f"{name}: {milliseconds:.3f} ms/batch, {args.batch * 1000 / milliseconds:.1f} solves/s"
         )
