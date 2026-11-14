@@ -10,11 +10,12 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from tenkai import Options, Planner, RRTBuild, RRTConfig, build_rrt
+from tenkai import Options, Planner, RRTBuild, RRTConfig, build_rrt, sdf
 from tenkai.build import Backend
 from tenkai.compiler import ModelMetadata
 from tenkai.cuda import MathMode
-from tenkai.rrt import BuildInfo
+from tenkai.rrt import BuildInfo, NativeConfig, NativeScene
+from tenkai.sdf import pack_geometry
 
 FIXTURES = Path(__file__).with_name("fixtures")
 
@@ -56,7 +57,7 @@ def binding(tmp_path_factory: pytest.TempPathFactory) -> RRTBuild:
 def test_binding_round_trip_and_lifetime(binding: RRTBuild) -> None:
     native = ct.CDLL(str(binding.library))
     assert native.live_contexts() == 0
-    geometry = [[10, 10, 10, 1, 1, 1, 10], [20, 20, 20, 1, 1, 1, 20]]
+    geometry: sdf.Geometry = [[], []]
     config = RRTConfig(max_nodes=16, max_rounds=9, step_size=0.5, goal_bias=0.25)
     starts = np.array([[-1.0, 10, -0.5, 20], [0.0, 30, 0.5, 40]])[:, ::2]
     goals = np.array([[0.5, 1], [1, 0]], dtype=np.float32)
@@ -95,7 +96,7 @@ def test_binding_round_trip_and_lifetime(binding: RRTBuild) -> None:
 
 def test_context_closes_on_exception(binding: RRTBuild) -> None:
     with pytest.raises(ValueError, match="user exception"):
-        with binding.planner([[10, 10, 10, 1, 1, 1, 10]]):
+        with binding.planner([]):
             raise ValueError("user exception")
     assert ct.CDLL(str(binding.library)).live_contexts() == 0
 
@@ -112,15 +113,13 @@ def test_context_closes_on_exception(binding: RRTBuild) -> None:
 )
 def test_invalid_config_before_load(binding: RRTBuild, config: RRTConfig) -> None:
     with pytest.raises(ValueError):
-        Planner("missing.so", binding.model, config, 1, [[0] * 7], 0.05)
+        Planner("missing.so", binding.model, config, 1, [], 0.05)
 
 
-@pytest.mark.parametrize(
-    "geometry", [[], [[0] * 6], [[0, 0, 0, -1, 1, 1, 0]], [[float("inf")] * 7]]
-)
-def test_invalid_geometry_before_load(binding: RRTBuild, geometry: list[list[float]]) -> None:
-    with pytest.raises(ValueError):
-        Planner("missing.so", binding.model, RRTConfig(), 1, geometry, 0.05)
+@pytest.mark.parametrize("geometry", [[object()], [[sdf.Ground()], [object()]], [[0] * 7]])
+def test_invalid_geometry_before_load(binding: RRTBuild, geometry: object) -> None:
+    with pytest.raises(ValueError, match="collision objects"):
+        Planner("missing.so", binding.model, RRTConfig(), 1, geometry, 0.05)  # type: ignore[arg-type]
 
 
 @pytest.mark.parametrize(
@@ -139,13 +138,13 @@ def test_invalid_geometry_before_load(binding: RRTBuild, geometry: list[list[flo
 def test_invalid_ids_and_seeds(
     binding: RRTBuild, bad_ids: list[int | float], bad_seeds: list[int | float]
 ) -> None:
-    with binding.planner([[10, 10, 10, 1, 1, 1, 10]]) as planner:
+    with binding.planner([]) as planner:
         with pytest.raises(ValueError):
             planner.solve([[0, 0]], [[1, 1]], bad_ids, bad_seeds)
 
 
 def test_invalid_shapes_and_problem_ids(binding: RRTBuild) -> None:
-    with binding.planner([[10, 10, 10, 1, 1, 1, 10]]) as planner:
+    with binding.planner([]) as planner:
         with pytest.raises(ValueError, match="shape"):
             planner.solve([[0, 0, 0]], [[1, 1]], [0], [0])
         with pytest.raises(ValueError, match="shape"):
@@ -252,7 +251,7 @@ def test_public_build(compiled: RRTBuild, gpu_backend: Backend) -> None:
     assert [j["name"] for j in compiled.model["control_joints"]] == ["y", "x"]
     library = ct.CDLL(str(compiled.library))
     for symbol in (
-        "rrtc_create",
+        "rrtc_create_scene",
         "rrt_destroy",
         "rrt_solve",
         "rrt_path",
@@ -264,7 +263,8 @@ def test_public_build(compiled: RRTBuild, gpu_backend: Backend) -> None:
 @pytest.mark.gpu
 def test_public_planner_on_gpu(compiled: RRTBuild) -> None:
     config = RRTConfig(max_nodes=256, max_rounds=512, goal_bias=1.0)
-    with compiled.planner([[10, 10, 10, 1, 1, 1, 10]], config=config) as planner:
+    obstacles = [sdf.Box((10, 10, 10), (1, 1, 1)), sdf.Ground(z=-10)]
+    with compiled.planner(obstacles, config=config) as planner:
         inputs = ([[-0.5, -0.5]], [[0.5, 0.5]], [0], [42])
         results = planner.solve(*inputs)
         assert results[0]["status"] == "success"
@@ -275,3 +275,166 @@ def test_public_planner_on_gpu(compiled: RRTBuild) -> None:
         assert not planner.collisions(path[:, ::-1], [0] * len(path)).any()
         assert planner.solve(*inputs) == results
         np.testing.assert_array_equal(planner.path(0), path)
+
+
+@pytest.mark.parametrize("geometry", [[], [[], []], [sdf.Sphere((0, 0, 0), 0.1)]])
+def test_object_scenes_and_empty_environments(binding: RRTBuild, geometry: sdf.Geometry) -> None:
+    with binding.planner(geometry) as planner:
+        expected_count = 2 if geometry == [[], []] else 1
+        assert planner.environment_count == expected_count
+        assert (
+            planner.solve([[0, 0]], [[0.5, 0.5]], [expected_count - 1], [42])[0]["status"]
+            == "success"
+        )
+
+
+@pytest.mark.gpu
+@pytest.mark.parametrize(
+    "obstacles,points,expected",
+    [
+        ([], [[0, 0], [0.5, 0.5]], [0, 0]),
+        ([sdf.Sphere((0.25, 0, 0), 0.1)], [[0.25, 0], [0.375, 0], [0.5, 0]], [1, 1, 0]),
+        ([sdf.Cylinder((0, 0, 0), 0.1, 0.4)], [[0, 0], [0.125, 0], [0.25, 0]], [1, 1, 0]),
+        ([sdf.Ground(z=0.02)], [[0, 0], [0.5, 0.5]], [1, 1]),
+        ([sdf.Ground(z=-0.2)], [[0, 0], [0.5, 0.5]], [0, 0]),
+        (
+            [sdf.Box((0, 0, 0), (0.8, 0.1, 0.2), ((0.6, -0.8, 0), (0.8, 0.6, 0), (0, 0, 1)))],
+            [[0.18, 0.24], [-0.18, 0.24]],
+            [1, 0],
+        ),
+        (
+            [sdf.Cylinder((0.2, -0.1, 0), 0.05, 1.0, ((0, -0.8, 0.6), (0, 0.6, 0.8), (-1, 0, 0)))],
+            [[0.38, 0.14], [-0.04, 0.08]],
+            [1, 0],
+        ),
+        (
+            [sdf.Sphere((-0.5, 0, 0), 0.1), sdf.Sphere((0.5, 0, 0), 0.1)],
+            [[-0.5, 0], [0, 0], [0.5, 0]],
+            [1, 0, 1],
+        ),
+        (
+            [
+                sdf.Box((-0.75, 0, 0), (0.1, 0.1, 0.2)),
+                sdf.Box((-0.5, 0, 0), (0.1, 0.1, 0.2)),
+                sdf.Sphere((0, 0.5, 0), 0.1),
+                sdf.Sphere((0.25, 0.5, 0), 0.1),
+                sdf.Cylinder((0.5, 0, 0), 0.05, 0.4),
+                sdf.Cylinder((0.75, 0, 0), 0.05, 0.4),
+                sdf.Ground(z=-0.25),
+                sdf.Ground(z=-0.2),
+            ],
+            [[-0.75, 0], [-0.5, 0], [0, 0.5], [0.25, 0.5], [0.5, 0], [0.75, 0], [0, 0]],
+            [1, 1, 1, 1, 1, 1, 0],
+        ),
+    ],
+)
+def test_primitive_collisions_on_gpu(
+    compiled: RRTBuild,
+    obstacles: list[sdf.CollisionObject],
+    points: list[list[float]],
+    expected: list[int],
+) -> None:
+    with compiled.planner(obstacles) as planner:
+        np.testing.assert_array_equal(planner.collisions(points, [0] * len(points)), expected)
+
+
+@pytest.mark.gpu
+def test_mixed_environments_share_one_build_on_gpu(
+    compiled: RRTBuild, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def no_compilation(*args: object, **kwargs: object) -> None:
+        pytest.fail("creating or solving scenes must not invoke a compiler")
+
+    monkeypatch.setattr(subprocess, "run", no_compilation)
+    obstacles = [
+        sdf.Box((0.5, -0.5, 0), (0.2, 0.2, 0.2)),
+        sdf.Sphere((-0.5, 0.5, 0), 0.1),
+        sdf.Cylinder((0.75, -0.75, 0), 0.1, 0.4),
+        sdf.Ground(z=-0.2),
+    ]
+    environments = [
+        obstacles,
+        [sdf.Sphere((-0.5, -0.5, 0), 0.1)],
+        [sdf.Cylinder((0.5, 0.5, 0), 0.1, 0.4)],
+        [],
+    ]
+    config = RRTConfig(max_nodes=64, max_rounds=32, goal_bias=1.0)
+    starts = [[-0.5, -0.5]] * 4
+    goals = [[0.5, 0.5]] * 4
+    with compiled.planner(environments, config=config, problem_count=4) as planner:
+        # Scene storage is owned by the planner after creation.
+        environments.clear()
+        results = planner.solve(starts, goals, [0, 1, 2, 3], [42] * 4)
+        assert [result["status"] for result in results] == [
+            "success",
+            "invalid_start",
+            "invalid_goal",
+            "success",
+        ]
+        np.testing.assert_array_equal(
+            planner.collisions([[-0.5, -0.5]] * 4, [0, 1, 2, 3]), [0, 1, 0, 0]
+        )
+        for index in (0, 3):
+            path = planner.path(index)
+            np.testing.assert_array_equal(path[0], starts[index])
+            np.testing.assert_array_equal(path[-1], goals[index])
+            assert not planner.collisions(path[:, ::-1], [index] * len(path)).any()
+
+    with compiled.planner([sdf.Ground(z=0.0)]) as other:
+        assert other.solve([[-0.5, -0.5]], [[0.5, 0.5]], [0], [42])[0]["status"] == "invalid_start"
+
+
+@pytest.mark.gpu_compile
+@pytest.mark.parametrize(
+    "invalid,message",
+    [
+        ("range", "scene range"),
+        ("rotation", "orthonormal"),
+        ("reflection", "determinant"),
+        ("radius", "negative sphere radius"),
+        ("height", "negative cylinder"),
+        ("nonfinite", "nonfinite scene geometry"),
+        ("pointer", "null scene input"),
+    ],
+)
+def test_native_scene_rejects_invalid_input_before_gpu_allocation(
+    compiled: RRTBuild, invalid: str, message: str
+) -> None:
+    scene = pack_geometry(
+        [
+            sdf.Box((0, 0, 0), (1, 1, 1)),
+            sdf.Sphere((0, 0, 0), 1),
+            sdf.Cylinder((0, 0, 0), 1, 1),
+            sdf.Ground(),
+        ]
+    )
+    match invalid:
+        case "range":
+            scene.ranges[0, 0] = [1, 1]
+        case "rotation":
+            scene.boxes[0, 3] = 2
+        case "reflection":
+            scene.boxes[0, 3] = -1
+        case "radius":
+            scene.spheres[0, 3] = -1
+        case "height":
+            scene.cylinders[0, 13] = -1
+        case "nonfinite":
+            scene.grounds[0, 0] = float("inf")
+    native_scene = NativeScene.from_scene(scene)
+    if invalid == "pointer":
+        native_scene.spheres = None
+
+    library = ct.CDLL(str(compiled.library))
+    library.rrt_error.restype = ct.c_char_p
+    config = NativeConfig(64, 32, 1.0, 0.1)
+    lower = (ct.c_double * 2)(-1, -1)
+    upper = (ct.c_double * 2)(1, 1)
+    resolution = (ct.c_double * 2)(0.05, 0.05)
+    handle = ct.c_void_p(123)
+    status = library.rrtc_create_scene(
+        ct.byref(config), 1, 1, ct.byref(native_scene), lower, upper, resolution, ct.byref(handle)
+    )
+    assert status == -1
+    assert handle.value is None
+    assert message in library.rrt_error().decode()

@@ -16,6 +16,7 @@ import numpy.typing as npt
 from .build import Backend, compiler_command, target_arch
 from .compiler import ModelMetadata, generate
 from .cuda import Options
+from .sdf import Geometry, SceneData, pack_geometry
 
 type Status = Literal["success", "round_limit", "node_limit", "invalid_start", "invalid_goal"]
 
@@ -76,7 +77,7 @@ class RRTBuild:
 
     def planner(
         self,
-        geometry: npt.ArrayLike,
+        geometry: Geometry,
         *,
         config: RRTConfig = RRTConfig(),
         problem_count: int = 1,
@@ -179,6 +180,34 @@ class NativeResult(ct.Structure):
     ]
 
 
+class NativeScene(ct.Structure):
+    _fields_ = [
+        ("ranges", ct.POINTER(ct.c_uint32)),
+        ("boxes", ct.POINTER(ct.c_double)),
+        ("spheres", ct.POINTER(ct.c_double)),
+        ("cylinders", ct.POINTER(ct.c_double)),
+        ("grounds", ct.POINTER(ct.c_double)),
+        ("box_count", ct.c_uint32),
+        ("sphere_count", ct.c_uint32),
+        ("cylinder_count", ct.c_uint32),
+        ("ground_count", ct.c_uint32),
+    ]
+
+    @classmethod
+    def from_scene(cls, scene: SceneData) -> Self:
+        return cls(
+            scene.ranges.ctypes.data_as(ct.POINTER(ct.c_uint32)),
+            scene.boxes.ctypes.data_as(ct.POINTER(ct.c_double)),
+            scene.spheres.ctypes.data_as(ct.POINTER(ct.c_double)),
+            scene.cylinders.ctypes.data_as(ct.POINTER(ct.c_double)),
+            scene.grounds.ctypes.data_as(ct.POINTER(ct.c_double)),
+            len(scene.boxes),
+            len(scene.spheres),
+            len(scene.cylinders),
+            len(scene.grounds),
+        )
+
+
 def unsigned_array[T: (np.uint32, np.uint64)](
     values: npt.ArrayLike, dtype: type[T], name: str
 ) -> npt.NDArray[T]:
@@ -200,10 +229,9 @@ def unsigned_array[T: (np.uint32, np.uint64)](
 class Planner:
     """A reusable batch of RRT-Connect problems with owned GPU search and scene buffers.
 
-    Geometry has shape (environments, 7): box center x/y/z, box full extents
-    x/y/z, and ground offset. The ground plane is z = -offset. Each environment
-    contains one axis-aligned box and one horizontal ground plane. Uncontrolled
-    joints remain at zero.
+    Geometry is a list of sdf collision objects for one environment, or a list
+    of such lists for multiple environments. An empty list is an empty scene.
+    Uncontrolled joints remain at zero.
     """
 
     def __init__(
@@ -212,7 +240,7 @@ class Planner:
         model: ModelMetadata,
         config: RRTConfig,
         problem_count: int,
-        geometry: npt.ArrayLike,
+        geometry: Geometry,
         resolution: float,
     ) -> None:
         config.validate()
@@ -220,17 +248,10 @@ class Planner:
         if not math.isfinite(resolution) or resolution <= 0:
             raise ValueError("resolution must be finite and positive")
 
-        scene = np.ascontiguousarray(geometry, dtype=np.float64)
-        if scene.ndim != 2 or scene.shape[1] != 7:
-            raise ValueError("geometry must have shape (environments, 7)")
-        check_count(len(scene), "environment_count")
-        if not np.isfinite(scene).all():
-            raise ValueError("geometry must be finite")
-        if (scene[:, 3:6] < 0).any():
-            raise ValueError("box full extents must be nonnegative")
+        scene = pack_geometry(geometry)
 
         self.problem_count = problem_count
-        self.environment_count = len(scene)
+        self.environment_count = len(scene.ranges)
         self.dimension = len(model["control_joints"])
         self.fk_dof = len(model["input_joint_names"])
         if not 0 < self.dimension <= self.fk_dof:
@@ -253,12 +274,12 @@ class Planner:
         self.library.rrt_error.argtypes = []
         self.library.rrt_error.restype = ct.c_char_p
 
-        create = self.library.rrtc_create
+        create = self.library.rrtc_create_scene
         create.argtypes = [
             ct.POINTER(NativeConfig),
             ct.c_uint32,
             ct.c_uint32,
-            float_array,
+            ct.POINTER(NativeScene),
             float_array,
             float_array,
             float_array,
@@ -298,11 +319,12 @@ class Planner:
         self.library.rrt_check.restype = ct.c_int
 
         native_config = NativeConfig(**asdict(config))
+        native_scene = NativeScene.from_scene(scene)
         status = create(
             ct.byref(native_config),
             problem_count,
-            len(scene),
-            scene,
+            self.environment_count,
+            ct.byref(native_scene),
             lower,
             upper,
             resolutions,

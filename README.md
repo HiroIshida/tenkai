@@ -1,195 +1,143 @@
 # tenkai
 
-Generate robot-specific GPU kernels for forward kinematics, collision checks, and
-single-candidate RRT-Connect. The compiler is Python 3.12; shared C++ kernels and the
-native planner runtime compile with CUDA or AMD HIP.
+tenkai (展開 in Japanese) generates robot-specific GPU kernels for forward
+kinematics, collision checking, and RRT-Connect motion planning from URDF models.
+Plan paths from Python on NVIDIA CUDA or AMD HIP GPUs.
 
 ## Setup
 
-```sh
-uv sync --all-extras
-```
-
-`src/tenkai` contains the Python package, CUDA templates, and planner bindings.
-The package depends on PyYAML and NumPy; the `bench` extra adds plainmp.
-
-## Generate kernels
+Use Python 3.12 and [uv](https://docs.astral.sh/uv/):
 
 ```sh
-uv run tenkai-generate \
-  --urdf assets/fetch/fetch.urdf \
-  --spheres assets/fetch/collision.yaml \
-  --float --no-sfu artifacts/generated
+uv sync
 ```
 
-This writes `collision.cuh`, `model.json`, and the native planner sources below
-when the model has controlled joints. Use `--all-kernels` to
-also emit FK, sphere-center, and collision-predicate sources. FK and collision
-use FP32; `--no-sfu` selects standard math instead of the default SFU intrinsics.
-`--optimization none|basic|algebraic` and `--live-budget N` select optimization
-and scheduling behavior. The CLI prints stage durations as JSON.
+Planning requires a supported GPU, its driver, and a CUDA or HIP toolkit with a
+compatible C++ compiler. Set `NVCC`, `HIPCC`, or `CXX` to select your compilers.
 
-`model.json` records joint and sphere metadata, plus `math`, `optimization`, and
-`live_budget` using the same values as `Options`. A null `live_budget` preserves
-DAG order.
+## Plan your first path
 
-The planner uses ordinary C++ includes, with the same directory structure as
-`src/tenkai/templates`:
-
-```text
-rrt/bindings.cu
-  └─ planner.cuh       GPU buffers, kernel launches, and RrtPlanner
-       └─ rrtc.cuh     single-candidate RRT-Connect kernels
-            └─ common.cuh
-                 ├─ types.hpp
-                 └─ generated_model.cuh
-                      └─ ../collision/{sdf,streaming,workspace}.cuh
-```
-
-Each header includes its direct dependencies. `generated_model.cuh` contains
-model-specific collision predicates, the collision batch kernel, and dimensions.
-Python substitutes model parameters and writes separate files; the GPU compiler
-resolves their includes. Compile `rrt/bindings.cu` to build the native binding,
-or include `rrt/planner.cuh` in a custom native application. Keep the generated
-directory tree together when moving it.
-
-`generate_rrt_sources(fk, spheres, controls, options)` returns a mapping from
-relative file paths to source text. `controls` contains FK joint indices in
-planning order.
+This example uses the included Fetch robot. Save it as a Python file and run it
+with `uv run python your_script.py` from the repository root.
 
 ```python
-from pathlib import Path
-
-from tenkai import FkDag, Options, Robot, generate_collision_kernel, read_spheres
-
-robot = Robot.from_string(Path("assets/fetch/fetch.urdf").read_text())
-fk = FkDag.from_robot(robot)
-spheres = read_spheres(Path("assets/fetch/collision.yaml").read_text(), fk)
-source = generate_collision_kernel(fk, spheres, Options(math="f32"))
-```
-
-## Run and time a planner
-
-RRT-Connect can be used from one script with the installed package and
-your model files. For the included Fetch model, this is a complete example:
-
-```python
-from time import perf_counter
-
-import numpy as np
-
-from tenkai import RRTConfig, build_rrt
+from tenkai import RRTConfig, build_rrt, sdf
 
 compiled = build_rrt(
     "assets/fetch/fetch.urdf",
     "assets/fetch/collision.yaml",
     "build/fetch",
 )
-starts = [[0.0, 1.32, 1.40, -0.20, 1.72, 0.0, 1.66, 0.0]]
-goals = [[0.386, 0.205, 1.41, 0.308, -1.82, 0.245, 0.417, 6.01]]
-geometry = [[0.95, 0, 0.8, 1, 2, 0.05, 0]]
+
+start = [0.0, 1.32, 1.40, -0.20, 1.72, 0.0, 1.66, 0.0]
+goal = [0.386, 0.205, 1.41, 0.308, -1.82, 0.245, 0.417, 6.01]
+obstacles = [
+    sdf.Box(center=(0.95, 0, 0.8), size=(1, 2, 0.05)),
+    sdf.Ground(z=0),
+]
 
 with compiled.planner(
-    geometry,
+    obstacles,
     config=RRTConfig(max_rounds=8192),
-    problem_count=len(starts),
+    problem_count=1,
     resolution=0.01,
 ) as planner:
-    planner.solve(starts, goals, [0], [42])  # Warm up the GPU driver and kernels.
-    times = []
-    for _ in range(10):
-        begin = perf_counter()
-        results = planner.solve(starts, goals, [0], [42])
-        times.append((perf_counter() - begin) * 1000)
-    print(f"Median solve: {np.median(times):.3f} ms", results)
-    path = planner.path(0)
+    result = planner.solve([start], [goal], [0], [42])[0]
+    print(result)
+    if result["status"] == "success":
+        path = planner.path(0)
+        print(path)
 ```
 
-`build_rrt` generates CUDA, runs `nvcc` via `subprocess`, and writes `librrt.so`,
-`model.json`, and a compiler log under the output directory. `compiled.timings`
-reports `codegen`, `nvcc`, and `total` wall times in seconds. Each call rebuilds;
-use a separate directory for each distinct build. Import `Options` from `tenkai`
-and pass `options=Options(math="f32")` for standard FP32 math or
-`options=Options(math="f32-sfu")` for SFU intrinsics (the default).
-Set the target with `arch="compute_75"`.
-The build needs a CUDA toolkit and compatible C++ compiler (`NVCC` and `CXX` may
-override discovery). Creating or running a planner also needs a CUDA GPU/driver.
+`build_rrt` compiles the robot once. Reuse `compiled` with different obstacles,
+and call `solve` repeatedly on a planner with new starts, goals, and seeds.
+Creating a planner uploads its environments and allocates reusable search buffers;
+the `with` block releases those buffers on exit. Each call to `build_rrt` rebuilds
+the library, so keep it outside your planning loop.
 
-For AMD Radeon RX 9070 XT, select HIP:
+Starts, goals, and returned paths follow
+`compiled.model["control_joints"]` order. The last two arguments to `solve` are
+one environment ID and one unsigned 64-bit random seed per problem. Repeated
+solves with the same inputs on the same backend are deterministic.
+`path(i)` retrieves problem `i`'s path from the last solve.
+
+## Define your environments
+
+Pass a list of `tenkai.sdf` objects to `compiled.planner`. Positions and lengths
+are in meters, in the robot's root frame. An empty list creates an empty
+environment; there is no implicit ground plane.
+
+| Object | Parameters |
+| --- | --- |
+| `sdf.Box` | `center=(x, y, z)`, `size=(sx, sy, sz)` with full side lengths |
+| `sdf.Sphere` | `center=(x, y, z)`, `radius` |
+| `sdf.Cylinder` | `center=(x, y, z)`, `radius`, `height` with full height along local Z |
+| `sdf.Ground` | `z`, the height of a horizontal surface with everything below it occupied |
+
+Boxes and cylinders also accept `rotation`, a 3×3 local-to-world rotation matrix;
+the default is the identity. You can mix primitive types and include any number
+of each in an environment.
+
+For multiple environments, pass a list of object lists. Environment IDs are
+their zero-based indices, and multiple problems can share an environment:
+
+```python
+environments = [obstacles, []]
+
+with compiled.planner(environments, problem_count=2, resolution=0.01) as planner:
+    results = planner.solve([start, start], [goal, goal], [0, 1], [42, 43])
+    for i, result in enumerate(results):
+        if result["status"] == "success":
+            print(i, planner.path(i))
+```
+
+Changing obstacle counts, types, or poses does not require recompiling the robot.
+`planner.collisions(q, environment_ids)` checks configurations without planning;
+these full configurations follow `compiled.model["input_joint_names"]` order.
+
+## Use your own robot
+
+Pass your URDF and collision-sphere YAML to `build_rrt`. The YAML lists the
+controlled joint names and the collision spheres attached to each robot link;
+see [the Fetch configuration](assets/fetch/collision.yaml) for the format.
+Obstacle spheres (`sdf.Sphere`) describe the environment separately.
+
+Uncontrolled joints stay at zero during planning. Collision checking uses the
+robot's spheres against the environment; self-collision is not checked.
+
+## Choose a GPU backend
+
+CUDA is the default, targeting `compute_75`. Override the target with
+`arch="compute_XX"` as appropriate for your GPU. For AMD HIP, for example on an
+RX 9070 XT, use:
 
 ```python
 compiled = build_rrt(
     "assets/fetch/fetch.urdf",
     "assets/fetch/collision.yaml",
-    "artifacts/fetch-hip",
+    "build/fetch-hip",
     backend="hip",
     arch="gfx1201",
 )
 ```
 
-The same single-candidate RRT-Connect API supports `f32` and `f32-sfu`.
-Each problem uses one warp and streaming collision checks when the scene permits them.
-HIP defaults to `gfx1201`; CUDA remains the
-default backend with `compute_75`. Set `HIPCC` to override `hipcc` discovery.
-HIP builds report `hipcc` instead of `nvcc` in `compiled.timings` and
-`compiled.toolchain`. The CUDA-only `max_registers` option must be omitted or zero.
+HIP supports wave32 GPUs; wave64 devices are rejected. Select a device with
+`HIP_VISIBLE_DEVICES` if needed. Both backends use FP32 with SFU intrinsics by
+default. Import `Options` from `tenkai` and pass `options=Options(math="f32")` to
+`build_rrt` for standard FP32 math. Results can differ between backends.
 
-This initial HIP port targets wave32 GPUs and was tested on RX 9070 XT with
-HIP 7.16 / AMD Clang 24. Wave64 devices are rejected when creating a planner.
-If several GPUs are installed, use `HIP_VISIBLE_DEVICES=0` (or the appropriate
-device index) to select the Radeon. Generated source is shared with CUDA; the
-build supplies a compatibility header and enables OCML directed rounding for
-workspace bounds. Numerical results need not be bit-identical across backends.
-
-For custom native builds, `tenkai.build.compiler_command("hip", "gfx1201")`
-returns `(flags, version)` with the required includes and compiler definitions;
-append your source files and output flags before invoking it with `subprocess`.
-
-`compiled.planner(...)` loads the shared library through `ctypes.CDLL` and owns
-the native scene and search buffers until `close()` or context exit. Solves reuse
-these buffers and finish copying results to the host before returning, so the
-timer above includes Python and
-host/device transfers, and excludes compilation, setup, and first-use driver JIT.
-
-Starts, goals, and returned paths use `compiled.model["control_joints"]` order.
-Pass one environment ID and uint64 seed per problem; repeated solves with the
-same inputs are deterministic. `path(i)` retrieves the last solve's path.
-`collisions(q, ids)` accepts full configurations in
-`compiled.model["input_joint_names"]` order.
-
-The current binding accepts one axis-aligned box and one ground plane per
-environment: each geometry row is `[cx, cy, cz, sx, sy, sz, ground_offset]`, with
-full box side lengths `sx/sy/sz` and the ground plane at `z = -ground_offset`.
-Uncontrolled joints stay at zero; self-collision is not checked. Model inputs and
-scene geometry are supplied by the caller.
-
-## Check
-
-Run `./format.sh` to format CUDA templates with clang-format (Chromium style),
-format Python with Ruff, and run Ruff lint checks. All tools are managed by uv.
+## Generate kernels without running a planner
 
 ```sh
-uv run pytest
-uv run mypy
-uv run ruff check src tests bench
-uv run ruff format --check src tests bench
-uv build
+uv run tenkai-generate \
+  --urdf assets/fetch/fetch.urdf \
+  --spheres assets/fetch/collision.yaml \
+  --all-kernels artifacts/generated
 ```
 
-Tests include exact source hashes and model metadata for 108 configurations,
-and CPU execution of generated kernels. Source hashes track the current
-formatted templates.
-`uv run pytest --run-cuda` also compiles with nvcc.
-`--run-gpu` enables GPU execution tests. Set
-`NVCC` and `CXX` when the toolkit requires a specific compiler.
-
-```sh
-uv run pytest --run-hip --run-gpu
-```
-
-`--run-hip` selects HIP and enables compilation tests; `--run-gpu` additionally
-executes them on the GPU. `--gpu-arch gfx1201` overrides the default target.
-CUDA and HIP runs reuse the same arithmetic, collision, planner, and binding tests.
+This generates forward-kinematics, sphere-center, collision, and planner sources
+with model metadata. Use `--no-sfu` for standard FP32 math. Keep the generated
+directory tree together when using the sources in your application.
 
 ## Benchmarks
 
@@ -198,6 +146,16 @@ uv run python bench/compiler.py
 uv run --extra bench python bench/compare_rrtc.py
 ```
 
-These are independent, single-file benchmarks: compilation time and Python API
-RRT-Connect throughput against plainmp. Results and builds go under `artifacts/`.
-See [benchmark details](bench/README.md) for workloads and measurement boundaries.
+These measure compilation time and planning throughput against plainmp.
+See [benchmark details](bench/README.md) for workloads and timing boundaries.
+
+## Development
+
+```sh
+./format.sh
+uv run mypy
+uv run pytest
+```
+
+Use `uv run pytest --run-cuda --run-gpu` for CUDA tests, or
+`uv run pytest --run-hip --run-gpu` for HIP tests.

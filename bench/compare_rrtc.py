@@ -24,7 +24,7 @@ from plainmp.ompl_solver import (
 from plainmp.problem import Problem
 from plainmp.psdf import BoxSDF, GroundSDF, Pose, UnionSDF
 
-from tenkai import Options, RRTConfig, build_rrt
+from tenkai import Options, RRTConfig, build_rrt, sdf
 from tenkai.build import target_arch
 from tenkai.collision import read_config
 from tenkai.compiler import ModelMetadata
@@ -32,7 +32,9 @@ from tenkai.compiler import ModelMetadata
 ASSETS = Path(__file__).resolve().parents[1] / "assets/fetch"
 START = [0.0, 1.32, 1.40, -0.20, 1.72, 0.0, 1.66, 0.0]
 GOAL = [0.386, 0.205, 1.41, 0.308, -1.82, 0.245, 0.417, 6.01]
-GEOMETRY = [0.95, 0.0, 0.8, 1.0, 2.0, 0.05, 0.0]
+BOX = sdf.Box(center=(0.95, 0.0, 0.8), size=(1.0, 2.0, 0.05))
+GROUND = sdf.Ground(z=0.0)
+GEOMETRY: list[sdf.CollisionObject] = [BOX, GROUND]
 RESOLUTION = 0.005
 
 
@@ -49,8 +51,8 @@ def make_problem(urdf: Path, spheres: Path, model: ModelMetadata) -> Problem:
     checker = SphereCollisionCst(
         KinematicModel(urdf.read_text()), names, BaseType.FIXED, attachments, [], None, True
     )
-    box = BoxSDF(np.array(GEOMETRY[3:6]), Pose(np.array(GEOMETRY[:3]), np.eye(3)))
-    checker.set_sdf(UnionSDF([box, GroundSDF(0.0)]))
+    box = BoxSDF(np.array(BOX.size), Pose(np.array(BOX.center), np.array(BOX.rotation)))
+    checker.set_sdf(UnionSDF([box, GroundSDF(-GROUND.z)]))
     lower = np.array([joint["lower"] for joint in model["control_joints"]])
     upper = np.array([joint["upper"] for joint in model["control_joints"]])
     return Problem(
@@ -146,7 +148,7 @@ def main() -> None:
     ids = np.zeros(args.batch, dtype=np.uint32)
     seeds = np.arange(args.batch, dtype=np.uint64) + 42
     with compiled.planner(
-        [GEOMETRY],
+        GEOMETRY,
         config=config,
         problem_count=args.batch,
         resolution=RESOLUTION,

@@ -11,6 +11,8 @@ uv run python bench/compiler.py --repeats 3
 `compare_rrtc.py` compares plainmp CPU and tenkai GPU RRT-Connect on one fixed
 Fetch problem. Both use all 69 collision spheres, the same box and ground plane,
 joint bounds, step size, and motion-check resolution; self-collision is disabled.
+The scene is defined with `tenkai.sdf.Box` and `Ground`; both planners use
+these same dimensions and poses.
 tenkai uses one sample and one warp per problem. Failed solves stop the benchmark.
 
 Times cover Python API calls for a batch after one warmup batch. plainmp solves

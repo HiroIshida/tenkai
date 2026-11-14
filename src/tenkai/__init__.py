@@ -1,5 +1,6 @@
 """Robot-specialized CUDA code generation and motion planning."""
 
+from . import sdf
 from .collision import Sphere, read_spheres
 from .cuda import (
     Options,
@@ -13,6 +14,7 @@ from .model import FkDag, Robot
 from .rrt import Planner, RRTBuild, RRTConfig, RRTResult, build_rrt
 
 __all__ = [
+    "sdf",
     "FkDag",
     "Robot",
     "Sphere",
