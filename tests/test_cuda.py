@@ -40,11 +40,16 @@ def chain_sources(directory: Path, options: Options) -> None:
     fk = FkDag.from_robot(Robot.from_string((FIXTURES / "fk_chain.urdf").read_text()))
     tool = fk.link_names.index("tool")
     spheres = [Sphere(tool, (0, 0, 0), 0.25)]
+    spheres.extend(Sphere(tool, (i, 0, 0), (i + 1) / 64) for i in range(1, 9))
+    spheres.insert(1, Sphere(fk.link_names.index("sensor"), (0, 0, 0), 0.375))
     (directory / "fk.cuh").write_text(generate_fk_kernel(fk, tool, options))
     (directory / "centers.cuh").write_text(generate_centers_kernel(fk, spheres, options))
     (directory / "collision.cuh").write_text(generate_collision_kernel(fk, spheres, options))
+    radii = ", ".join(f"{sphere.radius}f" for sphere in spheres)
     (directory / "config.h").write_text(
         "using Scalar = float;\nnamespace sdf = tenkai_f32;\nconstexpr double tolerance = 1e-5;\n"
+        f"constexpr size_t sphere_count = {len(spheres)};\n"
+        f"__device__ const Scalar radii[] = {{{radii}}};\n"
     )
 
 

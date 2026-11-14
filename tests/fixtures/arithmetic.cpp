@@ -45,6 +45,27 @@ private:
 };
 #endif
 
+__global__ void check_grouped_collisions(const Scalar* configurations, const Scalar* centers,
+                                       unsigned char* results, size_t count) {
+    const size_t batch = blockIdx.x * blockDim.x + threadIdx.x;
+    if (batch >= count) return;
+    const Scalar* q = configurations + batch * 4;
+    const Scalar* points = centers + batch * sphere_count * 3;
+    const sdf::Environment environment = {{0,0},{0,1},{0,0},{0,0}};
+
+    bool valid = true;
+    // Isolated probes prevent an earlier hit from hiding a skipped sphere.
+    for (size_t i = 0; i < sphere_count; ++i) {
+        for (Scalar factor : {0.5f, 1.5f}) {
+            const sdf::Sphere obstacle = {
+                {points[3*i], points[3*i+1], points[3*i+2] + factor * radii[i]}, 0};
+            const sdf::Scene scene = {&environment, nullptr, &obstacle, nullptr, nullptr};
+            valid &= tenkai_collision_one(q, scene, 0) == (factor < 1);
+        }
+    }
+    results[batch] = valid;
+}
+
 int main() {
 #if !defined(__CUDACC__) && !defined(__HIPCC__)
     if (!check_sdfs()) return 1;
@@ -60,15 +81,18 @@ int main() {
     const sdf::Environment environment = {{0,0},{0,1},{0,0},{0,1}};
     const sdf::Scene scene = {&environment, nullptr, &obstacle, nullptr, &ground};
     const uint32_t ids[] = {0,0,0};
-    Scalar poses[28], centers[12];
-    unsigned char flags[4];
+    const double directions[][3] = {{0,1,0}, {-1,0,0}, {0,1,0}};
+    constexpr size_t center_count = 4 * sphere_count * 3;
+    Scalar poses[28], centers[center_count];
+    unsigned char flags[4], grouped[4];
     std::fill_n(poses, 28, Scalar(123));
-    std::fill_n(centers, 12, Scalar(123));
+    std::fill_n(centers, center_count, Scalar(123));
     std::fill_n(flags, 4, 123);
+    std::fill_n(grouped, 4, 123);
 #if defined(__CUDACC__) || defined(__HIPCC__)
-    Buffer<Scalar> device_q(q, 12), device_poses(poses, 28), device_centers(centers, 12);
+    Buffer<Scalar> device_q(q, 12), device_poses(poses, 28), device_centers(centers, center_count);
     Buffer<uint32_t> device_ids(ids, 3);
-    Buffer<unsigned char> device_flags(flags, 4);
+    Buffer<unsigned char> device_flags(flags, 4), device_grouped(grouped, 4);
     Buffer<sdf::Sphere> device_obstacle(&obstacle, 1);
     Buffer<sdf::Ground> device_ground(&ground, 1);
     Buffer<sdf::Environment> device_environment(&environment, 1);
@@ -80,25 +104,37 @@ int main() {
     check(cudaGetLastError());
     tenkai_collision<<<1, 32>>>(device_q.data, device_ids.data, device_scene, device_flags.data, 3);
     check(cudaGetLastError());
+    check_grouped_collisions<<<1, 32>>>(device_q.data, device_centers.data, device_grouped.data, 3);
+    check(cudaGetLastError());
     device_poses.download(poses);
     device_centers.download(centers);
     device_flags.download(flags);
+    device_grouped.download(grouped);
 #else
     blockDim.x = 4;
     for (threadIdx.x = 0; threadIdx.x < 4; ++threadIdx.x) {
         tenkai_fk(q, poses, 3);
         tenkai_centers(q, centers, 3);
         tenkai_collision(q, ids, scene, flags, 3);
+        check_grouped_collisions(q, centers, grouped, 3);
     }
 #endif
     for (size_t i = 0; i < 3; ++i) {
         for (size_t j = 0; j < 7; ++j)
             if (std::abs(poses[i*7+j] - expected[i][j]) > tolerance) return 2;
-        for (size_t j = 0; j < 3; ++j)
-            if (std::abs(centers[i*3+j] - expected[i][j]) > tolerance) return 3;
+        for (size_t sphere = 0; sphere < sphere_count; ++sphere) {
+            const double offset = sphere == 0 ? 0 : sphere - 1;
+            for (size_t axis = 0; axis < 3; ++axis) {
+                double position = expected[i][axis] + offset * directions[i][axis];
+                if (sphere == 1) position = axis == 2 ? 2 : 0;
+                if (std::abs(centers[(i*sphere_count+sphere)*3+axis] - position) > tolerance)
+                    return 3;
+            }
+        }
         if (flags[i] != (i == 1 ? 0 : 1)) return 4;
+        if (grouped[i] != 1) return 8;
     }
     for (size_t i = 21; i < 28; ++i) if (poses[i] != 123) return 5;
-    for (size_t i = 9; i < 12; ++i) if (centers[i] != 123) return 6;
-    return flags[3] == 123 ? 0 : 7;
+    for (size_t i = 3*sphere_count*3; i < center_count; ++i) if (centers[i] != 123) return 6;
+    return flags[3] == 123 && grouped[3] == 123 ? 0 : 7;
 }
