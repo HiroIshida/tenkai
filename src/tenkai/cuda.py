@@ -68,7 +68,7 @@ def template(name: str, replacements: Sequence[tuple[str, str | int]] = ()) -> s
     return source
 
 
-class Kernel:
+class DagEmitter:
     def __init__(
         self,
         name: str,
@@ -163,16 +163,16 @@ def generate_fk_kernel(fk: FkDag, link_index: int, options: Options = Options())
     dag, outputs = fk.dag.optimize(
         [*pose.translation, *pose.rotation], options.precision, options.optimization
     )
-    kernel = Kernel("tenkai_fk", dag, len(fk.joint_names), outputs, options)
-    return kernel.source()
+    emitter = DagEmitter("tenkai_fk", dag, len(fk.joint_names), outputs, options)
+    return emitter.source()
 
 
 def generate_centers_kernel(
     fk: FkDag, spheres: Sequence[Sphere], options: Options = Options()
 ) -> str:
     dag, outputs = center_expressions(fk, spheres, options.precision, options.optimization)
-    kernel = Kernel("tenkai_centers", dag, len(fk.joint_names), outputs, options)
-    return kernel.source()
+    emitter = DagEmitter("tenkai_centers", dag, len(fk.joint_names), outputs, options)
+    return emitter.source()
 
 
 def collision_group(spheres: Sequence[Sphere], start: int, options: Options) -> str:
@@ -238,8 +238,8 @@ def collision_definition(name: str, qualifier: str, body: str, options: Options)
     )
 
 
-def collision_function(kernel: Kernel, spheres: Sequence[Sphere], qualifier: str) -> str:
-    options = kernel.options
+def collision_function(emitter: DagEmitter, spheres: Sequence[Sphere], qualifier: str) -> str:
+    options = emitter.options
 
     def store(index: int, value: int) -> str:
         axis = "xyz"[index % 3]
@@ -261,15 +261,15 @@ def collision_function(kernel: Kernel, spheres: Sequence[Sphere], qualifier: str
             "    bool collision = false;\n"
             f"    {options.namespace}::Vec3 center;\n"
         )
-        body += kernel.body("q", False, store)
+        body += emitter.body("q", False, store)
         body += "    return collision;\n"
     else:
         body = "    return false;\n"
 
-    return collision_definition(kernel.name, qualifier, body, options)
+    return collision_definition(emitter.name, qualifier, body, options)
 
 
-def streaming_function(kernel: Kernel, spheres: Sequence[Sphere]) -> str:
+def streaming_function(emitter: DagEmitter, spheres: Sequence[Sphere]) -> str:
     finite_squared_radii = True
     for sphere in spheres:
         radius = f32(sphere.radius)
@@ -307,7 +307,7 @@ def streaming_function(kernel: Kernel, spheres: Sequence[Sphere]) -> str:
 
         return text
 
-    body = kernel.body("q", True, store)
+    body = emitter.body("q", True, store)
     return template(
         "collision/streaming.cuh",
         (("STREAMABLE_BODY", streamable_body), ("BODY", body)),
@@ -315,14 +315,14 @@ def streaming_function(kernel: Kernel, spheres: Sequence[Sphere]) -> str:
 
 
 def planning_functions(
-    kernel: Kernel,
+    emitter: DagEmitter,
     spheres: Sequence[Sphere],
     groups: Sequence[Sequence[int]],
     moving: Sequence[int],
     controls: Sequence[int],
 ) -> str:
-    options = kernel.options
-    dag = kernel.dag
+    options = emitter.options
+    dag = emitter.dag
     dependencies_by_control = [dag.depends_on_inputs([index]) for index in controls]
 
     bounded_indices: list[int] = []
@@ -339,16 +339,16 @@ def planning_functions(
     edge_spheres = [spheres[index] for index in remaining_indices]
     edge_groups = [groups[index] for index in remaining_indices]
     edge_outputs = [node for group in edge_groups for node in group]
-    edge_kernel = Kernel(
+    edge_emitter = DagEmitter(
         "tenkai_collision_edge",
         dag,
-        kernel.dof,
+        emitter.dof,
         edge_outputs,
         options,
         edge_groups,
     )
-    source = collision_function(edge_kernel, edge_spheres, "__forceinline__")
-    source += streaming_function(edge_kernel, edge_spheres)
+    source = collision_function(edge_emitter, edge_spheres, "__forceinline__")
+    source += streaming_function(edge_emitter, edge_spheres)
 
     bounds_checks: list[str] = []
     for dimension, flags in enumerate(dependencies_by_control):
@@ -411,7 +411,7 @@ def generate_collision_function(
 
     dag, outputs = center_expressions(fk, spheres, options.precision, options.optimization)
     groups = [outputs[i : i + 3] for i in range(0, len(outputs), 3)]
-    kernel = Kernel("tenkai_collision_one", dag, len(fk.joint_names), outputs, options, groups)
+    emitter = DagEmitter("tenkai_collision_one", dag, len(fk.joint_names), outputs, options, groups)
 
     source = template(
         "collision/sdf.cuh",
@@ -425,7 +425,7 @@ def generate_collision_function(
         ),
     )
     qualifier = "__noinline__" if controls is not None else "inline"
-    source += collision_function(kernel, spheres, qualifier)
+    source += collision_function(emitter, spheres, qualifier)
 
     if controls is not None:
         dependent = dag.depends_on_inputs(controls)
@@ -444,18 +444,18 @@ def generate_collision_function(
         else:
             moving_groups = [groups[i] for i in moving]
             moving_outputs = [node for group in moving_groups for node in group]
-            moving_kernel = Kernel(
+            moving_emitter = DagEmitter(
                 "tenkai_collision_moving",
                 dag,
-                kernel.dof,
+                emitter.dof,
                 moving_outputs,
                 options,
                 moving_groups,
             )
-            source += collision_function(moving_kernel, [spheres[i] for i in moving], qualifier)
+            source += collision_function(moving_emitter, [spheres[i] for i in moving], qualifier)
 
         if options.precision == "f32":
-            source += planning_functions(kernel, spheres, groups, moving, controls)
+            source += planning_functions(emitter, spheres, groups, moving, controls)
 
     return source
 
