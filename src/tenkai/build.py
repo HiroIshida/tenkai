@@ -33,7 +33,6 @@ def compiler_command(backend: Backend = "cuda", arch: str | None = None) -> tupl
     if hipcc is None:
         raise RuntimeError("hipcc not found; install ROCm or set HIPCC")
     version = subprocess.check_output([hipcc, "--version"], text=True)
-    compatibility = TEMPLATES / "hip"
     command = [
         hipcc,
         "-x",
@@ -43,9 +42,9 @@ def compiler_command(backend: Backend = "cuda", arch: str | None = None) -> tupl
         # Workspace bounds need directed rounding, not the default nearest-only intrinsics.
         "-DOCML_BASIC_ROUNDED_OPERATIONS",
         "-I",
-        str(compatibility),
+        str(TEMPLATES),
         "-include",
-        str(compatibility / "cuda_runtime.h"),
+        str(TEMPLATES / "amd_hip_compat.h"),
     ]
     return command, version
 
@@ -69,5 +68,5 @@ def toolchain() -> tuple[str, str, str]:
 def copy_rrt_bindings(directory: Path) -> Path:
     # Compile beside the generated rrt.cuh, not the adjacent source template.
     source = directory / "rrt.cu"
-    shutil.copyfile(TEMPLATES / "cuda/rrt_bindings.cu", source)
+    shutil.copyfile(TEMPLATES / "rrt/bindings.cu", source)
     return source

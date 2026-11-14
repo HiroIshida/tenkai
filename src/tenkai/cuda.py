@@ -89,7 +89,7 @@ class Kernel:
 
         body = self.body(f"(configurations + batch * {self.dof})", False, store)
         return template(
-            "cuda/batch_kernel.cuh",
+            "kinematics_batch_kernel.cuh",
             (("NAME", self.name), ("SCALAR", self.options.scalar), ("BODY", body)),
         )
 
@@ -268,7 +268,7 @@ def streaming_function(kernel: Kernel, spheres: Sequence[Sphere]) -> str:
         return text
 
     return template(
-        "cuda/collision_streaming.cuh",
+        "collision/streaming.cuh",
         (("STREAMABLE_BODY", streamable_body), ("BODY", kernel.body("q", True, store))),
     )
 
@@ -338,7 +338,7 @@ def planning_functions(
             f"    if (!workspace_clear(v{x}, v{y}, v{z}, {number(spheres[i].radius)}f, scene, environment)) return false;\n"
         )
     return source + template(
-        "cuda/collision_workspace.cuh",
+        "collision/workspace.cuh",
         (
             ("BOUNDS_CHECKS", "".join(bounds_checks)),
             ("BODY", "".join(body)),
@@ -358,7 +358,7 @@ def generate_collision_function(
     groups = [outputs[i : i + 3] for i in range(0, len(outputs), 3)]
     kernel = Kernel("tenkai_collision_one", dag, len(fk.joint_names), outputs, options, groups)
     source = template(
-        "cuda/sdf.cuh",
+        "collision/sdf.cuh",
         (("NAMESPACE", options.namespace), ("SCALAR", options.scalar), ("SUFFIX", options.suffix)),
     )
     qualifier = "__noinline__" if controls is not None else "inline"
@@ -405,7 +405,7 @@ def generate_collision_kernel(
         else "false"
     )
     return source + template(
-        "cuda/collision_kernel.cuh",
+        "collision/batch_kernel.cuh",
         (("SCALAR", options.scalar), ("NAMESPACE", options.namespace), ("COLLISION", collision)),
     )
 
@@ -422,13 +422,13 @@ def generate_rrt_kernel(
         raise ValueError("RRT control index exceeds FK joint count")
     if len(set(controls)) != len(controls):
         raise ValueError("duplicate RRT control index")
-    source = generate_collision_kernel(fk, spheres, options, controls) + template("rrt_types.hpp")
+    source = generate_collision_kernel(fk, spheres, options, controls) + template("rrt/types.hpp")
     indices = ", ".join(map(str, controls))
     fp32 = options.precision == "f32"
-    files = ["cuda/rrt_common.cuh", "cuda/rrt.cuh", "cuda/rrtc.cuh"]
+    files = ["rrt/common.cuh", "rrt/rrt.cuh", "rrt/rrtc.cuh"]
     if fp32:
-        files.append("cuda/rrtc_single.cuh")
-    files.append("cuda/rrt_runtime.cuh")
+        files.append("rrt/rrtc_single.cuh")
+    files.append("rrt/runtime.cuh")
     for name in files:
         source += template(
             name,
