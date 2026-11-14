@@ -6,10 +6,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import assert_never
 
-from .collision import Sphere, center_expressions
+from .collision import CollisionDag, Sphere, center_expressions, collision_expressions
 from .dag import Binary, BinaryOp, Constant, Dag, Input, Optimization, Trig, TrigOp, f32
 from .model import FkDag
-from .scheduling import Store, schedule
+from .scheduling import Evaluate, Store, schedule
 
 TEMPLATES = Path(__file__).with_name("templates")
 
@@ -84,12 +84,19 @@ class DagEmitter:
                 return f"v{a} {operator} v{b}"
         assert_never(node)
 
-    def body(self, input_name: str, store: Callable[[int, int], str]) -> str:
+    def body(
+        self,
+        input_name: str,
+        store: Callable[[int, int], str],
+        cached: set[int] | None = None,
+    ) -> str:
         source: list[str] = []
 
         for step in self.schedule.steps:
             if isinstance(step, Store):
                 source.append(store(step.index, step.node))
+                continue
+            if cached is not None and step.node in cached:
                 continue
 
             expression = self.expression(step.node, input_name)
@@ -116,24 +123,8 @@ def generate_centers_kernel(
     return emitter.source()
 
 
-def collision_group(spheres: Sequence[Sphere], start: int) -> str:
+def sphere_collision(radius: float) -> str:
     source: list[str] = []
-
-    if len(spheres) > 1:
-        bounds: list[str] = []
-        for operation in ("fmin", "fmax"):
-            coordinates: list[str] = []
-            for axis in "xyz":
-                value = f"point{start}.{axis}"
-                for i in range(start + 1, start + len(spheres)):
-                    value = f"{operation}f({value}, point{i}.{axis})"
-                coordinates.append(value)
-            bounds.append("{" + ", ".join(coordinates) + "}")
-        radius = number(max(sphere.radius for sphere in spheres))
-        source.append(
-            f"    const tenkai_f32::SphereBounds bounds{start} = "
-            f"{{{', '.join(bounds)}, {radius}f}};\n"
-        )
 
     for primitive, field in (
         ("Box", "boxes"),
@@ -150,20 +141,10 @@ def collision_group(spheres: Sequence[Sphere], start: int) -> str:
             f"scene.{field}[environment.{field}.offset + i];\n"
         )
 
-        broad_phase = len(spheres) > 1 and primitive != "Ground"
-        if broad_phase:
-            source.append(f"        if (tenkai_f32::overlaps(obstacle, bounds{start})) {{\n")
-
-        for offset, sphere in enumerate(spheres):
-            radius = number(sphere.radius)
-            source.append(
-                f"        collision |= tenkai_f32::intersects("
-                f"obstacle, point{start + offset}, {radius}f);\n"
-            )
-
-        if broad_phase:
-            source.append("        }\n")
-        source.append("        if (collision) return true;\n    }\n")
+        source.append(
+            f"        collision |= tenkai_f32::intersects(obstacle, center, {number(radius)}f);\n"
+        )
+        source.append("    }\n")
 
     return "".join(source)
 
@@ -177,20 +158,9 @@ def collision_definition(name: str, qualifier: str, body: str) -> str:
     )
 
 
-def collision_function(emitter: DagEmitter, spheres: Sequence[Sphere], qualifier: str) -> str:
-    def store(index: int, value: int) -> str:
-        axis = "xyz"[index % 3]
-        text = f"    center.{axis} = v{value};\n"
-        if index % 3 == 2:
-            sphere_index = index // 3
-            text += f"    const tenkai_f32::Vec3 point{sphere_index} = center;\n"
-            end = sphere_index + 1
-            if end % 16 == 0 or end == len(spheres):
-                start = sphere_index // 16 * 16
-                text += collision_group(spheres[start:end], start)
-
-        return text
-
+def collision_function(
+    emitter: DagEmitter, spheres: Sequence[Sphere], geometry: CollisionDag, qualifier: str
+) -> str:
     if spheres:
         body = (
             "    const tenkai_f32::Environment environment = "
@@ -198,7 +168,7 @@ def collision_function(emitter: DagEmitter, spheres: Sequence[Sphere], qualifier
             "    bool collision = false;\n"
             "    tenkai_f32::Vec3 center;\n"
         )
-        body += emitter.body("q", store)
+        body += link_collision_body(emitter, spheres, geometry, streaming=False)
         body += "    return collision;\n"
     else:
         body = "    return false;\n"
@@ -206,8 +176,64 @@ def collision_function(emitter: DagEmitter, spheres: Sequence[Sphere], qualifier
     return collision_definition(emitter.name, qualifier, body)
 
 
+def link_collision_body(
+    emitter: DagEmitter,
+    spheres: Sequence[Sphere],
+    geometry: CollisionDag,
+    *,
+    streaming: bool,
+) -> str:
+    links: dict[int, list[int]] = {}
+    for index, sphere in enumerate(spheres):
+        links.setdefault(sphere.link_index, []).append(index)
+
+    pose_outputs: list[int] = []
+    for link in links:
+        pose = geometry.poses[link]
+        pose_outputs.extend((*pose.translation, *pose.rotation))
+    fk = DagEmitter("", emitter.dag, emitter.dof, pose_outputs, emitter.options)
+    source = [fk.body("q", lambda _index, _node: "")]
+    cached = {step.node for step in fk.schedule.steps if isinstance(step, Evaluate)}
+
+    outputs = [step.node for step in emitter.schedule.steps if isinstance(step, Store)]
+    for indices in links.values():
+        members = [spheres[index] for index in indices]
+        groups = [outputs[index * 3 : index * 3 + 3] for index in indices]
+        points = [node for group in groups for node in group]
+        link_emitter = DagEmitter("", emitter.dag, emitter.dof, points, emitter.options, groups)
+
+        def store(index: int, value: int) -> str:
+            axis = "xyz"[index % 3]
+            text = f"    center.{axis} = v{value};\n"
+            if index % 3 != 2:
+                return text
+
+            sphere = members[index // 3]
+            if streaming:
+                radius = number(sphere.radius)
+                text += f"    collision |= streaming_intersects(box, center, {radius}f, retry);\n"
+                text += f"    collision |= intersects(ground, center, {radius}f);\n"
+            else:
+                text += sphere_collision(sphere.radius)
+
+            end = index // 3 + 1
+            if end % 8 == 0 or end == len(members):
+                if streaming:
+                    text += "    if (__any_sync(mask, collision || retry))\n"
+                    text += (
+                        "        return retry ? StreamingCollision::Retry : "
+                        "StreamingCollision::Blocked;\n"
+                    )
+                else:
+                    text += "    if (collision) return true;\n"
+            return text
+
+        source.append("    {\n" + link_emitter.body("q", store, cached) + "    }\n")
+    return "".join(source)
+
+
 def streaming_replacements(
-    emitter: DagEmitter, spheres: Sequence[Sphere]
+    emitter: DagEmitter, spheres: Sequence[Sphere], geometry: CollisionDag
 ) -> list[tuple[str, str | int]]:
     finite_squared_radii = True
     for sphere in spheres:
@@ -230,23 +256,7 @@ def streaming_replacements(
             "    return true;\n"
         )
 
-    def store(index: int, value: int) -> str:
-        axis = "xyz"[index % 3]
-        text = f"    center.{axis} = v{value};\n"
-        if index % 3 == 2:
-            radius = number(spheres[index // 3].radius)
-            text += f"    collision |= streaming_intersects(box, center, {radius}f, retry);\n"
-            text += f"    collision |= intersects(ground, center, {radius}f);\n"
-            if (index // 3 + 1) % 8 == 0:
-                text += "    if (__any_sync(mask, collision || retry))\n"
-                text += (
-                    "        return retry ? StreamingCollision::Retry : "
-                    "StreamingCollision::Blocked;\n"
-                )
-
-        return text
-
-    body = emitter.body("q", store)
+    body = link_collision_body(emitter, spheres, geometry, streaming=True)
     return [("STREAMABLE_BODY", streamable_body), ("STREAMING_BODY", body)]
 
 
@@ -256,6 +266,7 @@ def planning_replacements(
     groups: Sequence[Sequence[int]],
     moving: Sequence[int],
     controls: Sequence[int],
+    geometry: CollisionDag,
 ) -> list[tuple[str, str | int]]:
     options = emitter.options
     dag = emitter.dag
@@ -282,7 +293,7 @@ def planning_replacements(
         options,
         edge_groups,
     )
-    edge_function = collision_function(edge_emitter, edge_spheres, "__forceinline__")
+    edge_function = collision_function(edge_emitter, edge_spheres, geometry, "__forceinline__")
 
     bounds_checks: list[str] = []
     for dimension, flags in enumerate(dependencies_by_control):
@@ -327,7 +338,7 @@ def planning_replacements(
 
     return [
         ("EDGE_FUNCTION", edge_function),
-        *streaming_replacements(edge_emitter, edge_spheres),
+        *streaming_replacements(edge_emitter, edge_spheres, geometry),
         ("BOUNDS_CHECKS", "".join(bounds_checks)),
         ("WORKSPACE_BODY", "".join(body)),
     ]
@@ -335,22 +346,29 @@ def planning_replacements(
 
 def prepare_collision(
     fk: FkDag, spheres: Sequence[Sphere], options: Options
-) -> tuple[DagEmitter, list[list[int]]]:
+) -> tuple[DagEmitter, CollisionDag]:
     for sphere in spheres:
         sphere.validate(fk)
 
-    dag, outputs = center_expressions(fk, spheres, options.optimization)
-    groups = [outputs[i : i + 3] for i in range(0, len(outputs), 3)]
-    emitter = DagEmitter("tenkai_collision_one", dag, len(fk.joint_names), outputs, options, groups)
-    return emitter, groups
+    geometry = collision_expressions(fk, spheres, options.optimization)
+    outputs = [node for center in geometry.centers for node in center]
+    emitter = DagEmitter(
+        "tenkai_collision_one",
+        geometry.dag,
+        len(fk.joint_names),
+        outputs,
+        options,
+        geometry.centers,
+    )
+    return emitter, geometry
 
 
 def generate_collision_function(
     fk: FkDag, spheres: Sequence[Sphere], options: Options = Options()
 ) -> str:
-    emitter, _ = prepare_collision(fk, spheres, options)
+    emitter, geometry = prepare_collision(fk, spheres, options)
     source = template("collision/sdf.cuh")
-    return source + collision_function(emitter, spheres, "inline")
+    return source + collision_function(emitter, spheres, geometry, "inline")
 
 
 def collision_kernel(fk: FkDag, spheres: Sequence[Sphere]) -> str:
@@ -389,10 +407,11 @@ def generate_rrt_sources(
     if len(set(controls)) != len(controls):
         raise ValueError("duplicate RRT control index")
 
-    emitter, groups = prepare_collision(fk, spheres, options)
+    emitter, geometry = prepare_collision(fk, spheres, options)
+    groups = geometry.centers
     dependent = emitter.dag.depends_on_inputs(controls)
     moving = [index for index, group in enumerate(groups) if any(dependent[node] for node in group)]
-    functions = collision_function(emitter, spheres, "__noinline__")
+    functions = collision_function(emitter, spheres, geometry, "__noinline__")
     if len(moving) == len(spheres):
         functions += collision_definition(
             "tenkai_collision_moving",
@@ -411,7 +430,7 @@ def generate_rrt_sources(
             moving_groups,
         )
         functions += collision_function(
-            moving_emitter, [spheres[i] for i in moving], "__noinline__"
+            moving_emitter, [spheres[i] for i in moving], geometry, "__noinline__"
         )
 
     replacements: list[tuple[str, str | int]] = [
@@ -421,7 +440,7 @@ def generate_rrt_sources(
         ("COLLISION_FUNCTIONS", functions),
         ("COLLISION_KERNEL", collision_kernel(fk, spheres)),
     ]
-    replacements.extend(planning_replacements(emitter, spheres, groups, moving, controls))
+    replacements.extend(planning_replacements(emitter, spheres, groups, moving, controls, geometry))
 
     files: dict[str, str] = {}
     for path in sorted((TEMPLATES / "rrt").iterdir()):

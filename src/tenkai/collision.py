@@ -10,7 +10,7 @@ from yaml.nodes import MappingNode, Node, ScalarNode, SequenceNode
 
 from .dag import Dag, Optimization
 from .model import FkDag
-from .transform import MatrixNodes, Vector3
+from .transform import MatrixNodes, Pose, Vector3
 
 
 @dataclass(frozen=True)
@@ -138,6 +138,13 @@ def read_spheres(source: str, fk: FkDag) -> list[Sphere]:
 def center_expressions(
     fk: FkDag, spheres: Sequence[Sphere], optimization: Optimization
 ) -> tuple[Dag, list[int]]:
+    dag, outputs = center_dag(fk, spheres, optimization)
+    return dag.optimize(outputs, optimization)
+
+
+def center_dag(
+    fk: FkDag, spheres: Sequence[Sphere], optimization: Optimization
+) -> tuple[Dag, list[int]]:
     for sphere in spheres:
         sphere.validate(fk)
 
@@ -159,4 +166,31 @@ def center_expressions(
             center = pose.transform_point(dag, local)
         outputs.extend(center)
 
-    return dag.optimize(outputs, optimization)
+    return dag, outputs
+
+
+@dataclass
+class CollisionDag:
+    dag: Dag
+    centers: list[list[int]]
+    poses: dict[int, Pose]
+
+
+def collision_expressions(
+    fk: FkDag, spheres: Sequence[Sphere], optimization: Optimization
+) -> CollisionDag:
+    dag, outputs = center_dag(fk, spheres, optimization)
+    center_count = len(outputs)
+    links = list(dict.fromkeys(sphere.link_index for sphere in spheres))
+    for link in links:
+        pose = fk.poses[link]
+        outputs.extend((*pose.translation, *pose.rotation))
+
+    dag, outputs = dag.optimize(outputs, optimization)
+    centers = [outputs[i : i + 3] for i in range(0, center_count, 3)]
+    poses: dict[int, Pose] = {}
+    for index, link in enumerate(links):
+        start = center_count + index * 7
+        tx, ty, tz, qx, qy, qz, qw = outputs[start : start + 7]
+        poses[link] = Pose((tx, ty, tz), (qx, qy, qz, qw))
+    return CollisionDag(dag, centers, poses)
