@@ -1,20 +1,19 @@
-"""Build and run robot-specific CUDA RRT and RRT-Connect planners."""
+"""Build and run robot-specific GPU RRT and RRT-Connect planners."""
 
 import ctypes as ct
 import json
 import math
-import re
 import subprocess
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from types import TracebackType
-from typing import Literal, Self, TypedDict
+from typing import Literal, NotRequired, Self, TypedDict
 
 import numpy as np
 import numpy.typing as npt
 
-from .build import copy_rrt_bindings, toolchain
+from .build import Backend, compiler_command, copy_rrt_bindings, target_arch
 from .compiler import ModelMetadata, generate
 from .cuda import Options
 
@@ -65,7 +64,9 @@ class RRTResult(TypedDict):
 
 
 class BuildInfo(TypedDict):
-    nvcc: str
+    nvcc: NotRequired[str]
+    hipcc: NotRequired[str]
+    backend: NotRequired[Backend]
     compile_command: list[str]
     max_registers: int | None
 
@@ -99,49 +100,49 @@ def build_rrt(
     output: str | Path,
     *,
     options: Options = Options(),
-    arch: str = "compute_75",
+    backend: Backend = "cuda",
+    arch: str | None = None,
     max_registers: int | None = None,
 ) -> RRTBuild:
-    """Generate and compile both planners into output/librrt.so using nvcc.
+    """Generate and compile both planners into output/librrt.so using nvcc or hipcc.
 
-    Requires a CUDA toolkit and a supported C++ compiler, but no GPU. Each call
+    Requires the selected GPU toolkit, but no GPU. Each call
     rebuilds the library. Use separate output directories for distinct builds.
-    The result includes codegen, nvcc, and total wall times in seconds.
+    HIP defaults to gfx1201 (RX 9070 XT) and requires wave32 at runtime.
+    The result includes codegen, nvcc/hipcc, and total wall times in seconds.
     """
     begin = time.perf_counter()
-    if re.fullmatch(r"compute_[0-9]+", arch) is None:
-        raise ValueError("arch must be a virtual architecture such as compute_75")
+    arch = target_arch(backend, arch)
     if max_registers is None:
-        max_registers = 128 if options.math == "f32" else 0
+        max_registers = 128 if backend == "cuda" and options.math == "f32" else 0
     check_count(max_registers, "max_registers", 0)
     if max_registers != 0 and not 32 <= max_registers <= 255:
         raise ValueError("max_registers must be 0 or between 32 and 255")
+    if backend == "hip" and max_registers:
+        raise ValueError("max_registers is only supported by the CUDA backend")
     directory = Path(output).resolve()
     stages = generate(Path(urdf), Path(spheres), directory, options)
     model: ModelMetadata = json.loads((directory / "model.json").read_text())
     if not model["control_joints"]:
         raise ValueError("RRT requires at least one control_joint_names entry")
-    nvcc, compiler, version = toolchain()
+    command, version = compiler_command(backend, arch)
+    compiler_name = "hipcc" if backend == "hip" else "nvcc"
     source = copy_rrt_bindings(directory)
     library = directory / "librrt.so"
-    command = [
-        nvcc,
-        "-ccbin",
-        compiler,
-        "-std=c++14",
-        "-O3",
-        "-arch=" + arch,
-        "-code=" + arch,
-        "-shared",
-        "-Xcompiler",
-        "-fPIC",
-        "-DTENKAI_MODEL_NAMESPACE=" + options.namespace,
-        "-I",
-        str(directory),
-        str(source),
-        "-o",
-        str(library),
-    ]
+    command.extend(["-O3", "-shared"])
+    if backend == "cuda":
+        command.append("-Xcompiler")
+    command.extend(
+        [
+            "-fPIC",
+            "-DTENKAI_MODEL_NAMESPACE=" + options.namespace,
+            "-I",
+            str(directory),
+            str(source),
+            "-o",
+            str(library),
+        ]
+    )
     if max_registers:
         command.append("--maxrregcount=" + str(max_registers))
     log_path = directory / "compile.log"
@@ -150,11 +151,15 @@ def build_rrt(
         result = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT)
         compile_seconds = time.perf_counter() - compile_begin
     if result.returncode:
-        raise RuntimeError(f"nvcc failed; see {log_path}\n{log_path.read_text()}")
-    info = BuildInfo(nvcc=version, compile_command=command, max_registers=max_registers or None)
+        raise RuntimeError(f"{compiler_name} failed; see {log_path}\n{log_path.read_text()}")
+    info = BuildInfo(backend=backend, compile_command=command, max_registers=max_registers or None)
+    if backend == "hip":
+        info["hipcc"] = version
+    else:
+        info["nvcc"] = version
     timings = {
         "codegen": stages["total"],
-        "nvcc": compile_seconds,
+        compiler_name: compile_seconds,
         "total": time.perf_counter() - begin,
     }
     return RRTBuild(library, model, info, timings)

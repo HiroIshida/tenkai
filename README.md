@@ -1,8 +1,8 @@
 # tenkai
 
-Generate robot-specific CUDA kernels for forward kinematics, collision checks,
-RRT, and RRT-Connect. The compiler is Python 3.12; CUDA C++ implements the GPU
-kernels and native planner runtime.
+Generate robot-specific GPU kernels for forward kinematics, collision checks,
+RRT, and RRT-Connect. The compiler is Python 3.12; shared C++ kernels and the
+native planner runtime compile with CUDA or AMD HIP.
 
 ## Setup
 
@@ -67,7 +67,7 @@ with compiled.planner(
     problem_count=len(starts),
     resolution=0.01,
 ) as planner:
-    planner.solve(starts, goals, [0], [42])  # Warm up the CUDA driver and kernels.
+    planner.solve(starts, goals, [0], [42])  # Warm up the GPU driver and kernels.
     times = []
     for _ in range(10):
         begin = perf_counter()
@@ -85,6 +85,36 @@ and pass, for example, `options=Options(math="f64")` to select precision
 (`f32`, `f32-sfu`, or `f64`). Set the target with `arch="compute_75"`.
 The build needs a CUDA toolkit and compatible C++ compiler (`NVCC` and `CXX` may
 override discovery). Creating or running a planner also needs a CUDA GPU/driver.
+
+For AMD Radeon RX 9070 XT, select HIP:
+
+```python
+compiled = build_rrt(
+    "assets/fetch/fetch.urdf",
+    "assets/fetch/collision.yaml",
+    "artifacts/fetch-hip",
+    backend="hip",
+    arch="gfx1201",
+)
+```
+
+The same planner API supports `rrt` and `rrtc` in `f32`, `f32-sfu`, and `f64`.
+The f32 modes also support the single-warp streaming path.
+HIP defaults to `gfx1201`; CUDA remains the
+default backend with `compute_75`. Set `HIPCC` to override `hipcc` discovery.
+HIP builds report `hipcc` instead of `nvcc` in `compiled.timings` and
+`compiled.toolchain`. The CUDA-only `max_registers` option must be omitted or zero.
+
+This initial HIP port targets wave32 GPUs and was tested on RX 9070 XT with
+HIP 7.16 / AMD Clang 24. Wave64 devices are rejected when creating a planner.
+If several GPUs are installed, use `HIP_VISIBLE_DEVICES=0` (or the appropriate
+device index) to select the Radeon. Generated source is shared with CUDA; the
+build supplies a compatibility header and enables OCML directed rounding for
+workspace bounds. Numerical results need not be bit-identical across backends.
+
+For custom native builds, `tenkai.build.compiler_command("hip", "gfx1201")`
+returns `(flags, version)` with the required includes and compiler definitions;
+append your source files and output flags before invoking it with `subprocess`.
 
 `compiled.planner(...)` loads the shared library through `ctypes.CDLL` and owns
 the native scene and search buffers until `close()` or context exit. Use
