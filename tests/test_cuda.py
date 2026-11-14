@@ -44,7 +44,7 @@ def chain_sources(directory: Path, options: Options) -> None:
     )
 
 
-def planner_source(directory: Path, options: Options) -> None:
+def planner_source(directory: Path, options: Options, controls: tuple[int, ...] = (1, 0)) -> None:
     robot = '<robot name="cartesian"><link name="root"/>'
     parent = "root"
     for name, axis in [("x", "1 0 0"), ("y", "0 1 0"), ("z", "0 0 1")]:
@@ -54,7 +54,58 @@ def planner_source(directory: Path, options: Options) -> None:
     robot += "</robot>"
     fk = FkDag.from_robot(Robot.from_string(robot))
     spheres = [Sphere(3, (0, 0, 0), 0.05), Sphere(3, (0, 0, 0.025), 0.025)]
-    (directory / "rrt.cuh").write_text(generate_rrt_kernel(fk, spheres, [1, 0], options))
+    (directory / "rrt.cuh").write_text(generate_rrt_kernel(fk, spheres, controls, options))
+
+
+def static_planner_source(directory: Path, options: Options, sphere_count: int) -> None:
+    robot = Robot.from_string("""<robot name="fixed_spheres">
+      <link name="root"/><link name="arm"/><link name="slide"/><link name="lift"/>
+      <joint name="spin" type="revolute"><parent link="lift"/><child link="arm"/>
+        <axis xyz="0 0 1"/></joint>
+      <joint name="slide" type="prismatic"><parent link="root"/><child link="slide"/>
+        <origin xyz="5 0 0"/><axis xyz="1 0 0"/></joint>
+      <joint name="lift" type="prismatic"><parent link="root"/><child link="lift"/>
+        <axis xyz="0 0 1"/></joint>
+    </robot>""")
+    fk = FkDag.from_robot(robot)
+    spheres = [
+        Sphere(fk.link_names.index("root"), (-5, 0, 0), 0.05),
+        Sphere(fk.link_names.index("slide"), (0, 0, 0), 0.05),
+        Sphere(fk.link_names.index("lift"), (0, 0, 0.5), 0.05),
+        Sphere(fk.link_names.index("arm"), (2, 0, 0), 0.05),
+    ]
+    (directory / "rrt.cuh").write_text(
+        generate_rrt_kernel(fk, spheres[:sphere_count], [0], options)
+    )
+
+
+def run_planner_fixture(
+    directory: Path,
+    options: Options,
+    backend: Backend,
+    arch: str,
+    fixture: str,
+    defines: tuple[str, ...] = (),
+) -> None:
+    binary = directory / "planner-test"
+    command, _ = compiler_command(backend, arch)
+    if options.math == "f32":
+        command.append("-DTEST_STANDARD_FP32")
+    command.extend("-D" + define for define in defines)
+    run(
+        [
+            *command,
+            "-DTENKAI_MODEL_NAMESPACE=" + options.namespace,
+            "-I",
+            str(directory),
+            "-I",
+            str(FIXTURES),
+            str(FIXTURES / fixture),
+            "-o",
+            str(binary),
+        ]
+    )
+    run([str(binary)])
 
 
 @pytest.mark.parametrize("math_mode", ["f32", "f64"])
@@ -136,21 +187,36 @@ def test_planner_on_gpu(
 ) -> None:
     options = Options(math_mode)
     planner_source(tmp_path, options)
-    binary = tmp_path / "rrt-test"
-    command, _ = compiler_command(gpu_backend, gpu_arch)
-    if math_mode == "f32":
-        command.append("-DTEST_STANDARD_FP32")
-    run(
-        [
-            *command,
-            "-DTENKAI_MODEL_NAMESPACE=" + options.namespace,
-            "-I",
-            str(tmp_path),
-            "-I",
-            str(FIXTURES),
-            str(FIXTURES / "rrt.cu"),
-            "-o",
-            str(binary),
-        ]
+    run_planner_fixture(tmp_path, options, gpu_backend, gpu_arch, "rrt.cu")
+
+
+@pytest.mark.gpu
+@pytest.mark.parametrize("math_mode", ["f32", "f32-sfu", "f64"])
+def test_streaming_and_fallback_paths_on_gpu(
+    tmp_path: Path, math_mode: MathMode, gpu_backend: Backend, gpu_arch: str
+) -> None:
+    options = Options(math_mode)
+    planner_source(tmp_path, options, (2, 0, 1))
+    run_planner_fixture(tmp_path, options, gpu_backend, gpu_arch, "rrtc_streaming.cu")
+
+
+@pytest.mark.gpu
+@pytest.mark.parametrize("math_mode", ["f32", "f32-sfu", "f64"])
+@pytest.mark.parametrize("sphere_count", [0, 3, 4])
+def test_fixed_spheres_and_reference_joints_on_gpu(
+    tmp_path: Path,
+    math_mode: MathMode,
+    sphere_count: int,
+    gpu_backend: Backend,
+    gpu_arch: str,
+) -> None:
+    options = Options(math_mode)
+    static_planner_source(tmp_path, options, sphere_count)
+    run_planner_fixture(
+        tmp_path,
+        options,
+        gpu_backend,
+        gpu_arch,
+        "rrt_static.cu",
+        (f"TEST_SPHERE_COUNT={sphere_count}",),
     )
-    run([str(binary)])

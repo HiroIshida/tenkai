@@ -425,10 +425,7 @@ def generate_rrt_kernel(
     source = generate_collision_kernel(fk, spheres, options, controls) + template("rrt/types.hpp")
     indices = ", ".join(map(str, controls))
     fp32 = options.precision == "f32"
-    files = ["rrt/common.cuh", "rrt/rrt.cuh", "rrt/rrtc.cuh"]
-    if fp32:
-        files.append("rrt/rrtc_single.cuh")
-    files.append("rrt/runtime.cuh")
+    files = ["rrt/common.cuh", "rrt/rrtc.cuh", "rrt/runtime.cuh"]
     for name in files:
         source += template(
             name,
@@ -438,7 +435,6 @@ def generate_rrt_kernel(
                 ("FK_DOF", len(fk.joint_names)),
                 ("CONTROLS", indices),
                 ("FP32", int(fp32)),
-                ("RRTC_SINGLE", "tenkai_rrtc_single" if fp32 else "tenkai_rrtc"),
             ),
         )
     return source

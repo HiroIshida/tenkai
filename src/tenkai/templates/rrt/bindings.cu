@@ -31,9 +31,8 @@ struct Context {
     model::Scene scene;
     std::unique_ptr<model::RrtPlanner> planner;
 
-    Context(const tenkai::RrtConfig& config, uint32_t warps, size_t problems, size_t envs,
-            const double* geometry, const double* lower, const double* upper, const double* resolution,
-            tenkai::RrtAlgorithm algorithm)
+    Context(const tenkai::RrtConfig& config, size_t problems, size_t envs,
+            const double* geometry, const double* lower, const double* upper, const double* resolution)
         : problem_count(problems), environment_count(envs), environments(envs), boxes(envs), grounds(envs) {
         model::RrtSpace space{};
         for (uint32_t d = 0; d < model::rrt_dimension; ++d) {
@@ -61,7 +60,7 @@ struct Context {
         boxes.upload(host_boxes.data(), envs);
         grounds.upload(host_grounds.data(), envs);
         scene = {environments.data(), boxes.data(), nullptr, nullptr, grounds.data()};
-        planner.reset(new model::RrtPlanner(config, {warps}, space, scene, envs, problems, algorithm));
+        planner.reset(new model::RrtPlanner(config, space, scene, envs, problems));
     }
 };
 
@@ -70,35 +69,20 @@ Context& context(void* handle) {
     return *static_cast<Context*>(handle);
 }
 
-int create(const tenkai::RrtConfig* config, uint32_t warps, uint32_t problems,
-           uint32_t environments, const double* geometry, const double* lower,
-           const double* upper, const double* resolution, void** output, tenkai::RrtAlgorithm algorithm) {
+}
+
+extern "C" const char* rrt_error() { return last_error.c_str(); }
+
+extern "C" int rrtc_create(const tenkai::RrtConfig* config, uint32_t problems,
+                           uint32_t environments, const double* geometry, const double* lower,
+                           const double* upper, const double* resolution, void** output) {
     return boundary([&] {
         if (!output) throw std::invalid_argument("null RRT output handle");
         *output = nullptr;
         if (!config || !problems || !environments || !geometry || !lower || !upper || !resolution)
             throw std::invalid_argument("invalid RRT creation arguments");
-        *output = new Context(*config, warps, problems, environments, geometry, lower, upper, resolution, algorithm);
+        *output = new Context(*config, problems, environments, geometry, lower, upper, resolution);
     });
-}
-}
-
-extern "C" const char* rrt_error() { return last_error.c_str(); }
-
-extern "C" int rrt_create(const tenkai::RrtConfig* config, uint32_t warps,
-                          uint32_t problems, uint32_t environments, const double* geometry,
-                          const double* lower, const double* upper, const double* resolution,
-                          void** output) {
-    return create(config, warps, problems, environments, geometry, lower, upper, resolution,
-                  output, tenkai::RrtAlgorithm::Rrt);
-}
-
-extern "C" int rrtc_create(const tenkai::RrtConfig* config, uint32_t warps,
-                           uint32_t problems, uint32_t environments, const double* geometry,
-                           const double* lower, const double* upper, const double* resolution,
-                           void** output) {
-    return create(config, warps, problems, environments, geometry, lower, upper, resolution,
-                  output, tenkai::RrtAlgorithm::RrtConnect);
 }
 
 extern "C" void rrt_destroy(void* handle) { delete static_cast<Context*>(handle); }

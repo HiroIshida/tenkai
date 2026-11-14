@@ -3,12 +3,9 @@
 #include <stdint.h>
 
 namespace tenkai {
-enum class RrtAlgorithm : uint32_t { Rrt, RrtConnect };
-
 struct RrtConfig {
     uint32_t max_nodes = 8192;
     uint32_t max_rounds = 1024;
-    uint32_t samples_per_round = 32;
     double step_size = 0.5;
     double goal_bias = 0.1;
 };

@@ -1,151 +1,312 @@
 namespace @NAMESPACE@ {
-__device__ inline uint32_t rrtc_nearest_width(uint32_t unscanned, uint32_t queries) {
-    if (unscanned < 32) return 1;
-    uint32_t width = 32;
-    // Preserve query concurrency instead of assigning a whole warp to every query.
-    while (width > 1 && queries > blockDim.x / width) width /= 2;
-    return width;
+enum class RrtPreparation : unsigned char { Search, InvalidStart, InvalidGoal, Fallback };
+
+// Every interpolation point is required; reverse edges include their new source.
+// Return true when FP32 streaming needs the full collision predicate to retry.
+template <bool Streaming>
+__device__ __forceinline__ bool rrtc_check_edge(
+    RrtCandidate& candidate, const Scalar* nodes, const RrtProblem& problem,
+    const RrtSpace& space, Scene scene, bool reverse, bool in_workspace) {
+    const uint32_t lane = threadIdx.x % 32;
+    const uint64_t checks = uint64_t(candidate.steps) + (reverse && candidate.steps ? 1 : 0);
+    const uint64_t waves = (checks + 31) / 32;
+    for (uint64_t wave = 0; wave < waves; ++wave) {
+        const uint64_t sample = uint64_t(lane) * waves + wave;
+        bool hit = false, retry = false;
+        const unsigned mask = __ballot_sync(0xffffffffu, sample < checks);
+        if (sample < checks) {
+            const uint32_t step = uint32_t(sample) + (reverse ? 0 : 1);
+            const Scalar ratio = Scalar(step) / Scalar(candidate.steps);
+            const Scalar* parent = nodes + size_t(candidate.parent) * rrt_dimension;
+            const Scalar* from = reverse ? candidate.q : parent;
+            const Scalar* to = reverse ? parent : candidate.q;
+            const uint32_t controls[rrt_dimension] = {@CONTROLS@};
+            Scalar full[rrt_fk_dof];
+            for (uint32_t d = 0; d < rrt_fk_dof; ++d) full[d] = space.reference[d];
+            for (uint32_t d = 0; d < rrt_dimension; ++d) {
+                const Scalar q = step == candidate.steps ? to[d] :
+                    (step == 0 ? from[d] : from[d] + ratio * (to[d] - from[d]));
+                full[controls[d]] = q;
+            }
+#if @FP32@
+            if (Streaming) {
+                const auto collision = tenkai_collision_streaming(full, scene, problem.environment_id, mask);
+                retry = collision == StreamingCollision::Retry;
+                hit = collision == StreamingCollision::Blocked;
+            } else {
+                hit = in_workspace ? tenkai_collision_edge(full, scene, problem.environment_id) :
+                    tenkai_collision_moving(full, scene, problem.environment_id);
+            }
+#else
+            hit = tenkai_collision_moving(full, scene, problem.environment_id);
+#endif
+        }
+        if (Streaming && __any_sync(0xffffffffu, retry)) return true;
+        if (__any_sync(0xffffffffu, hit)) {
+            if (lane == 0) candidate.blocked = 1;
+            break;
+        }
+    }
+    return false;
+}
+
+struct RrtcState {
+    RrtCandidate candidate;
+    tenkai::RrtResult result;
+    bool start_valid, goal_valid, connecting, in_workspace;
+    volatile bool finished;
+    uint32_t round, target;
+};
+
+// Cold validation is compiled separately so its registers do not constrain the
+// resident warps executing the streaming collision predicate.
+template <bool Streaming>
+__device__ __forceinline__ void rrtc_search(
+    const RrtProblem* problems, size_t id, const RrtSpace& space, Scene scene, tenkai::RrtConfig config,
+    Scalar* all_nodes, uint32_t* all_parents, RrtTree* all_trees, uint32_t* all_paths,
+    tenkai::RrtResult* results, const unsigned char* clear,
+    RrtcState& state, RrtPreparation* preparation) {
+    using namespace @NAMESPACE@;
+    const uint32_t lane = threadIdx.x % 32;
+    const RrtProblem& problem = problems[id];
+    Scalar* nodes = all_nodes + id * config.max_nodes * rrt_dimension;
+    uint32_t* parents = all_parents + id * config.max_nodes;
+    RrtTree* trees = all_trees + id * config.max_nodes;
+    uint32_t* path = all_paths + id * config.max_nodes;
+    RrtCandidate& candidate = state.candidate;
+    tenkai::RrtResult& result = state.result;
+    bool& connecting = state.connecting;
+    bool& in_workspace = state.in_workspace;
+    volatile bool& finished = state.finished;
+    uint32_t& round = state.round;
+    uint32_t& target = state.target;
+    if (lane == 0) { round = 0; connecting = false; }
+    if (Streaming) {
+        if (preparation[id] == RrtPreparation::Fallback) return;
+        if (lane == 0) {
+            result = {tenkai::PlanStatus::RoundLimit, 0, 0, 0};
+            finished = false;
+            rrt_append(problem.start, 0, nodes, parents, result);
+            rrt_append(problem.goal, 1, nodes, parents, result);
+            trees[0] = RrtTree::Start;
+            trees[1] = RrtTree::Goal;
+            const RrtPreparation initial = preparation[id];
+            if (initial == RrtPreparation::InvalidStart || initial == RrtPreparation::InvalidGoal) {
+                result.status = initial == RrtPreparation::InvalidStart ?
+                    tenkai::PlanStatus::InvalidStart : tenkai::PlanStatus::InvalidGoal;
+                result.node_count = 0;
+                finished = true;
+            } else {
+                bool equal = true;
+                for (uint32_t d = 0; d < rrt_dimension; ++d)
+                    equal &= problem.start[d] == problem.goal[d];
+                if (equal) {
+                    result.status = tenkai::PlanStatus::Success;
+                    result.path_length = 1;
+                    path[0] = 0;
+                    finished = true;
+                }
+            }
+        }
+        __syncwarp();
+    } else {
+        rrt_initialize(problem, space, scene, nodes, parents, path, result,
+                       state.start_valid, state.goal_valid, finished, trees);
+    }
+    if (lane == 0 && !finished) {
+        if (result.node_count == config.max_nodes) {
+            result.status = tenkai::PlanStatus::NodeLimit;
+            finished = true;
+        }
+    }
+    __syncwarp();
+    while (round < config.max_rounds && !finished) {
+        const RrtTree active = round % 2 == 0 ? RrtTree::Start : RrtTree::Goal;
+        const RrtTree tree = connecting ?
+            (active == RrtTree::Start ? RrtTree::Goal : RrtTree::Start) : active;
+        if (Streaming) {
+            if (connecting) {
+                for (uint32_t d = lane; d < rrt_dimension; d += 32)
+                    candidate.q[d] = nodes[size_t(target) * rrt_dimension + d];
+                if (lane == 0) candidate.reaches_target = true;
+            } else {
+                uint64_t base = problem.seed +
+                    uint64_t(round) * UINT64_C(0xd1342543de82ef95);
+                const bool biased = rrt_uniform(base) < config.goal_bias;
+                const Scalar* bias_target = active == RrtTree::Start ? problem.goal : problem.start;
+                for (uint32_t d = lane; d < rrt_dimension; d += 32) {
+                    uint64_t rng = base + uint64_t(d) * UINT64_C(0x9e3779b97f4a7c15);
+                    candidate.q[d] = biased ? bias_target[d] : Scalar(double(space.lower[d]) +
+                        rrt_uniform(rng) * (double(space.upper[d]) - double(space.lower[d])));
+                }
+                if (lane == 0) candidate.reaches_target = biased;
+            }
+        } else if (lane == 0) {
+            if (connecting) {
+                for (uint32_t d = 0; d < rrt_dimension; ++d)
+                    candidate.q[d] = nodes[size_t(target) * rrt_dimension + d];
+                candidate.reaches_target = true;
+            } else {
+                rrt_sample(candidate, problem, space, config, round,
+                           active == RrtTree::Start ? problem.goal : problem.start);
+            }
+        }
+        __syncwarp();
+        const uint32_t unscanned = result.node_count - (connecting ? candidate.nearest.scanned : 0);
+        const uint32_t width = unscanned < 32 ? 1 : 32;
+        if (lane < width)
+            rrt_extend(candidate, nodes, result.node_count, space, config.step_size,
+                       trees, tree, connecting ? &candidate.nearest : nullptr, width, true);
+        // Lane-zero predicates can still compile to shared loads in every lane.
+        __syncwarp();
+        if (lane == 0 && connecting && !candidate.steps && candidate.reaches_target)
+            candidate.blocked = 0;
+#if @FP32@
+        if (lane == 0)
+            in_workspace = clear[problem.environment_id] &&
+                tenkai_collision_in_workspace(candidate.q, space.lower, space.upper) &&
+                tenkai_collision_in_workspace(nodes + size_t(candidate.parent) * rrt_dimension,
+                                             space.lower, space.upper);
+#else
+        if (lane == 0) in_workspace = false;
+#endif
+        __syncwarp();
+        if (Streaming && !in_workspace) {
+            if (lane == 0) preparation[id] = RrtPreparation::Fallback;
+            return;
+        }
+        if (rrtc_check_edge<Streaming>(candidate, nodes, problem, space, scene,
+                                       tree == RrtTree::Goal, in_workspace)) {
+            if (lane == 0) preparation[id] = RrtPreparation::Fallback;
+            return;
+        }
+        __syncwarp();
+        if (lane == 0) {
+            if (!connecting) result.rounds = round + 1;
+            if (candidate.blocked) {
+                connecting = false;
+                ++round;
+                if (result.node_count == config.max_nodes) {
+                    result.status = tenkai::PlanStatus::NodeLimit;
+                    finished = true;
+                }
+            } else if (!connecting) {
+                target = rrt_append(candidate.q, candidate.parent, nodes, parents, result);
+                trees[target] = active;
+                candidate.nearest = {0, 0, INFINITY};
+                connecting = true;
+            } else {
+                uint32_t node = candidate.parent;
+                if (candidate.steps) {
+                    if (result.node_count == config.max_nodes) {
+                        result.status = tenkai::PlanStatus::NodeLimit;
+                        finished = true;
+                    } else {
+                        node = rrt_append(candidate.q, candidate.parent, nodes, parents, result);
+                        trees[node] = tree;
+                    }
+                }
+                if (!finished && candidate.reaches_target) {
+                    const uint32_t start = active == RrtTree::Start ? target : node;
+                    const uint32_t goal = active == RrtTree::Goal ? target : node;
+                    rrt_start_path(start, parents, path, result);
+                    for (uint32_t n = goal; n != parents[n];) {
+                        n = parents[n];
+                        path[result.path_length++] = n;
+                    }
+                    finished = true;
+                }
+                if (!finished && result.node_count == config.max_nodes) {
+                    result.status = tenkai::PlanStatus::NodeLimit;
+                    finished = true;
+                }
+            }
+        }
+        __syncwarp();
+    }
+    if (lane == 0) results[id] = result;
 }
 }
 
-// Both trees share max_nodes slots. Roots point to themselves; other parents
-// precede their children. Tree tags keep nearest-neighbor searches separate.
 extern "C" __global__ void tenkai_rrtc(
     const @NAMESPACE@::RrtProblem* problems, size_t problem_count,
     @NAMESPACE@::RrtSpace space, @NAMESPACE@::Scene scene, tenkai::RrtConfig config,
     @NAMESPACE@::Scalar* all_nodes, uint32_t* all_parents, @NAMESPACE@::RrtTree* all_trees,
-    @NAMESPACE@::RrtCandidate* all_candidates, uint32_t* all_paths,
-    tenkai::RrtResult* results) {
-    using namespace @NAMESPACE@;
-    const size_t problem_id = blockIdx.x;
-    if (problem_id >= problem_count) return;
-    const unsigned int thread = threadIdx.x;
-    const bool interleaved_edges = sizeof(Scalar) == sizeof(float) && config.samples_per_round == 1;
-    const RrtProblem& problem = problems[problem_id];
-    Scalar* nodes = all_nodes + problem_id * config.max_nodes * rrt_dimension;
-    uint32_t* parents = all_parents + problem_id * config.max_nodes;
-    RrtTree* trees = all_trees + problem_id * config.max_nodes;
-    uint32_t* path = all_paths + problem_id * config.max_nodes;
-    RrtCandidate* candidates = all_candidates + problem_id * config.samples_per_round;
-    __shared__ tenkai::RrtResult result;
-    __shared__ bool start_valid, goal_valid, connecting;
-    // Prevent speculative reads outside thread zero's node-limit checks.
-    __shared__ volatile bool finished;
-    rrt_initialize(problem, space, scene, nodes, parents, path, result,
-                   start_valid, goal_valid, finished, trees);
-    if (thread == 0 && !finished && result.node_count == config.max_nodes) {
-        result.status = tenkai::PlanStatus::NodeLimit;
-        finished = true;
-    }
-    __syncthreads();
-    for (uint32_t round = 0; round < config.max_rounds && !finished; ++round) {
-        const RrtTree active = round % 2 == 0 ? RrtTree::Start : RrtTree::Goal;
-        const RrtTree other = active == RrtTree::Start ? RrtTree::Goal : RrtTree::Start;
-        const uint32_t snapshot_size = result.node_count;
-        const uint32_t remaining = config.max_nodes - snapshot_size;
-        const uint32_t count = remaining < config.samples_per_round ? remaining : config.samples_per_round;
-        const uint32_t width = rrtc_nearest_width(snapshot_size, count);
-        const uint32_t lane = thread & (width - 1);
-        for (uint32_t c = thread / width; c < count; c += blockDim.x / width) {
-            RrtCandidate& candidate = candidates[c];
-            if (lane == 0)
-                rrt_sample(candidate, problem, space, config, round, c,
-                           active == RrtTree::Start ? problem.goal : problem.start);
-            if (width > 1) __syncwarp(rrt_group_mask(width));
-            rrt_extend(candidate, nodes, snapshot_size, space, config.step_size,
-                       trees, active, nullptr, width);
-        }
-        __syncthreads();
-        rrt_check_edges(candidates, count, nodes, problem, space, scene,
-                        active == RrtTree::Start ? EdgeDirection::Forward : EdgeDirection::Reverse,
-                        interleaved_edges);
-        if (thread == 0) {
-            result.rounds = round + 1;
-            connecting = false;
-            for (uint32_t c = 0; c < count; ++c) {
-                RrtCandidate& candidate = candidates[c];
-                candidate.state = GrowState::Trapped;
-                if (candidate.blocked) continue;
-                candidate.target = rrt_append(candidate.q, candidate.parent, nodes, parents, result);
-                trees[candidate.target] = active;
-                candidate.nearest = {0, 0, INFINITY};
-                candidate.state = GrowState::Advanced;
-                connecting = true;
-            }
-        }
-        __syncthreads();
-        // Every Advanced connection adds a node, bounding CONNECT by max_nodes.
-        // Each wave reads a snapshot; insertion order is independent of warps.
-        uint32_t connect_scanned = 0;
-        while (connecting && !finished) {
-            const uint32_t connect_snapshot = result.node_count;
-            // Every still-Advanced query has scanned the preceding wave's snapshot.
-            const uint32_t width = rrtc_nearest_width(connect_snapshot - connect_scanned, count);
-            const uint32_t lane = thread & (width - 1);
-            for (uint32_t c = thread / width; c < count; c += blockDim.x / width) {
-                RrtCandidate& candidate = candidates[c];
-                if (lane == 0) candidate.steps = 0;
-                if (candidate.state != GrowState::Advanced) continue;
-                if (lane == 0) {
-                    for (uint32_t d = 0; d < rrt_dimension; ++d)
-                        candidate.q[d] = nodes[size_t(candidate.target) * rrt_dimension + d];
-                    candidate.reaches_target = true;
-                }
-                if (width > 1) __syncwarp(rrt_group_mask(width));
-                rrt_extend(candidate, nodes, connect_snapshot, space, config.step_size,
-                           trees, other, &candidate.nearest, width);
-                // An existing node at the target is already a valid connection.
-                if (lane == 0 && !candidate.steps && candidate.reaches_target) candidate.blocked = 0;
-            }
-            connect_scanned = connect_snapshot;
-            __syncthreads();
-            rrt_check_edges(candidates, count, nodes, problem, space, scene,
-                            other == RrtTree::Start ? EdgeDirection::Forward : EdgeDirection::Reverse,
-                            interleaved_edges);
-            if (thread == 0) {
-                connecting = false;
-                for (uint32_t c = 0; c < count; ++c) {
-                    RrtCandidate& candidate = candidates[c];
-                    if (candidate.state != GrowState::Advanced) continue;
-                    if (candidate.blocked) {
-                        candidate.state = GrowState::Trapped;
-                        continue;
-                    }
-                    uint32_t node = candidate.parent;
-                    if (candidate.steps) {
-                        if (result.node_count == config.max_nodes) continue;
-                        node = rrt_append(candidate.q, candidate.parent, nodes, parents, result);
-                        trees[node] = other;
-                    }
-                    candidate.state = candidate.reaches_target ? GrowState::Reached : GrowState::Advanced;
-                    if (candidate.state == GrowState::Reached) {
-                        const uint32_t start = active == RrtTree::Start ? candidate.target : node;
-                        const uint32_t goal = active == RrtTree::Goal ? candidate.target : node;
-                        rrt_start_path(start, parents, path, result);
-                        // The connection coordinates occur in both trees. Keep
-                        // them once so the path has no zero-length join edge.
-                        for (uint32_t n = goal; n != parents[n];) {
-                            n = parents[n];
-                            path[result.path_length++] = n;
-                        }
-                        finished = true;
-                        break;
-                    }
-                    connecting = true;
-                }
-            }
-            __syncthreads();
-            if (thread == 0 && !finished && result.node_count == config.max_nodes) {
-                result.status = tenkai::PlanStatus::NodeLimit;
-                finished = true;
-            }
-            __syncthreads();
-        }
-        if (thread == 0 && !finished && result.node_count == config.max_nodes) {
-            result.status = tenkai::PlanStatus::NodeLimit;
-            finished = true;
-        }
-        __syncthreads();
-    }
-    if (thread == 0) results[problem_id] = result;
+    uint32_t* all_paths,
+    tenkai::RrtResult* results, const unsigned char* clear) {
+    const size_t id = blockIdx.x;
+    if (id >= problem_count) return;
+    __shared__ @NAMESPACE@::RrtcState state;
+    @NAMESPACE@::rrtc_search<false>(
+        problems, id, space, scene, config, all_nodes, all_parents, all_trees,
+        all_paths, results, clear, state, nullptr);
 }
+
+#if @FP32@
+extern "C" __global__ void tenkai_rrtc_prepare(
+    const @NAMESPACE@::RrtProblem* problems, size_t problem_count,
+    @NAMESPACE@::RrtSpace space, @NAMESPACE@::Scene scene, const unsigned char* clear,
+    @NAMESPACE@::RrtPreparation* preparation, uint32_t* next_problem) {
+    using namespace @NAMESPACE@;
+    const size_t id = size_t(blockIdx.x) * blockDim.x + threadIdx.x;
+    if (id == 0) *next_problem = 0;
+    if (id >= problem_count) return;
+    const RrtProblem& problem = problems[id];
+    RrtPreparation initial = RrtPreparation::Fallback;
+    if (clear[problem.environment_id] && tenkai_collision_streamable(scene, problem.environment_id)) {
+        initial = RrtPreparation::Search;
+        if (!rrt_in_bounds(problem.start, space) ||
+            rrt_collision(problem.start, space, scene, problem.environment_id))
+            initial = RrtPreparation::InvalidStart;
+        else if (!rrt_in_bounds(problem.goal, space) ||
+                 rrt_collision(problem.goal, space, scene, problem.environment_id, true))
+            initial = RrtPreparation::InvalidGoal;
+    }
+    preparation[id] = initial;
+}
+
+extern "C" __global__ __launch_bounds__(128, 6) void tenkai_rrtc_streaming(
+    const @NAMESPACE@::RrtProblem* problems, size_t problem_count,
+    @NAMESPACE@::RrtSpace space, @NAMESPACE@::Scene scene, tenkai::RrtConfig config,
+    @NAMESPACE@::Scalar* all_nodes, uint32_t* all_parents, @NAMESPACE@::RrtTree* all_trees,
+    uint32_t* all_paths,
+    tenkai::RrtResult* results, const unsigned char* clear,
+    @NAMESPACE@::RrtPreparation* preparation, uint32_t* next_problem) {
+    __shared__ @NAMESPACE@::RrtcState states[4];
+    auto& state = states[threadIdx.x / 32];
+    // A finished plan must not strand its warp behind another plan in the block.
+    for (;;) {
+        uint32_t id = 0;
+        if (threadIdx.x % 32 == 0) id = atomicAdd(next_problem, 1);
+        id = __shfl_sync(0xffffffffu, id, 0);
+        if (id >= problem_count) return;
+        @NAMESPACE@::rrtc_search<true>(
+            problems, id, space, scene, config, all_nodes, all_parents, all_trees,
+            all_paths, results, clear, state, preparation);
+        __syncwarp();
+    }
+}
+
+extern "C" __global__ void tenkai_rrtc_fallback(
+    const @NAMESPACE@::RrtProblem* problems, size_t problem_count,
+    @NAMESPACE@::RrtSpace space, @NAMESPACE@::Scene scene, tenkai::RrtConfig config,
+    @NAMESPACE@::Scalar* all_nodes, uint32_t* all_parents, @NAMESPACE@::RrtTree* all_trees,
+    uint32_t* all_paths,
+    tenkai::RrtResult* results, const unsigned char* clear,
+    @NAMESPACE@::RrtPreparation* preparation) {
+    const size_t id = blockIdx.x;
+    if (id >= problem_count || preparation[id] != @NAMESPACE@::RrtPreparation::Fallback) return;
+    __shared__ @NAMESPACE@::RrtcState state;
+    @NAMESPACE@::rrtc_search<false>(
+        problems, id, space, scene, config, all_nodes, all_parents, all_trees,
+        all_paths, results, clear, state, nullptr);
+}
+extern "C" __global__ void tenkai_rrtc_workspace(
+    @NAMESPACE@::RrtSpace space, @NAMESPACE@::Scene scene,
+    size_t environment_count, unsigned char* clear) {
+    for (size_t id = size_t(blockIdx.x) * blockDim.x + threadIdx.x;
+         id < environment_count; id += size_t(blockDim.x) * gridDim.x)
+        clear[id] = tenkai_collision_workspace_clear(
+            space.lower, space.upper, space.reference, scene, uint32_t(id));
+}
+#endif

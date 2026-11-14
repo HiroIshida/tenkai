@@ -108,7 +108,7 @@ def main() -> None:
         backend=args.backend,
         arch=arch,
     )
-    config = RRTConfig(max_rounds=8192, samples_per_round=1, goal_bias=0.0)
+    config = RRTConfig(max_rounds=8192, goal_bias=0.0)
     cpu_times: list[float] = []
     if args.cpu_ms_per_problem is None:
         problem = make_problem(args.urdf, args.spheres, compiled.model)
@@ -148,10 +148,8 @@ def main() -> None:
     with compiled.planner(
         [GEOMETRY],
         config=config,
-        warps=1,
         problem_count=args.batch,
         resolution=RESOLUTION,
-        algorithm="rrtc",
     ) as planner:
 
         def solve_gpu() -> int:
@@ -168,7 +166,6 @@ def main() -> None:
         "arch": arch,
         "plainmp_version": version("plainmp"),
         "config": asdict(config),
-        "warps": 1,
         "resolution": RESOLUTION,
         "plainmp_ms": cpu_times,
         "plainmp_ms_per_problem": args.cpu_ms_per_problem,

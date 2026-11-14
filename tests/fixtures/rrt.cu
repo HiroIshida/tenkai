@@ -7,7 +7,7 @@
 namespace m = TENKAI_MODEL_NAMESPACE;
 using Scalar = m::Scalar;
 using Status = tenkai::PlanStatus;
-using Algorithm = tenkai::RrtAlgorithm;
+#include "rrtc_reference.cuh"
 namespace sdf = m;
 #include "broad_phase_checks.h"
 #include "workspace_checks.cuh"
@@ -31,7 +31,7 @@ bool collision(const Scalar* q, uint32_t environment) {
 }
 
 void validate_path(const std::vector<Scalar>& path, const m::RrtProblem& problem,
-                   const m::RrtSpace& space, const tenkai::RrtConfig& config, Algorithm algorithm) {
+                   const m::RrtSpace& space, const tenkai::RrtConfig& config) {
     assert(!path.empty() && path.size() % 2 == 0);
     for (size_t d = 0; d < 2; ++d) {
         assert(path[d] == problem.start[d]);
@@ -48,9 +48,8 @@ void validate_path(const std::vector<Scalar>& path, const m::RrtProblem& problem
             norm += delta*delta;
             segments = std::max(segments, std::ceil(std::abs(delta) / double(space.resolution[d])));
         }
-        if (algorithm == Algorithm::RrtConnect || i + 2 < path.size())
-            assert(std::sqrt(norm) <= config.step_size + 1e-6);
-        if (algorithm == Algorithm::RrtConnect) assert(norm > 0);
+        assert(std::sqrt(norm) <= config.step_size + 1e-6);
+        assert(norm > 0);
         for (unsigned int j = 0; j <= segments; ++j) {
             Scalar q[2];
             for (size_t d = 0; d < 2; ++d)
@@ -60,37 +59,38 @@ void validate_path(const std::vector<Scalar>& path, const m::RrtProblem& problem
     }
 }
 
-__global__ void check_edge_grid(m::RrtCandidate* candidates, uint32_t count,
+__global__ void check_edge_grid(m::RrtCandidate* candidates,
                                 const Scalar* nodes, m::RrtSpace space, m::Scene scene,
-                                m::EdgeDirection direction, bool interleaved) {
+                                bool reverse) {
     m::RrtProblem problem{};
     problem.environment_id = 1;
-    problem.goal[1] = Scalar(0.8);
-    m::rrt_check_edges(candidates, count, nodes, problem, space, scene, direction, interleaved);
+    const bool retry = m::rrtc_check_edge<false>(
+        candidates[blockIdx.x], nodes, problem, space, scene, reverse, false);
+    assert(!retry);
 }
 
 void check_edge_grids(const m::RrtSpace& space, m::Scene scene) {
     struct Edge {
         double from, to, y;
         uint32_t steps;
-        bool forward_blocked, reverse_blocked, goal_blocked;
+        bool forward_blocked, reverse_blocked;
     };
     std::vector<Edge> cases{
-        {-0.8, 1.2, 0, 80, true, true, false}, // All quarter probes miss the obstacle.
-        {-2.6, 0.6, 0, 65, true, true, false}, // Collision after the first 32 samples.
-        {-0.8, 1.2, 0.8, 80, false, false, false},
-        {-0.8, 0.8, 0, 1, false, false, false}, // Only the endpoint belongs to this grid.
-        {-0.8, 0.8, 0, 2, true, true, false},
-        {0.2, 0, 0, 1, true, true, true}, // The new endpoint must be checked in reverse too.
-        {0.8, 0.8, 0, 0, false, false, false},
-        {-0.9, -0.8, 0, 4, false, false, true},
-        {-0.8, 1.2, 0.8, 4097, false, false, false},
+        {-0.8, 1.2, 0, 80, true, true},
+        {-2.6, 0.6, 0, 65, true, true}, // Collision after the first 32 samples.
+        {-0.8, 1.2, 0.8, 80, false, false},
+        {-0.8, 0.8, 0, 1, false, false}, // Only the endpoint belongs to this grid.
+        {-0.8, 0.8, 0, 2, true, true},
+        {0.2, 0, 0, 1, true, true}, // The new endpoint must be checked in reverse too.
+        {0.8, 0.8, 0, 0, false, false},
+        {-0.9, -0.8, 0, 4, false, false},
+        {-0.8, 1.2, 0.8, 4097, false, false},
     };
     for (uint32_t steps : {1u, 2u, 3u, 31u, 32u, 33u, 63u, 64u, 65u, 97u}) {
         for (uint32_t hit = 0; hit <= steps + 1; ++hit) {
             // Exactly one grid point can hit; omitting any point must fail.
             cases.push_back({-0.5 * hit, 0.5 * (double(steps) - hit), 0, steps,
-                             hit > 0 && hit <= steps, hit <= steps, hit >= steps});
+                             hit > 0 && hit <= steps, hit <= steps});
         }
     }
     const uint32_t capacity = static_cast<uint32_t>(cases.size());
@@ -108,26 +108,16 @@ void check_edge_grids(const m::RrtSpace& space, m::Scene scene) {
     m::DeviceBuffer<m::RrtCandidate> device_candidates(capacity);
     m::DeviceBuffer<Scalar> device_nodes(nodes.size());
     device_nodes.upload(nodes.data(), nodes.size());
-    for (auto direction : {m::EdgeDirection::Forward, m::EdgeDirection::Reverse, m::EdgeDirection::Goal}) {
-        for (uint32_t warps : {1u, 3u, 4u, 8u}) {
-            for (uint32_t count : {0u, 1u, 3u, 4u, 5u, 7u, 8u, 9u, 33u, 65u, capacity}) {
-                for (bool interleaved : {false, true}) {
-                    device_candidates.upload(candidates.data(), capacity);
-                    check_edge_grid<<<1, 32 * warps>>>(device_candidates.data(), count,
-                        device_nodes.data(), space, scene, direction, interleaved);
-                    m::cuda_check(cudaGetLastError(), "check edge grids");
-                    std::vector<m::RrtCandidate> checked(capacity);
-                    device_candidates.download(checked.data(), capacity);
-                    for (uint32_t c = 0; c < capacity; ++c) {
-                        const bool goal = direction == m::EdgeDirection::Goal;
-                        const bool blocked = goal ? checked[c].goal_blocked : checked[c].blocked;
-                        const auto& edge = cases[c];
-                        const bool expected = goal ? edge.goal_blocked :
-                            (direction == m::EdgeDirection::Forward ? edge.forward_blocked : edge.reverse_blocked);
-                        assert(blocked == (c < count && expected));
-                    }
-                }
-            }
+    for (bool reverse : {false, true}) {
+        device_candidates.upload(candidates.data(), capacity);
+        check_edge_grid<<<capacity, 32>>>(device_candidates.data(), device_nodes.data(), space, scene, reverse);
+        m::cuda_check(cudaGetLastError(), "check edge grids");
+        std::vector<m::RrtCandidate> checked(capacity);
+        device_candidates.download(checked.data(), capacity);
+        for (uint32_t c = 0; c < capacity; ++c) {
+            const auto& edge = cases[c];
+            const bool expected = reverse ? edge.reverse_blocked : edge.forward_blocked;
+            assert(bool(checked[c].blocked) == expected);
         }
     }
 }
@@ -267,21 +257,15 @@ __global__ void check_cached_nearest(m::RrtSpace space) {
     }
 }
 
-__global__ void check_grouped_nearest(m::RrtSpace space) {
+__global__ void check_warp_nearest(m::RrtSpace space) {
     using Tree = m::RrtTree;
-    constexpr uint32_t capacity = 192, max_queries = 129;
+    constexpr uint32_t capacity = 192;
     __shared__ Scalar nodes[capacity * m::rrt_dimension];
     __shared__ Tree trees[capacity];
-    __shared__ m::RrtCandidate candidates[max_queries];
-    for (uint32_t width : {1u, 2u, 4u, 8u, 16u, 32u}) {
-        assert(m::rrtc_nearest_width(31, blockDim.x / width) == 1);
-        assert(m::rrtc_nearest_width(32, blockDim.x / width) == width);
-    }
-    assert(m::rrtc_nearest_width(32, blockDim.x + 1) == 1);
-    assert(m::rrtc_nearest_width(capacity, 1) == 32);
+    __shared__ m::RrtCandidate candidate;
     for (Scalar scale : {Scalar(1), Scalar(1e-30), Scalar(1e20)}) {
         for (uint32_t d = 0; d < m::rrt_dimension; ++d) space.resolution[d] = Scalar(0.025) * scale;
-        for (uint32_t n = threadIdx.x; n < capacity; n += blockDim.x) {
+        for (uint32_t n = threadIdx.x; n < capacity; n += 32) {
             Scalar x = Scalar(4 + n % 7);
             if (n == 2) x = -1;
             if (n == 31 || n == 32) x = 1;
@@ -290,53 +274,50 @@ __global__ void check_grouped_nearest(m::RrtSpace space) {
             nodes[n * m::rrt_dimension + 1] = 0;
             trees[n] = n % 2 ? Tree::Goal : Tree::Start;
         }
-        __syncthreads();
-        for (uint32_t queries : {1u, 3u, 4u, 8u, 17u, 32u, 65u, max_queries}) {
+        __syncwarp();
+        for (uint32_t query = 0; query < 5; ++query) {
+            const Scalar target = Scalar(query) * Scalar(0.25) * scale;
             for (Tree tree : {Tree::Start, Tree::Goal}) {
                 for (bool cached : {false, true}) {
-                    for (uint32_t c = threadIdx.x; c < queries; c += blockDim.x)
-                        candidates[c].nearest = {0, 0, INFINITY};
-                    __syncthreads();
+                    if (threadIdx.x == 0) candidate.nearest = {0, 0, INFINITY};
+                    __syncwarp();
                     uint32_t scanned = 0;
                     for (uint32_t snapshot : {2u, 2u, 31u, 32u, 64u, 65u, 96u, 128u, 160u, capacity}) {
-                        const uint32_t width = m::rrtc_nearest_width(snapshot - (cached ? scanned : 0), queries);
-                        const uint32_t lane = threadIdx.x & (width - 1);
-                        for (uint32_t c = threadIdx.x / width; c < queries; c += blockDim.x / width) {
-                            auto& candidate = candidates[c];
-                            const Scalar target = Scalar(c % 5) * Scalar(0.25) * scale;
-                            if (lane == 0) {
-                                candidate.q[0] = target;
-                                candidate.q[1] = 0;
-                                candidate.reaches_target = true;
-                            }
-                            if (width > 1) __syncwarp(m::rrt_group_mask(width));
+                        const uint32_t width = snapshot - (cached ? scanned : 0) < 32 ? 1 : 32;
+                        if (threadIdx.x == 0) {
+                            candidate.q[0] = target;
+                            candidate.q[1] = 0;
+                            candidate.reaches_target = true;
+                        }
+                        __syncwarp();
+                        if (threadIdx.x < width)
                             m::rrt_extend(candidate, nodes, snapshot, space, double(scale) * 0.25,
                                           trees, tree, cached ? &candidate.nearest : nullptr, width);
-                            if (lane == 0) {
-                                m::RrtCandidate reference{};
-                                reference.q[0] = target;
-                                reference.reaches_target = true;
-                                m::RrtNearestCache nearest{0, 0, INFINITY};
-                                m::rrt_extend(reference, nodes, snapshot, space, double(scale) * 0.25,
-                                              trees, tree, &nearest);
-                                assert(candidate.parent == reference.parent);
-                                assert(candidate.steps == reference.steps && candidate.blocked == reference.blocked);
-                                assert(candidate.reaches_target == reference.reaches_target);
-                                for (uint32_t d = 0; d < m::rrt_dimension; ++d)
-                                    assert(candidate.q[d] == reference.q[d]);
-                                if (cached) {
-                                    assert(candidate.nearest.node == nearest.node);
-                                    assert(candidate.nearest.scanned == snapshot);
-                                    assert(candidate.nearest.squared_distance == nearest.squared_distance);
-                                }
-                                if (c == 0 && tree == Tree::Start && snapshot >= 31)
-                                    assert(reference.parent == (snapshot <= 64 ? 2u : 64u));
-                                if (c == 0 && tree == Tree::Goal && snapshot >= 32)
-                                    assert(reference.parent == (snapshot <= 65 ? 31u : 65u));
+                        __syncwarp();
+                        if (threadIdx.x == 0) {
+                            m::RrtCandidate reference{};
+                            reference.q[0] = target;
+                            reference.reaches_target = true;
+                            m::RrtNearestCache nearest{0, 0, INFINITY};
+                            m::rrt_extend(reference, nodes, snapshot, space, double(scale) * 0.25,
+                                          trees, tree, &nearest);
+                            assert(candidate.parent == reference.parent);
+                            assert(candidate.steps == reference.steps && candidate.blocked == reference.blocked);
+                            assert(candidate.reaches_target == reference.reaches_target);
+                            for (uint32_t d = 0; d < m::rrt_dimension; ++d)
+                                assert(candidate.q[d] == reference.q[d]);
+                            if (cached) {
+                                assert(candidate.nearest.node == nearest.node);
+                                assert(candidate.nearest.scanned == snapshot);
+                                assert(candidate.nearest.squared_distance == nearest.squared_distance);
                             }
+                            if (query == 0 && tree == Tree::Start && snapshot >= 31)
+                                assert(reference.parent == (snapshot <= 64 ? 2u : 64u));
+                            if (query == 0 && tree == Tree::Goal && snapshot >= 32)
+                                assert(reference.parent == (snapshot <= 65 ? 31u : 65u));
                         }
                         scanned = snapshot;
-                        __syncthreads();
+                        __syncwarp();
                     }
                 }
             }
@@ -350,13 +331,12 @@ void check_single_candidate(const m::RrtSpace& space, m::Scene scene,
         for (double step : {0.05, 1.0, 2.0}) {
             for (double bias : {0.0, 1.0}) {
                 tenkai::RrtConfig config;
-                config.samples_per_round = 1;
                 config.max_nodes = capacity;
                 config.max_rounds = 128;
                 config.step_size = step;
                 config.goal_bias = bias;
-                m::RrtPlanner single(config, {1}, space, scene, 3, problems.size(), Algorithm::RrtConnect);
-                m::RrtPlanner general(config, {4}, space, scene, 3, problems.size(), Algorithm::RrtConnect);
+                m::RrtPlanner single(config, space, scene, 3, problems.size());
+                ReferencePlanner general(config, space, scene, 3, problems.size());
                 const auto actual = single.solve(problems), expected = general.solve(problems);
                 for (size_t i = 0; i < problems.size(); ++i) {
                     assert(actual[i].status == expected[i].status);
@@ -365,7 +345,7 @@ void check_single_candidate(const m::RrtSpace& space, m::Scene scene,
                     assert(actual[i].path_length == expected[i].path_length);
                     assert(single.path(i) == general.path(i));
                     if (actual[i].status == Status::Success)
-                        validate_path(single.path(i), problems[i], space, config, Algorithm::RrtConnect);
+                        validate_path(single.path(i), problems[i], space, config);
                 }
             }
         }
@@ -402,14 +382,11 @@ int main() try {
     check_cached_nearest<<<1, 1>>>(space);
     m::cuda_check(cudaGetLastError(), "check cached nearest nodes");
     m::cuda_check(cudaDeviceSynchronize(), "validate cached nearest nodes");
-    for (uint32_t warps : {1u, 3u, 4u, 8u}) {
-        check_grouped_nearest<<<1, 32 * warps>>>(space);
-        m::cuda_check(cudaGetLastError(), "check grouped nearest nodes");
-        m::cuda_check(cudaDeviceSynchronize(), "validate grouped nearest nodes");
-    }
+    check_warp_nearest<<<1, 32>>>(space);
+    m::cuda_check(cudaGetLastError(), "check warp nearest nodes");
+    m::cuda_check(cudaDeviceSynchronize(), "validate warp nearest nodes");
     tenkai::RrtConfig config;
     config.max_nodes = 1024;
-    config.samples_per_round = 64;
     config.max_rounds = 128;
     config.step_size = 0.35;
     config.goal_bias = 0.2;
@@ -428,95 +405,84 @@ int main() try {
     problems[6].environment_id = 1; problems[6].start[1] = 0;
     problems[7].environment_id = 1; problems[7].goal[1] = 0;
     check_single_candidate(space, scene, problems);
-    for (Algorithm algorithm : {Algorithm::Rrt, Algorithm::RrtConnect}) {
-        std::vector<std::vector<Scalar>> reference;
-        std::vector<tenkai::RrtResult> reference_results;
-        for (uint32_t warps : {1u, 3u, 4u, 8u}) {
-            m::RrtPlanner planner(config, {warps}, space, scene, 3, problems.size(), algorithm);
-            rejects([&] { planner.path(0); });
-            for (int repetition = 0; repetition < 2; ++repetition) {
-                const auto result = planner.solve(problems);
-                assert(result[0].status == Status::Success && result[0].path_length == 1 && result[0].rounds == 0);
-                assert(result[1].status == Status::Success && result[2].status == Status::Success);
-                assert(result[3].status == Status::NodeLimit || result[3].status == Status::RoundLimit);
-                assert(result[4].status == Status::InvalidStart && result[5].status == Status::InvalidGoal);
-                assert(result[6].status == Status::InvalidStart && result[7].status == Status::InvalidGoal);
-                assert(result[8].status == Status::Success);
-                if (algorithm == Algorithm::RrtConnect) {
-                    assert(result[1].rounds == 1);
-                    // This seed connects while the goal tree is active, exercising
-                    // the opposite parent-chain order from the empty scene.
-                    assert(result[2].rounds % 2 == 0);
-                }
-                std::vector<std::vector<Scalar>> paths;
-                for (size_t p = 0; p < problems.size(); ++p) {
-                    paths.push_back(planner.path(p));
-                    if (result[p].status == Status::Success) validate_path(paths.back(), problems[p], space, config, algorithm);
-                    else assert(paths.back().empty() && result[p].path_length == 0);
-                    assert(result[p].node_count <= config.max_nodes);
-                }
-                assert(paths[1] == paths[8]);
-                if (reference.empty()) {
-                    reference = paths;
-                    reference_results = result;
-                } else {
-                    assert(paths == reference);
-                    for (size_t p = 0; p < result.size(); ++p) {
-                        assert(result[p].status == reference_results[p].status);
-                        assert(result[p].node_count == reference_results[p].node_count);
-                        assert(result[p].rounds == reference_results[p].rounds);
-                        assert(result[p].path_length == reference_results[p].path_length);
-                    }
-                }
+    std::vector<std::vector<Scalar>> reference;
+    std::vector<tenkai::RrtResult> reference_results;
+    m::RrtPlanner planner(config, space, scene, 3, problems.size());
+    rejects([&] { planner.path(0); });
+    for (int repetition = 0; repetition < 2; ++repetition) {
+        const auto result = planner.solve(problems);
+        assert(result[0].status == Status::Success && result[0].path_length == 1 && result[0].rounds == 0);
+        assert(result[1].status == Status::Success && result[2].status == Status::Success);
+        assert(result[3].status == Status::NodeLimit || result[3].status == Status::RoundLimit);
+        assert(result[4].status == Status::InvalidStart && result[5].status == Status::InvalidGoal);
+        assert(result[6].status == Status::InvalidStart && result[7].status == Status::InvalidGoal);
+        assert(result[8].status == Status::Success);
+        assert(result[1].rounds == 1);
+        std::vector<std::vector<Scalar>> paths;
+        for (size_t p = 0; p < problems.size(); ++p) {
+            paths.push_back(planner.path(p));
+            if (result[p].status == Status::Success) validate_path(paths.back(), problems[p], space, config);
+            else assert(paths.back().empty() && result[p].path_length == 0);
+            assert(result[p].node_count <= config.max_nodes);
+        }
+        assert(paths[1] == paths[8]);
+        if (reference.empty()) {
+            reference = paths;
+            reference_results = result;
+        } else {
+            assert(paths == reference);
+            for (size_t p = 0; p < result.size(); ++p) {
+                assert(result[p].status == reference_results[p].status);
+                assert(result[p].node_count == reference_results[p].node_count);
+                assert(result[p].rounds == reference_results[p].rounds);
+                assert(result[p].path_length == reference_results[p].path_length);
             }
-            auto invalid = problems;
-            invalid[0].environment_id = 3;
-            rejects([&] { planner.solve(invalid); });
-            invalid.pop_back();
-            rejects([&] { planner.solve(invalid); });
         }
     }
-    rejects([&] { m::RrtPlanner p(config, {0}, space, scene, 3, 1); });
-    rejects([&] { m::RrtPlanner p(config, {33}, space, scene, 3, 1); });
+    auto invalid = problems;
+    invalid[0].environment_id = 3;
+    rejects([&] { planner.solve(invalid); });
+    invalid.pop_back();
+    rejects([&] { planner.solve(invalid); });
+    rejects([&] { m::RrtPlanner p(config, space, scene, 0, 1); });
+    rejects([&] { m::RrtPlanner p(config, space, scene, 3, 0); });
     auto bad_space = space;
     bad_space.resolution[0] = 0;
-    rejects([&] { m::RrtPlanner p(config, {1}, bad_space, scene, 3, 1); });
-    config.samples_per_round = 1;
+    rejects([&] { m::RrtPlanner p(config, bad_space, scene, 3, 1); });
     config.max_rounds = 1;
     config.goal_bias = 0;
     config.step_size = 0.01;
-    for (Algorithm algorithm : {Algorithm::Rrt, Algorithm::RrtConnect}) {
-        m::RrtPlanner round_limit(config, {1}, space, scene, 3, 1, algorithm);
+    {
+        m::RrtPlanner round_limit(config, space, scene, 3, 1);
         assert(round_limit.solve({problems[3]})[0].status == Status::RoundLimit);
         auto small = config;
         small.max_nodes = 2;
-        m::RrtPlanner node_limit(small, {1}, space, scene, 3, 1, algorithm);
+        m::RrtPlanner node_limit(small, space, scene, 3, 1);
         assert(node_limit.solve({problems[1]})[0].status == Status::NodeLimit);
         const auto equal = node_limit.solve({problems[0]})[0];
         assert(equal.status == Status::Success && equal.path_length == 1);
     }
     config.goal_bias = 1;
     config.step_size = 0.05;
-    m::RrtPlanner connect(config, {4}, space, scene, 3, 1, Algorithm::RrtConnect);
+    m::RrtPlanner connect(config, space, scene, 3, 1);
     const auto connected = connect.solve({problems[1]})[0];
     assert(connected.status == Status::Success && connected.rounds == 1 && connected.path_length > 30);
-    validate_path(connect.path(0), problems[1], space, config, Algorithm::RrtConnect);
+    validate_path(connect.path(0), problems[1], space, config);
     for (uint32_t capacity : {3u, 5u, 10u}) {
         auto small = config;
         small.max_nodes = capacity;
-        small.samples_per_round = capacity - 1;
-        m::RrtPlanner limit(small, {4}, space, scene, 3, 1, Algorithm::RrtConnect);
+        m::RrtPlanner limit(small, space, scene, 3, 1);
         const auto result = limit.solve({problems[1]})[0];
         assert(result.status == Status::NodeLimit && result.node_count == capacity);
     }
     // The active tree can reach an existing opposite root even with no free slot.
     config.max_nodes = 3;
     config.step_size = 2;
-    m::RrtPlanner root_join(config, {1}, space, scene, 3, 1, Algorithm::RrtConnect);
+    m::RrtPlanner root_join(config, space, scene, 3, 1);
     const auto joined = root_join.solve({problems[1]})[0];
     assert(joined.status == Status::Success && joined.path_length == 2 && joined.node_count == 3);
-    validate_path(root_join.path(0), problems[1], space, config, Algorithm::RrtConnect);
-    std::cout << "RRT / RRT-Connect paths, limits, environment mapping, replay and 1/3/4/8 warps passed\n";
+    validate_path(root_join.path(0), problems[1], space, config);
+    std::cout << "RRT-Connect paths, limits, environment mapping, replay and warp search passed\n";
 } catch (const std::exception& error) {
     std::cerr << error.what() << '\n';
     return 1;

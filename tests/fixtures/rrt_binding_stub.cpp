@@ -4,13 +4,13 @@
 #include <vector>
 
 struct Config {
-    uint32_t max_nodes, max_rounds, samples_per_round;
+    uint32_t max_nodes, max_rounds;
     double step_size, goal_bias;
 };
 struct Result { uint32_t status, node_count, rounds, path_length; };
 struct Context {
     Config config;
-    uint32_t problems, environments, algorithm;
+    uint32_t problems, environments;
     std::vector<double> starts, goals;
 };
 static int alive = 0;
@@ -19,21 +19,12 @@ static const char* error = "";
 extern "C" const char* rrt_error() { return error; }
 extern "C" int live_contexts() { return alive; }
 
-static int create(const Config* config, uint32_t problems, uint32_t environments,
-                  void** output, uint32_t algorithm) {
-    *output = new Context{*config, problems, environments, algorithm, {}, {}};
-    ++alive;
-    return 0;
-}
-extern "C" int rrt_create(const Config* config, uint32_t, uint32_t problems,
-                         uint32_t environments, const double*, const double*,
-                         const double*, const double*, void** output) {
-    return create(config, problems, environments, output, 1);
-}
-extern "C" int rrtc_create(const Config* config, uint32_t, uint32_t problems,
+extern "C" int rrtc_create(const Config* config, uint32_t problems,
                           uint32_t environments, const double*, const double*,
                           const double*, const double*, void** output) {
-    return create(config, problems, environments, output, 2);
+    *output = new Context{*config, problems, environments, {}, {}};
+    ++alive;
+    return 0;
 }
 extern "C" void rrt_destroy(void* handle) {
     delete static_cast<Context*>(handle);
@@ -47,7 +38,7 @@ extern "C" int rrt_solve(void* handle, const double* starts, const double* goals
     for (uint32_t i = 0; i < context.problems; ++i) {
         if (ids[i] >= context.environments) return -1;
         output[i] = {0, uint32_t(seeds[i] ^ (seeds[i] >> 32)),
-                     context.config.max_rounds + context.algorithm, 3};
+                     context.config.max_rounds, 3};
     }
     return 0;
 }

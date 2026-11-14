@@ -5,8 +5,9 @@
 
 namespace m = TENKAI_MODEL_NAMESPACE;
 using Scalar = m::Scalar;
+#include "rrtc_reference.cuh"
 
-void compare(m::RrtPlanner& actual, m::RrtPlanner& reference,
+void compare(m::RrtPlanner& actual, ReferencePlanner& reference,
              const std::vector<m::RrtProblem>& problems) {
     const auto a = actual.solve(problems), b = reference.solve(problems);
     for (size_t i = 0; i < problems.size(); ++i) {
@@ -93,7 +94,6 @@ int main() try {
     const m::RrtSpace space{{Scalar(0.1),-1,-1}, {1,1,1},
                             {Scalar(0.025),Scalar(0.025),Scalar(0.025)}, {0,0,0}};
     tenkai::RrtConfig config;
-    config.samples_per_round = 1;
     config.max_nodes = 1024;
     config.max_rounds = 512;
     for (size_t count : {1u, 3u, 4u, 5u, 33u}) {
@@ -116,8 +116,8 @@ int main() try {
         for (double step : {0.2, 1.0}) {
             config.step_size = step;
             config.goal_bias = step == 1.0 ? 0.0 : 0.2;
-            m::RrtPlanner actual(config, {1}, space, scene, 8, count, tenkai::RrtAlgorithm::RrtConnect);
-            m::RrtPlanner reference(config, {4}, space, scene, 8, count, tenkai::RrtAlgorithm::RrtConnect);
+            m::RrtPlanner actual(config, space, scene, 8, count);
+            ReferencePlanner reference(config, space, scene, 8, count);
             compare(actual, reference, problems);
             boxes[0].pose.world_to_local[0] = c;
             boxes[0].pose.world_to_local[1] = c;

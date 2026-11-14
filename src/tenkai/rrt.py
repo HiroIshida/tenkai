@@ -1,4 +1,4 @@
-"""Build and run robot-specific GPU RRT and RRT-Connect planners."""
+"""Build and run robot-specific single-candidate GPU RRT-Connect planners."""
 
 import ctypes as ct
 import json
@@ -17,7 +17,6 @@ from .build import Backend, compiler_command, copy_rrt_bindings, target_arch
 from .compiler import ModelMetadata, generate
 from .cuda import Options
 
-type Algorithm = Literal["rrt", "rrtc"]
 type Status = Literal["success", "round_limit", "node_limit", "invalid_start", "invalid_goal"]
 
 STATUSES: tuple[Status, ...] = (
@@ -40,16 +39,12 @@ def check_count(value: int, name: str, minimum: int = 1) -> None:
 class RRTConfig:
     max_nodes: int = 8192
     max_rounds: int = 1024
-    samples_per_round: int = 32
     step_size: float = 1.0
     goal_bias: float = 0.1
 
     def validate(self) -> None:
         check_count(self.max_nodes, "max_nodes", 2)
         check_count(self.max_rounds, "max_rounds")
-        check_count(self.samples_per_round, "samples_per_round")
-        if self.samples_per_round >= self.max_nodes:
-            raise ValueError("samples_per_round must be less than max_nodes")
         if not math.isfinite(self.step_size) or self.step_size <= 0:
             raise ValueError("step_size must be finite and positive")
         if not math.isfinite(self.goal_bias) or not 0 <= self.goal_bias <= 1:
@@ -83,15 +78,11 @@ class RRTBuild:
         geometry: npt.ArrayLike,
         *,
         config: RRTConfig = RRTConfig(),
-        warps: int = 4,
         problem_count: int = 1,
         resolution: float = 0.05,
-        algorithm: Algorithm = "rrt",
     ) -> "Planner":
         """Allocate a planner; close it explicitly or use it as a context manager."""
-        return Planner(
-            self.library, self.model, config, warps, problem_count, geometry, resolution, algorithm
-        )
+        return Planner(self.library, self.model, config, problem_count, geometry, resolution)
 
 
 def build_rrt(
@@ -104,7 +95,7 @@ def build_rrt(
     arch: str | None = None,
     max_registers: int | None = None,
 ) -> RRTBuild:
-    """Generate and compile both planners into output/librrt.so using nvcc or hipcc.
+    """Generate and compile RRT-Connect into output/librrt.so using nvcc or hipcc.
 
     Requires the selected GPU toolkit, but no GPU. Each call
     rebuilds the library. Use separate output directories for distinct builds.
@@ -169,7 +160,6 @@ class NativeConfig(ct.Structure):
     _fields_ = [
         ("max_nodes", ct.c_uint32),
         ("max_rounds", ct.c_uint32),
-        ("samples_per_round", ct.c_uint32),
         ("step_size", ct.c_double),
         ("goal_bias", ct.c_double),
     ]
@@ -201,7 +191,7 @@ def unsigned_array[T: (np.uint32, np.uint64)](
 
 
 class Planner:
-    """A reusable batch of RRT problems with owned GPU search and scene buffers.
+    """A reusable batch of RRT-Connect problems with owned GPU search and scene buffers.
 
     Geometry has shape (environments, 7): box center x/y/z, box full extents
     x/y/z, and ground offset. The ground plane is z = -offset. Each environment
@@ -214,18 +204,11 @@ class Planner:
         library: str | Path,
         model: ModelMetadata,
         config: RRTConfig,
-        warps: int,
         problem_count: int,
         geometry: npt.ArrayLike,
         resolution: float,
-        algorithm: Algorithm = "rrt",
     ) -> None:
-        if algorithm not in ("rrt", "rrtc"):
-            raise ValueError("algorithm must be rrt or rrtc")
         config.validate()
-        check_count(warps, "warps")
-        if warps > 32:
-            raise ValueError("warps must be between 1 and 32")
         check_count(problem_count, "problem_count")
         if not math.isfinite(resolution) or resolution <= 0:
             raise ValueError("resolution must be finite and positive")
@@ -257,10 +240,9 @@ class Planner:
         flags = np.ctypeslib.ndpointer(dtype=np.uint8, flags="C_CONTIGUOUS")
         self.library.rrt_error.argtypes = []
         self.library.rrt_error.restype = ct.c_char_p
-        create = getattr(self.library, algorithm + "_create")
+        create = self.library.rrtc_create
         create.argtypes = [
             ct.POINTER(NativeConfig),
-            ct.c_uint32,
             ct.c_uint32,
             ct.c_uint32,
             floats,
@@ -295,7 +277,6 @@ class Planner:
         self.check(
             create(
                 ct.byref(native),
-                warps,
                 problem_count,
                 len(scene),
                 scene,

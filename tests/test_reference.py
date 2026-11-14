@@ -1,4 +1,4 @@
-"""Frozen Rust outputs remain exact after normalizing the project name."""
+"""Recorded compiler outputs remain exact after normalizing the project name."""
 
 import hashlib
 import json
@@ -30,7 +30,7 @@ REFERENCES: list[Reference] = json.loads((ROOT / "tests/reference/compiler.json"
 
 
 @pytest.mark.parametrize("reference", REFERENCES, ids=[item["name"] for item in REFERENCES])
-def test_generated_sources_match_frozen_rust(reference: Reference, tmp_path: Path) -> None:
+def test_generated_sources_match_reference(reference: Reference, tmp_path: Path) -> None:
     options = Options(reference["math"], reference["optimization"], reference["live_budget"])
     generate(ROOT / reference["urdf"], ROOT / reference["spheres"], tmp_path, options, True)
     actual = {}

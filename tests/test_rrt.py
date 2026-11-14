@@ -14,7 +14,7 @@ from tenkai import Options, Planner, RRTBuild, RRTConfig, build_rrt
 from tenkai.build import Backend
 from tenkai.compiler import ModelMetadata
 from tenkai.cuda import MathMode
-from tenkai.rrt import Algorithm, BuildInfo
+from tenkai.rrt import BuildInfo
 
 FIXTURES = Path(__file__).with_name("fixtures")
 
@@ -53,27 +53,22 @@ def binding(tmp_path_factory: pytest.TempPathFactory) -> RRTBuild:
     return RRTBuild(library, model, info)
 
 
-@pytest.mark.parametrize("algorithm,rounds", [("rrt", 10), ("rrtc", 11)])
-def test_binding_round_trip_and_lifetime(
-    binding: RRTBuild, algorithm: Algorithm, rounds: int
-) -> None:
+def test_binding_round_trip_and_lifetime(binding: RRTBuild) -> None:
     native = ct.CDLL(str(binding.library))
     assert native.live_contexts() == 0
     geometry = [[10, 10, 10, 1, 1, 1, 10], [20, 20, 20, 1, 1, 1, 20]]
-    config = RRTConfig(
-        max_nodes=16, max_rounds=9, samples_per_round=1, step_size=0.5, goal_bias=0.25
-    )
+    config = RRTConfig(max_nodes=16, max_rounds=9, step_size=0.5, goal_bias=0.25)
     starts = np.array([[-1.0, 10, -0.5, 20], [0.0, 30, 0.5, 40]])[:, ::2]
     goals = np.array([[0.5, 1], [1, 0]], dtype=np.float32)
-    with binding.planner(geometry, config=config, problem_count=2, algorithm=algorithm) as planner:
+    with binding.planner(geometry, config=config, problem_count=2) as planner:
         assert native.live_contexts() == 1
         with pytest.raises(RuntimeError, match="path unavailable"):
             planner.path(0)
         seeds = [0, 2**64 - 2]
         results = planner.solve(starts, goals, [1, 0], seeds)
         assert results == [
-            {"status": "success", "nodes": 0, "rounds": rounds, "path_length": 3},
-            {"status": "success", "nodes": 1, "rounds": rounds, "path_length": 3},
+            {"status": "success", "nodes": 0, "rounds": 9, "path_length": 3},
+            {"status": "success", "nodes": 1, "rounds": 9, "path_length": 3},
         ]
         path = planner.path(1)
         np.testing.assert_array_equal(path[0], starts[1])
@@ -110,8 +105,6 @@ def test_context_closes_on_exception(binding: RRTBuild) -> None:
     [
         RRTConfig(max_nodes=1),
         RRTConfig(max_rounds=2**32),
-        RRTConfig(samples_per_round=0),
-        RRTConfig(max_nodes=32, samples_per_round=32),
         RRTConfig(step_size=float("nan")),
         RRTConfig(goal_bias=1.1),
         RRTConfig(max_nodes=True),
@@ -119,7 +112,7 @@ def test_context_closes_on_exception(binding: RRTBuild) -> None:
 )
 def test_invalid_config_before_load(binding: RRTBuild, config: RRTConfig) -> None:
     with pytest.raises(ValueError):
-        Planner("missing.so", binding.model, config, 1, 1, [[0] * 7], 0.05)
+        Planner("missing.so", binding.model, config, 1, [[0] * 7], 0.05)
 
 
 @pytest.mark.parametrize(
@@ -127,7 +120,7 @@ def test_invalid_config_before_load(binding: RRTBuild, config: RRTConfig) -> Non
 )
 def test_invalid_geometry_before_load(binding: RRTBuild, geometry: list[list[float]]) -> None:
     with pytest.raises(ValueError):
-        Planner("missing.so", binding.model, RRTConfig(), 1, 1, geometry, 0.05)
+        Planner("missing.so", binding.model, RRTConfig(), 1, geometry, 0.05)
 
 
 @pytest.mark.parametrize(
@@ -259,7 +252,6 @@ def test_public_build(compiled: RRTBuild, gpu_backend: Backend) -> None:
     assert [j["name"] for j in compiled.model["control_joints"]] == ["y", "x"]
     library = ct.CDLL(str(compiled.library))
     for symbol in (
-        "rrt_create",
         "rrtc_create",
         "rrt_destroy",
         "rrt_solve",
@@ -270,14 +262,9 @@ def test_public_build(compiled: RRTBuild, gpu_backend: Backend) -> None:
 
 
 @pytest.mark.gpu
-@pytest.mark.parametrize("algorithm,samples,warps", [("rrt", 4, 4), ("rrtc", 4, 4), ("rrtc", 1, 1)])
-def test_public_planner_on_gpu(
-    compiled: RRTBuild, algorithm: Algorithm, samples: int, warps: int
-) -> None:
-    config = RRTConfig(max_nodes=256, max_rounds=512, samples_per_round=samples, goal_bias=1.0)
-    with compiled.planner(
-        [[10, 10, 10, 1, 1, 1, 10]], config=config, warps=warps, algorithm=algorithm
-    ) as planner:
+def test_public_planner_on_gpu(compiled: RRTBuild) -> None:
+    config = RRTConfig(max_nodes=256, max_rounds=512, goal_bias=1.0)
+    with compiled.planner([[10, 10, 10, 1, 1, 1, 10]], config=config) as planner:
         inputs = ([[-0.5, -0.5]], [[0.5, 0.5]], [0], [42])
         results = planner.solve(*inputs)
         assert results[0]["status"] == "success"

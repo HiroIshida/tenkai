@@ -19,8 +19,6 @@ struct RrtProblem {
 };
 
 enum class RrtTree : uint8_t { Start, Goal };
-enum class GrowState : uint8_t { Trapped, Advanced, Reached };
-enum class EdgeDirection { Forward, Reverse, Goal };
 
 struct RrtNearestCache {
     uint32_t node, scanned;
@@ -29,16 +27,14 @@ struct RrtNearestCache {
 
 struct RrtCandidate {
     Scalar q[rrt_dimension];
-    uint32_t parent, steps, target;
-    unsigned int blocked, goal_blocked;
+    uint32_t parent, steps;
+    unsigned int blocked;
     bool reaches_target;
-    GrowState state;
     RrtNearestCache nearest;
 };
 
 inline void validate_rrt(const tenkai::RrtConfig& config, const RrtSpace& space) {
-    if (config.max_nodes < 2 || !config.max_rounds || !config.samples_per_round ||
-        config.samples_per_round > config.max_nodes - 1 ||
+    if (config.max_nodes < 2 || !config.max_rounds ||
         !std::isfinite(config.step_size) || config.step_size <= 0 ||
         !std::isfinite(config.goal_bias) || config.goal_bias < 0 || config.goal_bias > 1)
         throw std::invalid_argument("invalid RRT config");
@@ -125,10 +121,10 @@ __device__ inline uint32_t rrt_steps(const Scalar* a, const Scalar* b,
 
 __device__ inline void rrt_sample(RrtCandidate& candidate, const RrtProblem& problem,
                                   const RrtSpace& space, tenkai::RrtConfig config,
-                                  uint32_t round, uint32_t c, const Scalar* bias_target) {
-    // Each candidate owns a stream independent of warp count and execution order.
+                                  uint32_t round, const Scalar* bias_target) {
+    // Each problem owns a stream independent of batch size and execution order.
     uint64_t rng = problem.seed +
-        (uint64_t(round) * config.samples_per_round + c) * UINT64_C(0xd1342543de82ef95);
+        uint64_t(round) * UINT64_C(0xd1342543de82ef95);
     const bool biased = rrt_uniform(rng) < config.goal_bias;
     for (uint32_t d = 0; d < rrt_dimension; ++d)
         candidate.q[d] = biased ? bias_target[d] : Scalar(
@@ -236,92 +232,6 @@ __device__ inline void rrt_extend(RrtCandidate& candidate, const Scalar* nodes,
     if (width > 1) __syncwarp(rrt_group_mask(width));
 }
 
-__device__ inline bool rrt_edge_collision(const RrtCandidate& candidate, uint32_t step,
-                                          const Scalar* nodes, const RrtProblem& problem,
-                                          const RrtSpace& space, Scene scene, EdgeDirection direction) {
-    const Scalar* parent = nodes + size_t(candidate.parent) * rrt_dimension;
-    const Scalar* from = direction == EdgeDirection::Forward ? parent : candidate.q;
-    const Scalar* to = direction == EdgeDirection::Forward ? candidate.q :
-        (direction == EdgeDirection::Reverse ? parent : problem.goal);
-    const Scalar ratio = Scalar(step) / Scalar(candidate.steps);
-    Scalar q[rrt_dimension];
-    for (uint32_t d = 0; d < rrt_dimension; ++d)
-        q[d] = step == candidate.steps ? to[d] : (step == 0 ? from[d] :
-            from[d] + ratio * (to[d] - from[d]));
-    // Initialization already checked spheres that cannot move during this solve.
-    return rrt_collision(q, space, scene, problem.environment_id, true);
-}
-
-// All threads in the block must participate, including those with no edge work.
-__device__ inline void rrt_check_edges(RrtCandidate* candidates, uint32_t count,
-                                       const Scalar* nodes, const RrtProblem& problem,
-                                       const RrtSpace& space, Scene scene, EdgeDirection direction,
-                                       bool interleaved = false) {
-    __shared__ unsigned int next_edge;
-    const uint32_t warps = blockDim.x / 32;
-    const bool dynamic = warps > 1 && count > warps;
-    // Initial warp assignments need no claim, leaving room for every terminal claim.
-    if (threadIdx.x == 0) next_edge = 0;
-    // Interleaved checks skip the probe barrier that publishes the work counter.
-    if (interleaved && dynamic) __syncthreads();
-    if (!interleaved && direction != EdgeDirection::Goal) {
-        // Probe existing grid points; accepting an edge still requires the full grid.
-        for (uint64_t task = threadIdx.x; task < uint64_t(count) * 4; task += blockDim.x) {
-            RrtCandidate& candidate = candidates[task / 4];
-            if (candidate.steps <= 4) continue;
-            uint32_t step = uint64_t(candidate.steps) * (task % 4 + 1) / 4;
-            if (direction == EdgeDirection::Reverse) step = candidate.steps - step;
-            if (rrt_edge_collision(candidate, step, nodes, problem, space, scene, direction))
-                atomicOr(&candidate.blocked, 1u);
-        }
-        __syncthreads();
-        for (uint32_t c = threadIdx.x; c < count; c += blockDim.x)
-            if (candidates[c].blocked) candidates[c].steps = 0;
-        __syncthreads();
-    }
-    if (direction == EdgeDirection::Goal) {
-        for (uint32_t c = threadIdx.x; c < count; c += blockDim.x) {
-            RrtCandidate& candidate = candidates[c];
-            candidate.goal_blocked = candidate.blocked;
-            candidate.steps = candidate.blocked || candidate.reaches_target ? 0 :
-                rrt_steps(candidate.q, problem.goal, space);
-        }
-        __syncthreads();
-    }
-    const unsigned int lane = threadIdx.x % 32;
-    for (uint64_t c = threadIdx.x / 32; c < count;) {
-        RrtCandidate& candidate = candidates[c];
-        // Reverse edges include the new endpoint, which is their source.
-        const uint64_t checks = uint64_t(candidate.steps) +
-            (direction == EdgeDirection::Reverse && candidate.steps ? 1 : 0);
-        // Spreading each warp's checks across the edge avoids separate probes.
-        // Every original grid point is still required before accepting an edge.
-        const uint64_t waves = (checks + 31) / 32;
-        for (uint64_t base = 0; base < checks; base += 32) {
-            const uint64_t sample = interleaved ? uint64_t(lane) * waves + base / 32 : base + lane;
-            bool hit = false;
-            if (sample < checks) {
-                const uint32_t step = static_cast<uint32_t>(sample) +
-                    (direction == EdgeDirection::Reverse ? 0 : 1);
-                hit = rrt_edge_collision(candidate, step, nodes, problem, space, scene, direction);
-            }
-            if (__any_sync(0xffffffffu, hit)) {
-                if (lane == 0)
-                    (direction == EdgeDirection::Goal ? candidate.goal_blocked : candidate.blocked) = 1;
-                break;
-            }
-        }
-        if (dynamic) {
-            unsigned int next = 0;
-            if (lane == 0) next = atomicAdd(&next_edge, 1u);
-            c = uint64_t(__shfl_sync(0xffffffffu, next, 0)) + warps;
-        } else {
-            c += warps;
-        }
-    }
-    __syncthreads();
-}
-
 __device__ inline uint32_t rrt_append(const Scalar* q, uint32_t parent, Scalar* nodes,
                                       uint32_t* parents, tenkai::RrtResult& result) {
     const uint32_t node = result.node_count++;
@@ -347,16 +257,14 @@ __device__ inline void rrt_start_path(uint32_t node, const uint32_t* parents,
 __device__ inline void rrt_initialize(const RrtProblem& problem, const RrtSpace& space, Scene scene,
                                       Scalar* nodes, uint32_t* parents, uint32_t* path,
                                       tenkai::RrtResult& result, bool& start_valid,
-                                      bool& goal_valid, volatile bool& finished, RrtTree* trees = nullptr) {
+                                      bool& goal_valid, volatile bool& finished, RrtTree* trees) {
     if (threadIdx.x == 0) {
         result = {tenkai::PlanStatus::RoundLimit, 0, 0, 0};
         finished = false;
         rrt_append(problem.start, 0, nodes, parents, result);
-        if (trees) {
-            rrt_append(problem.goal, 1, nodes, parents, result);
-            trees[0] = RrtTree::Start;
-            trees[1] = RrtTree::Goal;
-        }
+        rrt_append(problem.goal, 1, nodes, parents, result);
+        trees[0] = RrtTree::Start;
+        trees[1] = RrtTree::Goal;
         start_valid = rrt_in_bounds(problem.start, space) &&
             !rrt_collision(problem.start, space, scene, problem.environment_id);
     }

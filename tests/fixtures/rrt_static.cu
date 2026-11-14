@@ -6,7 +6,6 @@
 namespace m = TENKAI_MODEL_NAMESPACE;
 using Scalar = m::Scalar;
 using Status = tenkai::PlanStatus;
-using Algorithm = tenkai::RrtAlgorithm;
 
 int main() try {
     m::Sphere obstacles[] = {
@@ -31,7 +30,6 @@ int main() try {
     tenkai::RrtConfig config;
     config.max_nodes = 128;
     config.max_rounds = 8;
-    config.samples_per_round = 1;
     config.goal_bias = 1;
     config.step_size = 0.25;
     const uint32_t ids[] = {5, 1, 3, 0, 4, 2, 6};
@@ -42,51 +40,44 @@ int main() try {
         problems[i].start[0] = Scalar(-0.5);
         problems[i].goal[0] = Scalar(0.5);
     }
-    for (Algorithm algorithm : {Algorithm::Rrt, Algorithm::RrtConnect}) {
-        for (uint32_t warps : {1u, 4u}) {
-            for (uint32_t candidates : {1u, 8u}) {
-                config.samples_per_round = candidates;
-                m::RrtPlanner planner(config, {warps}, space, scene, 7, problems.size(), algorithm);
-                const auto results = planner.solve(problems);
-                for (size_t i = 0; i < results.size(); ++i) {
-                    Status expected = Status::Success;
-                    if (TEST_SPHERE_COUNT >= 3 && ids[i] < 3) expected = Status::InvalidStart;
-                    if (TEST_SPHERE_COUNT == 4 && ids[i] == 3) expected = Status::InvalidGoal;
-                    if (TEST_SPHERE_COUNT == 4 && ids[i] == 4) expected = Status::InvalidStart;
-                    if (TEST_SPHERE_COUNT == 4 && ids[i] == 6) expected = Status::RoundLimit;
-                    assert(results[i].status == expected);
-                    const auto path = planner.path(i);
-                    if (expected == Status::Success) {
-                        assert(path.front() == problems[i].start[0] && path.back() == problems[i].goal[0]);
-                    } else {
-                        assert(path.empty());
-                    }
-                }
-                // A later solve must observe scene changes even when only fixed spheres can hit.
-                obstacles[1].position.x = 6;
-                device_obstacles.upload(obstacles, 6);
-                assert(planner.solve(problems)[1].status == Status::Success);
-                obstacles[1].position.x = 5;
-                device_obstacles.upload(obstacles, 6);
-                assert(planner.solve(problems)[1].status ==
-                    (TEST_SPHERE_COUNT ? Status::InvalidStart : Status::Success));
-            }
+    m::RrtPlanner planner(config, space, scene, 7, problems.size());
+    const auto results = planner.solve(problems);
+    for (size_t i = 0; i < results.size(); ++i) {
+        Status expected = Status::Success;
+        if (TEST_SPHERE_COUNT >= 3 && ids[i] < 3) expected = Status::InvalidStart;
+        if (TEST_SPHERE_COUNT == 4 && ids[i] == 3) expected = Status::InvalidGoal;
+        if (TEST_SPHERE_COUNT == 4 && ids[i] == 4) expected = Status::InvalidStart;
+        if (TEST_SPHERE_COUNT == 4 && ids[i] == 6) expected = Status::RoundLimit;
+        assert(results[i].status == expected);
+        const auto path = planner.path(i);
+        if (expected == Status::Success) {
+            assert(path.front() == problems[i].start[0] && path.back() == problems[i].goal[0]);
+        } else {
+            assert(path.empty());
         }
-        auto shifted = space;
-        shifted.reference[1] = 1;
-        shifted.reference[2] = 1;
-        m::RrtPlanner planner(config, {1}, shifted, scene, 7, problems.size(), algorithm);
-        auto results = planner.solve(problems);
-        assert(results[1].status == Status::Success);
-        assert(results[2].status == Status::Success && results[4].status == Status::Success);
-        assert(results[6].status == Status::Success);
-        obstacles[1].position.x = 6;
-        device_obstacles.upload(obstacles, 6);
-        assert(planner.solve(problems)[1].status ==
-            (TEST_SPHERE_COUNT ? Status::InvalidStart : Status::Success));
-        obstacles[1].position.x = 5;
-        device_obstacles.upload(obstacles, 6);
     }
+    // A later solve must observe scene changes even when only fixed spheres can hit.
+    obstacles[1].position.x = 6;
+    device_obstacles.upload(obstacles, 6);
+    assert(planner.solve(problems)[1].status == Status::Success);
+    obstacles[1].position.x = 5;
+    device_obstacles.upload(obstacles, 6);
+    assert(planner.solve(problems)[1].status ==
+        (TEST_SPHERE_COUNT ? Status::InvalidStart : Status::Success));
+    auto shifted = space;
+    shifted.reference[1] = 1;
+    shifted.reference[2] = 1;
+    m::RrtPlanner shifted_planner(config, shifted, scene, 7, problems.size());
+    const auto shifted_results = shifted_planner.solve(problems);
+    assert(shifted_results[1].status == Status::Success);
+    assert(shifted_results[2].status == Status::Success && shifted_results[4].status == Status::Success);
+    assert(shifted_results[6].status == Status::Success);
+    obstacles[1].position.x = 6;
+    device_obstacles.upload(obstacles, 6);
+    assert(shifted_planner.solve(problems)[1].status ==
+        (TEST_SPHERE_COUNT ? Status::InvalidStart : Status::Success));
+    obstacles[1].position.x = 5;
+    device_obstacles.upload(obstacles, 6);
     // Standalone queries retain all spheres, independently of planning controls.
     Scalar configurations[21]{};
     for (size_t i = 0; i < 7; ++i) configurations[3*i] = Scalar(-0.5);

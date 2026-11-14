@@ -1,7 +1,7 @@
 # tenkai
 
-Generate robot-specific GPU kernels for forward kinematics, collision checks,
-RRT, and RRT-Connect. The compiler is Python 3.12; shared C++ kernels and the
+Generate robot-specific GPU kernels for forward kinematics, collision checks, and
+single-candidate RRT-Connect. The compiler is Python 3.12; shared C++ kernels and the
 native planner runtime compile with CUDA or AMD HIP.
 
 ## Setup
@@ -40,7 +40,7 @@ source = generate_collision_kernel(fk, spheres, Options(math="f32"))
 
 ## Run and time a planner
 
-RRT and RRT-Connect can be used from one script with the installed package and
+RRT-Connect can be used from one script with the installed package and
 your model files. No code from `bench/` or `examples/` is needed. For the included
 Fetch model, this is a complete example:
 
@@ -62,7 +62,6 @@ geometry = [[0.95, 0, 0.8, 1, 2, 0.05, 0]]
 
 with compiled.planner(
     geometry,
-    algorithm="rrtc",
     config=RRTConfig(max_rounds=8192),
     problem_count=len(starts),
     resolution=0.01,
@@ -98,8 +97,9 @@ compiled = build_rrt(
 )
 ```
 
-The same planner API supports `rrt` and `rrtc` in `f32`, `f32-sfu`, and `f64`.
-The f32 modes also support the single-warp streaming path.
+The same single-candidate RRT-Connect API supports `f32`, `f32-sfu`, and `f64`.
+Each problem uses one warp; the f32 modes also use streaming collision checks
+when the scene permits them.
 HIP defaults to `gfx1201`; CUDA remains the
 default backend with `compute_75`. Set `HIPCC` to override `hipcc` discovery.
 HIP builds report `hipcc` instead of `nvcc` in `compiled.timings` and
@@ -117,9 +117,9 @@ returns `(flags, version)` with the required includes and compiler definitions;
 append your source files and output flags before invoking it with `subprocess`.
 
 `compiled.planner(...)` loads the shared library through `ctypes.CDLL` and owns
-the native scene and search buffers until `close()` or context exit. Use
-`algorithm="rrt"` for single-tree RRT. Solves reuse these buffers and finish copying
-results to the host before returning, so the timer above includes Python and
+the native scene and search buffers until `close()` or context exit. Solves reuse
+these buffers and finish copying results to the host before returning, so the
+timer above includes Python and
 host/device transfers, and excludes compilation, setup, and first-use driver JIT.
 
 Starts, goals, and returned paths use `compiled.model["control_joints"]` order.
@@ -144,8 +144,10 @@ uv run ruff format --check src tests bench tools
 uv build
 ```
 
-Tests include frozen Rust source hashes for 108 configurations, normalizing only
-the tenkai/TENKAI names back to rkern/RKERN, and CPU execution of generated kernels.
+Tests include source hashes for 108 configurations, normalizing the tenkai/TENKAI
+names back to rkern/RKERN, and CPU execution of generated kernels. Kinematics and
+collision hashes retain the frozen Rust outputs; planner hashes track the
+single-candidate RRT-Connect implementation.
 `uv run pytest --run-cuda` also compiles with nvcc.
 `--run-gpu` enables GPU execution tests. Set
 `NVCC` and `CXX` when the toolkit requires a specific compiler.

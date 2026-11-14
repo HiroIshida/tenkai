@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare generated CUDA with the saved Rust sources after the project rename."""
+"""Compare collision CUDA and metadata with saved Rust outputs after renaming."""
 
 import argparse
 import hashlib
@@ -35,7 +35,7 @@ def verify(reference: Path, report: Path) -> None:
                 Options(mode),
             )
             matched = {}
-            for name in ("collision.cuh", "rrt.cuh"):
+            for name in ("collision.cuh",):
                 saved = (reference / mode / name).read_bytes()
                 expected = saved.replace(b"rkern", b"tenkai").replace(b"RKERN", b"TENKAI")
                 if (output / name).read_bytes() != expected:
@@ -46,14 +46,14 @@ def verify(reference: Path, report: Path) -> None:
             ):
                 raise RuntimeError("metadata differs: " + mode)
             results[mode] = matched
-            print(f"{mode}: CUDA sources match byte-for-byte after renaming", flush=True)
+            print(f"{mode}: collision source matches byte-for-byte after renaming", flush=True)
     report.parent.mkdir(parents=True, exist_ok=True)
     report.write_text(
         json.dumps(
             {
                 "reference": str(reference),
                 "matched_sha256": results,
-                "comparison": "source byte equality after rkern/RKERN -> tenkai/TENKAI",
+                "comparison": "collision source equality after rkern/RKERN -> tenkai/TENKAI",
             },
             indent=2,
         )
