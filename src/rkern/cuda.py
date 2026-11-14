@@ -82,22 +82,16 @@ class Kernel:
         self.schedule = schedule(dag, outputs, options.live_budget, groups)
 
     def source(self) -> str:
-        scalar = self.options.scalar
-        source = f"""#include <stddef.h>
-#include <math.h>
-
-extern "C" __global__ void {self.name}(
-    const {scalar}* configurations, {scalar}* output, size_t count) {{
-    const size_t batch = static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
-    if (batch >= count) return;
-"""
         count = self.schedule.output_count
 
         def store(index: int, value: int) -> str:
             return f"    output[batch * {count} + {index}] = v{value};\n"
 
-        source += self.body(f"(configurations + batch * {self.dof})", False, store)
-        return source + "}\n"
+        body = self.body(f"(configurations + batch * {self.dof})", False, store)
+        return template(
+            "cuda/batch_kernel.cuh",
+            (("NAME", self.name), ("SCALAR", self.options.scalar), ("BODY", body)),
+        )
 
     def trig_pair(self, index: int, next_id: int) -> tuple[int, int, int] | None:
         node = self.dag.nodes[index]
@@ -193,37 +187,32 @@ def collision_group(spheres: Sequence[Sphere], start: int, options: Options) -> 
         ("Cylinder", "cylinders"),
         ("Ground", "grounds"),
     ):
-        source.append(f"""#ifdef __CUDACC__
-    #pragma unroll 1
-#endif
-    for (size_t i = 0; i < environment.{field}.count; ++i) {{
-        const {namespace}::{primitive}& obstacle = scene.{field}[environment.{field}.offset + i];
-""")
+        body = []
         broad_phase = len(spheres) > 1 and primitive != "Ground"
         if broad_phase:
-            source.append(f"        if ({namespace}::overlaps(obstacle, bounds{start})) {{\n")
+            body.append(f"        if ({namespace}::overlaps(obstacle, bounds{start})) {{\n")
         for offset, sphere in enumerate(spheres):
-            source.append(
+            body.append(
                 f"        collision |= {namespace}::intersects(obstacle, point{start + offset}, {number(sphere.radius)}{suffix});\n"
             )
         if broad_phase:
-            source.append("        }\n")
-        source.append("        if (collision) return true;\n    }\n")
+            body.append("        }\n")
+        source.append(
+            template(
+                "cuda/collision_group.cuh",
+                (
+                    ("NAMESPACE", namespace),
+                    ("PRIMITIVE", primitive),
+                    ("FIELD", field),
+                    ("BODY", "".join(body)),
+                ),
+            )
+        )
     return "".join(source)
 
 
 def collision_function(kernel: Kernel, spheres: Sequence[Sphere], qualifier: str) -> str:
     options = kernel.options
-    source = f"""
-__device__ {qualifier} bool {kernel.name}(
-    const {options.scalar}* q, {options.namespace}::Scene scene, uint32_t environment_id) {{
-"""
-    if not spheres:
-        return source + "    return false;\n}\n"
-    source += f"""    const {options.namespace}::Environment environment = scene.environments[environment_id];
-    bool collision = false;
-    {options.namespace}::Vec3 center;
-"""
 
     def store(index: int, value: int) -> str:
         text = f"    center.{'xyz'[index % 3]} = v{value};\n"
@@ -236,52 +225,45 @@ __device__ {qualifier} bool {kernel.name}(
                 text += collision_group(spheres[start:end], start, options)
         return text
 
-    return source + kernel.body("q", False, store) + "    return collision;\n}\n"
+    if spheres:
+        body = template(
+            "cuda/collision_body.cuh",
+            (("NAMESPACE", options.namespace), ("BODY", kernel.body("q", False, store))),
+        )
+    else:
+        body = "    return false;\n"
+    return template(
+        "cuda/collision_function.cuh",
+        (
+            ("QUALIFIER", qualifier),
+            ("NAME", kernel.name),
+            ("SCALAR", options.scalar),
+            ("NAMESPACE", options.namespace),
+            ("BODY", body),
+        ),
+    )
 
 
 def streaming_function(kernel: Kernel, spheres: Sequence[Sphere]) -> str:
-    source = (
-        template("cuda/streaming.cuh")
-        + """
-__device__ inline bool rkern_collision_streamable(rkern_f32::Scene scene, uint32_t environment_id) {
-"""
-    )
     if any(not math.isfinite(f32(f32(s.radius) * f32(s.radius))) for s in spheres):
-        source += "    return false;\n}\n"
+        streamable_body = "    return false;\n"
     else:
-        source += """    const auto environment = scene.environments[environment_id];
-    if (environment.boxes.count != 1 || environment.grounds.count != 1 ||
-        environment.spheres.count || environment.cylinders.count) return false;
-    const auto& box = scene.boxes[environment.boxes.offset];
-    for (unsigned i = 0; i < 9; ++i)
-        if (box.pose.world_to_local[i] != (i % 4 == 0 ? 1.0f : 0.0f)) return false;
-    return true;
-}
-"""
-    source += """
-__device__ __forceinline__ rkern_f32::StreamingCollision rkern_collision_streaming(
-    const float* q, rkern_f32::Scene scene, uint32_t environment_id, unsigned mask) {
-    using namespace rkern_f32;
-    const Environment environment = scene.environments[environment_id];
-    const Box& box = scene.boxes[environment.boxes.offset];
-    const Ground& ground = scene.grounds[environment.grounds.offset];
-    bool collision = false, retry = false;
-    Vec3 center;
-"""
+        streamable_body = template("cuda/streaming_environment.cuh")
 
     def store(index: int, value: int) -> str:
         text = f"    center.{'xyz'[index % 3]} = v{value};\n"
         if index % 3 == 2:
             radius = number(spheres[index // 3].radius)
-            text += f"    collision |= streaming_intersects(box, center, {radius}f, retry);\n    collision |= intersects(ground, center, {radius}f);\n"
+            text += f"    collision |= streaming_intersects(box, center, {radius}f, retry);\n"
+            text += f"    collision |= intersects(ground, center, {radius}f);\n"
             if (index // 3 + 1) % 8 == 0:
-                text += "    if (__any_sync(mask, collision || retry))\n        return retry ? StreamingCollision::Retry : StreamingCollision::Blocked;\n"
+                text += "    if (__any_sync(mask, collision || retry))\n"
+                text += "        return retry ? StreamingCollision::Retry : StreamingCollision::Blocked;\n"
         return text
 
-    return (
-        source
-        + kernel.body("q", True, store)
-        + "    return retry ? StreamingCollision::Retry :\n        (collision ? StreamingCollision::Blocked : StreamingCollision::Clear);\n}\n"
+    return template("cuda/streaming.cuh") + template(
+        "cuda/collision_streaming.cuh",
+        (("STREAMABLE_BODY", streamable_body), ("BODY", kernel.body("q", True, store))),
     )
 
 
@@ -318,18 +300,13 @@ def planning_functions(
     source = collision_function(edge, edge_spheres, "__forceinline__") + streaming_function(
         edge, edge_spheres
     )
-    source += "\n__device__ inline bool rkern_collision_in_workspace(const float* q, const float* lower, const float* upper) {\n"
+    bounds_checks = []
     for d, flags in enumerate(dependent):
         if any(any(flags[node] for node in groups[i]) for i in bounded):
-            source += f"    if (!(q[{d}] >= lower[{d}] && q[{d}] <= upper[{d}])) return false;\n"
-    source += "    return true;\n}\n" + template("cuda/workspace.cuh")
-    source += """
-__device__ __noinline__ bool rkern_collision_workspace_clear(
-    const float* lower, const float* upper, const float* reference,
-    rkern_f32::Scene scene, uint32_t environment_id) {
-    using namespace rkern_f32;
-    const Environment environment = scene.environments[environment_id];
-"""
+            bounds_checks.append(
+                f"    if (!(q[{d}] >= lower[{d}] && q[{d}] <= upper[{d}])) return false;\n"
+            )
+    body = []
     needed = dag.required_nodes([node for i in bounded for node in groups[i]])
     for index, node in enumerate(dag.nodes):
         if not needed[index]:
@@ -348,11 +325,20 @@ __device__ __noinline__ bool rkern_collision_workspace_clear(
                 expression = f"workspace_trig(v{angle}, {cosine})"
             case Binary(op, a, b):
                 expression = f"workspace_{op.value}(v{a}, v{b})"
-        source += f"    const WorkspaceInterval v{index} = {expression};\n"
+        body.append(f"    const WorkspaceInterval v{index} = {expression};\n")
     for i in bounded:
         x, y, z = groups[i]
-        source += f"    if (!workspace_clear(v{x}, v{y}, v{z}, {number(spheres[i].radius)}f, scene, environment)) return false;\n"
-    return source + "    return true;\n}\n"
+        body.append(
+            f"    if (!workspace_clear(v{x}, v{y}, v{z}, {number(spheres[i].radius)}f, scene, environment)) return false;\n"
+        )
+    return source + template(
+        "cuda/collision_workspace.cuh",
+        (
+            ("BOUNDS_CHECKS", "".join(bounds_checks)),
+            ("INTERVAL_HELPERS", template("cuda/workspace.cuh")),
+            ("BODY", "".join(body)),
+        ),
+    )
 
 
 def generate_collision_function(
@@ -376,12 +362,16 @@ def generate_collision_function(
         dependent = dag.depends_on_inputs(controls)
         moving = [i for i, group in enumerate(groups) if any(dependent[node] for node in group)]
         if len(moving) == len(spheres):
-            source += f"""
-__device__ inline bool rkern_collision_moving(
-    const {options.scalar}* q, {options.namespace}::Scene scene, uint32_t environment_id) {{
-    return rkern_collision_one(q, scene, environment_id);
-}}
-"""
+            source += template(
+                "cuda/collision_function.cuh",
+                (
+                    ("QUALIFIER", "inline"),
+                    ("NAME", "rkern_collision_moving"),
+                    ("SCALAR", options.scalar),
+                    ("NAMESPACE", options.namespace),
+                    ("BODY", "    return rkern_collision_one(q, scene, environment_id);\n"),
+                ),
+            )
         else:
             moving_groups = [groups[i] for i in moving]
             moving_kernel = Kernel(
@@ -413,17 +403,9 @@ def generate_collision_kernel(
         if spheres
         else "false"
     )
-    return (
-        source
-        + f"""
-extern "C" __global__ void rkern_collision(
-    const {options.scalar}* configurations, const uint32_t* environment_ids,
-    {options.namespace}::Scene scene, unsigned char* output, size_t count) {{
-    const size_t batch = static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
-    if (batch >= count) return;
-    output[batch] = static_cast<unsigned char>({collision});
-}}
-"""
+    return source + template(
+        "cuda/collision_kernel.cuh",
+        (("SCALAR", options.scalar), ("NAMESPACE", options.namespace), ("COLLISION", collision)),
     )
 
 
