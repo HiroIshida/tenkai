@@ -11,7 +11,7 @@
 
 #include "planner.cuh"
 
-namespace model = TPL_NAMESPACE;
+namespace model = tenkai_f32;
 using Scalar = model::Scalar;
 
 namespace {

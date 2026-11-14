@@ -12,8 +12,8 @@ __device__ inline bool check_broad_phase_case(unsigned int index) {
     const int y = int(index % 9) - 4; index /= 9;
     const int x = int(index % 9) - 4; index /= 9;
     const unsigned int pose_index = index % 4; index /= 4;
-    const Scalar minimum = sizeof(Scalar) == sizeof(float) ? Scalar(FLT_MIN) : Scalar(DBL_MIN);
-    const Scalar maximum = sizeof(Scalar) == sizeof(float) ? Scalar(FLT_MAX) : Scalar(DBL_MAX);
+    const Scalar minimum = FLT_MIN;
+    const Scalar maximum = FLT_MAX;
     const Scalar scales[] = {Scalar(1), Scalar(1e-6), Scalar(1e6),
                             Scalar(sqrt(minimum)) / Scalar(16), Scalar(sqrt(maximum)) * Scalar(4)};
     const sdf::Pose poses[] = {

@@ -1,6 +1,6 @@
-extern "C" __global__ void tenkai_collision(const TPL_SCALAR* configurations,
+extern "C" __global__ void tenkai_collision(const float* configurations,
                                             const uint32_t* environment_ids,
-                                            TPL_NAMESPACE::Scene scene,
+                                            tenkai_f32::Scene scene,
                                             unsigned char* output,
                                             size_t count) {
   const size_t batch =

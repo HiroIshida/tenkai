@@ -16,7 +16,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--urdf", type=Path, default=ASSETS / "fetch.urdf")
     parser.add_argument("--spheres", type=Path, default=ASSETS / "collision.yaml")
-    parser.add_argument("--math", choices=["f32", "f32-sfu", "f64"], default="f32")
+    parser.add_argument("--math", choices=["f32", "f32-sfu"], default="f32")
     parser.add_argument("--backend", choices=["cuda", "hip"], default="cuda")
     parser.add_argument("--arch")
     parser.add_argument("--repeats", type=int, default=3)

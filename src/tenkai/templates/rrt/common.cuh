@@ -1,5 +1,5 @@
-#ifndef TPL_NAMESPACE_RRT_COMMON_INCLUDED
-#define TPL_NAMESPACE_RRT_COMMON_INCLUDED
+#ifndef tenkai_f32_RRT_COMMON_INCLUDED
+#define tenkai_f32_RRT_COMMON_INCLUDED
 #include <cuda_runtime.h>
 #include <cfloat>
 #include <cmath>
@@ -11,7 +11,7 @@
 #include "generated_model.cuh"
 #include "types.hpp"
 
-namespace TPL_NAMESPACE {
+namespace tenkai_f32 {
 struct RrtSpace {
   Scalar lower[rrt_dimension];
   Scalar upper[rrt_dimension];
@@ -120,7 +120,7 @@ __device__ inline uint32_t rrt_steps(const Scalar* a,
                                      const Scalar* b,
                                      const RrtSpace& space,
                                      bool fp32_control = false) {
-  if (fp32_control && sizeof(Scalar) == sizeof(float)) {
+  if (fp32_control) {
     const float resolution = space.resolution[0];
     bool uniform = true;
     float displacement = 0;
@@ -194,8 +194,7 @@ __device__ inline double rrt_squared_distance(const Scalar* a,
     const Scalar delta = a[d] - b[d];
     distance += delta * delta;
   }
-  if (sizeof(Scalar) == sizeof(double) ||
-      (isfinite(distance) && distance >= Scalar(FLT_MIN))) {
+  if (isfinite(distance) && distance >= Scalar(FLT_MIN)) {
     return distance;
   }
 
@@ -269,8 +268,8 @@ __device__ inline void rrt_steer(RrtCandidate& candidate,
                                  const RrtSpace& space,
                                  double step_size,
                                  bool fp32_control = false) {
-  if (fp32_control && sizeof(Scalar) == sizeof(float) && step_size == 1.0 &&
-      best_distance >= double(FLT_MIN) && best_distance <= double(FLT_MAX) &&
+  if (fp32_control && step_size == 1.0 && best_distance >= double(FLT_MIN) &&
+      best_distance <= double(FLT_MAX) &&
       best_distance == double(Scalar(best_distance))) {
     candidate.reaches_target &= best_distance <= 1.0;
     if (best_distance > 1.0) {
@@ -428,5 +427,5 @@ __device__ inline void rrt_initialize(const RrtProblem& problem,
   __syncthreads();
 }
 
-}  // namespace TPL_NAMESPACE
+}  // namespace tenkai_f32
 #endif

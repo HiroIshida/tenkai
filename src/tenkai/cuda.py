@@ -7,11 +7,11 @@ from pathlib import Path
 from typing import Literal, assert_never
 
 from .collision import Sphere, center_expressions
-from .dag import Binary, BinaryOp, Constant, Dag, Input, Optimization, Precision, Trig, TrigOp, f32
+from .dag import Binary, BinaryOp, Constant, Dag, Input, Optimization, Trig, TrigOp, f32
 from .model import FkDag
 from .scheduling import Evaluate, Store, schedule
 
-type MathMode = Literal["f32", "f32-sfu", "f64"]
+type MathMode = Literal["f32", "f32-sfu"]
 TEMPLATES = Path(__file__).with_name("templates")
 
 
@@ -22,34 +22,12 @@ class Options:
     live_budget: int | None = None
 
     def __post_init__(self) -> None:
-        if self.math not in ("f32", "f32-sfu", "f64"):
-            raise ValueError("invalid math mode")
+        if self.math not in ("f32", "f32-sfu"):
+            raise ValueError("math mode must be f32 or f32-sfu")
         if self.optimization not in ("none", "basic", "algebraic"):
             raise ValueError("invalid optimization")
         if self.live_budget is not None and self.live_budget < 0:
             raise ValueError("live budget must be nonnegative")
-
-    @property
-    def precision(self) -> Precision:
-        if self.math == "f64":
-            return "f64"
-        return "f32"
-
-    @property
-    def scalar(self) -> str:
-        if self.math == "f64":
-            return "double"
-        return "float"
-
-    @property
-    def suffix(self) -> str:
-        if self.math == "f64":
-            return ""
-        return "f"
-
-    @property
-    def namespace(self) -> str:
-        return "tenkai_" + self.precision
 
 
 def number(value: float) -> str:
@@ -93,7 +71,7 @@ class DagEmitter:
         body = self.body(f"(configurations + batch * {self.dof})", False, store)
         return template(
             "kinematics_batch_kernel.cuh",
-            (("NAME", self.name), ("SCALAR", self.options.scalar), ("BODY", body)),
+            (("NAME", self.name), ("BODY", body)),
         )
 
     def trig_pair(self, index: int, next_id: int) -> tuple[int, int, int] | None:
@@ -112,11 +90,11 @@ class DagEmitter:
         node = self.dag.nodes[index]
         match node:
             case Constant(value):
-                return number(value) + self.options.suffix
+                return number(value) + "f"
             case Input(index):
                 return f"{input_name}[{index}]"
             case Trig(op, angle):
-                function = op.value + self.options.suffix
+                function = op.value + "f"
                 if self.options.math == "f32-sfu":
                     function = "__" + function
                 return f"{function}(v{angle})"
@@ -150,7 +128,7 @@ class DagEmitter:
                 continue
 
             expression = self.expression(step.node, input_name)
-            source.append(f"    const {self.options.scalar} v{step.node} = {expression};\n")
+            source.append(f"    const float v{step.node} = {expression};\n")
 
         return "".join(source)
 
@@ -160,9 +138,7 @@ def generate_fk_kernel(fk: FkDag, link_index: int, options: Options = Options())
         raise ValueError("link index is out of range")
 
     pose = fk.poses[link_index]
-    dag, outputs = fk.dag.optimize(
-        [*pose.translation, *pose.rotation], options.precision, options.optimization
-    )
+    dag, outputs = fk.dag.optimize([*pose.translation, *pose.rotation], options.optimization)
     emitter = DagEmitter("tenkai_fk", dag, len(fk.joint_names), outputs, options)
     return emitter.source()
 
@@ -170,14 +146,12 @@ def generate_fk_kernel(fk: FkDag, link_index: int, options: Options = Options())
 def generate_centers_kernel(
     fk: FkDag, spheres: Sequence[Sphere], options: Options = Options()
 ) -> str:
-    dag, outputs = center_expressions(fk, spheres, options.precision, options.optimization)
+    dag, outputs = center_expressions(fk, spheres, options.optimization)
     emitter = DagEmitter("tenkai_centers", dag, len(fk.joint_names), outputs, options)
     return emitter.source()
 
 
-def collision_group(spheres: Sequence[Sphere], start: int, options: Options) -> str:
-    namespace = options.namespace
-    suffix = options.suffix
+def collision_group(spheres: Sequence[Sphere], start: int) -> str:
     source: list[str] = []
 
     if len(spheres) > 1:
@@ -187,13 +161,13 @@ def collision_group(spheres: Sequence[Sphere], start: int, options: Options) -> 
             for axis in "xyz":
                 value = f"point{start}.{axis}"
                 for i in range(start + 1, start + len(spheres)):
-                    value = f"{operation}{suffix}({value}, point{i}.{axis})"
+                    value = f"{operation}f({value}, point{i}.{axis})"
                 coordinates.append(value)
             bounds.append("{" + ", ".join(coordinates) + "}")
         radius = number(max(sphere.radius for sphere in spheres))
         source.append(
-            f"    const {namespace}::SphereBounds bounds{start} = "
-            f"{{{', '.join(bounds)}, {radius}{suffix}}};\n"
+            f"    const tenkai_f32::SphereBounds bounds{start} = "
+            f"{{{', '.join(bounds)}, {radius}f}};\n"
         )
 
     for primitive, field in (
@@ -207,19 +181,19 @@ def collision_group(spheres: Sequence[Sphere], start: int, options: Options) -> 
             "    #pragma unroll 1\n"
             "#endif\n"
             f"    for (size_t i = 0; i < environment.{field}.count; ++i) {{\n"
-            f"        const {namespace}::{primitive}& obstacle = "
+            f"        const tenkai_f32::{primitive}& obstacle = "
             f"scene.{field}[environment.{field}.offset + i];\n"
         )
 
         broad_phase = len(spheres) > 1 and primitive != "Ground"
         if broad_phase:
-            source.append(f"        if ({namespace}::overlaps(obstacle, bounds{start})) {{\n")
+            source.append(f"        if (tenkai_f32::overlaps(obstacle, bounds{start})) {{\n")
 
         for offset, sphere in enumerate(spheres):
             radius = number(sphere.radius)
             source.append(
-                f"        collision |= {namespace}::intersects("
-                f"obstacle, point{start + offset}, {radius}{suffix});\n"
+                f"        collision |= tenkai_f32::intersects("
+                f"obstacle, point{start + offset}, {radius}f);\n"
             )
 
         if broad_phase:
@@ -229,44 +203,42 @@ def collision_group(spheres: Sequence[Sphere], start: int, options: Options) -> 
     return "".join(source)
 
 
-def collision_definition(name: str, qualifier: str, body: str, options: Options) -> str:
+def collision_definition(name: str, qualifier: str, body: str) -> str:
     return (
         f"\n__device__ {qualifier} bool {name}(\n"
-        f"    const {options.scalar}* q, {options.namespace}::Scene scene, "
+        "    const float* q, tenkai_f32::Scene scene, "
         f"uint32_t environment_id) {{\n"
         f"{body}}}\n"
     )
 
 
 def collision_function(emitter: DagEmitter, spheres: Sequence[Sphere], qualifier: str) -> str:
-    options = emitter.options
-
     def store(index: int, value: int) -> str:
         axis = "xyz"[index % 3]
         text = f"    center.{axis} = v{value};\n"
         if index % 3 == 2:
             sphere_index = index // 3
-            text += f"    const {options.namespace}::Vec3 point{sphere_index} = center;\n"
+            text += f"    const tenkai_f32::Vec3 point{sphere_index} = center;\n"
             end = sphere_index + 1
             if end % 16 == 0 or end == len(spheres):
                 start = sphere_index // 16 * 16
-                text += collision_group(spheres[start:end], start, options)
+                text += collision_group(spheres[start:end], start)
 
         return text
 
     if spheres:
         body = (
-            f"    const {options.namespace}::Environment environment = "
+            "    const tenkai_f32::Environment environment = "
             "scene.environments[environment_id];\n"
             "    bool collision = false;\n"
-            f"    {options.namespace}::Vec3 center;\n"
+            "    tenkai_f32::Vec3 center;\n"
         )
         body += emitter.body("q", False, store)
         body += "    return collision;\n"
     else:
         body = "    return false;\n"
 
-    return collision_definition(emitter.name, qualifier, body, options)
+    return collision_definition(emitter.name, qualifier, body)
 
 
 def streaming_replacements(
@@ -403,33 +375,21 @@ def prepare_collision(
     for sphere in spheres:
         sphere.validate(fk)
 
-    dag, outputs = center_expressions(fk, spheres, options.precision, options.optimization)
+    dag, outputs = center_expressions(fk, spheres, options.optimization)
     groups = [outputs[i : i + 3] for i in range(0, len(outputs), 3)]
     emitter = DagEmitter("tenkai_collision_one", dag, len(fk.joint_names), outputs, options, groups)
     return emitter, groups
-
-
-def scalar_replacements(options: Options) -> list[tuple[str, str | int]]:
-    return [
-        ("NAMESPACE", options.namespace),
-        ("SCALAR", options.scalar),
-        ("FABS", "fabs" + options.suffix),
-        ("FMAX", "fmax" + options.suffix),
-        ("FMIN", "fmin" + options.suffix),
-        ("SQRT", "sqrt" + options.suffix),
-        ("FP32", int(options.precision == "f32")),
-    ]
 
 
 def generate_collision_function(
     fk: FkDag, spheres: Sequence[Sphere], options: Options = Options()
 ) -> str:
     emitter, _ = prepare_collision(fk, spheres, options)
-    source = template("collision/sdf.cuh", scalar_replacements(options))
+    source = template("collision/sdf.cuh")
     return source + collision_function(emitter, spheres, "inline")
 
 
-def collision_kernel(fk: FkDag, spheres: Sequence[Sphere], options: Options) -> str:
+def collision_kernel(fk: FkDag, spheres: Sequence[Sphere]) -> str:
     configuration = "configurations"
     if fk.joint_names:
         configuration = f"configurations + batch * {len(fk.joint_names)}"
@@ -440,7 +400,7 @@ def collision_kernel(fk: FkDag, spheres: Sequence[Sphere], options: Options) -> 
 
     return template(
         "collision/batch_kernel.cuh",
-        (("SCALAR", options.scalar), ("NAMESPACE", options.namespace), ("COLLISION", collision)),
+        (("COLLISION", collision),),
     )
 
 
@@ -448,7 +408,7 @@ def generate_collision_kernel(
     fk: FkDag, spheres: Sequence[Sphere], options: Options = Options()
 ) -> str:
     source = generate_collision_function(fk, spheres, options)
-    return source + collision_kernel(fk, spheres, options)
+    return source + collision_kernel(fk, spheres)
 
 
 def generate_rrt_sources(
@@ -474,7 +434,6 @@ def generate_rrt_sources(
             "tenkai_collision_moving",
             "inline",
             "    return tenkai_collision_one(q, scene, environment_id);\n",
-            options,
         )
     else:
         moving_groups = [groups[i] for i in moving]
@@ -491,29 +450,14 @@ def generate_rrt_sources(
             moving_emitter, [spheres[i] for i in moving], "__noinline__"
         )
 
-    replacements = scalar_replacements(options)
-    replacements.extend(
-        [
-            ("DIMENSION", len(controls)),
-            ("FK_DOF", len(fk.joint_names)),
-            ("CONTROLS", ", ".join(map(str, controls))),
-            ("COLLISION_FUNCTIONS", functions),
-            ("COLLISION_KERNEL", collision_kernel(fk, spheres, options)),
-        ]
-    )
-    if options.precision == "f32":
-        replacements.extend(planning_replacements(emitter, spheres, groups, moving, controls))
-    else:
-        replacements.extend(
-            (key, "")
-            for key in (
-                "EDGE_FUNCTION",
-                "STREAMABLE_BODY",
-                "STREAMING_BODY",
-                "BOUNDS_CHECKS",
-                "WORKSPACE_BODY",
-            )
-        )
+    replacements: list[tuple[str, str | int]] = [
+        ("DIMENSION", len(controls)),
+        ("FK_DOF", len(fk.joint_names)),
+        ("CONTROLS", ", ".join(map(str, controls))),
+        ("COLLISION_FUNCTIONS", functions),
+        ("COLLISION_KERNEL", collision_kernel(fk, spheres)),
+    ]
+    replacements.extend(planning_replacements(emitter, spheres, groups, moving, controls))
 
     files: dict[str, str] = {}
     for path in sorted((TEMPLATES / "rrt").iterdir()):

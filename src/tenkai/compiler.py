@@ -112,7 +112,7 @@ def generate(
         input_joint_names=fk.joint_names,
         control_joints=bounds,
         sphere_count=len(spheres),
-        scalar=options.scalar,
+        scalar="float",
         math=options.math,
         optimization=options.optimization,
         live_budget=options.live_budget,

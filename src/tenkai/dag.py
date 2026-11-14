@@ -10,7 +10,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Literal, assert_never
 
-type Precision = Literal["f32", "f64"]
 type Optimization = Literal["none", "basic", "algebraic"]
 type Fingerprint = tuple[int, int, int]
 
@@ -146,13 +145,11 @@ class Dag:
 
         return dependent
 
-    def optimize(
-        self, outputs: Sequence[int], precision: Precision, mode: Optimization
-    ) -> tuple["Dag", list[int]]:
+    def optimize(self, outputs: Sequence[int], mode: Optimization) -> tuple["Dag", list[int]]:
         if mode == "none":
             return Dag(self.nodes.copy()), list(outputs)
 
-        optimizer = Optimizer(precision, mode)
+        optimizer = Optimizer(mode)
         remapped_nodes: dict[int, int] = {}
         for index, needed in enumerate(self.required_nodes(outputs)):
             if not needed:
@@ -185,9 +182,8 @@ def atom(kind: bytes, value: int) -> Fingerprint:
 
 
 class Optimizer:
-    def __init__(self, precision: Precision, mode: Optimization) -> None:
+    def __init__(self, mode: Optimization) -> None:
         self.dag = Dag()
-        self.precision = precision
         self.structural: dict[Node | tuple[str, int], int] = {}
 
         self.algebraic = mode == "algebraic"
@@ -206,9 +202,7 @@ class Optimizer:
 
     def insert(self, node: Node) -> int:
         if isinstance(node, Constant):
-            rounded = node.value
-            if self.precision == "f32":
-                rounded = f32(rounded)
+            rounded = f32(node.value)
             if math.isfinite(rounded):
                 return self.intern(Constant(rounded))
         if not isinstance(node, Binary):
@@ -217,12 +211,9 @@ class Optimizer:
         x = self.constant(node.a)
         y = self.constant(node.b)
         if x is not None and y is not None:
-            if self.precision == "f32":
-                x, y = f32(x), f32(y)
-
+            x, y = f32(x), f32(y)
             value = arithmetic(node.op, x, y)
-            if self.precision == "f32":
-                value = f32(value)
+            value = f32(value)
 
             if math.isfinite(value):
                 return self.intern(Constant(value))

@@ -1,11 +1,10 @@
-#ifndef TPL_NAMESPACE_STREAMING_INCLUDED
-#define TPL_NAMESPACE_STREAMING_INCLUDED
+#ifndef tenkai_f32_STREAMING_INCLUDED
+#define tenkai_f32_STREAMING_INCLUDED
 #include <cuda_runtime.h>
 #include <math.h>
 
 #include "sdf.cuh"
 
-#if TPL_FP32
 namespace tenkai_f32 {
 enum class StreamingCollision { Clear, Blocked, Retry };
 
@@ -25,5 +24,4 @@ __device__ inline bool streaming_intersects(const Box& box,
 }
 
 }  // namespace tenkai_f32
-#endif
 #endif

@@ -24,8 +24,9 @@ uv run tenkai-generate \
 
 This writes `collision.cuh`, `model.json`, and the native planner sources below
 when the model has controlled joints. Use `--all-kernels` to
-also emit FK, sphere-center, and collision-predicate sources. `--double`,
-`--optimization none|basic|algebraic`, and `--live-budget N` select the numerical
+also emit FK, sphere-center, and collision-predicate sources. FK and collision
+use FP32; `--no-sfu` selects standard math instead of the default SFU intrinsics.
+`--optimization none|basic|algebraic` and `--live-budget N` select optimization
 and scheduling behavior. The CLI prints stage durations as JSON.
 
 `model.json` records joint and sphere metadata, plus `math`, `optimization`, and
@@ -108,8 +109,9 @@ with compiled.planner(
 `model.json`, and a compiler log under the output directory. `compiled.timings`
 reports `codegen`, `nvcc`, and `total` wall times in seconds. Each call rebuilds;
 use a separate directory for each distinct build. Import `Options` from `tenkai`
-and pass, for example, `options=Options(math="f64")` to select precision
-(`f32`, `f32-sfu`, or `f64`). Set the target with `arch="compute_75"`.
+and pass `options=Options(math="f32")` for standard FP32 math or
+`options=Options(math="f32-sfu")` for SFU intrinsics (the default).
+Set the target with `arch="compute_75"`.
 The build needs a CUDA toolkit and compatible C++ compiler (`NVCC` and `CXX` may
 override discovery). Creating or running a planner also needs a CUDA GPU/driver.
 
@@ -125,9 +127,8 @@ compiled = build_rrt(
 )
 ```
 
-The same single-candidate RRT-Connect API supports `f32`, `f32-sfu`, and `f64`.
-Each problem uses one warp; the f32 modes also use streaming collision checks
-when the scene permits them.
+The same single-candidate RRT-Connect API supports `f32` and `f32-sfu`.
+Each problem uses one warp and streaming collision checks when the scene permits them.
 HIP defaults to `gfx1201`; CUDA remains the
 default backend with `compute_75`. Set `HIPCC` to override `hipcc` discovery.
 HIP builds report `hipcc` instead of `nvcc` in `compiled.timings` and

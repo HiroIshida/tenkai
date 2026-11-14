@@ -144,8 +144,8 @@ void check_interpolation_grid_sizes() {
         {{0, 0}, {1, 2}, {Scalar(0.25), Scalar(0.5)}, 4},
         {{-1, -2}, {1, 2}, {Scalar(0.5), Scalar(0.5)}, 8},
     };
-    const Scalar small = std::ldexp(Scalar(1), sizeof(Scalar) == sizeof(float) ? -120 : -1000);
-    const Scalar large = std::ldexp(Scalar(1), sizeof(Scalar) == sizeof(float) ? 100 : 900);
+    const Scalar small = std::ldexp(Scalar(1), -120);
+    const Scalar large = std::ldexp(Scalar(1), 100);
     for (Scalar resolution : {Scalar(0.25), small, large}) {
         const Scalar boundary = 4 * resolution;
         for (uint32_t d = 0; d < 2; ++d) {

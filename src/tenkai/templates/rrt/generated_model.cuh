@@ -1,23 +1,20 @@
-#ifndef TPL_NAMESPACE_RRT_MODEL_INCLUDED
-#define TPL_NAMESPACE_RRT_MODEL_INCLUDED
+#ifndef tenkai_f32_RRT_MODEL_INCLUDED
+#define tenkai_f32_RRT_MODEL_INCLUDED
 #include <cuda_runtime.h>
 #include <cstddef>
 #include <cstdint>
 
 #include "../collision/sdf.cuh"
-#if TPL_FP32
 #include "../collision/streaming.cuh"
 #include "../collision/workspace.cuh"
-#endif
 
-namespace TPL_NAMESPACE {
+namespace tenkai_f32 {
 constexpr uint32_t rrt_dimension = TPL_DIMENSION;
 constexpr uint32_t rrt_fk_dof = TPL_FK_DOF;
-}  // namespace TPL_NAMESPACE
+}  // namespace tenkai_f32
 
 /* TPL_COLLISION_FUNCTIONS */
 
-#if TPL_FP32
 /* TPL_EDGE_FUNCTION */
 
 __device__ inline bool tenkai_collision_streamable(tenkai_f32::Scene scene,
@@ -74,7 +71,6 @@ __device__ __noinline__ bool tenkai_collision_workspace_clear(
 
   return true;
 }
-#endif
 
 /* TPL_COLLISION_KERNEL */
 #endif

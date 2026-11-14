@@ -1,47 +1,37 @@
 import pytest
 from helpers import execute
 
-from tenkai.dag import Constant, Dag, Optimization, Precision
+from tenkai.dag import Constant, Dag, Optimization
 from tenkai.scheduling import Evaluate, Store, schedule
 
 
 @pytest.mark.parametrize("mode", ["basic", "algebraic"])
-@pytest.mark.parametrize(
-    "precision, expected",
-    [
-        ("f32", [16777216, 0, 16785408, 16777216]),
-        ("f64", [16777217, 1, 16785409, 16777217]),
-    ],
-)
-def test_constant_folding_uses_selected_precision(
-    mode: Optimization, precision: Precision, expected: list[float]
-) -> None:
+def test_constant_folding_uses_float32(mode: Optimization) -> None:
     dag = Dag()
     large = dag.constant(16777216)
     one = dag.constant(1)
     factor = dag.constant(4097)
     total = dag.add(large, one)
     outputs = [total, dag.sub(total, large), dag.mul(factor, factor), dag.constant(16777217)]
-    result, ids = dag.optimize(outputs, precision, mode)
+    result, ids = dag.optimize(outputs, mode)
+    expected = [16777216, 0, 16785408, 16777216]
     assert [result.nodes[i] for i in ids] == [Constant(value) for value in expected]
 
 
-@pytest.mark.parametrize("precision", ["f32", "f64"])
-def test_algebraic_equivalents_share_nodes(precision: Precision) -> None:
+def test_algebraic_equivalents_share_nodes() -> None:
     dag = Dag()
     a, b, c = [dag.input(i) for i in range(3)]
     ab = dag.add(a, b)
     outputs = [dag.mul(ab, c), dag.add(dag.mul(a, c), dag.mul(b, c)), dag.sub(ab, b), a]
-    _, ids = dag.optimize(outputs, precision, "algebraic")
+    _, ids = dag.optimize(outputs, "algebraic")
     assert ids[0] == ids[1]
     assert ids[2] == ids[3]
 
 
 @pytest.mark.parametrize("mode", ["basic", "algebraic"])
-@pytest.mark.parametrize("precision", ["f32", "f64"])
 @pytest.mark.parametrize("budget", [None, 0, 1, 64])
 def test_schedules_keep_output_order_and_omit_dead_work(
-    mode: Optimization, precision: Precision, budget: int | None
+    mode: Optimization, budget: int | None
 ) -> None:
     dag = Dag()
     x, y, unused = [dag.input(i) for i in range(3)]
@@ -49,7 +39,7 @@ def test_schedules_keep_output_order_and_omit_dead_work(
     xy = dag.add(x, y)
     yx = dag.add(y, x)
     outputs = [yx, dead, dag.mul(xy, yx), dag.sub(x, y), xy, yx]
-    optimized, ids = dag.optimize(outputs, precision, mode)
+    optimized, ids = dag.optimize(outputs, mode)
     order = schedule(optimized, ids, budget, [ids[:3], ids[3:]])
     assert execute(optimized, order, [2, 3]) == [5, 0, 25, -1, 5, 5]
     assert order == schedule(optimized, ids, budget, [ids[:3], ids[3:]])
@@ -95,6 +85,6 @@ def test_no_optimization_keeps_original_nodes() -> None:
     x = dag.input(0)
     total = dag.add(x, dag.constant(0))
     dag.cos(x)
-    optimized, ids = dag.optimize([total, x, total], "f32", "none")
+    optimized, ids = dag.optimize([total, x, total], "none")
     assert optimized.nodes == dag.nodes
     assert ids == [total, x, total]

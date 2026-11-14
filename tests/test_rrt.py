@@ -44,8 +44,8 @@ def binding(tmp_path_factory: pytest.TempPathFactory) -> RRTBuild:
             {"name": "x", "index": 0, "lower": -1.0, "upper": 1.0},
         ],
         sphere_count=1,
-        scalar="double",
-        math="f64",
+        scalar="float",
+        math="f32",
         optimization="algebraic",
         live_budget=None,
     )
@@ -219,7 +219,7 @@ def test_invalid_build_options_before_generation(
     assert not (tmp_path / "build").exists()
 
 
-@pytest.fixture(scope="module", params=["f32", "f32-sfu", "f64"])
+@pytest.fixture(scope="module", params=["f32", "f32-sfu"])
 def compiled(
     request: pytest.FixtureRequest,
     tmp_path_factory: pytest.TempPathFactory,

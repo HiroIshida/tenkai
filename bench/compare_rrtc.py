@@ -88,7 +88,7 @@ def main() -> None:
         type=float,
         help="skip CPU solves and extrapolate from this measured time per problem",
     )
-    parser.add_argument("--math", choices=["f32", "f32-sfu", "f64"], default="f32")
+    parser.add_argument("--math", choices=["f32", "f32-sfu"], default="f32")
     parser.add_argument("--backend", choices=["cuda", "hip"], default="cuda")
     parser.add_argument("--arch")
     parser.add_argument("--output", type=Path, default=Path("artifacts/rrtc-bench"))

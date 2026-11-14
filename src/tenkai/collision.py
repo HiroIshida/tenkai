@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import yaml
 from yaml.nodes import MappingNode, Node, ScalarNode, SequenceNode
 
-from .dag import Dag, Optimization, Precision
+from .dag import Dag, Optimization
 from .model import FkDag
 from .transform import MatrixNodes, Vector3
 
@@ -136,7 +136,7 @@ def read_spheres(source: str, fk: FkDag) -> list[Sphere]:
 
 
 def center_expressions(
-    fk: FkDag, spheres: Sequence[Sphere], precision: Precision, optimization: Optimization
+    fk: FkDag, spheres: Sequence[Sphere], optimization: Optimization
 ) -> tuple[Dag, list[int]]:
     for sphere in spheres:
         sphere.validate(fk)
@@ -145,7 +145,7 @@ def center_expressions(
     dag = Dag(fk.dag.nodes.copy())
     rotations: dict[int, MatrixNodes] = {}
     outputs: list[int] = []
-    share_rotations = precision == "f32" and optimization == "algebraic"
+    share_rotations = optimization == "algebraic"
 
     for sphere in spheres:
         pose = fk.poses[sphere.link_index]
@@ -159,4 +159,4 @@ def center_expressions(
             center = pose.transform_point(dag, local)
         outputs.extend(center)
 
-    return dag.optimize(outputs, precision, optimization)
+    return dag.optimize(outputs, optimization)

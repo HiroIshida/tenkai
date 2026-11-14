@@ -1,5 +1,5 @@
-#ifndef TPL_NAMESPACE_RRT_PLANNER_INCLUDED
-#define TPL_NAMESPACE_RRT_PLANNER_INCLUDED
+#ifndef tenkai_f32_RRT_PLANNER_INCLUDED
+#define tenkai_f32_RRT_PLANNER_INCLUDED
 #include <cuda_runtime.h>
 #include <cstddef>
 #include <cstdint>
@@ -13,7 +13,7 @@
 #include "rrtc.cuh"
 #include "types.hpp"
 
-namespace TPL_NAMESPACE {
+namespace tenkai_f32 {
 inline void cuda_check(cudaError_t error, const char* operation) {
   if (error != cudaSuccess) {
     throw std::runtime_error(std::string(operation) + ": " +
@@ -101,15 +101,10 @@ class RrtPlanner {
         parents_(storage_product(problem_count, config.max_nodes)),
         trees_(storage_product(problem_count, config.max_nodes)),
         paths_(storage_product(problem_count, config.max_nodes)),
-        results_(problem_count)
-#if TPL_FP32
-        ,
+        results_(problem_count),
         workspace_clear_(environment_count),
         preparation_(problem_count),
-        next_problem_(1)
-#endif
-  {
-  }
+        next_problem_(1) {}
 
   std::vector<tenkai::RrtResult> solve(
       const std::vector<RrtProblem>& problems) {
@@ -125,7 +120,6 @@ class RrtPlanner {
     solved_ = false;
     problems_.upload(problems.data(), problems.size());
 
-#if TPL_FP32
     const size_t blocks = (environment_count_ - 1) / 128 + 1;
     tenkai_rrtc_workspace<<<
         static_cast<unsigned int>(blocks < 65535 ? blocks : 65535), 128>>>(
@@ -150,12 +144,6 @@ class RrtPlanner {
         problems_.data(), problem_count_, space_, scene_, config_,
         nodes_.data(), parents_.data(), trees_.data(), paths_.data(),
         results_.data(), workspace_clear_.data(), preparation_.data());
-#else
-    tenkai_rrtc<<<static_cast<unsigned int>(problem_count_), 32>>>(
-        problems_.data(), problem_count_, space_, scene_, config_,
-        nodes_.data(), parents_.data(), trees_.data(), paths_.data(),
-        results_.data(), nullptr);
-#endif
     cuda_check(cudaGetLastError(), "launch RRT planner");
 
     std::vector<tenkai::RrtResult> result(problem_count_);
@@ -204,11 +192,7 @@ class RrtPlanner {
     int device;
     cudaDeviceProp properties;
     cudaFuncAttributes attributes;
-#if TPL_FP32
     const void* kernel = reinterpret_cast<const void*>(tenkai_rrtc_fallback);
-#else
-    const void* kernel = reinterpret_cast<const void*>(tenkai_rrtc);
-#endif
     cuda_check(cudaGetDevice(&device), "get CUDA device");
     cuda_check(cudaGetDeviceProperties(&properties, device),
                "get CUDA properties");
@@ -227,14 +211,12 @@ class RrtPlanner {
       throw std::invalid_argument("RRT block cannot fit on an SM");
     }
 
-#if TPL_FP32
     cuda_check(cudaOccupancyMaxActiveBlocksPerMultiprocessor(
                    &active_blocks, tenkai_rrtc_streaming, 128, 0),
                "check streaming RRT occupancy");
     if (!active_blocks) {
       throw std::invalid_argument("streaming RRT block cannot fit on an SM");
     }
-#endif
 
     return config;
   }
@@ -252,12 +234,10 @@ class RrtPlanner {
   DeviceBuffer<RrtTree> trees_;
   DeviceBuffer<uint32_t> paths_;
   DeviceBuffer<tenkai::RrtResult> results_;
-#if TPL_FP32
   DeviceBuffer<unsigned char> workspace_clear_;
   DeviceBuffer<RrtPreparation> preparation_;
   DeviceBuffer<uint32_t> next_problem_;
-#endif
 };
 
-}  // namespace TPL_NAMESPACE
+}  // namespace tenkai_f32
 #endif

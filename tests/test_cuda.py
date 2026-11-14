@@ -44,10 +44,8 @@ def chain_sources(directory: Path, options: Options) -> None:
     (directory / "fk.cuh").write_text(generate_fk_kernel(fk, tool, options))
     (directory / "centers.cuh").write_text(generate_centers_kernel(fk, spheres, options))
     (directory / "collision.cuh").write_text(generate_collision_kernel(fk, spheres, options))
-    tolerance = "1e-12" if options.math == "f64" else "1e-5"
     (directory / "config.h").write_text(
-        f"using Scalar = {options.scalar};\nnamespace sdf = {options.namespace};\n"
-        f"constexpr double tolerance = {tolerance};\n"
+        "using Scalar = float;\nnamespace sdf = tenkai_f32;\nconstexpr double tolerance = 1e-5;\n"
     )
 
 
@@ -100,7 +98,7 @@ def run_planner_fixture(
     run(
         [
             *command,
-            "-DTENKAI_MODEL_NAMESPACE=" + options.namespace,
+            "-DTENKAI_MODEL_NAMESPACE=tenkai_f32",
             "-I",
             str(directory),
             "-I",
@@ -113,16 +111,13 @@ def run_planner_fixture(
     run([str(binary)])
 
 
-@pytest.mark.parametrize("math_mode", ["f32", "f64"])
 @pytest.mark.parametrize("optimization", ["none", "basic", "algebraic"])
 @pytest.mark.parametrize("budget", [None, 64])
-def test_host_arithmetic(
-    tmp_path: Path, math_mode: MathMode, optimization: Optimization, budget: int | None
-) -> None:
+def test_host_arithmetic(tmp_path: Path, optimization: Optimization, budget: int | None) -> None:
     compiler = shutil.which(os.environ.get("CXX", "c++"))
     if compiler is None:
         pytest.skip("host arithmetic requires a C++ compiler")
-    options = Options(math_mode, optimization, budget)
+    options = Options("f32", optimization, budget)
     chain_sources(tmp_path, options)
     binary = tmp_path / "arithmetic"
     run(
@@ -143,7 +138,7 @@ def test_host_arithmetic(
 
 
 @pytest.mark.gpu_compile
-@pytest.mark.parametrize("math_mode", ["f32", "f32-sfu", "f64"])
+@pytest.mark.parametrize("math_mode", ["f32", "f32-sfu"])
 def test_all_kernels_compile(
     tmp_path: Path, math_mode: MathMode, gpu_backend: Backend, gpu_arch: str
 ) -> None:
@@ -159,7 +154,7 @@ def test_all_kernels_compile(
 
 
 @pytest.mark.gpu_compile
-@pytest.mark.parametrize("math_mode", ["f32", "f32-sfu", "f64"])
+@pytest.mark.parametrize("math_mode", ["f32", "f32-sfu"])
 def test_planner_headers_are_self_contained(
     tmp_path: Path, math_mode: MathMode, gpu_backend: Backend, gpu_arch: str
 ) -> None:
@@ -175,7 +170,7 @@ def test_planner_headers_are_self_contained(
 
 
 @pytest.mark.gpu
-@pytest.mark.parametrize("math_mode", ["f32", "f32-sfu", "f64"])
+@pytest.mark.parametrize("math_mode", ["f32", "f32-sfu"])
 def test_arithmetic_on_gpu(
     tmp_path: Path, math_mode: MathMode, gpu_backend: Backend, gpu_arch: str
 ) -> None:
@@ -200,7 +195,7 @@ def test_arithmetic_on_gpu(
 
 
 @pytest.mark.gpu
-@pytest.mark.parametrize("math_mode", ["f32", "f32-sfu", "f64"])
+@pytest.mark.parametrize("math_mode", ["f32", "f32-sfu"])
 def test_planner_on_gpu(
     tmp_path: Path, math_mode: MathMode, gpu_backend: Backend, gpu_arch: str
 ) -> None:
@@ -210,7 +205,7 @@ def test_planner_on_gpu(
 
 
 @pytest.mark.gpu
-@pytest.mark.parametrize("math_mode", ["f32", "f32-sfu", "f64"])
+@pytest.mark.parametrize("math_mode", ["f32", "f32-sfu"])
 def test_streaming_and_fallback_paths_on_gpu(
     tmp_path: Path, math_mode: MathMode, gpu_backend: Backend, gpu_arch: str
 ) -> None:
@@ -220,7 +215,7 @@ def test_streaming_and_fallback_paths_on_gpu(
 
 
 @pytest.mark.gpu
-@pytest.mark.parametrize("math_mode", ["f32", "f32-sfu", "f64"])
+@pytest.mark.parametrize("math_mode", ["f32", "f32-sfu"])
 @pytest.mark.parametrize("sphere_count", [0, 3, 4])
 def test_fixed_spheres_and_reference_joints_on_gpu(
     tmp_path: Path,

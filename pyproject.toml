@@ -52,6 +52,7 @@ select = ["E4", "E7", "E9", "F", "I", "UP"]
 [tool.mypy]
 python_version = "3.12"
 files = ["src/tenkai", "bench"]
+exclude = ["^bench/artifacts/"]
 strict = true
 
 # plainmp does not distribute a py.typed marker.

@@ -26,7 +26,7 @@ driver JIT are excluded. Only the selected toolkit and a compatible C++ compiler
 required; no GPU is needed.
 
 Both scripts accept `--backend cuda|hip` (default `cuda`),
-`--math f32|f32-sfu|f64` (default `f32`) and `--arch`
+`--math f32|f32-sfu` (default `f32`) and `--arch`
 (default `compute_75` for CUDA, `gfx1201` for HIP). For RX 9070 XT:
 
 ```sh

@@ -1,5 +1,5 @@
-#ifndef TPL_NAMESPACE_WORKSPACE_INCLUDED
-#define TPL_NAMESPACE_WORKSPACE_INCLUDED
+#ifndef tenkai_f32_WORKSPACE_INCLUDED
+#define tenkai_f32_WORKSPACE_INCLUDED
 #include <cuda_runtime.h>
 #include <float.h>
 #include <math.h>
@@ -7,7 +7,6 @@
 
 #include "sdf.cuh"
 
-#if TPL_FP32
 namespace tenkai_f32 {
 struct WorkspaceInterval {
   float lower;
@@ -121,5 +120,4 @@ __device__ inline bool workspace_clear(WorkspaceInterval x,
 }
 
 }  // namespace tenkai_f32
-#endif
 #endif

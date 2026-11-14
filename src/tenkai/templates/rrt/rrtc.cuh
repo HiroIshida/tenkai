@@ -1,5 +1,5 @@
-#ifndef TPL_NAMESPACE_RRT_RRTC_INCLUDED
-#define TPL_NAMESPACE_RRT_RRTC_INCLUDED
+#ifndef tenkai_f32_RRT_RRTC_INCLUDED
+#define tenkai_f32_RRT_RRTC_INCLUDED
 #include <cuda_runtime.h>
 #include <cstddef>
 #include <cstdint>
@@ -8,7 +8,7 @@
 #include "generated_model.cuh"
 #include "types.hpp"
 
-namespace TPL_NAMESPACE {
+namespace tenkai_f32 {
 enum class RrtPreparation : unsigned char {
   Search,
   InvalidStart,
@@ -62,7 +62,6 @@ __device__ __forceinline__ bool rrtc_check_edge(RrtCandidate& candidate,
         full[controls[d]] = q;
       }
 
-#if TPL_FP32
       if (Streaming) {
         const auto collision = tenkai_collision_streaming(
             full, scene, problem.environment_id, mask);
@@ -73,9 +72,6 @@ __device__ __forceinline__ bool rrtc_check_edge(RrtCandidate& candidate,
       } else {
         hit = tenkai_collision_moving(full, scene, problem.environment_id);
       }
-#else
-      hit = tenkai_collision_moving(full, scene, problem.environment_id);
-#endif
     }
 
     if (Streaming && __any_sync(0xffffffffu, retry)) {
@@ -120,7 +116,7 @@ __device__ __forceinline__ void rrtc_search(const RrtProblem* problems,
                                             const unsigned char* clear,
                                             RrtcState& state,
                                             RrtPreparation* preparation) {
-  using namespace TPL_NAMESPACE;
+  using namespace tenkai_f32;
 
   const uint32_t lane = threadIdx.x % 32;
   const RrtProblem& problem = problems[id];
@@ -258,7 +254,6 @@ __device__ __forceinline__ void rrtc_search(const RrtProblem* problems,
       candidate.blocked = 0;
     }
 
-#if TPL_FP32
     if (lane == 0) {
       in_workspace = clear[problem.environment_id] &&
                      tenkai_collision_in_workspace(candidate.q, space.lower,
@@ -267,11 +262,6 @@ __device__ __forceinline__ void rrtc_search(const RrtProblem* problems,
                          nodes + size_t(candidate.parent) * rrt_dimension,
                          space.lower, space.upper);
     }
-#else
-    if (lane == 0) {
-      in_workspace = false;
-    }
-#endif
     __syncwarp();
 
     if (Streaming && !in_workspace) {
@@ -346,41 +336,39 @@ __device__ __forceinline__ void rrtc_search(const RrtProblem* problems,
   }
 }
 
-}  // namespace TPL_NAMESPACE
+}  // namespace tenkai_f32
 
-extern "C" __global__ void tenkai_rrtc(
-    const TPL_NAMESPACE::RrtProblem* problems,
-    size_t problem_count,
-    TPL_NAMESPACE::RrtSpace space,
-    TPL_NAMESPACE::Scene scene,
-    tenkai::RrtConfig config,
-    TPL_NAMESPACE::Scalar* all_nodes,
-    uint32_t* all_parents,
-    TPL_NAMESPACE::RrtTree* all_trees,
-    uint32_t* all_paths,
-    tenkai::RrtResult* results,
-    const unsigned char* clear) {
+extern "C" __global__ void tenkai_rrtc(const tenkai_f32::RrtProblem* problems,
+                                       size_t problem_count,
+                                       tenkai_f32::RrtSpace space,
+                                       tenkai_f32::Scene scene,
+                                       tenkai::RrtConfig config,
+                                       tenkai_f32::Scalar* all_nodes,
+                                       uint32_t* all_parents,
+                                       tenkai_f32::RrtTree* all_trees,
+                                       uint32_t* all_paths,
+                                       tenkai::RrtResult* results,
+                                       const unsigned char* clear) {
   const size_t id = blockIdx.x;
   if (id >= problem_count) {
     return;
   }
 
-  __shared__ TPL_NAMESPACE::RrtcState state;
-  TPL_NAMESPACE::rrtc_search<false>(problems, id, space, scene, config,
-                                    all_nodes, all_parents, all_trees,
-                                    all_paths, results, clear, state, nullptr);
+  __shared__ tenkai_f32::RrtcState state;
+  tenkai_f32::rrtc_search<false>(problems, id, space, scene, config, all_nodes,
+                                 all_parents, all_trees, all_paths, results,
+                                 clear, state, nullptr);
 }
 
-#if TPL_FP32
 extern "C" __global__ void tenkai_rrtc_prepare(
-    const TPL_NAMESPACE::RrtProblem* problems,
+    const tenkai_f32::RrtProblem* problems,
     size_t problem_count,
-    TPL_NAMESPACE::RrtSpace space,
-    TPL_NAMESPACE::Scene scene,
+    tenkai_f32::RrtSpace space,
+    tenkai_f32::Scene scene,
     const unsigned char* clear,
-    TPL_NAMESPACE::RrtPreparation* preparation,
+    tenkai_f32::RrtPreparation* preparation,
     uint32_t* next_problem) {
-  using namespace TPL_NAMESPACE;
+  using namespace tenkai_f32;
 
   const size_t id = size_t(blockIdx.x) * blockDim.x + threadIdx.x;
   if (id == 0) {
@@ -409,20 +397,20 @@ extern "C" __global__ void tenkai_rrtc_prepare(
 }
 
 extern "C" __global__ __launch_bounds__(128, 6) void tenkai_rrtc_streaming(
-    const TPL_NAMESPACE::RrtProblem* problems,
+    const tenkai_f32::RrtProblem* problems,
     size_t problem_count,
-    TPL_NAMESPACE::RrtSpace space,
-    TPL_NAMESPACE::Scene scene,
+    tenkai_f32::RrtSpace space,
+    tenkai_f32::Scene scene,
     tenkai::RrtConfig config,
-    TPL_NAMESPACE::Scalar* all_nodes,
+    tenkai_f32::Scalar* all_nodes,
     uint32_t* all_parents,
-    TPL_NAMESPACE::RrtTree* all_trees,
+    tenkai_f32::RrtTree* all_trees,
     uint32_t* all_paths,
     tenkai::RrtResult* results,
     const unsigned char* clear,
-    TPL_NAMESPACE::RrtPreparation* preparation,
+    tenkai_f32::RrtPreparation* preparation,
     uint32_t* next_problem) {
-  __shared__ TPL_NAMESPACE::RrtcState states[4];
+  __shared__ tenkai_f32::RrtcState states[4];
   auto& state = states[threadIdx.x / 32];
 
   // A finished plan must not strand its warp behind another plan in the block.
@@ -436,40 +424,40 @@ extern "C" __global__ __launch_bounds__(128, 6) void tenkai_rrtc_streaming(
       return;
     }
 
-    TPL_NAMESPACE::rrtc_search<true>(
-        problems, id, space, scene, config, all_nodes, all_parents, all_trees,
-        all_paths, results, clear, state, preparation);
+    tenkai_f32::rrtc_search<true>(problems, id, space, scene, config, all_nodes,
+                                  all_parents, all_trees, all_paths, results,
+                                  clear, state, preparation);
     __syncwarp();
   }
 }
 
 extern "C" __global__ void tenkai_rrtc_fallback(
-    const TPL_NAMESPACE::RrtProblem* problems,
+    const tenkai_f32::RrtProblem* problems,
     size_t problem_count,
-    TPL_NAMESPACE::RrtSpace space,
-    TPL_NAMESPACE::Scene scene,
+    tenkai_f32::RrtSpace space,
+    tenkai_f32::Scene scene,
     tenkai::RrtConfig config,
-    TPL_NAMESPACE::Scalar* all_nodes,
+    tenkai_f32::Scalar* all_nodes,
     uint32_t* all_parents,
-    TPL_NAMESPACE::RrtTree* all_trees,
+    tenkai_f32::RrtTree* all_trees,
     uint32_t* all_paths,
     tenkai::RrtResult* results,
     const unsigned char* clear,
-    TPL_NAMESPACE::RrtPreparation* preparation) {
+    tenkai_f32::RrtPreparation* preparation) {
   const size_t id = blockIdx.x;
   if (id >= problem_count ||
-      preparation[id] != TPL_NAMESPACE::RrtPreparation::Fallback) {
+      preparation[id] != tenkai_f32::RrtPreparation::Fallback) {
     return;
   }
 
-  __shared__ TPL_NAMESPACE::RrtcState state;
-  TPL_NAMESPACE::rrtc_search<false>(problems, id, space, scene, config,
-                                    all_nodes, all_parents, all_trees,
-                                    all_paths, results, clear, state, nullptr);
+  __shared__ tenkai_f32::RrtcState state;
+  tenkai_f32::rrtc_search<false>(problems, id, space, scene, config, all_nodes,
+                                 all_parents, all_trees, all_paths, results,
+                                 clear, state, nullptr);
 }
 
-extern "C" __global__ void tenkai_rrtc_workspace(TPL_NAMESPACE::RrtSpace space,
-                                                 TPL_NAMESPACE::Scene scene,
+extern "C" __global__ void tenkai_rrtc_workspace(tenkai_f32::RrtSpace space,
+                                                 tenkai_f32::Scene scene,
                                                  size_t environment_count,
                                                  unsigned char* clear) {
   for (size_t id = size_t(blockIdx.x) * blockDim.x + threadIdx.x;
@@ -478,5 +466,4 @@ extern "C" __global__ void tenkai_rrtc_workspace(TPL_NAMESPACE::RrtSpace space,
         space.lower, space.upper, space.reference, scene, uint32_t(id));
   }
 }
-#endif
 #endif
