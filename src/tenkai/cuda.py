@@ -422,9 +422,7 @@ def generate_rrt_kernel(
         raise ValueError("RRT control index exceeds FK joint count")
     if len(set(controls)) != len(controls):
         raise ValueError("duplicate RRT control index")
-    source = generate_collision_kernel(fk, spheres, options, controls) + template(
-        "planning/rrt.hpp"
-    )
+    source = generate_collision_kernel(fk, spheres, options, controls) + template("rrt_types.hpp")
     indices = ", ".join(map(str, controls))
     fp32 = options.precision == "f32"
     files = ["cuda/rrt_common.cuh", "cuda/rrt.cuh", "cuda/rrtc.cuh"]
