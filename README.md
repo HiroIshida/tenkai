@@ -136,6 +136,9 @@ scene geometry are supplied by the caller.
 
 ## Check
 
+Run `./format.sh` to format CUDA templates with clang-format (Chromium style),
+format Python with Ruff, and run Ruff lint checks. All tools are managed by uv.
+
 ```sh
 uv run pytest
 uv run mypy
@@ -145,9 +148,8 @@ uv build
 ```
 
 Tests include source hashes for 108 configurations, normalizing the tenkai/TENKAI
-names back to rkern/RKERN, and CPU execution of generated kernels. Kinematics and
-collision hashes retain the frozen Rust outputs; planner hashes track the
-single-candidate RRT-Connect implementation.
+names back to rkern/RKERN, and CPU execution of generated kernels. Source hashes
+track the current formatted templates.
 `uv run pytest --run-cuda` also compiles with nvcc.
 `--run-gpu` enables GPU execution tests. Set
 `NVCC` and `CXX` when the toolkit requires a specific compiler.

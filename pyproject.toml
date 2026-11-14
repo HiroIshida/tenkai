@@ -16,7 +16,13 @@ tenkai-generate = "tenkai.cli:main"
 bench = ["plainmp>=0.3.6,<0.4"]
 
 [dependency-groups]
-dev = ["pytest>=8,<9", "mypy>=1.13", "types-PyYAML>=6", "ruff>=0.11"]
+dev = [
+    "pytest>=8,<9",
+    "mypy>=1.13",
+    "types-PyYAML>=6",
+    "ruff>=0.11",
+    "clang-format==23.1.5",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/tenkai"]
@@ -25,7 +31,7 @@ packages = ["src/tenkai"]
 "licenses" = "tenkai/licenses"
 
 [tool.hatch.build.targets.sdist]
-include = ["src/tenkai", "tests", "assets", "bench", "tools", "licenses", "pyproject.toml", "uv.lock", ".python-version", "README.md"]
+include = ["src/tenkai", "tests", "assets", "bench", "tools", "licenses", "pyproject.toml", "uv.lock", ".python-version", "README.md", "format.sh"]
 exclude = ["__pycache__"]
 
 [tool.pytest.ini_options]

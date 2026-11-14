@@ -61,7 +61,10 @@ def number(value: float) -> str:
 def template(name: str, replacements: Sequence[tuple[str, str | int]] = ()) -> str:
     source = (TEMPLATES / name).read_text()
     for key, value in replacements:
-        source = source.replace("@" + key + "@", str(value))
+        # clang-format splits @KEY@ tokens; identifiers and block comments stay intact.
+        marker = "TENKAI_TEMPLATE_" + key
+        source = source.replace("/* " + marker + " */", str(value))
+        source = source.replace(marker, str(value))
     return source
 
 
