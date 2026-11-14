@@ -187,28 +187,32 @@ def collision_group(spheres: Sequence[Sphere], start: int, options: Options) -> 
         ("Cylinder", "cylinders"),
         ("Ground", "grounds"),
     ):
-        body = []
+        source.append(
+            "#ifdef __CUDACC__\n"
+            "    #pragma unroll 1\n"
+            "#endif\n"
+            f"    for (size_t i = 0; i < environment.{field}.count; ++i) {{\n"
+            f"        const {namespace}::{primitive}& obstacle = scene.{field}[environment.{field}.offset + i];\n"
+        )
         broad_phase = len(spheres) > 1 and primitive != "Ground"
         if broad_phase:
-            body.append(f"        if ({namespace}::overlaps(obstacle, bounds{start})) {{\n")
+            source.append(f"        if ({namespace}::overlaps(obstacle, bounds{start})) {{\n")
         for offset, sphere in enumerate(spheres):
-            body.append(
+            source.append(
                 f"        collision |= {namespace}::intersects(obstacle, point{start + offset}, {number(sphere.radius)}{suffix});\n"
             )
         if broad_phase:
-            body.append("        }\n")
-        source.append(
-            template(
-                "cuda/collision_group.cuh",
-                (
-                    ("NAMESPACE", namespace),
-                    ("PRIMITIVE", primitive),
-                    ("FIELD", field),
-                    ("BODY", "".join(body)),
-                ),
-            )
-        )
+            source.append("        }\n")
+        source.append("        if (collision) return true;\n    }\n")
     return "".join(source)
+
+
+def collision_definition(name: str, qualifier: str, body: str, options: Options) -> str:
+    return (
+        f"\n__device__ {qualifier} bool {name}(\n"
+        f"    const {options.scalar}* q, {options.namespace}::Scene scene, uint32_t environment_id) {{\n"
+        f"{body}}}\n"
+    )
 
 
 def collision_function(kernel: Kernel, spheres: Sequence[Sphere], qualifier: str) -> str:
@@ -226,29 +230,31 @@ def collision_function(kernel: Kernel, spheres: Sequence[Sphere], qualifier: str
         return text
 
     if spheres:
-        body = template(
-            "cuda/collision_body.cuh",
-            (("NAMESPACE", options.namespace), ("BODY", kernel.body("q", False, store))),
+        body = (
+            f"    const {options.namespace}::Environment environment = scene.environments[environment_id];\n"
+            "    bool collision = false;\n"
+            f"    {options.namespace}::Vec3 center;\n"
         )
+        body += kernel.body("q", False, store)
+        body += "    return collision;\n"
     else:
         body = "    return false;\n"
-    return template(
-        "cuda/collision_function.cuh",
-        (
-            ("QUALIFIER", qualifier),
-            ("NAME", kernel.name),
-            ("SCALAR", options.scalar),
-            ("NAMESPACE", options.namespace),
-            ("BODY", body),
-        ),
-    )
+    return collision_definition(kernel.name, qualifier, body, options)
 
 
 def streaming_function(kernel: Kernel, spheres: Sequence[Sphere]) -> str:
     if any(not math.isfinite(f32(f32(s.radius) * f32(s.radius))) for s in spheres):
         streamable_body = "    return false;\n"
     else:
-        streamable_body = template("cuda/streaming_environment.cuh")
+        streamable_body = (
+            "    const auto environment = scene.environments[environment_id];\n"
+            "    if (environment.boxes.count != 1 || environment.grounds.count != 1 ||\n"
+            "        environment.spheres.count || environment.cylinders.count) return false;\n"
+            "    const auto& box = scene.boxes[environment.boxes.offset];\n"
+            "    for (unsigned i = 0; i < 9; ++i)\n"
+            "        if (box.pose.world_to_local[i] != (i % 4 == 0 ? 1.0f : 0.0f)) return false;\n"
+            "    return true;\n"
+        )
 
     def store(index: int, value: int) -> str:
         text = f"    center.{'xyz'[index % 3]} = v{value};\n"
@@ -261,7 +267,7 @@ def streaming_function(kernel: Kernel, spheres: Sequence[Sphere]) -> str:
                 text += "        return retry ? StreamingCollision::Retry : StreamingCollision::Blocked;\n"
         return text
 
-    return template("cuda/streaming.cuh") + template(
+    return template(
         "cuda/collision_streaming.cuh",
         (("STREAMABLE_BODY", streamable_body), ("BODY", kernel.body("q", True, store))),
     )
@@ -335,7 +341,6 @@ def planning_functions(
         "cuda/collision_workspace.cuh",
         (
             ("BOUNDS_CHECKS", "".join(bounds_checks)),
-            ("INTERVAL_HELPERS", template("cuda/workspace.cuh")),
             ("BODY", "".join(body)),
         ),
     )
@@ -362,15 +367,11 @@ def generate_collision_function(
         dependent = dag.depends_on_inputs(controls)
         moving = [i for i, group in enumerate(groups) if any(dependent[node] for node in group)]
         if len(moving) == len(spheres):
-            source += template(
-                "cuda/collision_function.cuh",
-                (
-                    ("QUALIFIER", "inline"),
-                    ("NAME", "tenkai_collision_moving"),
-                    ("SCALAR", options.scalar),
-                    ("NAMESPACE", options.namespace),
-                    ("BODY", "    return tenkai_collision_one(q, scene, environment_id);\n"),
-                ),
+            source += collision_definition(
+                "tenkai_collision_moving",
+                "inline",
+                "    return tenkai_collision_one(q, scene, environment_id);\n",
+                options,
             )
         else:
             moving_groups = [groups[i] for i in moving]
@@ -425,17 +426,8 @@ def generate_rrt_kernel(
         "planning/rrt.hpp"
     )
     indices = ", ".join(map(str, controls))
-    source += template(
-        "cuda/rrt.cuh",
-        (
-            ("NAMESPACE", options.namespace),
-            ("DIMENSION", len(controls)),
-            ("FK_DOF", len(fk.joint_names)),
-            ("CONTROLS", indices),
-        ),
-    )
     fp32 = options.precision == "f32"
-    files = ["cuda/rrtc.cuh"]
+    files = ["cuda/rrt_common.cuh", "cuda/rrt.cuh", "cuda/rrtc.cuh"]
     if fp32:
         files.append("cuda/rrtc_single.cuh")
     files.append("cuda/rrt_runtime.cuh")
@@ -444,6 +436,8 @@ def generate_rrt_kernel(
             name,
             (
                 ("NAMESPACE", options.namespace),
+                ("DIMENSION", len(controls)),
+                ("FK_DOF", len(fk.joint_names)),
                 ("CONTROLS", indices),
                 ("FP32", int(fp32)),
                 ("RRTC_SINGLE", "tenkai_rrtc_single" if fp32 else "tenkai_rrtc"),
