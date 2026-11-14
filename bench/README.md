@@ -64,7 +64,7 @@ normally made available by `Python.h` in the bindings.
   The process is pinned to the first allowed logical CPU, or `--cpu-core N`.
 - Both backends use the same batch sizes, input offsets, and repetition counts
   from `workload.hpp`. CPU input values match GPU inputs, but plainmp always
-  computes in double; `--math` only controls rkern. GPU/CPU runs do not overlap.
+  computes in double; `--math` only controls tenkai. GPU/CPU runs do not overlap.
 - Sampling, compilation/JIT, allocation, initialization, validation, and file I/O
   are outside timing. Batch times are per-launch averages within each round;
   the table reports the median over rounds and the throughput range. `us/query`
@@ -80,7 +80,7 @@ Small batches can visit only part of the pool within a measurement.
 Before reporting timings, all configurations are compared with plainmp. At least
 99.9% agreement is required; approximation differences count toward the allowed
 0.1%. Neither backend is treated as exact ground truth. Disagreements are counted
-separately for plainmp-collision/rkern-free and plainmp-free/rkern-collision, and
+separately for plainmp-collision/tenkai-free and plainmp-free/tenkai-collision, and
 every differing index and pair of flags is recorded in `plainmp_differences.csv`.
 `validation.json` records the agreement rate, directional counts, and pass/fail
 result even if the threshold is not met. Existing analytical unit tests retain
@@ -247,16 +247,16 @@ CXX=g++-8 uv run pytest tests/test_cuda.py --run-cuda --run-gpu
 ```
 
 Use the host compiler supported by the installed CUDA toolkit; `g++-8` above is
-for the original CUDA 10 host. `rkern.generate_collision_function` exposes the
-single-configuration device predicate. `rkern.generate_rrt_kernel` emits
+for the original CUDA 10 host. `tenkai.generate_collision_function` exposes the
+single-configuration device predicate. `tenkai.generate_rrt_kernel` emits
 both specialized kernels and native `RrtPlanner`; pass
-`rkern::RrtAlgorithm::RrtConnect` as its final constructor argument to select RRTC.
+`tenkai::RrtAlgorithm::RrtConnect` as its final constructor argument to select RRTC.
 The Python `Planner` accepts `algorithm="rrtc"`. Common planner config/result types are
-in `src/rkern/templates/planning/rrt.hpp`, separate from CUDA execution configuration and storage.
+in `src/tenkai/templates/planning/rrt.hpp`, separate from CUDA execution configuration and storage.
 
 ## Compile-time comparison
 
-The Python 3.12 compiler and CUDA templates are installed from `src/rkern` by uv.
+The Python 3.12 compiler and CUDA templates are installed from `src/tenkai` by uv.
 All benchmark entry points use this compiler.
 
 ```sh
@@ -282,6 +282,7 @@ to change the experiment.
 before the migration, on a Ryzen 7 7840HS with CUDA 10.1 and GCC 8.4.
 [Migration verification](migration_results.json) records whole-file binary
 identity against the Rust baseline for all three math modes. The saved binaries
-and Rust source archive live in `artifacts/rust-reference/`; they are required
-only for the local binary replay. Ordinary tests compare against the 108 frozen
-Rust output records in `tests/reference/compiler.json` without invoking Rust.
+and Rust source archive live in `artifacts/rust-reference/`. The verifier now
+compares generated CUDA after renaming rkern/RKERN to tenkai/TENKAI; the binary
+report records the original migration. Ordinary tests use the 108 frozen Rust
+output records in `tests/reference/compiler.json`, normalizing only the names.

@@ -6,7 +6,7 @@
 
 #include "rrt.cuh"
 
-namespace model = RKERN_MODEL_NAMESPACE;
+namespace model = TENKAI_MODEL_NAMESPACE;
 using Scalar = model::Scalar;
 
 namespace {
@@ -31,9 +31,9 @@ struct Context {
     model::Scene scene;
     std::unique_ptr<model::RrtPlanner> planner;
 
-    Context(const rkern::RrtConfig& config, uint32_t warps, size_t problems, size_t envs,
+    Context(const tenkai::RrtConfig& config, uint32_t warps, size_t problems, size_t envs,
             const double* geometry, const double* lower, const double* upper, const double* resolution,
-            rkern::RrtAlgorithm algorithm)
+            tenkai::RrtAlgorithm algorithm)
         : problem_count(problems), environment_count(envs), environments(envs), boxes(envs), grounds(envs) {
         model::RrtSpace space{};
         for (uint32_t d = 0; d < model::rrt_dimension; ++d) {
@@ -70,9 +70,9 @@ Context& context(void* handle) {
     return *static_cast<Context*>(handle);
 }
 
-int create(const rkern::RrtConfig* config, uint32_t warps, uint32_t problems,
+int create(const tenkai::RrtConfig* config, uint32_t warps, uint32_t problems,
            uint32_t environments, const double* geometry, const double* lower,
-           const double* upper, const double* resolution, void** output, rkern::RrtAlgorithm algorithm) {
+           const double* upper, const double* resolution, void** output, tenkai::RrtAlgorithm algorithm) {
     return boundary([&] {
         if (!output) throw std::invalid_argument("null RRT output handle");
         *output = nullptr;
@@ -85,27 +85,27 @@ int create(const rkern::RrtConfig* config, uint32_t warps, uint32_t problems,
 
 extern "C" const char* rrt_error() { return last_error.c_str(); }
 
-extern "C" int rrt_create(const rkern::RrtConfig* config, uint32_t warps,
+extern "C" int rrt_create(const tenkai::RrtConfig* config, uint32_t warps,
                           uint32_t problems, uint32_t environments, const double* geometry,
                           const double* lower, const double* upper, const double* resolution,
                           void** output) {
     return create(config, warps, problems, environments, geometry, lower, upper, resolution,
-                  output, rkern::RrtAlgorithm::Rrt);
+                  output, tenkai::RrtAlgorithm::Rrt);
 }
 
-extern "C" int rrtc_create(const rkern::RrtConfig* config, uint32_t warps,
+extern "C" int rrtc_create(const tenkai::RrtConfig* config, uint32_t warps,
                            uint32_t problems, uint32_t environments, const double* geometry,
                            const double* lower, const double* upper, const double* resolution,
                            void** output) {
     return create(config, warps, problems, environments, geometry, lower, upper, resolution,
-                  output, rkern::RrtAlgorithm::RrtConnect);
+                  output, tenkai::RrtAlgorithm::RrtConnect);
 }
 
 extern "C" void rrt_destroy(void* handle) { delete static_cast<Context*>(handle); }
 
 extern "C" int rrt_solve(void* handle, const double* starts, const double* goals,
                          const uint32_t* environment_ids, const uint64_t* seeds,
-                         rkern::RrtResult* output) {
+                         tenkai::RrtResult* output) {
     return boundary([&] {
         auto& ctx = context(handle);
         if (!starts || !goals || !environment_ids || !seeds || !output)
@@ -154,7 +154,7 @@ extern "C" int rrt_check(void* handle, const double* configurations,
         model::DeviceBuffer<unsigned char> flags(count);
         device_q.upload(q.data(), q.size());
         ids.upload(environment_ids, count);
-        rkern_collision<<<(size_t(count) + 127) / 128, 128>>>(device_q.data(), ids.data(), ctx.scene, flags.data(), count);
+        tenkai_collision<<<(size_t(count) + 127) / 128, 128>>>(device_q.data(), ids.data(), ctx.scene, flags.data(), count);
         model::cuda_check(cudaGetLastError(), "launch path validation");
         flags.download(output, count);
     });

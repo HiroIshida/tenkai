@@ -14,7 +14,7 @@ import time
 import numpy as np
 
 from common import codegen_command, toolchain
-from rkern import Options
+from tenkai import Options
 
 BENCH = Path(__file__).resolve().parent
 ROOT = BENCH.parent
@@ -151,10 +151,10 @@ def build(output, math_mode, arch, max_registers=None, live_budget=None):
     options = Options(math_mode, live_budget=live_budget)
     subprocess.run(codegen_command(directory, options), cwd=ROOT, check=True)
     model = json.loads((directory / "model.json").read_text())
-    namespace = "rkern_f64" if model["scalar"] == "double" else "rkern_f32"
+    namespace = "tenkai_f64" if model["scalar"] == "double" else "tenkai_f32"
     library = directory / "librrt.so"
     command = [nvcc, "-ccbin", compiler, "-std=c++14", "-O3", "-arch=" + arch, "-code=" + arch,
-               "-shared", "-Xcompiler", "-fPIC", "-DRKERN_MODEL_NAMESPACE=" + namespace,
+               "-shared", "-Xcompiler", "-fPIC", "-DTENKAI_MODEL_NAMESPACE=" + namespace,
                "-I", str(directory), str(BENCH / "rrt.cu"), "-o", str(library)]
     if max_registers:
         command.append("--maxrregcount=" + str(max_registers))

@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from helpers import evaluate
 
-from rkern import FkDag, Robot, generate_rrt_kernel, read_spheres
+from tenkai import FkDag, Robot, generate_rrt_kernel, read_spheres
 
 ROOT = Path(__file__).resolve().parents[1]
 CHAIN = (ROOT / "tests/fixtures/fk_chain.urdf").read_text()

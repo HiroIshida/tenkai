@@ -49,7 +49,7 @@ class Options:
 
     @property
     def namespace(self) -> str:
-        return "rkern_" + self.precision
+        return "tenkai_" + self.precision
 
 
 def number(value: float) -> str:
@@ -159,14 +159,14 @@ def generate_fk_kernel(fk: FkDag, link_index: int, options: Options = Options())
     dag, outputs = fk.dag.optimize(
         [*pose.translation, *pose.rotation], options.precision, options.optimization
     )
-    return Kernel("rkern_fk", dag, len(fk.joint_names), outputs, options).source()
+    return Kernel("tenkai_fk", dag, len(fk.joint_names), outputs, options).source()
 
 
 def generate_centers_kernel(
     fk: FkDag, spheres: Sequence[Sphere], options: Options = Options()
 ) -> str:
     dag, outputs = center_expressions(fk, spheres, options.precision, options.optimization)
-    return Kernel("rkern_centers", dag, len(fk.joint_names), outputs, options).source()
+    return Kernel("tenkai_centers", dag, len(fk.joint_names), outputs, options).source()
 
 
 def collision_group(spheres: Sequence[Sphere], start: int, options: Options) -> str:
@@ -243,7 +243,7 @@ def streaming_function(kernel: Kernel, spheres: Sequence[Sphere]) -> str:
     source = (
         template("cuda/streaming.cuh")
         + """
-__device__ inline bool rkern_collision_streamable(rkern_f32::Scene scene, uint32_t environment_id) {
+__device__ inline bool tenkai_collision_streamable(tenkai_f32::Scene scene, uint32_t environment_id) {
 """
     )
     if any(not math.isfinite(f32(f32(s.radius) * f32(s.radius))) for s in spheres):
@@ -259,9 +259,9 @@ __device__ inline bool rkern_collision_streamable(rkern_f32::Scene scene, uint32
 }
 """
     source += """
-__device__ __forceinline__ rkern_f32::StreamingCollision rkern_collision_streaming(
-    const float* q, rkern_f32::Scene scene, uint32_t environment_id, unsigned mask) {
-    using namespace rkern_f32;
+__device__ __forceinline__ tenkai_f32::StreamingCollision tenkai_collision_streaming(
+    const float* q, tenkai_f32::Scene scene, uint32_t environment_id, unsigned mask) {
+    using namespace tenkai_f32;
     const Environment environment = scene.environments[environment_id];
     const Box& box = scene.boxes[environment.boxes.offset];
     const Ground& ground = scene.grounds[environment.grounds.offset];
@@ -308,7 +308,7 @@ def planning_functions(
     edge_spheres = [spheres[i] for i in remaining]
     edge_groups = [groups[i] for i in remaining]
     edge = Kernel(
-        "rkern_collision_edge",
+        "tenkai_collision_edge",
         dag,
         kernel.dof,
         [node for group in edge_groups for node in group],
@@ -318,16 +318,16 @@ def planning_functions(
     source = collision_function(edge, edge_spheres, "__forceinline__") + streaming_function(
         edge, edge_spheres
     )
-    source += "\n__device__ inline bool rkern_collision_in_workspace(const float* q, const float* lower, const float* upper) {\n"
+    source += "\n__device__ inline bool tenkai_collision_in_workspace(const float* q, const float* lower, const float* upper) {\n"
     for d, flags in enumerate(dependent):
         if any(any(flags[node] for node in groups[i]) for i in bounded):
             source += f"    if (!(q[{d}] >= lower[{d}] && q[{d}] <= upper[{d}])) return false;\n"
     source += "    return true;\n}\n" + template("cuda/workspace.cuh")
     source += """
-__device__ __noinline__ bool rkern_collision_workspace_clear(
+__device__ __noinline__ bool tenkai_collision_workspace_clear(
     const float* lower, const float* upper, const float* reference,
-    rkern_f32::Scene scene, uint32_t environment_id) {
-    using namespace rkern_f32;
+    tenkai_f32::Scene scene, uint32_t environment_id) {
+    using namespace tenkai_f32;
     const Environment environment = scene.environments[environment_id];
 """
     needed = dag.required_nodes([node for i in bounded for node in groups[i]])
@@ -365,7 +365,7 @@ def generate_collision_function(
         sphere.validate(fk)
     dag, outputs = center_expressions(fk, spheres, options.precision, options.optimization)
     groups = [outputs[i : i + 3] for i in range(0, len(outputs), 3)]
-    kernel = Kernel("rkern_collision_one", dag, len(fk.joint_names), outputs, options, groups)
+    kernel = Kernel("tenkai_collision_one", dag, len(fk.joint_names), outputs, options, groups)
     source = template(
         "cuda/sdf.cuh",
         (("NAMESPACE", options.namespace), ("SCALAR", options.scalar), ("SUFFIX", options.suffix)),
@@ -377,15 +377,15 @@ def generate_collision_function(
         moving = [i for i, group in enumerate(groups) if any(dependent[node] for node in group)]
         if len(moving) == len(spheres):
             source += f"""
-__device__ inline bool rkern_collision_moving(
+__device__ inline bool tenkai_collision_moving(
     const {options.scalar}* q, {options.namespace}::Scene scene, uint32_t environment_id) {{
-    return rkern_collision_one(q, scene, environment_id);
+    return tenkai_collision_one(q, scene, environment_id);
 }}
 """
         else:
             moving_groups = [groups[i] for i in moving]
             moving_kernel = Kernel(
-                "rkern_collision_moving",
+                "tenkai_collision_moving",
                 dag,
                 kernel.dof,
                 [node for group in moving_groups for node in group],
@@ -409,14 +409,14 @@ def generate_collision_kernel(
         f"configurations + batch * {len(fk.joint_names)}" if fk.joint_names else "configurations"
     )
     collision = (
-        f"rkern_collision_one({configuration}, scene, environment_ids[batch])"
+        f"tenkai_collision_one({configuration}, scene, environment_ids[batch])"
         if spheres
         else "false"
     )
     return (
         source
         + f"""
-extern "C" __global__ void rkern_collision(
+extern "C" __global__ void tenkai_collision(
     const {options.scalar}* configurations, const uint32_t* environment_ids,
     {options.namespace}::Scene scene, unsigned char* output, size_t count) {{
     const size_t batch = static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
@@ -464,7 +464,7 @@ def generate_rrt_kernel(
                 ("NAMESPACE", options.namespace),
                 ("CONTROLS", indices),
                 ("FP32", int(fp32)),
-                ("RRTC_SINGLE", "rkern_rrtc_single" if fp32 else "rkern_rrtc"),
+                ("RRTC_SINGLE", "tenkai_rrtc_single" if fp32 else "tenkai_rrtc"),
             ),
         )
     return source

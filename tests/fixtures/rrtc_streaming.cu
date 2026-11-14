@@ -3,7 +3,7 @@
 #include <iostream>
 #include "rrt.cuh"
 
-namespace m = RKERN_MODEL_NAMESPACE;
+namespace m = TENKAI_MODEL_NAMESPACE;
 using Scalar = m::Scalar;
 
 void compare(m::RrtPlanner& actual, m::RrtPlanner& reference,
@@ -27,7 +27,7 @@ __global__ void check_streaming_votes(m::Scene scene) {
                                 0.0f, 0.35f};
             bool hit = false;
             if (mask & (1u << lane)) {
-                const auto result = rkern_collision_streaming(q, scene, 0, mask);
+                const auto result = tenkai_collision_streaming(q, scene, 0, mask);
                 assert(result != m::StreamingCollision::Retry);
                 hit = result == m::StreamingCollision::Blocked;
             }
@@ -38,8 +38,8 @@ __global__ void check_streaming_votes(m::Scene scene) {
     for (float angle : {0.0f, -0.0f, 3.1415927f, -10.0f, 100000.0f, -100000.0f,
                          1.0e10f, FLT_MAX}) {
         const float q[3] = {float(lane) * 0.02f - 0.3f, 0.0f, angle};
-        const bool expected = __any_sync(0xffffffffu, rkern_collision_edge(q, scene, 0));
-        const auto result = rkern_collision_streaming(q, scene, 0, 0xffffffffu);
+        const bool expected = __any_sync(0xffffffffu, tenkai_collision_edge(q, scene, 0));
+        const auto result = tenkai_collision_streaming(q, scene, 0, 0xffffffffu);
         assert(result != m::StreamingCollision::Retry);
         assert(bool(__any_sync(0xffffffffu, result == m::StreamingCollision::Blocked)) == expected);
     }
@@ -92,7 +92,7 @@ int main() try {
 #endif
     const m::RrtSpace space{{Scalar(0.1),-1,-1}, {1,1,1},
                             {Scalar(0.025),Scalar(0.025),Scalar(0.025)}, {0,0,0}};
-    rkern::RrtConfig config;
+    tenkai::RrtConfig config;
     config.samples_per_round = 1;
     config.max_nodes = 1024;
     config.max_rounds = 512;
@@ -116,8 +116,8 @@ int main() try {
         for (double step : {0.2, 1.0}) {
             config.step_size = step;
             config.goal_bias = step == 1.0 ? 0.0 : 0.2;
-            m::RrtPlanner actual(config, {1}, space, scene, 8, count, rkern::RrtAlgorithm::RrtConnect);
-            m::RrtPlanner reference(config, {4}, space, scene, 8, count, rkern::RrtAlgorithm::RrtConnect);
+            m::RrtPlanner actual(config, {1}, space, scene, 8, count, tenkai::RrtAlgorithm::RrtConnect);
+            m::RrtPlanner reference(config, {4}, space, scene, 8, count, tenkai::RrtAlgorithm::RrtConnect);
             compare(actual, reference, problems);
             boxes[0].pose.world_to_local[0] = c;
             boxes[0].pose.world_to_local[1] = c;

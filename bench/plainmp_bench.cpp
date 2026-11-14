@@ -35,7 +35,7 @@ std::vector<Eigen::VectorXd> load_configurations(const std::string& directory,
 }
 
 int main(int argc, char** argv) try {
-    if (argc != 3) throw std::runtime_error("usage: plainmp_bench <rkern-root> <data-directory>");
+    if (argc != 3) throw std::runtime_error("usage: plainmp_bench <tenkai-root> <data-directory>");
     const std::string root = argv[1], directory = argv[2];
     const auto config = YAML::LoadFile(root + "/assets/fetch/collision.yaml");
     const auto names = config["control_joint_names"].as<std::vector<std::string>>();

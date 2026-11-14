@@ -15,8 +15,8 @@ from typing import TextIO
 
 from common import codegen_command, compiler_sources, toolchain
 
-from rkern import Options
-from rkern.compiler import generate
+from tenkai import Options
+from tenkai.compiler import generate
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -94,7 +94,7 @@ def compiler_commands(
         "-shared",
         "-Xcompiler",
         "-fPIC",
-        "-DRKERN_MODEL_NAMESPACE=" + options.namespace,
+        "-DTENKAI_MODEL_NAMESPACE=" + options.namespace,
         str(ROOT / "bench/rrt.cu"),
         "-o",
         str(directory / "librrt.so"),

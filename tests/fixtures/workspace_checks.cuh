@@ -10,15 +10,15 @@ __global__ void check_workspace_cases(const WorkspaceCase* cases, uint32_t count
     if (i >= count) return;
     const WorkspaceCase& c = cases[i];
     const float reference[3] = {0, 0, c.z};
-    const bool clear = rkern_collision_workspace_clear(c.lower, c.upper, reference, scene, c.environment);
+    const bool clear = tenkai_collision_workspace_clear(c.lower, c.upper, reference, scene, c.environment);
     assert(clear == c.clear);
     if (clear) {
         for (unsigned y = 0; y <= 16; ++y) {
             for (unsigned x = 0; x <= 16; ++x) {
                 float q[3] = {c.lower[1] + float(x) / 16 * (c.upper[1] - c.lower[1]),
                               c.lower[0] + float(y) / 16 * (c.upper[0] - c.lower[0]), c.z};
-                assert(rkern_collision_edge(q, scene, c.environment) ==
-                       rkern_collision_moving(q, scene, c.environment));
+                assert(tenkai_collision_edge(q, scene, c.environment) ==
+                       tenkai_collision_moving(q, scene, c.environment));
             }
         }
     }

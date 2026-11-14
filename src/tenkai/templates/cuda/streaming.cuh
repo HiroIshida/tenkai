@@ -1,4 +1,4 @@
-namespace rkern_f32 {
+namespace tenkai_f32 {
 enum class StreamingCollision { Clear, Blocked, Retry };
 
 __device__ inline bool streaming_intersects(const Box& box, Vec3 point, float radius, bool& retry) {

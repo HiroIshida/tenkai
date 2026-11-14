@@ -3,8 +3,8 @@
 import math
 from collections.abc import Sequence
 
-from rkern.dag import Binary, BinaryOp, Constant, Dag, Input, Node, Trig, TrigOp
-from rkern.scheduling import Evaluate, Schedule, Store
+from tenkai.dag import Binary, BinaryOp, Constant, Dag, Input, Node, Trig, TrigOp
+from tenkai.scheduling import Evaluate, Schedule, Store
 
 
 def evaluate_node(node: Node, inputs: Sequence[float], values: dict[int, float]) -> float:

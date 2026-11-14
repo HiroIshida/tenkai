@@ -10,12 +10,12 @@ __device__ inline uint32_t rrtc_nearest_width(uint32_t unscanned, uint32_t queri
 
 // Both trees share max_nodes slots. Roots point to themselves; other parents
 // precede their children. Tree tags keep nearest-neighbor searches separate.
-extern "C" __global__ void rkern_rrtc(
+extern "C" __global__ void tenkai_rrtc(
     const @NAMESPACE@::RrtProblem* problems, size_t problem_count,
-    @NAMESPACE@::RrtSpace space, @NAMESPACE@::Scene scene, rkern::RrtConfig config,
+    @NAMESPACE@::RrtSpace space, @NAMESPACE@::Scene scene, tenkai::RrtConfig config,
     @NAMESPACE@::Scalar* all_nodes, uint32_t* all_parents, @NAMESPACE@::RrtTree* all_trees,
     @NAMESPACE@::RrtCandidate* all_candidates, uint32_t* all_paths,
-    rkern::RrtResult* results) {
+    tenkai::RrtResult* results) {
     using namespace @NAMESPACE@;
     const size_t problem_id = blockIdx.x;
     if (problem_id >= problem_count) return;
@@ -27,14 +27,14 @@ extern "C" __global__ void rkern_rrtc(
     RrtTree* trees = all_trees + problem_id * config.max_nodes;
     uint32_t* path = all_paths + problem_id * config.max_nodes;
     RrtCandidate* candidates = all_candidates + problem_id * config.samples_per_round;
-    __shared__ rkern::RrtResult result;
+    __shared__ tenkai::RrtResult result;
     __shared__ bool start_valid, goal_valid, connecting;
     // Prevent speculative reads outside thread zero's node-limit checks.
     __shared__ volatile bool finished;
     rrt_initialize(problem, space, scene, nodes, parents, path, result,
                    start_valid, goal_valid, finished, trees);
     if (thread == 0 && !finished && result.node_count == config.max_nodes) {
-        result.status = rkern::PlanStatus::NodeLimit;
+        result.status = tenkai::PlanStatus::NodeLimit;
         finished = true;
     }
     __syncthreads();
@@ -136,13 +136,13 @@ extern "C" __global__ void rkern_rrtc(
             }
             __syncthreads();
             if (thread == 0 && !finished && result.node_count == config.max_nodes) {
-                result.status = rkern::PlanStatus::NodeLimit;
+                result.status = tenkai::PlanStatus::NodeLimit;
                 finished = true;
             }
             __syncthreads();
         }
         if (thread == 0 && !finished && result.node_count == config.max_nodes) {
-            result.status = rkern::PlanStatus::NodeLimit;
+            result.status = tenkai::PlanStatus::NodeLimit;
             finished = true;
         }
         __syncthreads();

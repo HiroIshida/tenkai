@@ -1,4 +1,4 @@
-namespace rkern_f32 {
+namespace tenkai_f32 {
 struct WorkspaceInterval { float lower, upper; };
 
 __device__ inline WorkspaceInterval workspace_unknown() { return {-INFINITY, INFINITY}; }

@@ -7,8 +7,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-import rkern
-from rkern import Options
+import tenkai
+from tenkai import Options
 
 
 def toolchain() -> tuple[str, str, str]:
@@ -43,5 +43,5 @@ def codegen_command(output: Path, options: Options) -> list[str]:
 
 
 def compiler_sources() -> list[Path]:
-    package = Path(rkern.__file__).parent
+    package = Path(tenkai.__file__).parent
     return sorted(path for path in package.rglob("*") if path.suffix in (".py", ".cuh", ".hpp"))

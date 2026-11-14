@@ -1,8 +1,8 @@
-#ifndef RKERN_RRT_TYPES_HPP
-#define RKERN_RRT_TYPES_HPP
+#ifndef TENKAI_RRT_TYPES_HPP
+#define TENKAI_RRT_TYPES_HPP
 #include <stdint.h>
 
-namespace rkern {
+namespace tenkai {
 enum class RrtAlgorithm : uint32_t { Rrt, RrtConnect };
 
 struct RrtConfig {

@@ -3,10 +3,10 @@
 #include <iostream>
 #include "rrt.cuh"
 
-namespace m = RKERN_MODEL_NAMESPACE;
+namespace m = TENKAI_MODEL_NAMESPACE;
 using Scalar = m::Scalar;
-using Status = rkern::PlanStatus;
-using Algorithm = rkern::RrtAlgorithm;
+using Status = tenkai::PlanStatus;
+using Algorithm = tenkai::RrtAlgorithm;
 
 int main() try {
     m::Sphere obstacles[] = {
@@ -28,7 +28,7 @@ int main() try {
     device_environments.upload(environments, 7);
     const m::Scene scene = {device_environments.data(), nullptr, device_obstacles.data(), nullptr, nullptr};
     m::RrtSpace space{{-1}, {1}, {Scalar(0.025)}, {13, 0, 0}};
-    rkern::RrtConfig config;
+    tenkai::RrtConfig config;
     config.max_nodes = 128;
     config.max_rounds = 8;
     config.samples_per_round = 1;
@@ -95,7 +95,7 @@ int main() try {
     m::DeviceBuffer<unsigned char> device_flags(7);
     device_configurations.upload(configurations, 21);
     device_ids.upload(ids, 7);
-    rkern_collision<<<1, 32>>>(device_configurations.data(), device_ids.data(), scene, device_flags.data(), 7);
+    tenkai_collision<<<1, 32>>>(device_configurations.data(), device_ids.data(), scene, device_flags.data(), 7);
     m::cuda_check(cudaGetLastError(), "check standalone fixed spheres");
     unsigned char flags[7];
     device_flags.download(flags, 7);

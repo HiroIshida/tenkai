@@ -72,7 +72,7 @@ int main(int argc, char** argv) try {
     const sdf::Scene scene = {d_environment, d_box, nullptr, nullptr, d_ground};
 
     CUDA(cudaMemset(d_result, 123, kPool));
-    rkern_collision<<<(kPool+kBlock-1)/kBlock, kBlock>>>(d_q, d_ids, scene, d_result, kPool);
+    tenkai_collision<<<(kPool+kBlock-1)/kBlock, kBlock>>>(d_q, d_ids, scene, d_result, kPool);
     CUDA(cudaGetLastError());
     CUDA(cudaMemcpy(host_result, d_result, kPool, cudaMemcpyDeviceToHost));
     std::ofstream flags(directory + "/collision.u8", std::ios::binary);
@@ -81,9 +81,9 @@ int main(int argc, char** argv) try {
     if (!flags) return 1;
 
     cudaFuncAttributes attributes;
-    CUDA(cudaFuncGetAttributes(&attributes, rkern_collision));
+    CUDA(cudaFuncGetAttributes(&attributes, tenkai_collision));
     int active_blocks, driver_version, runtime_version;
-    CUDA(cudaOccupancyMaxActiveBlocksPerMultiprocessor(&active_blocks, rkern_collision, kBlock, 0));
+    CUDA(cudaOccupancyMaxActiveBlocksPerMultiprocessor(&active_blocks, tenkai_collision, kBlock, 0));
     CUDA(cudaDriverGetVersion(&driver_version));
     CUDA(cudaRuntimeGetVersion(&runtime_version));
     std::ofstream info(directory + "/device.json");
@@ -109,10 +109,10 @@ int main(int argc, char** argv) try {
             if (job.mode == Mode::Transfer) {
                 CUDA(cudaMemcpyAsync(d_transfer_q, host_q + offset*kDof,
                                      job.batch*kDof*sizeof(Scalar), cudaMemcpyHostToDevice));
-                rkern_collision<<<grid, kBlock>>>(d_transfer_q, d_ids, scene, d_transfer_result, job.batch);
+                tenkai_collision<<<grid, kBlock>>>(d_transfer_q, d_ids, scene, d_transfer_result, job.batch);
                 CUDA(cudaMemcpyAsync(host_result, d_transfer_result, job.batch, cudaMemcpyDeviceToHost));
             } else {
-                rkern_collision<<<grid, kBlock>>>(d_q + offset*kDof, d_ids + offset, scene, d_result + offset, job.batch);
+                tenkai_collision<<<grid, kBlock>>>(d_q + offset*kDof, d_ids + offset, scene, d_result + offset, job.batch);
             }
         }
         CUDA(cudaEventRecord(stop));

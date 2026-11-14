@@ -5,7 +5,7 @@
   SPDX-License-Identifier: CC-BY-NC-SA-4.0
   Authors: Michael Ferguson and Melonee Wise (Fetch Robotics).
   Modified for tenkai: retain links and joints only.
-  Bundled with rkern for URDF parsing; no meshes or ROS packages are needed.
+  Bundled with tenkai for URDF parsing; no meshes or ROS packages are needed.
   See NOTICE.md and LICENSE-CC-BY-NC-SA-4.0.txt in this directory.
 -->
 <robot name="fetch">

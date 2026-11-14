@@ -15,7 +15,7 @@ template <typename T> std::vector<T> read_values(const std::string& path) {
 }
 
 int main(int argc, char** argv) try {
-    if (argc != 3) throw std::invalid_argument("usage: rrt_validate <rkern-root> <result-directory>");
+    if (argc != 3) throw std::invalid_argument("usage: rrt_validate <tenkai-root> <result-directory>");
     const std::string root = argv[1], directory = argv[2];
     const auto config = YAML::LoadFile(root + "/assets/fetch/collision.yaml");
     const auto names = config["control_joint_names"].as<std::vector<std::string>>();

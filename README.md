@@ -1,4 +1,4 @@
-# rkern
+# tenkai
 
 Generate robot-specific CUDA kernels for forward kinematics, collision checks,
 RRT, and RRT-Connect. The compiler is Python 3.12; CUDA C++ implements the GPU
@@ -10,13 +10,13 @@ kernels and native planner runtime.
 uv sync --all-extras
 ```
 
-`src/rkern` contains the Python package and its CUDA templates. The `bench` extra
+`src/tenkai` contains the Python package and its CUDA templates. The `bench` extra
 installs NumPy and Matplotlib. Code generation itself only requires PyYAML.
 
 ## Generate kernels
 
 ```sh
-uv run rkern-generate \
+uv run tenkai-generate \
   --urdf assets/fetch/fetch.urdf \
   --spheres assets/fetch/collision.yaml \
   --float --no-sfu artifacts/generated
@@ -30,7 +30,7 @@ and scheduling behavior. The CLI prints stage durations as JSON.
 ```python
 from pathlib import Path
 
-from rkern import FkDag, Options, Robot, generate_collision_kernel, read_spheres
+from tenkai import FkDag, Options, Robot, generate_collision_kernel, read_spheres
 
 robot = Robot.from_string(Path("assets/fetch/fetch.urdf").read_text())
 fk = FkDag.from_robot(robot)
@@ -48,8 +48,9 @@ uv run ruff format --check src tests bench/common.py bench/generate.py bench/com
 uv build
 ```
 
-Tests include frozen Rust source hashes for 108 configurations and CPU execution
-of generated kernels. `uv run pytest --run-cuda` also compiles with nvcc.
+Tests include frozen Rust source hashes for 108 configurations, normalizing only
+the tenkai/TENKAI names back to rkern/RKERN, and CPU execution of generated kernels.
+`uv run pytest --run-cuda` also compiles with nvcc.
 `--run-gpu` enables the planner execution tests and requires a CUDA GPU. Set
 `NVCC` and `CXX` when the toolkit requires a specific compiler.
 
@@ -72,10 +73,9 @@ records their checksums. They are outside `target/` and ignored by Git.
 uv run python bench/verify_migration.py
 ```
 
-This uses the saved build commands and paths to compare whole executable/shared
-library files byte-for-byte, for f32, f32/SFU, and f64. The reference builds use
-fixed intermediate paths and a fixed host compiler seed to make the comparison
-reproducible. No binary fields are stripped or normalized. The recorded toolkit
-is required for this check; the portable source parity tests need no Rust compiler.
+This compares generated CUDA byte-for-byte with the saved Rust sources for f32,
+f32/SFU, and f64 after replacing rkern/RKERN with tenkai/TENKAI in the reference.
+It also checks model metadata and the saved reference checksums. It requires
+neither a Rust compiler nor a CUDA toolkit and does not rebuild binaries.
 The original Rust source also remains available in the local source archive and
 Git history.

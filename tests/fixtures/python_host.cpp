@@ -32,9 +32,9 @@ int main() {
     std::fill_n(flags, 4, 123);
     blockDim.x = 4;
     for (threadIdx.x = 0; threadIdx.x < 4; ++threadIdx.x) {
-        rkern_fk(q, poses, 3);
-        rkern_centers(q, centers, 3);
-        rkern_collision(q, ids, scene, flags, 3);
+        tenkai_fk(q, poses, 3);
+        tenkai_centers(q, centers, 3);
+        tenkai_collision(q, ids, scene, flags, 3);
     }
     for (size_t i = 0; i < 3; ++i) {
         for (size_t j = 0; j < 7; ++j)

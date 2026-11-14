@@ -3,7 +3,7 @@
 `fetch.urdf` is distributed under **CC BY-NC-SA 4.0** (Attribution,
 NonCommercial, ShareAlike). See the full text in
 [LICENSE-CC-BY-NC-SA-4.0.txt](LICENSE-CC-BY-NC-SA-4.0.txt).
-This license applies to the model asset separately from rkern's source code.
+This license applies to the model asset separately from tenkai's source code.
 
 Authors: Michael Ferguson and Melonee Wise (Fetch Robotics).
 The original model is
@@ -15,7 +15,7 @@ specifies this license.
 Copied from tenkai2's `src/tenkai/assets/fetch/fetch.urdf`. The tenkai adaptation
 retains link names and joint elements, including origins, axes, and limits;
 it removes visual/collision geometry, inertial data, materials, transmissions,
-and simulator settings, and normalizes XML formatting. rkern changes only the
+and simulator settings, and normalizes XML formatting. tenkai changes only the
 header comment to describe this bundle. No meshes or binaries are included.
 
 Original upstream URDF SHA-256, recorded by tenkai2:
@@ -30,5 +30,5 @@ Copyright (c) 2024 Hirokazu Ishida. It is distributed under BSD 3-Clause;
 see [LICENSE-BSD3.txt](LICENSE-BSD3.txt).
 Tenkai removed the machine-specific URDF path and added attribution comments.
 
-rkern currently reads all collision spheres for environment checks. Self-collision
+tenkai currently reads all collision spheres for environment checks. Self-collision
 settings and default/control joint settings in this file are not applied.

@@ -45,28 +45,28 @@ struct CudaRrtConfig { uint32_t warps_per_problem = 4; };
 // is reused across solves; a new solve invalidates the previous tree/path.
 class RrtPlanner {
 public:
-    RrtPlanner(const rkern::RrtConfig& config, CudaRrtConfig execution,
+    RrtPlanner(const tenkai::RrtConfig& config, CudaRrtConfig execution,
                const RrtSpace& space, Scene scene, size_t environment_count, size_t problem_count,
-               rkern::RrtAlgorithm algorithm = rkern::RrtAlgorithm::Rrt)
+               tenkai::RrtAlgorithm algorithm = tenkai::RrtAlgorithm::Rrt)
         : config_(checked_config(config, execution, space, environment_count, problem_count, algorithm)),
           algorithm_(algorithm), threads_(execution.warps_per_problem * 32), space_(space), scene_(scene),
           environment_count_(environment_count), problem_count_(problem_count),
           problems_(problem_count),
           nodes_(storage_product(storage_product(problem_count, config.max_nodes), rrt_dimension)),
           parents_(storage_product(problem_count, config.max_nodes)),
-          trees_(algorithm == rkern::RrtAlgorithm::RrtConnect ? storage_product(problem_count, config.max_nodes) : 0),
+          trees_(algorithm == tenkai::RrtAlgorithm::RrtConnect ? storage_product(problem_count, config.max_nodes) : 0),
           candidates_(storage_product(problem_count, config.samples_per_round)),
           paths_(storage_product(problem_count, config.max_nodes)), results_(problem_count),
-          workspace_clear_(algorithm == rkern::RrtAlgorithm::RrtConnect && single_candidate(config, threads_) ?
+          workspace_clear_(algorithm == tenkai::RrtAlgorithm::RrtConnect && single_candidate(config, threads_) ?
                            environment_count : 0)
 #if @FP32@
-          , preparation_(algorithm == rkern::RrtAlgorithm::RrtConnect && single_candidate(config, threads_) ?
+          , preparation_(algorithm == tenkai::RrtAlgorithm::RrtConnect && single_candidate(config, threads_) ?
                          problem_count : 0),
-          next_problem_(algorithm == rkern::RrtAlgorithm::RrtConnect && single_candidate(config, threads_) ? 1 : 0)
+          next_problem_(algorithm == tenkai::RrtAlgorithm::RrtConnect && single_candidate(config, threads_) ? 1 : 0)
 #endif
           {}
 
-    std::vector<rkern::RrtResult> solve(const std::vector<RrtProblem>& problems) {
+    std::vector<tenkai::RrtResult> solve(const std::vector<RrtProblem>& problems) {
         if (problems.size() != problem_count_) throw std::invalid_argument("RRT problem count mismatch");
         for (const auto& problem : problems)
             if (problem.environment_id >= environment_count_)
@@ -74,36 +74,36 @@ public:
         solved_ = false;
         problems_.upload(problems.data(), problems.size());
 #if @FP32@
-        if (algorithm_ == rkern::RrtAlgorithm::RrtConnect && single_candidate(config_, threads_)) {
+        if (algorithm_ == tenkai::RrtAlgorithm::RrtConnect && single_candidate(config_, threads_)) {
             const size_t blocks = (environment_count_ - 1) / 128 + 1;
-            rkern_rrtc_workspace<<<static_cast<unsigned int>(blocks < 65535 ? blocks : 65535), 128>>>(
+            tenkai_rrtc_workspace<<<static_cast<unsigned int>(blocks < 65535 ? blocks : 65535), 128>>>(
                 space_, scene_, environment_count_, workspace_clear_.data());
             cuda_check(cudaGetLastError(), "check RRT workspace");
-            rkern_rrtc_prepare<<<static_cast<unsigned int>((problem_count_ - 1) / 128 + 1), 128>>>(
+            tenkai_rrtc_prepare<<<static_cast<unsigned int>((problem_count_ - 1) / 128 + 1), 128>>>(
                 problems_.data(), problem_count_, space_, scene_, workspace_clear_.data(),
                 preparation_.data(), next_problem_.data());
             cuda_check(cudaGetLastError(), "prepare RRT-Connect problems");
-            rkern_rrtc_streaming<<<static_cast<unsigned int>((problem_count_ - 1) / 4 + 1), 128>>>(
+            tenkai_rrtc_streaming<<<static_cast<unsigned int>((problem_count_ - 1) / 4 + 1), 128>>>(
                 problems_.data(), problem_count_, space_, scene_, config_, nodes_.data(),
                 parents_.data(), trees_.data(), candidates_.data(), paths_.data(), results_.data(),
                 workspace_clear_.data(), preparation_.data(), next_problem_.data());
             cuda_check(cudaGetLastError(), "launch streaming RRT-Connect");
-            rkern_rrtc_fallback<<<static_cast<unsigned int>(problem_count_), 32>>>(
+            tenkai_rrtc_fallback<<<static_cast<unsigned int>(problem_count_), 32>>>(
                 problems_.data(), problem_count_, space_, scene_, config_, nodes_.data(),
                 parents_.data(), trees_.data(), candidates_.data(), paths_.data(), results_.data(),
                 workspace_clear_.data(), preparation_.data());
         } else
 #endif
-        if (algorithm_ == rkern::RrtAlgorithm::RrtConnect)
-            rkern_rrtc<<<static_cast<unsigned int>(problem_count_), threads_>>>(
+        if (algorithm_ == tenkai::RrtAlgorithm::RrtConnect)
+            tenkai_rrtc<<<static_cast<unsigned int>(problem_count_), threads_>>>(
                 problems_.data(), problem_count_, space_, scene_, config_, nodes_.data(),
                 parents_.data(), trees_.data(), candidates_.data(), paths_.data(), results_.data());
         else
-            rkern_rrt<<<static_cast<unsigned int>(problem_count_), threads_>>>(
+            tenkai_rrt<<<static_cast<unsigned int>(problem_count_), threads_>>>(
                 problems_.data(), problem_count_, space_, scene_, config_, nodes_.data(),
                 parents_.data(), candidates_.data(), paths_.data(), results_.data());
         cuda_check(cudaGetLastError(), "launch RRT planner");
-        std::vector<rkern::RrtResult> result(problem_count_);
+        std::vector<tenkai::RrtResult> result(problem_count_);
         results_.download(result.data(), result.size());
         solved_ = true;
         return result;
@@ -111,7 +111,7 @@ public:
 
     std::vector<Scalar> path(size_t problem_id) const {
         if (!solved_ || problem_id >= problem_count_) throw std::out_of_range("RRT path unavailable");
-        rkern::RrtResult result;
+        tenkai::RrtResult result;
         results_.download(&result, 1, problem_id);
         std::vector<uint32_t> indices(result.path_length);
         paths_.download(indices.data(), indices.size(), problem_id * config_.max_nodes);
@@ -125,25 +125,25 @@ public:
     }
 
 private:
-    static bool single_candidate(const rkern::RrtConfig& config, uint32_t threads) {
+    static bool single_candidate(const tenkai::RrtConfig& config, uint32_t threads) {
         return sizeof(Scalar) == sizeof(float) && config.samples_per_round == 1 && threads == 32;
     }
 
-    static rkern::RrtConfig checked_config(const rkern::RrtConfig& config, CudaRrtConfig execution,
+    static tenkai::RrtConfig checked_config(const tenkai::RrtConfig& config, CudaRrtConfig execution,
                                           const RrtSpace& space, size_t environments, size_t problems,
-                                          rkern::RrtAlgorithm algorithm) {
+                                          tenkai::RrtAlgorithm algorithm) {
         validate_rrt(config, space);
-        if (algorithm != rkern::RrtAlgorithm::Rrt && algorithm != rkern::RrtAlgorithm::RrtConnect)
+        if (algorithm != tenkai::RrtAlgorithm::Rrt && algorithm != tenkai::RrtAlgorithm::RrtConnect)
             throw std::invalid_argument("invalid RRT algorithm");
         if (!execution.warps_per_problem || execution.warps_per_problem > 32 || !environments || !problems)
             throw std::invalid_argument("invalid CUDA RRT execution dimensions");
         int device;
         cudaDeviceProp properties;
         cudaFuncAttributes attributes;
-        const void* kernel = algorithm == rkern::RrtAlgorithm::RrtConnect ?
+        const void* kernel = algorithm == tenkai::RrtAlgorithm::RrtConnect ?
             (single_candidate(config, execution.warps_per_problem * 32) ?
-                reinterpret_cast<const void*>(@RRTC_SINGLE@) : reinterpret_cast<const void*>(rkern_rrtc)) :
-            reinterpret_cast<const void*>(rkern_rrt);
+                reinterpret_cast<const void*>(@RRTC_SINGLE@) : reinterpret_cast<const void*>(tenkai_rrtc)) :
+            reinterpret_cast<const void*>(tenkai_rrt);
         cuda_check(cudaGetDevice(&device), "get CUDA device");
         cuda_check(cudaGetDeviceProperties(&properties, device), "get CUDA properties");
         cuda_check(cudaFuncGetAttributes(&attributes, kernel), "get RRT kernel attributes");
@@ -155,17 +155,17 @@ private:
             &active_blocks, kernel, execution.warps_per_problem * 32, 0), "check RRT occupancy");
         if (!active_blocks) throw std::invalid_argument("RRT block cannot fit on an SM");
 #if @FP32@
-        if (algorithm == rkern::RrtAlgorithm::RrtConnect && single_candidate(config, execution.warps_per_problem * 32)) {
+        if (algorithm == tenkai::RrtAlgorithm::RrtConnect && single_candidate(config, execution.warps_per_problem * 32)) {
             cuda_check(cudaOccupancyMaxActiveBlocksPerMultiprocessor(
-                &active_blocks, rkern_rrtc_streaming, 128, 0), "check streaming RRT occupancy");
+                &active_blocks, tenkai_rrtc_streaming, 128, 0), "check streaming RRT occupancy");
             if (!active_blocks) throw std::invalid_argument("streaming RRT block cannot fit on an SM");
         }
 #endif
         return config;
     }
 
-    rkern::RrtConfig config_;
-    rkern::RrtAlgorithm algorithm_;
+    tenkai::RrtConfig config_;
+    tenkai::RrtAlgorithm algorithm_;
     uint32_t threads_;
     RrtSpace space_;
     Scene scene_;
@@ -177,7 +177,7 @@ private:
     DeviceBuffer<RrtTree> trees_;
     DeviceBuffer<RrtCandidate> candidates_;
     DeviceBuffer<uint32_t> paths_;
-    DeviceBuffer<rkern::RrtResult> results_;
+    DeviceBuffer<tenkai::RrtResult> results_;
     DeviceBuffer<unsigned char> workspace_clear_;
 #if @FP32@
     DeviceBuffer<RrtPreparation> preparation_;

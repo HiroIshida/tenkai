@@ -4,10 +4,10 @@
 #include <random>
 #include "rrt.cuh"
 
-namespace m = RKERN_MODEL_NAMESPACE;
+namespace m = TENKAI_MODEL_NAMESPACE;
 using Scalar = m::Scalar;
-using Status = rkern::PlanStatus;
-using Algorithm = rkern::RrtAlgorithm;
+using Status = tenkai::PlanStatus;
+using Algorithm = tenkai::RrtAlgorithm;
 namespace sdf = m;
 #include "broad_phase_checks.h"
 #include "workspace_checks.cuh"
@@ -31,7 +31,7 @@ bool collision(const Scalar* q, uint32_t environment) {
 }
 
 void validate_path(const std::vector<Scalar>& path, const m::RrtProblem& problem,
-                   const m::RrtSpace& space, const rkern::RrtConfig& config, Algorithm algorithm) {
+                   const m::RrtSpace& space, const tenkai::RrtConfig& config, Algorithm algorithm) {
     assert(!path.empty() && path.size() % 2 == 0);
     for (size_t d = 0; d < 2; ++d) {
         assert(path[d] == problem.start[d]);
@@ -349,7 +349,7 @@ void check_single_candidate(const m::RrtSpace& space, m::Scene scene,
     for (uint32_t capacity : {2u, 3u, 4u, 16u, 1024u}) {
         for (double step : {0.05, 1.0, 2.0}) {
             for (double bias : {0.0, 1.0}) {
-                rkern::RrtConfig config;
+                tenkai::RrtConfig config;
                 config.samples_per_round = 1;
                 config.max_nodes = capacity;
                 config.max_rounds = 128;
@@ -407,7 +407,7 @@ int main() try {
         m::cuda_check(cudaGetLastError(), "check grouped nearest nodes");
         m::cuda_check(cudaDeviceSynchronize(), "validate grouped nearest nodes");
     }
-    rkern::RrtConfig config;
+    tenkai::RrtConfig config;
     config.max_nodes = 1024;
     config.samples_per_round = 64;
     config.max_rounds = 128;
@@ -430,7 +430,7 @@ int main() try {
     check_single_candidate(space, scene, problems);
     for (Algorithm algorithm : {Algorithm::Rrt, Algorithm::RrtConnect}) {
         std::vector<std::vector<Scalar>> reference;
-        std::vector<rkern::RrtResult> reference_results;
+        std::vector<tenkai::RrtResult> reference_results;
         for (uint32_t warps : {1u, 3u, 4u, 8u}) {
             m::RrtPlanner planner(config, {warps}, space, scene, 3, problems.size(), algorithm);
             rejects([&] { planner.path(0); });

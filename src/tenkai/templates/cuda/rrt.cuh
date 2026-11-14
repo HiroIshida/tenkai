@@ -36,7 +36,7 @@ struct RrtCandidate {
     RrtNearestCache nearest;
 };
 
-inline void validate_rrt(const rkern::RrtConfig& config, const RrtSpace& space) {
+inline void validate_rrt(const tenkai::RrtConfig& config, const RrtSpace& space) {
     if (config.max_nodes < 2 || !config.max_rounds || !config.samples_per_round ||
         config.samples_per_round > config.max_nodes - 1 ||
         !std::isfinite(config.step_size) || config.step_size <= 0 ||
@@ -84,8 +84,8 @@ __device__ inline bool rrt_collision(const Scalar* q, const RrtSpace& space,
     Scalar full[rrt_fk_dof];
     for (uint32_t d = 0; d < rrt_fk_dof; ++d) full[d] = space.reference[d];
     for (uint32_t d = 0; d < rrt_dimension; ++d) full[controls[d]] = q[d];
-    return moving_only ? rkern_collision_moving(full, scene, environment_id) :
-        rkern_collision_one(full, scene, environment_id);
+    return moving_only ? tenkai_collision_moving(full, scene, environment_id) :
+        tenkai_collision_one(full, scene, environment_id);
 }
 
 __device__ inline uint32_t rrt_steps(const Scalar* a, const Scalar* b,
@@ -124,7 +124,7 @@ __device__ inline uint32_t rrt_steps(const Scalar* a, const Scalar* b,
 }
 
 __device__ inline void rrt_sample(RrtCandidate& candidate, const RrtProblem& problem,
-                                  const RrtSpace& space, rkern::RrtConfig config,
+                                  const RrtSpace& space, tenkai::RrtConfig config,
                                   uint32_t round, uint32_t c, const Scalar* bias_target) {
     // Each candidate owns a stream independent of warp count and execution order.
     uint64_t rng = problem.seed +
@@ -323,7 +323,7 @@ __device__ inline void rrt_check_edges(RrtCandidate* candidates, uint32_t count,
 }
 
 __device__ inline uint32_t rrt_append(const Scalar* q, uint32_t parent, Scalar* nodes,
-                                      uint32_t* parents, rkern::RrtResult& result) {
+                                      uint32_t* parents, tenkai::RrtResult& result) {
     const uint32_t node = result.node_count++;
     for (uint32_t d = 0; d < rrt_dimension; ++d)
         nodes[size_t(node) * rrt_dimension + d] = q[d];
@@ -332,8 +332,8 @@ __device__ inline uint32_t rrt_append(const Scalar* q, uint32_t parent, Scalar* 
 }
 
 __device__ inline void rrt_start_path(uint32_t node, const uint32_t* parents,
-                                      uint32_t* path, rkern::RrtResult& result) {
-    result.status = rkern::PlanStatus::Success;
+                                      uint32_t* path, tenkai::RrtResult& result) {
+    result.status = tenkai::PlanStatus::Success;
     for (uint32_t n = node;; n = parents[n]) {
         path[result.path_length++] = n;
         if (n == parents[n]) break;
@@ -346,10 +346,10 @@ __device__ inline void rrt_start_path(uint32_t node, const uint32_t* parents,
 
 __device__ inline void rrt_initialize(const RrtProblem& problem, const RrtSpace& space, Scene scene,
                                       Scalar* nodes, uint32_t* parents, uint32_t* path,
-                                      rkern::RrtResult& result, bool& start_valid,
+                                      tenkai::RrtResult& result, bool& start_valid,
                                       bool& goal_valid, volatile bool& finished, RrtTree* trees = nullptr) {
     if (threadIdx.x == 0) {
-        result = {rkern::PlanStatus::RoundLimit, 0, 0, 0};
+        result = {tenkai::PlanStatus::RoundLimit, 0, 0, 0};
         finished = false;
         rrt_append(problem.start, 0, nodes, parents, result);
         if (trees) {
@@ -366,7 +366,7 @@ __device__ inline void rrt_initialize(const RrtProblem& problem, const RrtSpace&
     __syncthreads();
     if (threadIdx.x == 0) {
         if (!start_valid || !goal_valid) {
-            result.status = !start_valid ? rkern::PlanStatus::InvalidStart : rkern::PlanStatus::InvalidGoal;
+            result.status = !start_valid ? tenkai::PlanStatus::InvalidStart : tenkai::PlanStatus::InvalidGoal;
             result.node_count = 0;
             finished = true;
         } else {
@@ -374,7 +374,7 @@ __device__ inline void rrt_initialize(const RrtProblem& problem, const RrtSpace&
             for (uint32_t d = 0; d < rrt_dimension; ++d)
                 equal &= problem.start[d] == problem.goal[d];
             if (equal) {
-                result.status = rkern::PlanStatus::Success;
+                result.status = tenkai::PlanStatus::Success;
                 result.path_length = 1;
                 path[0] = 0;
                 finished = true;
@@ -388,12 +388,12 @@ __device__ inline void rrt_initialize(const RrtProblem& problem, const RrtSpace&
 // Per-problem buffers: nodes[max_nodes][dimension], parents[max_nodes],
 // candidates[samples_per_round], path[max_nodes], and one result. Scene/space
 // are shared read-only; problem_id and environment_id are independent.
-extern "C" __global__ void rkern_rrt(
+extern "C" __global__ void tenkai_rrt(
     const @NAMESPACE@::RrtProblem* problems, size_t problem_count,
-    @NAMESPACE@::RrtSpace space, @NAMESPACE@::Scene scene, rkern::RrtConfig config,
+    @NAMESPACE@::RrtSpace space, @NAMESPACE@::Scene scene, tenkai::RrtConfig config,
     @NAMESPACE@::Scalar* all_nodes, uint32_t* all_parents,
     @NAMESPACE@::RrtCandidate* all_candidates, uint32_t* all_paths,
-    rkern::RrtResult* results) {
+    tenkai::RrtResult* results) {
     using namespace @NAMESPACE@;
     const size_t problem_id = blockIdx.x;
     if (problem_id >= problem_count) return;
@@ -403,7 +403,7 @@ extern "C" __global__ void rkern_rrt(
     uint32_t* parents = all_parents + problem_id * config.max_nodes;
     uint32_t* path = all_paths + problem_id * config.max_nodes;
     RrtCandidate* candidates = all_candidates + problem_id * config.samples_per_round;
-    __shared__ rkern::RrtResult result;
+    __shared__ tenkai::RrtResult result;
     __shared__ bool start_valid, goal_valid, finished;
     rrt_initialize(problem, space, scene, nodes, parents, path, result,
                    start_valid, goal_valid, finished);
@@ -435,7 +435,7 @@ extern "C" __global__ void rkern_rrt(
                 }
             }
             if (!finished && result.node_count == config.max_nodes) {
-                result.status = rkern::PlanStatus::NodeLimit;
+                result.status = tenkai::PlanStatus::NodeLimit;
                 finished = true;
             }
         }

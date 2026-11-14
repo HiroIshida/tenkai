@@ -3,7 +3,7 @@ enum class RrtPreparation : unsigned char { Search, InvalidStart, InvalidGoal, F
 
 struct RrtSingleState {
     RrtCandidate candidate;
-    rkern::RrtResult result;
+    tenkai::RrtResult result;
     bool start_valid, goal_valid, connecting, in_workspace;
     volatile bool finished;
     uint32_t round, target;
@@ -13,9 +13,9 @@ struct RrtSingleState {
 // resident warps executing the streaming collision predicate.
 template <bool Streaming>
 __device__ __forceinline__ void rrt_single_search(
-    const RrtProblem* problems, size_t id, const RrtSpace& space, Scene scene, rkern::RrtConfig config,
+    const RrtProblem* problems, size_t id, const RrtSpace& space, Scene scene, tenkai::RrtConfig config,
     Scalar* all_nodes, uint32_t* all_parents, RrtTree* all_trees, uint32_t* all_paths,
-    rkern::RrtResult* results, const unsigned char* clear,
+    tenkai::RrtResult* results, const unsigned char* clear,
     RrtSingleState& state, RrtPreparation* preparation) {
     using namespace @NAMESPACE@;
     const uint32_t lane = threadIdx.x % 32;
@@ -25,7 +25,7 @@ __device__ __forceinline__ void rrt_single_search(
     RrtTree* trees = all_trees + id * config.max_nodes;
     uint32_t* path = all_paths + id * config.max_nodes;
     RrtCandidate& candidate = state.candidate;
-    rkern::RrtResult& result = state.result;
+    tenkai::RrtResult& result = state.result;
     bool& connecting = state.connecting;
     bool& in_workspace = state.in_workspace;
     volatile bool& finished = state.finished;
@@ -35,7 +35,7 @@ __device__ __forceinline__ void rrt_single_search(
     if (Streaming) {
         if (preparation[id] == RrtPreparation::Fallback) return;
         if (lane == 0) {
-            result = {rkern::PlanStatus::RoundLimit, 0, 0, 0};
+            result = {tenkai::PlanStatus::RoundLimit, 0, 0, 0};
             finished = false;
             rrt_append(problem.start, 0, nodes, parents, result);
             rrt_append(problem.goal, 1, nodes, parents, result);
@@ -44,7 +44,7 @@ __device__ __forceinline__ void rrt_single_search(
             const RrtPreparation initial = preparation[id];
             if (initial == RrtPreparation::InvalidStart || initial == RrtPreparation::InvalidGoal) {
                 result.status = initial == RrtPreparation::InvalidStart ?
-                    rkern::PlanStatus::InvalidStart : rkern::PlanStatus::InvalidGoal;
+                    tenkai::PlanStatus::InvalidStart : tenkai::PlanStatus::InvalidGoal;
                 result.node_count = 0;
                 finished = true;
             } else {
@@ -52,7 +52,7 @@ __device__ __forceinline__ void rrt_single_search(
                 for (uint32_t d = 0; d < rrt_dimension; ++d)
                     equal &= problem.start[d] == problem.goal[d];
                 if (equal) {
-                    result.status = rkern::PlanStatus::Success;
+                    result.status = tenkai::PlanStatus::Success;
                     result.path_length = 1;
                     path[0] = 0;
                     finished = true;
@@ -66,7 +66,7 @@ __device__ __forceinline__ void rrt_single_search(
     }
     if (lane == 0 && !finished) {
         if (result.node_count == config.max_nodes) {
-            result.status = rkern::PlanStatus::NodeLimit;
+            result.status = tenkai::PlanStatus::NodeLimit;
             finished = true;
         }
     }
@@ -114,8 +114,8 @@ __device__ __forceinline__ void rrt_single_search(
             candidate.blocked = 0;
         if (lane == 0)
             in_workspace = clear[problem.environment_id] &&
-                rkern_collision_in_workspace(candidate.q, space.lower, space.upper) &&
-                rkern_collision_in_workspace(nodes + size_t(candidate.parent) * rrt_dimension,
+                tenkai_collision_in_workspace(candidate.q, space.lower, space.upper) &&
+                tenkai_collision_in_workspace(nodes + size_t(candidate.parent) * rrt_dimension,
                                              space.lower, space.upper);
         __syncwarp();
         if (Streaming && !in_workspace) {
@@ -144,12 +144,12 @@ __device__ __forceinline__ void rrt_single_search(
                     full[controls[d]] = q;
                 }
                 if (Streaming) {
-                    const auto collision = rkern_collision_streaming(full, scene, problem.environment_id, mask);
+                    const auto collision = tenkai_collision_streaming(full, scene, problem.environment_id, mask);
                     retry = collision == StreamingCollision::Retry;
                     hit = collision == StreamingCollision::Blocked;
                 } else {
-                    hit = in_workspace ? rkern_collision_edge(full, scene, problem.environment_id) :
-                        rkern_collision_moving(full, scene, problem.environment_id);
+                    hit = in_workspace ? tenkai_collision_edge(full, scene, problem.environment_id) :
+                        tenkai_collision_moving(full, scene, problem.environment_id);
                 }
             }
             if (Streaming && __any_sync(0xffffffffu, retry)) {
@@ -168,7 +168,7 @@ __device__ __forceinline__ void rrt_single_search(
                 connecting = false;
                 ++round;
                 if (result.node_count == config.max_nodes) {
-                    result.status = rkern::PlanStatus::NodeLimit;
+                    result.status = tenkai::PlanStatus::NodeLimit;
                     finished = true;
                 }
             } else if (!connecting) {
@@ -180,7 +180,7 @@ __device__ __forceinline__ void rrt_single_search(
                 uint32_t node = candidate.parent;
                 if (candidate.steps) {
                     if (result.node_count == config.max_nodes) {
-                        result.status = rkern::PlanStatus::NodeLimit;
+                        result.status = tenkai::PlanStatus::NodeLimit;
                         finished = true;
                     } else {
                         node = rrt_append(candidate.q, candidate.parent, nodes, parents, result);
@@ -198,7 +198,7 @@ __device__ __forceinline__ void rrt_single_search(
                     finished = true;
                 }
                 if (!finished && result.node_count == config.max_nodes) {
-                    result.status = rkern::PlanStatus::NodeLimit;
+                    result.status = tenkai::PlanStatus::NodeLimit;
                     finished = true;
                 }
             }
@@ -209,12 +209,12 @@ __device__ __forceinline__ void rrt_single_search(
 }
 }
 
-extern "C" __global__ void rkern_rrtc_single(
+extern "C" __global__ void tenkai_rrtc_single(
     const @NAMESPACE@::RrtProblem* problems, size_t problem_count,
-    @NAMESPACE@::RrtSpace space, @NAMESPACE@::Scene scene, rkern::RrtConfig config,
+    @NAMESPACE@::RrtSpace space, @NAMESPACE@::Scene scene, tenkai::RrtConfig config,
     @NAMESPACE@::Scalar* all_nodes, uint32_t* all_parents, @NAMESPACE@::RrtTree* all_trees,
     @NAMESPACE@::RrtCandidate* all_candidates, uint32_t* all_paths,
-    rkern::RrtResult* results, const unsigned char* clear) {
+    tenkai::RrtResult* results, const unsigned char* clear) {
     const size_t id = blockIdx.x;
     if (id >= problem_count) return;
     __shared__ @NAMESPACE@::RrtSingleState state;
@@ -223,7 +223,7 @@ extern "C" __global__ void rkern_rrtc_single(
         all_paths, results, clear, state, nullptr);
 }
 
-extern "C" __global__ void rkern_rrtc_prepare(
+extern "C" __global__ void tenkai_rrtc_prepare(
     const @NAMESPACE@::RrtProblem* problems, size_t problem_count,
     @NAMESPACE@::RrtSpace space, @NAMESPACE@::Scene scene, const unsigned char* clear,
     @NAMESPACE@::RrtPreparation* preparation, uint32_t* next_problem) {
@@ -233,7 +233,7 @@ extern "C" __global__ void rkern_rrtc_prepare(
     if (id >= problem_count) return;
     const RrtProblem& problem = problems[id];
     RrtPreparation initial = RrtPreparation::Fallback;
-    if (clear[problem.environment_id] && rkern_collision_streamable(scene, problem.environment_id)) {
+    if (clear[problem.environment_id] && tenkai_collision_streamable(scene, problem.environment_id)) {
         initial = RrtPreparation::Search;
         if (!rrt_in_bounds(problem.start, space) ||
             rrt_collision(problem.start, space, scene, problem.environment_id))
@@ -245,12 +245,12 @@ extern "C" __global__ void rkern_rrtc_prepare(
     preparation[id] = initial;
 }
 
-extern "C" __global__ __launch_bounds__(128, 6) void rkern_rrtc_streaming(
+extern "C" __global__ __launch_bounds__(128, 6) void tenkai_rrtc_streaming(
     const @NAMESPACE@::RrtProblem* problems, size_t problem_count,
-    @NAMESPACE@::RrtSpace space, @NAMESPACE@::Scene scene, rkern::RrtConfig config,
+    @NAMESPACE@::RrtSpace space, @NAMESPACE@::Scene scene, tenkai::RrtConfig config,
     @NAMESPACE@::Scalar* all_nodes, uint32_t* all_parents, @NAMESPACE@::RrtTree* all_trees,
     @NAMESPACE@::RrtCandidate* all_candidates, uint32_t* all_paths,
-    rkern::RrtResult* results, const unsigned char* clear,
+    tenkai::RrtResult* results, const unsigned char* clear,
     @NAMESPACE@::RrtPreparation* preparation, uint32_t* next_problem) {
     __shared__ @NAMESPACE@::RrtSingleState states[4];
     auto& state = states[threadIdx.x / 32];
@@ -267,12 +267,12 @@ extern "C" __global__ __launch_bounds__(128, 6) void rkern_rrtc_streaming(
     }
 }
 
-extern "C" __global__ void rkern_rrtc_fallback(
+extern "C" __global__ void tenkai_rrtc_fallback(
     const @NAMESPACE@::RrtProblem* problems, size_t problem_count,
-    @NAMESPACE@::RrtSpace space, @NAMESPACE@::Scene scene, rkern::RrtConfig config,
+    @NAMESPACE@::RrtSpace space, @NAMESPACE@::Scene scene, tenkai::RrtConfig config,
     @NAMESPACE@::Scalar* all_nodes, uint32_t* all_parents, @NAMESPACE@::RrtTree* all_trees,
     @NAMESPACE@::RrtCandidate* all_candidates, uint32_t* all_paths,
-    rkern::RrtResult* results, const unsigned char* clear,
+    tenkai::RrtResult* results, const unsigned char* clear,
     @NAMESPACE@::RrtPreparation* preparation) {
     const size_t id = blockIdx.x;
     if (id >= problem_count || preparation[id] != @NAMESPACE@::RrtPreparation::Fallback) return;
@@ -281,11 +281,11 @@ extern "C" __global__ void rkern_rrtc_fallback(
         problems, id, space, scene, config, all_nodes, all_parents, all_trees,
         all_paths, results, clear, state, nullptr);
 }
-extern "C" __global__ void rkern_rrtc_workspace(
+extern "C" __global__ void tenkai_rrtc_workspace(
     @NAMESPACE@::RrtSpace space, @NAMESPACE@::Scene scene,
     size_t environment_count, unsigned char* clear) {
     for (size_t id = size_t(blockIdx.x) * blockDim.x + threadIdx.x;
          id < environment_count; id += size_t(blockDim.x) * gridDim.x)
-        clear[id] = rkern_collision_workspace_clear(
+        clear[id] = tenkai_collision_workspace_clear(
             space.lower, space.upper, space.reference, scene, uint32_t(id));
 }

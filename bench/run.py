@@ -19,7 +19,7 @@ from matplotlib.figure import Figure
 import numpy as np
 
 from common import codegen_command, compiler_sources, toolchain
-from rkern import Options
+from tenkai import Options
 
 BENCH = Path(__file__).resolve().parent
 ROOT = BENCH.parent
@@ -152,7 +152,7 @@ def prepare(args):
     scene = np.array([0.95, 0, 0.8, 1, 2, 0.05, 0], dtype=dtype)
     scene.tofile(output / "scene.bin")
 
-    namespace = "rkern_f32" if dtype == np.float32 else "rkern_f64"
+    namespace = "tenkai_f32" if dtype == np.float32 else "tenkai_f64"
     config = f"using Scalar = {model['scalar']};\n#ifdef __CUDACC__\nnamespace sdf = {namespace};\n#endif\n"
     constants = {
         "kPool": args.pool, "kDof": configurations.shape[1], "kMaxBatch": max(args.batches),
@@ -225,9 +225,9 @@ def validate(args):
         "samples": args.pool, "mismatches": len(different),
         "agreement": agreement, "required_agreement": required_agreement,
         "passed": agreement >= required_agreement,
-        "plainmp_collision_rkern_free": cpu_only,
-        "plainmp_free_rkern_collision": gpu_only,
-        "rkern": {
+        "plainmp_collision_tenkai_free": cpu_only,
+        "plainmp_free_tenkai_collision": gpu_only,
+        "tenkai": {
             "collision_count": int(gpu.sum()), "collision_fraction": float(gpu.mean()),
             "output_sha256": sha256(args.output / "collision.u8"),
         },
@@ -238,13 +238,13 @@ def validate(args):
     }
     with (args.output / "plainmp_differences.csv").open("w", newline="") as dest:
         writer = csv.writer(dest)
-        writer.writerow(["index", "plainmp_collision", "rkern_collision"])
+        writer.writerow(["index", "plainmp_collision", "tenkai_collision"])
         writer.writerows((i, cpu[i], gpu[i]) for i in different)
     write_json(args.output / "validation.json", result)
     print(f"plainmp/GPU agreement: {agreement:.6%} (required {required_agreement:.1%}); "
           f"{len(different):,}/{args.pool:,} differing flags.")
-    print(f"plainmp collision / rkern free: {cpu_only:,}; "
-          f"plainmp free / rkern collision: {gpu_only:,} (details in validation.json).")
+    print(f"plainmp collision / tenkai free: {cpu_only:,}; "
+          f"plainmp free / tenkai collision: {gpu_only:,} (details in validation.json).")
     if not result["passed"]:
         raise RuntimeError(f"plainmp/GPU agreement below {required_agreement:.1%}; "
                            f"see {args.output / 'validation.json'}")
@@ -256,8 +256,8 @@ def plot_throughput(args, summaries, device):
     axes = figure.subplots()
     for mode, label in [
         ("plainmp", "plainmp (CPU, 1 thread, FP64)"),
-        ("kernel", "rkern (GPU kernel)"),
-        ("transfer", "rkern (H2D + kernel + D2H)"),
+        ("kernel", "tenkai (GPU kernel)"),
+        ("transfer", "tenkai (H2D + kernel + D2H)"),
     ]:
         rows = sorted((row for row in summaries if row["mode"] == mode), key=lambda row: row["batch"])
         batches = [row["batch"] for row in rows]

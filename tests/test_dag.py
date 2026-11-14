@@ -1,8 +1,8 @@
 import pytest
 from helpers import execute
 
-from rkern.dag import Constant, Dag, Optimization, Precision
-from rkern.scheduling import Evaluate, Store, schedule
+from tenkai.dag import Constant, Dag, Optimization, Precision
+from tenkai.scheduling import Evaluate, Store, schedule
 
 
 @pytest.mark.parametrize("mode", ["basic", "algebraic"])

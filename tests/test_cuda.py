@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from rkern import (
+from tenkai import (
     FkDag,
     Options,
     Robot,
@@ -18,8 +18,8 @@ from rkern import (
     generate_fk_kernel,
     generate_rrt_kernel,
 )
-from rkern.cuda import MathMode
-from rkern.dag import Optimization
+from tenkai.cuda import MathMode
+from tenkai.dag import Optimization
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / "tests/fixtures"
@@ -127,7 +127,7 @@ def test_planner_on_gpu(tmp_path: Path, math_mode: MathMode) -> None:
     run(
         [
             *cuda_command(),
-            "-DRKERN_MODEL_NAMESPACE=" + options.namespace,
+            "-DTENKAI_MODEL_NAMESPACE=" + options.namespace,
             "-I",
             str(tmp_path),
             "-I",
