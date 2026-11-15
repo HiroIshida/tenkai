@@ -4,7 +4,7 @@ import math
 from dataclasses import dataclass
 from typing import Self
 
-from ..dag import Dag
+from tenkai.dag import Dag
 
 type Vector3 = tuple[float, float, float]
 type PointNodes = tuple[int, int, int]

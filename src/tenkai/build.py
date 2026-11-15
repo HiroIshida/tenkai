@@ -6,7 +6,7 @@ import shutil
 import subprocess
 from typing import Literal
 
-from .cuda import TEMPLATES
+from tenkai.cuda import TEMPLATES
 
 type Backend = Literal["cuda", "hip"]
 

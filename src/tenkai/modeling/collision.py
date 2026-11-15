@@ -8,9 +8,9 @@ from dataclasses import dataclass, field
 import yaml
 from yaml.nodes import MappingNode, Node, ScalarNode, SequenceNode
 
-from ..dag import Dag, Optimization
-from .model import KinematicModel
-from .transform import MatrixNodes, PointNodes, Pose, Vector3
+from tenkai.dag import Dag, Optimization
+from tenkai.modeling.model import KinematicModel
+from tenkai.modeling.transform import MatrixNodes, PointNodes, Pose, Vector3
 
 
 @dataclass(frozen=True)

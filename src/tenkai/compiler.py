@@ -6,7 +6,7 @@ import time
 from pathlib import Path
 from typing import Literal, TypedDict
 
-from .cuda import (
+from tenkai.cuda import (
     Options,
     generate_centers_kernel,
     generate_collision_function,
@@ -14,8 +14,8 @@ from .cuda import (
     generate_fk_kernel,
     generate_rrt_sources,
 )
-from .dag import Optimization
-from .modeling import KinematicModel, read_config
+from tenkai.dag import Optimization
+from tenkai.modeling import KinematicModel, read_config
 
 
 class ControlJoint(TypedDict):

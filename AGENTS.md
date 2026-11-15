@@ -8,6 +8,7 @@ Treat questions about reasons (e.g., "Why did you do X?") as requests for explan
 # Python guidelines
 
 - Use Python 3.12, the standard `src/tenkai` package layout, and uv with a committed lockfile.
+- Use absolute imports for package references (e.g. `from tenkai.dag import Dag`), including in `__init__.py`.
 - Prefer simple, explicit control flow. Give intermediate results meaningful names; avoid nested expressions and dense one-liners.
 - Use ordinary dataclasses for records and concrete types. Add abstractions only when they serve an existing need.
 - Annotate functions and data structures. Keep the compiler and its tooling passing strict mypy checks.

@@ -13,10 +13,10 @@ from typing import Literal, NotRequired, Self, TypedDict
 import numpy as np
 import numpy.typing as npt
 
-from .build import Backend, compiler_command, target_arch
-from .compiler import ModelMetadata, generate
-from .cuda import Options
-from .sdf import Geometry, SceneData, pack_geometry
+from tenkai.build import Backend, compiler_command, target_arch
+from tenkai.compiler import ModelMetadata, generate
+from tenkai.cuda import Options
+from tenkai.sdf import Geometry, SceneData, pack_geometry
 
 type Status = Literal["success", "round_limit", "node_limit", "invalid_start", "invalid_goal"]
 

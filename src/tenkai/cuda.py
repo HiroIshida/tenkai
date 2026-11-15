@@ -6,8 +6,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import assert_never
 
-from .dag import Binary, BinaryOp, Constant, Dag, Input, Optimization, Trig, TrigOp, f32
-from .modeling import (
+from tenkai.dag import Binary, BinaryOp, Constant, Dag, Input, Optimization, Trig, TrigOp, f32
+from tenkai.modeling import (
     CollisionDag,
     KinematicModel,
     SelfCollisionRules,
@@ -15,7 +15,7 @@ from .modeling import (
     center_expressions,
     collision_expressions,
 )
-from .scheduling import Evaluate, Store, schedule
+from tenkai.scheduling import Evaluate, Store, schedule
 
 TEMPLATES = Path(__file__).with_name("templates")
 

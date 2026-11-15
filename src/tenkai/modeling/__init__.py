@@ -1,6 +1,6 @@
 """Robot models and collision expressions for code generation."""
 
-from .collision import (
+from tenkai.modeling.collision import (
     CollisionDag,
     SelfCollisionRules,
     Sphere,
@@ -8,7 +8,7 @@ from .collision import (
     collision_expressions,
     read_config,
 )
-from .model import JointInfo, JointKind, KinematicModel
+from tenkai.modeling.model import JointInfo, JointKind, KinematicModel
 
 __all__ = [
     "KinematicModel",

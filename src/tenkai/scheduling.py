@@ -5,7 +5,7 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from .dag import Constant, Dag, dependencies
+from tenkai.dag import Constant, Dag, dependencies
 
 
 @dataclass(frozen=True)

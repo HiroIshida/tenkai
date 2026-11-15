@@ -6,9 +6,9 @@ from typing import Annotated
 
 import tyro
 
-from .compiler import generate
-from .cuda import Options
-from .dag import Optimization
+from tenkai.compiler import generate
+from tenkai.cuda import Options
+from tenkai.dag import Optimization
 
 SCHEDULING = tyro.conf.create_mutex_group(required=False, title="scheduling")
 

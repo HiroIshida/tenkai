@@ -6,8 +6,8 @@ from collections import deque
 from dataclasses import dataclass
 from typing import Literal, Self
 
-from ..dag import Dag
-from .transform import Pose, Vector3, quaternion_product
+from tenkai.dag import Dag
+from tenkai.modeling.transform import Pose, Vector3, quaternion_product
 
 type JointKind = Literal["revolute", "continuous", "prismatic"]
 
