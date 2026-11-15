@@ -165,28 +165,6 @@ __device__ inline uint32_t rrt_steps(const Scalar* a,
   return static_cast<uint32_t>(count);
 }
 
-__device__ inline void rrt_sample(RrtCandidate& candidate,
-                                  const RrtProblem& problem,
-                                  const RrtSpace& space,
-                                  tenkai::RrtConfig config,
-                                  uint32_t round,
-                                  const Scalar* bias_target) {
-  // Each problem owns a stream independent of batch size and execution order.
-  uint64_t rng = problem.seed + uint64_t(round) * UINT64_C(0xd1342543de82ef95);
-  const bool biased = rrt_uniform(rng) < config.goal_bias;
-
-  for (uint32_t d = 0; d < rrt_dimension; ++d) {
-    if (biased) {
-      candidate.q[d] = bias_target[d];
-    } else {
-      candidate.q[d] = Scalar(
-          double(space.lower[d]) +
-          rrt_uniform(rng) * (double(space.upper[d]) - double(space.lower[d])));
-    }
-  }
-  candidate.reaches_target = biased;
-}
-
 __device__ inline double rrt_squared_distance(const Scalar* a,
                                               const Scalar* b) {
   Scalar distance = 0;
@@ -371,60 +349,6 @@ __device__ inline void rrt_start_path(uint32_t node,
     path[i] = path[other];
     path[other] = value;
   }
-}
-
-__device__ inline void rrt_initialize(const RrtProblem& problem,
-                                      const RrtSpace& space,
-                                      Scene scene,
-                                      Scalar* nodes,
-                                      uint32_t* parents,
-                                      uint32_t* path,
-                                      tenkai::RrtResult& result,
-                                      bool& start_valid,
-                                      bool& goal_valid,
-                                      volatile bool& finished,
-                                      RrtTree* trees) {
-  if (threadIdx.x == 0) {
-    result = {tenkai::PlanStatus::RoundLimit, 0, 0, 0};
-    finished = false;
-
-    rrt_append(problem.start, 0, nodes, parents, result);
-    rrt_append(problem.goal, 1, nodes, parents, result);
-    trees[0] = RrtTree::Start;
-    trees[1] = RrtTree::Goal;
-
-    start_valid =
-        rrt_in_bounds(problem.start, space) &&
-        !rrt_collision(problem.start, space, scene, problem.environment_id);
-  }
-  if (threadIdx.x == 1) {
-    goal_valid = rrt_in_bounds(problem.goal, space) &&
-                 !rrt_collision(problem.goal, space, scene,
-                                problem.environment_id, true);
-  }
-  __syncthreads();
-
-  if (threadIdx.x == 0) {
-    if (!start_valid || !goal_valid) {
-      result.status = !start_valid ? tenkai::PlanStatus::InvalidStart
-                                   : tenkai::PlanStatus::InvalidGoal;
-      result.node_count = 0;
-      finished = true;
-    } else {
-      bool equal = true;
-      for (uint32_t d = 0; d < rrt_dimension; ++d) {
-        equal &= problem.start[d] == problem.goal[d];
-      }
-
-      if (equal) {
-        result.status = tenkai::PlanStatus::Success;
-        result.path_length = 1;
-        path[0] = 0;
-        finished = true;
-      }
-    }
-  }
-  __syncthreads();
 }
 
 }  // namespace tenkai_f32

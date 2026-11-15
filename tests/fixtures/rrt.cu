@@ -64,9 +64,8 @@ __global__ void check_edge_grid(m::RrtCandidate* candidates,
                                 bool reverse) {
     m::RrtProblem problem{};
     problem.environment_id = 1;
-    const bool retry = m::rrtc_check_edge<false>(
+    m::rrtc_check_edge(
         candidates[blockIdx.x], nodes, problem, space, scene, reverse, false);
-    assert(!retry);
 }
 
 void check_edge_grids(const m::RrtSpace& space, m::Scene scene) {

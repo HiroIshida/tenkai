@@ -128,23 +128,17 @@ class RrtPlanner {
 
     tenkai_rrtc_prepare<<<
         static_cast<unsigned int>((problem_count_ - 1) / 128 + 1), 128>>>(
-        problems_.data(), problem_count_, space_, scene_,
-        workspace_clear_.data(), preparation_.data(), next_problem_.data());
+        problems_.data(), problem_count_, space_, scene_, preparation_.data(),
+        next_problem_.data());
     cuda_check(cudaGetLastError(), "prepare RRT-Connect problems");
 
-    tenkai_rrtc_streaming<<<
-        static_cast<unsigned int>((problem_count_ - 1) / 4 + 1), 128>>>(
-        problems_.data(), problem_count_, space_, scene_, config_,
-        nodes_.data(), parents_.data(), trees_.data(), paths_.data(),
-        results_.data(), workspace_clear_.data(), preparation_.data(),
-        next_problem_.data());
-    cuda_check(cudaGetLastError(), "launch streaming RRT-Connect");
-
-    tenkai_rrtc_fallback<<<static_cast<unsigned int>(problem_count_), 32>>>(
-        problems_.data(), problem_count_, space_, scene_, config_,
-        nodes_.data(), parents_.data(), trees_.data(), paths_.data(),
-        results_.data(), workspace_clear_.data(), preparation_.data());
-    cuda_check(cudaGetLastError(), "launch RRT planner");
+    tenkai_rrtc<<<static_cast<unsigned int>((problem_count_ - 1) / 4 + 1),
+                  128>>>(problems_.data(), problem_count_, space_, scene_,
+                         config_, nodes_.data(), parents_.data(), trees_.data(),
+                         paths_.data(), results_.data(),
+                         workspace_clear_.data(), preparation_.data(),
+                         next_problem_.data());
+    cuda_check(cudaGetLastError(), "launch RRT-Connect");
 
     std::vector<tenkai::RrtResult> result(problem_count_);
     results_.download(result.data(), result.size());
@@ -192,30 +186,23 @@ class RrtPlanner {
     int device;
     cudaDeviceProp properties;
     cudaFuncAttributes attributes;
-    const void* kernel = reinterpret_cast<const void*>(tenkai_rrtc_fallback);
+    const void* kernel = reinterpret_cast<const void*>(tenkai_rrtc);
     cuda_check(cudaGetDevice(&device), "get CUDA device");
     cuda_check(cudaGetDeviceProperties(&properties, device),
                "get CUDA properties");
     cuda_check(cudaFuncGetAttributes(&attributes, kernel),
                "get RRT kernel attributes");
     if (problems > size_t(properties.maxGridSize[0]) ||
-        attributes.maxThreadsPerBlock < 32) {
+        attributes.maxThreadsPerBlock < 128) {
       throw std::invalid_argument("RRT launch exceeds device/kernel limits");
     }
 
     int active_blocks;
     cuda_check(cudaOccupancyMaxActiveBlocksPerMultiprocessor(&active_blocks,
-                                                             kernel, 32, 0),
+                                                             kernel, 128, 0),
                "check RRT occupancy");
     if (!active_blocks) {
       throw std::invalid_argument("RRT block cannot fit on an SM");
-    }
-
-    cuda_check(cudaOccupancyMaxActiveBlocksPerMultiprocessor(
-                   &active_blocks, tenkai_rrtc_streaming, 128, 0),
-               "check streaming RRT occupancy");
-    if (!active_blocks) {
-      throw std::invalid_argument("streaming RRT block cannot fit on an SM");
     }
 
     return config;

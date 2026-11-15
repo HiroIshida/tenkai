@@ -571,31 +571,23 @@ def generate_rrt_sources(
     dependent = emitter.dag.depends_on_inputs(controls)
     moving = [index for index, group in enumerate(groups) if any(dependent[node] for node in group)]
     functions = collision_function(emitter, spheres, geometry, "__noinline__", warp_support=True)
-    if len(moving) == len(spheres):
-        functions += collision_definition(
-            "tenkai_collision_moving",
-            "inline",
-            "    return tenkai_collision_one<Cooperative>(q, scene, environment_id, mask);\n",
-            warp_support=True,
-        )
-    else:
-        moving_groups = [groups[i] for i in moving]
-        moving_outputs = [node for group in moving_groups for node in group]
-        moving_emitter = DagEmitter(
-            "tenkai_collision_moving",
-            emitter.dag,
-            emitter.dof,
-            moving_outputs,
-            options,
-            moving_groups,
-        )
-        functions += collision_function(
-            moving_emitter,
-            [spheres[i] for i in moving],
-            geometry,
-            "__noinline__",
-            warp_support=True,
-        )
+    moving_groups = [groups[i] for i in moving]
+    moving_outputs = [node for group in moving_groups for node in group]
+    moving_emitter = DagEmitter(
+        "tenkai_collision_moving",
+        emitter.dag,
+        emitter.dof,
+        moving_outputs,
+        options,
+        moving_groups,
+    )
+    functions += collision_function(
+        moving_emitter,
+        [spheres[i] for i in moving],
+        geometry,
+        "__forceinline__",
+        warp_support=True,
+    )
 
     replacements: list[tuple[str, str | int]] = [
         ("DIMENSION", len(controls)),
