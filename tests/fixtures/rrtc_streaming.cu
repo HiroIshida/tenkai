@@ -57,6 +57,46 @@ __global__ void check_streaming_votes(m::Scene scene) {
     assert(retry);
 }
 
+__device__ void check_collision_vote(const float* q, m::Scene scene, unsigned environment,
+                                     unsigned mask) {
+    const unsigned lane = threadIdx.x;
+    bool scalar = false;
+    bool edge = false;
+    bool moving = false;
+    if (mask & (1u << lane)) {
+        scalar = tenkai_collision_one(q, scene, environment);
+        edge = tenkai_collision_edge<true>(q, scene, environment, mask);
+        moving = tenkai_collision_moving<true>(q, scene, environment, mask);
+    }
+    const bool expected = __any_sync(0xffffffffu, scalar);
+    assert(bool(__any_sync(0xffffffffu, edge)) == expected);
+    assert(bool(__any_sync(0xffffffffu, moving)) == expected);
+}
+
+__global__ void check_cooperative_votes(m::Scene scene) {
+    const unsigned lane = threadIdx.x;
+    for (unsigned mask : {1u, 0x80000000u, 15u, 0xaaaaaaaau, 0xffffffffu}) {
+        for (unsigned hit_lane : {0u, 15u, 31u, 32u}) {
+            const float q[3] = {lane == hit_lane || !(mask & (1u << lane)) ? 0.0f : -0.75f,
+                                0.0f, 0.35f};
+            bool hit = false;
+            if (mask & (1u << lane)) {
+                hit = tenkai_collision_edge<true>(q, scene, 0, mask);
+            }
+            const bool expected = hit_lane < 32 && (mask & (1u << hit_lane));
+            assert(bool(__any_sync(0xffffffffu, hit)) == expected);
+        }
+        for (unsigned environment = 0; environment <= 8; ++environment) {
+            const unsigned id = environment == 8 ? lane % 8 : environment;
+            for (float x : {0.0f, -0.0f, 0.2f, nextafterf(0.2f, 0.0f),
+                            nextafterf(0.2f, 1.0f), -10.0f, 100000.0f, FLT_MAX}) {
+                const float q[3] = {x, float(lane) * 0.05f - 0.75f, 0.35f};
+                check_collision_vote(q, scene, id, mask);
+            }
+        }
+    }
+}
+
 int main() try {
     const Scalar c = Scalar(std::sqrt(0.5));
     m::Box boxes[] = {
@@ -84,6 +124,9 @@ int main() try {
     device_environments.upload(environments, 8);
     const m::Scene scene{device_environments.data(), device_boxes.data(), device_sphere.data(),
                          device_cylinder.data(), device_ground.data()};
+    check_cooperative_votes<<<1,32>>>(scene);
+    m::cuda_check(cudaGetLastError(), "check cooperative collision votes");
+    m::cuda_check(cudaDeviceSynchronize(), "validate cooperative collision votes");
     check_streaming_votes<<<1,32>>>(scene);
     m::cuda_check(cudaGetLastError(), "check streaming collision masks and contact");
     m::cuda_check(cudaDeviceSynchronize(), "validate streaming collision masks and contact");

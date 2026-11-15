@@ -65,6 +65,8 @@ __device__ void check_predicates() {
                 const auto result = tenkai_collision_streaming(q, scene, 1, mask);
                 assert(result != m::StreamingCollision::Retry);
                 blocked = result == m::StreamingCollision::Blocked;
+                assert(blocked == tenkai_collision_edge<true>(q, scene, 1, mask));
+                assert(blocked == tenkai_collision_moving<true>(q, scene, 1, mask));
             }
             const bool expected = hit_lane < 32 && (mask & (1u << hit_lane));
             assert(bool(__any_sync(0xffffffffu, blocked)) == expected);

@@ -68,9 +68,9 @@ __device__ __forceinline__ bool rrtc_check_edge(RrtCandidate& candidate,
         retry = collision == StreamingCollision::Retry;
         hit = collision == StreamingCollision::Blocked;
       } else if (in_workspace) {
-        hit = tenkai_collision_edge(full, scene, problem.environment_id);
+        hit = tenkai_collision_edge<true>(full, scene, problem.environment_id, mask);
       } else {
-        hit = tenkai_collision_moving(full, scene, problem.environment_id);
+        hit = tenkai_collision_moving<true>(full, scene, problem.environment_id, mask);
       }
     }
 

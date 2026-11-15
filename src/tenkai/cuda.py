@@ -155,17 +155,26 @@ def sphere_collision(radius: float) -> str:
     return "".join(source)
 
 
-def collision_definition(name: str, qualifier: str, body: str) -> str:
+def collision_definition(
+    name: str, qualifier: str, body: str, *, warp_support: bool = False
+) -> str:
+    prefix = "template <bool Cooperative = false>\n" if warp_support else ""
+    mask = ", unsigned mask = 0xffffffffu" if warp_support else ""
     return (
-        f"\n__device__ {qualifier} bool {name}(\n"
+        f"\n{prefix}__device__ {qualifier} bool {name}(\n"
         "    const float* q, tenkai_f32::Scene scene, "
-        f"uint32_t environment_id) {{\n"
+        f"uint32_t environment_id{mask}) {{\n"
         f"{body}}}\n"
     )
 
 
 def collision_function(
-    emitter: DagEmitter, spheres: Sequence[Sphere], geometry: CollisionDag, qualifier: str
+    emitter: DagEmitter,
+    spheres: Sequence[Sphere],
+    geometry: CollisionDag,
+    qualifier: str,
+    *,
+    warp_support: bool = False,
 ) -> str:
     if spheres or geometry.rules.self_pairs:
         body = (
@@ -174,12 +183,14 @@ def collision_function(
             "    bool collision = false;\n"
             "    tenkai_f32::Vec3 center;\n"
         )
-        body += link_collision_body(emitter, spheres, geometry, streaming=False)
+        body += link_collision_body(
+            emitter, spheres, geometry, streaming=False, warp_support=warp_support
+        )
         body += "    return collision;\n"
     else:
         body = "    return false;\n"
 
-    return collision_definition(emitter.name, qualifier, body)
+    return collision_definition(emitter.name, qualifier, body, warp_support=warp_support)
 
 
 def link_collision_body(
@@ -188,6 +199,7 @@ def link_collision_body(
     geometry: CollisionDag,
     *,
     streaming: bool,
+    warp_support: bool = False,
 ) -> str:
     links: dict[int, list[int]] = {}
     for index, sphere in enumerate(spheres):
@@ -206,6 +218,10 @@ def link_collision_body(
         "    if (__any_sync(mask, collision || retry))\n"
         "        return retry ? StreamingCollision::Retry : StreamingCollision::Blocked;\n"
     )
+    scalar_exit = "    if (collision) return true;\n"
+    if warp_support:
+        scalar_exit = "    if (!Cooperative && collision) return true;\n"
+    warp_exit = "    if (Cooperative && __any_sync(mask, collision)) return true;\n"
 
     outputs = [step.node for step in emitter.schedule.steps if isinstance(step, Store)]
     for link, indices in links.items():
@@ -250,7 +266,9 @@ def link_collision_body(
                     if bound is None:
                         text += streaming_exit
                 else:
-                    text += "    if (collision) return true;\n"
+                    text += scalar_exit
+                    if warp_support and bound is None:
+                        text += warp_exit
             return text
 
         source.append(link_emitter.body("q", store, link_cached))
@@ -259,8 +277,14 @@ def link_collision_body(
             if streaming:
                 # Skipped lanes must rejoin before a vote using the caller's mask.
                 source.append(streaming_exit)
+            elif warp_support:
+                source.append(warp_exit)
         source.append("    }\n")
-    source.append(self_collision_body(emitter, geometry, cached, streaming=streaming))
+    source.append(
+        self_collision_body(
+            emitter, geometry, cached, streaming=streaming, warp_support=warp_support
+        )
+    )
     return "".join(source)
 
 
@@ -283,6 +307,7 @@ def self_collision_body(
     cached: set[int],
     *,
     streaming: bool,
+    warp_support: bool = False,
 ) -> str:
     pairs = geometry.rules.self_pairs
     if not pairs:
@@ -335,7 +360,9 @@ def self_collision_body(
                 source.append(
                     f"    collision |= tenkai_f32::intersects(self_sphere, {center}, {radius}f);\n"
                 )
-            if not streaming:
+            if warp_support:
+                source.append("    if (!Cooperative && collision) return true;\n")
+            elif not streaming:
                 source.append("    if (collision) return true;\n")
             source.append("    }\n")
         source.append("    }\n")
@@ -345,6 +372,8 @@ def self_collision_body(
             source.append(
                 "    if (__any_sync(mask, collision)) return StreamingCollision::Blocked;\n"
             )
+        elif warp_support:
+            source.append("    if (Cooperative && __any_sync(mask, collision)) return true;\n")
     return "".join(source)
 
 
@@ -409,7 +438,9 @@ def planning_replacements(
         options,
         edge_groups,
     )
-    edge_function = collision_function(edge_emitter, edge_spheres, geometry, "__forceinline__")
+    edge_function = collision_function(
+        edge_emitter, edge_spheres, geometry, "__forceinline__", warp_support=True
+    )
 
     bounds_checks: list[str] = []
     for dimension, flags in enumerate(dependencies_by_control):
@@ -539,12 +570,13 @@ def generate_rrt_sources(
     groups = geometry.centers
     dependent = emitter.dag.depends_on_inputs(controls)
     moving = [index for index, group in enumerate(groups) if any(dependent[node] for node in group)]
-    functions = collision_function(emitter, spheres, geometry, "__noinline__")
+    functions = collision_function(emitter, spheres, geometry, "__noinline__", warp_support=True)
     if len(moving) == len(spheres):
         functions += collision_definition(
             "tenkai_collision_moving",
             "inline",
-            "    return tenkai_collision_one(q, scene, environment_id);\n",
+            "    return tenkai_collision_one<Cooperative>(q, scene, environment_id, mask);\n",
+            warp_support=True,
         )
     else:
         moving_groups = [groups[i] for i in moving]
@@ -558,7 +590,11 @@ def generate_rrt_sources(
             moving_groups,
         )
         functions += collision_function(
-            moving_emitter, [spheres[i] for i in moving], geometry, "__noinline__"
+            moving_emitter,
+            [spheres[i] for i in moving],
+            geometry,
+            "__noinline__",
+            warp_support=True,
         )
 
     replacements: list[tuple[str, str | int]] = [
