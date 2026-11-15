@@ -6,15 +6,15 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import assert_never
 
-from .collision import (
+from .dag import Binary, BinaryOp, Constant, Dag, Input, Optimization, Trig, TrigOp, f32
+from .modeling import (
     CollisionDag,
+    KinematicModel,
     SelfCollisionRules,
     Sphere,
     center_expressions,
     collision_expressions,
 )
-from .dag import Binary, BinaryOp, Constant, Dag, Input, Optimization, Trig, TrigOp, f32
-from .model import KinematicModel
 from .scheduling import Evaluate, Store, schedule
 
 TEMPLATES = Path(__file__).with_name("templates")

@@ -18,8 +18,8 @@ from tenkai import (
     generate_rrt_sources,
 )
 from tenkai.build import Backend, compiler_command
-from tenkai.collision import read_config
 from tenkai.dag import Optimization
+from tenkai.modeling import read_config
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / "tests/fixtures"

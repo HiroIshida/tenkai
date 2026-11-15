@@ -6,7 +6,6 @@ import time
 from pathlib import Path
 from typing import Literal, TypedDict
 
-from .collision import read_config
 from .cuda import (
     Options,
     generate_centers_kernel,
@@ -16,7 +15,7 @@ from .cuda import (
     generate_rrt_sources,
 )
 from .dag import Optimization
-from .model import KinematicModel
+from .modeling import KinematicModel, read_config
 
 
 class ControlJoint(TypedDict):

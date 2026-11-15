@@ -25,8 +25,8 @@ from plainmp.psdf import BoxSDF, GroundSDF, Pose, UnionSDF
 
 from tenkai import RRTConfig, build_rrt, sdf
 from tenkai.build import Backend, target_arch
-from tenkai.collision import read_config
 from tenkai.compiler import ModelMetadata
+from tenkai.modeling import read_config
 
 ASSETS = Path(__file__).resolve().parents[1] / "assets/fetch"
 START = [0.0, 1.32, 1.40, -0.20, 1.72, 0.0, 1.66, 0.0]

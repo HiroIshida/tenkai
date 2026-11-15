@@ -4,8 +4,9 @@ from pathlib import Path
 import pytest
 
 from tenkai import KinematicModel, Sphere
-from tenkai.collision import center_dag, collision_expressions, enclosing_sphere, read_config
 from tenkai.dag import Optimization
+from tenkai.modeling import collision_expressions, read_config
+from tenkai.modeling.collision import center_dag, enclosing_sphere
 
 
 def test_enclosing_sphere_contains_members_with_different_radii() -> None:

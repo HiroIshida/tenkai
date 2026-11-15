@@ -5,7 +5,8 @@ from pathlib import Path
 import pytest
 from helpers import evaluate
 
-from tenkai import JointInfo, KinematicModel, generate_rrt_sources, read_spheres
+from tenkai import JointInfo, KinematicModel, generate_rrt_sources
+from tenkai.modeling import read_config
 
 ROOT = Path(__file__).resolve().parents[1]
 CHAIN = (ROOT / "tests/fixtures/fk_chain.urdf").read_text()
@@ -82,7 +83,8 @@ def test_joint_metadata_follows_input_order(reverse: bool) -> None:
 
 def test_fetch_spheres_follow_fk_order() -> None:
     kin = KinematicModel.from_urdf((ROOT / "assets/fetch/fetch.urdf").read_text())
-    spheres = read_spheres((ROOT / "assets/fetch/collision.yaml").read_text(), kin)
+    config = read_config((ROOT / "assets/fetch/collision.yaml").read_text())
+    spheres = config.resolve(kin)
     assert len(kin.joint_names) == 15
     assert len(kin.poses) == 26
     assert len(spheres) == 69
@@ -127,7 +129,8 @@ def test_invalid_models_are_rejected(source: str) -> None:
 def test_invalid_spheres_are_rejected(source: str) -> None:
     kin = KinematicModel.from_urdf('<robot name="one"><link name="root"/></robot>')
     with pytest.raises(ValueError):
-        read_spheres(source, kin)
+        config = read_config(source)
+        config.resolve(kin)
 
 
 @pytest.mark.parametrize("controls", [[], [100], [0, 0]])
@@ -139,9 +142,10 @@ def test_invalid_planner_controls(controls: list[int]) -> None:
 
 def test_empty_spheres_and_root_pose() -> None:
     kin = KinematicModel.from_urdf('<robot name="one"><link name="root"/></robot>')
+    config = read_config("collision_spheres: {}")
     assert kin.joints == []
     assert kin.joint_names == []
-    assert read_spheres("collision_spheres: {}", kin) == []
+    assert config.resolve(kin) == []
     values = evaluate(kin.dag, [])
     assert [values[i] for i in kin.poses[0].rotation] == [0, 0, 0, 1]
     assert position(kin, [], "root") == [0, 0, 0]

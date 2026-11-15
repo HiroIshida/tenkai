@@ -1,7 +1,6 @@
 """Robot-specialized CUDA code generation and motion planning."""
 
 from . import sdf
-from .collision import SelfCollisionRules, Sphere, read_spheres
 from .cuda import (
     Options,
     generate_centers_kernel,
@@ -10,7 +9,7 @@ from .cuda import (
     generate_fk_kernel,
     generate_rrt_sources,
 )
-from .model import JointInfo, JointKind, KinematicModel
+from .modeling import JointInfo, JointKind, KinematicModel, SelfCollisionRules, Sphere
 from .rrt import Planner, RRTBuild, RRTConfig, RRTResult, build_rrt
 
 __all__ = [
@@ -20,7 +19,6 @@ __all__ = [
     "KinematicModel",
     "Sphere",
     "SelfCollisionRules",
-    "read_spheres",
     "Options",
     "generate_centers_kernel",
     "generate_collision_function",

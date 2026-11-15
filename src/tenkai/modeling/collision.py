@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 import yaml
 from yaml.nodes import MappingNode, Node, ScalarNode, SequenceNode
 
-from .dag import Dag, Optimization
+from ..dag import Dag, Optimization
 from .model import KinematicModel
 from .transform import MatrixNodes, PointNodes, Pose, Vector3
 
@@ -182,10 +182,6 @@ def read_config(source: str) -> CollisionConfig:
         self_only.append(self_link)
 
     return CollisionConfig(groups, controls, pairs, self_only)
-
-
-def read_spheres(source: str, kin: KinematicModel) -> list[Sphere]:
-    return read_config(source).resolve(kin)
 
 
 def enclosing_sphere(spheres: Sequence[Sphere]) -> Sphere:
