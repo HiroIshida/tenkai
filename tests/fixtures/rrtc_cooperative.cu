@@ -19,57 +19,16 @@ void compare(m::RrtPlanner& actual, ReferencePlanner& reference,
     }
 }
 
-__global__ void check_streaming_votes(m::Scene scene) {
-    const unsigned lane = threadIdx.x;
-    for (unsigned mask : {1u, 0x80000000u, 15u, 0xaaaaaaaau, 0xffffffffu}) {
-        for (unsigned hit_lane : {0u, 15u, 31u, 32u}) {
-            const float q[3] = {lane == hit_lane || !(mask & (1u << lane)) ? 0.0f : -0.75f,
-                                0.0f, 0.35f};
-            bool hit = false;
-            if (mask & (1u << lane)) {
-                const auto result = tenkai_collision_streaming(q, scene, 0, mask);
-                assert(result != m::StreamingCollision::Retry);
-                hit = result == m::StreamingCollision::Blocked;
-            }
-            const bool expected = hit_lane < 32 && (mask & (1u << hit_lane));
-            assert(bool(__any_sync(0xffffffffu, hit)) == expected);
-        }
-    }
-    for (float angle : {0.0f, -0.0f, 3.1415927f, -10.0f, 100000.0f, -100000.0f,
-                         1.0e10f, FLT_MAX}) {
-        const float q[3] = {float(lane) * 0.02f - 0.3f, 0.0f, angle};
-        const bool expected = __any_sync(0xffffffffu, tenkai_collision_edge(q, scene, 0));
-        const auto result = tenkai_collision_streaming(q, scene, 0, 0xffffffffu);
-        assert(result != m::StreamingCollision::Retry);
-        assert(bool(__any_sync(0xffffffffu, result == m::StreamingCollision::Blocked)) == expected);
-    }
-    m::Box box = scene.boxes[0];
-    for (float x : {0.0f, 0.18f, nextafterf(0.18f, 0.0f), nextafterf(0.18f, 1.0f),
-                    FLT_MIN / 4, FLT_MAX}) {
-        const m::Vec3 point{x, 0, 0.35f};
-        bool retry = false;
-        const bool hit = m::streaming_intersects(box, point, 0.03f, retry);
-        assert(!retry && hit == m::intersects(box, point, 0.03f));
-    }
-    box.pose.position.x = -FLT_MAX;
-    bool retry = false;
-    m::streaming_intersects(box, {FLT_MAX, 0, 0}, 0.03f, retry);
-    assert(retry);
-}
-
 __device__ void check_collision_vote(const float* q, m::Scene scene, unsigned environment,
                                      unsigned mask) {
     const unsigned lane = threadIdx.x;
     bool scalar = false;
-    bool edge = false;
     bool moving = false;
     if (mask & (1u << lane)) {
         scalar = tenkai_collision_one(q, scene, environment);
-        edge = tenkai_collision_edge<true>(q, scene, environment, mask);
         moving = tenkai_collision_moving<true>(q, scene, environment, mask);
     }
     const bool expected = __any_sync(0xffffffffu, scalar);
-    assert(bool(__any_sync(0xffffffffu, edge)) == expected);
     assert(bool(__any_sync(0xffffffffu, moving)) == expected);
 }
 
@@ -81,7 +40,7 @@ __global__ void check_cooperative_votes(m::Scene scene) {
                                 0.0f, 0.35f};
             bool hit = false;
             if (mask & (1u << lane)) {
-                hit = tenkai_collision_edge<true>(q, scene, 0, mask);
+                hit = tenkai_collision_moving<true>(q, scene, 0, mask);
             }
             const bool expected = hit_lane < 32 && (mask & (1u << hit_lane));
             assert(bool(__any_sync(0xffffffffu, hit)) == expected);
@@ -127,9 +86,6 @@ int main() try {
     check_cooperative_votes<<<1,32>>>(scene);
     m::cuda_check(cudaGetLastError(), "check cooperative collision votes");
     m::cuda_check(cudaDeviceSynchronize(), "validate cooperative collision votes");
-    check_streaming_votes<<<1,32>>>(scene);
-    m::cuda_check(cudaGetLastError(), "check streaming collision masks and contact");
-    m::cuda_check(cudaDeviceSynchronize(), "validate streaming collision masks and contact");
     const m::RrtSpace space{{Scalar(0.1),-1,-1}, {1,1,1},
                             {Scalar(0.025),Scalar(0.025),Scalar(0.025)}, {0,0,0}};
     tenkai::RrtConfig config;
@@ -156,7 +112,7 @@ int main() try {
             config.step_size = step;
             config.goal_bias = step == 1.0 ? 0.0 : 0.2;
             m::RrtPlanner actual(config, space, scene, 8, count);
-            ReferencePlanner reference(config, space, scene, 8, count);
+            ReferencePlanner reference(config, space, scene, count);
             compare(actual, reference, problems);
             boxes[0].pose.world_to_local[0] = c;
             boxes[0].pose.world_to_local[1] = c;
@@ -175,7 +131,7 @@ int main() try {
             compare(actual, reference, problems);
         }
     }
-    std::cout << "Streaming and fallback paths, partial blocks, scene updates and contact passed\n";
+    std::cout << "Cooperative planning, partial blocks, scene updates and contact passed\n";
 } catch (const std::exception& error) {
     std::cerr << error.what() << '\n';
     return 1;

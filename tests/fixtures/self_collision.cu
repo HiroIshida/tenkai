@@ -45,7 +45,6 @@ __device__ void check_predicates() {
                 assert(tenkai_collision_one(q, scene, id) == expected);
 #if defined(__CUDACC__) || defined(__HIPCC__)
                 assert(tenkai_collision_moving(q, scene, id) == expected);
-                assert(tenkai_collision_edge(q, scene, id) == expected);
 #endif
             }
         }
@@ -62,11 +61,7 @@ __device__ void check_predicates() {
             const float q[] = {lane == hit_lane ? 0.0f : 2.0f, 0, 0};
             bool blocked = false;
             if (mask & (1u << lane)) {
-                const auto result = tenkai_collision_streaming(q, scene, 1, mask);
-                assert(result != m::StreamingCollision::Retry);
-                blocked = result == m::StreamingCollision::Blocked;
-                assert(blocked == tenkai_collision_edge<true>(q, scene, 1, mask));
-                assert(blocked == tenkai_collision_moving<true>(q, scene, 1, mask));
+                blocked = tenkai_collision_moving<true>(q, scene, 1, mask);
             }
             const bool expected = hit_lane < 32 && (mask & (1u << hit_lane));
             assert(bool(__any_sync(0xffffffffu, blocked)) == expected);

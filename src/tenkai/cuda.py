@@ -1,12 +1,11 @@
 """CUDA emission using the packaged device and runtime templates."""
 
-import math
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import assert_never
 
-from tenkai.dag import Binary, BinaryOp, Constant, Dag, Input, Optimization, Trig, TrigOp, f32
+from tenkai.dag import Binary, BinaryOp, Constant, Dag, Input, Optimization, Trig
 from tenkai.modeling import (
     CollisionDag,
     KinematicModel,
@@ -183,9 +182,7 @@ def collision_function(
             "    bool collision = false;\n"
             "    tenkai_f32::Vec3 center;\n"
         )
-        body += link_collision_body(
-            emitter, spheres, geometry, streaming=False, warp_support=warp_support
-        )
+        body += link_collision_body(emitter, spheres, geometry, warp_support=warp_support)
         body += "    return collision;\n"
     else:
         body = "    return false;\n"
@@ -198,8 +195,7 @@ def link_collision_body(
     spheres: Sequence[Sphere],
     geometry: CollisionDag,
     *,
-    streaming: bool,
-    warp_support: bool = False,
+    warp_support: bool,
 ) -> str:
     links: dict[int, list[int]] = {}
     for index, sphere in enumerate(spheres):
@@ -214,10 +210,6 @@ def link_collision_body(
     pose_emitter = DagEmitter("", emitter.dag, emitter.dof, pose_outputs, emitter.options)
     source = [pose_emitter.body("q", lambda _index, _node: "")]
     cached = {step.node for step in pose_emitter.schedule.steps if isinstance(step, Evaluate)}
-    streaming_exit = (
-        "    if (__any_sync(mask, collision || retry))\n"
-        "        return retry ? StreamingCollision::Retry : StreamingCollision::Blocked;\n"
-    )
     scalar_exit = "    if (collision) return true;\n"
     if warp_support:
         scalar_exit = "    if (!Cooperative && collision) return true;\n"
@@ -239,12 +231,7 @@ def link_collision_body(
                 step.node for step in bound_emitter.schedule.steps if isinstance(step, Evaluate)
             )
             source.append(link_bound_definition(geometry, link, "enclosing"))
-            condition = (
-                "streaming_may_intersect(box, enclosing) || may_intersect(ground, enclosing)"
-                if streaming
-                else "tenkai_f32::may_intersect(scene, environment, enclosing)"
-            )
-            source.append(f"    if ({condition}) {{\n")
+            source.append("    if (tenkai_f32::may_intersect(scene, environment, enclosing)) {\n")
 
         def store(index: int, value: int) -> str:
             axis = "xyz"[index % 3]
@@ -253,38 +240,23 @@ def link_collision_body(
                 return text
 
             sphere = members[index // 3]
-            if streaming:
-                radius = number(sphere.radius)
-                text += f"    collision |= streaming_intersects(box, center, {radius}f, retry);\n"
-                text += f"    collision |= intersects(ground, center, {radius}f);\n"
-            else:
-                text += sphere_collision(sphere.radius)
+            text += sphere_collision(sphere.radius)
 
             end = index // 3 + 1
             if end % 8 == 0 or end == len(members):
-                if streaming:
-                    if bound is None:
-                        text += streaming_exit
-                else:
-                    text += scalar_exit
-                    if warp_support and bound is None:
-                        text += warp_exit
+                text += scalar_exit
+                if warp_support and bound is None:
+                    text += warp_exit
             return text
 
         source.append(link_emitter.body("q", store, link_cached))
         if bound is not None:
             source.append("    }\n")
-            if streaming:
+            if warp_support:
                 # Skipped lanes must rejoin before a vote using the caller's mask.
-                source.append(streaming_exit)
-            elif warp_support:
                 source.append(warp_exit)
         source.append("    }\n")
-    source.append(
-        self_collision_body(
-            emitter, geometry, cached, streaming=streaming, warp_support=warp_support
-        )
-    )
+    source.append(self_collision_body(emitter, geometry, cached, warp_support=warp_support))
     return "".join(source)
 
 
@@ -306,8 +278,7 @@ def self_collision_body(
     geometry: CollisionDag,
     cached: set[int],
     *,
-    streaming: bool,
-    warp_support: bool = False,
+    warp_support: bool,
 ) -> str:
     pairs = geometry.rules.self_pairs
     if not pairs:
@@ -339,7 +310,7 @@ def self_collision_body(
             radius = number(geometry.spheres[index].radius)
             source.append(f"    const tenkai_f32::Sphere {name} = {{{center}, {radius}f}};\n")
 
-    # Workspace certificates and moving-only filters cover external obstacles.
+    # Moving-only filters cover external obstacles.
     # Every self pair remains active, including pairs with a fixed link.
     for a, b in pairs:
         source.append("    {\n")
@@ -362,133 +333,15 @@ def self_collision_body(
                 )
             if warp_support:
                 source.append("    if (!Cooperative && collision) return true;\n")
-            elif not streaming:
+            else:
                 source.append("    if (collision) return true;\n")
             source.append("    }\n")
         source.append("    }\n")
         source.append("    }\n")
-        if streaming:
+        if warp_support:
             # All lanes rejoin after their broad-phase branch before voting.
-            source.append(
-                "    if (__any_sync(mask, collision)) return StreamingCollision::Blocked;\n"
-            )
-        elif warp_support:
             source.append("    if (Cooperative && __any_sync(mask, collision)) return true;\n")
     return "".join(source)
-
-
-def streaming_replacements(
-    emitter: DagEmitter, spheres: Sequence[Sphere], geometry: CollisionDag
-) -> list[tuple[str, str | int]]:
-    finite_squared_radii = True
-    for sphere in spheres:
-        radius = f32(sphere.radius)
-        squared_radius = f32(radius * radius)
-        if not math.isfinite(squared_radius):
-            finite_squared_radii = False
-            break
-
-    if not finite_squared_radii:
-        streamable_body = "    return false;\n"
-    else:
-        streamable_body = (
-            "    const auto environment = scene.environments[environment_id];\n"
-            "    if (environment.boxes.count != 1 || environment.grounds.count != 1 ||\n"
-            "        environment.spheres.count || environment.cylinders.count) return false;\n"
-            "    const auto& box = scene.boxes[environment.boxes.offset];\n"
-            "    for (unsigned i = 0; i < 9; ++i)\n"
-            "        if (box.pose.world_to_local[i] != (i % 4 == 0 ? 1.0f : 0.0f)) return false;\n"
-            "    return true;\n"
-        )
-
-    body = link_collision_body(emitter, spheres, geometry, streaming=True)
-    return [("STREAMABLE_BODY", streamable_body), ("STREAMING_BODY", body)]
-
-
-def planning_replacements(
-    emitter: DagEmitter,
-    spheres: Sequence[Sphere],
-    groups: Sequence[Sequence[int]],
-    moving: Sequence[int],
-    controls: Sequence[int],
-    geometry: CollisionDag,
-) -> list[tuple[str, str | int]]:
-    options = emitter.options
-    dag = emitter.dag
-    dependencies_by_control = [dag.depends_on_inputs([index]) for index in controls]
-
-    bounded_indices: list[int] = []
-    for index in moving:
-        dependency_count = 0
-        for flags in dependencies_by_control:
-            if any(flags[node] for node in groups[index]):
-                dependency_count += 1
-        if dependency_count <= 2:
-            bounded_indices.append(index)
-
-    remaining_indices = [index for index in moving if index not in bounded_indices]
-    edge_spheres = [spheres[index] for index in remaining_indices]
-    edge_groups = [groups[index] for index in remaining_indices]
-    edge_outputs = [node for group in edge_groups for node in group]
-    edge_emitter = DagEmitter(
-        "tenkai_collision_edge",
-        dag,
-        emitter.dof,
-        edge_outputs,
-        options,
-        edge_groups,
-    )
-    edge_function = collision_function(
-        edge_emitter, edge_spheres, geometry, "__forceinline__", warp_support=True
-    )
-
-    bounds_checks: list[str] = []
-    for dimension, flags in enumerate(dependencies_by_control):
-        affects_bounds = any(flags[node] for index in bounded_indices for node in groups[index])
-        if affects_bounds:
-            bounds_checks.append(
-                f"    if (!(q[{dimension}] >= lower[{dimension}] && "
-                f"q[{dimension}] <= upper[{dimension}])) return false;\n"
-            )
-
-    body: list[str] = []
-    bounded_outputs = [node for index in bounded_indices for node in groups[index]]
-    needed = dag.required_nodes(bounded_outputs)
-    for index, node in enumerate(dag.nodes):
-        if not needed[index]:
-            continue
-
-        match node:
-            case Constant(value):
-                constant = number(value)
-                expression = "{" + constant + "f, " + constant + "f}"
-            case Input(input_index):
-                if input_index in controls:
-                    dimension = controls.index(input_index)
-                    expression = f"workspace_input(lower[{dimension}], upper[{dimension}])"
-                else:
-                    expression = f"{{reference[{input_index}], reference[{input_index}]}}"
-            case Trig(op, angle):
-                cosine = "true" if op == TrigOp.COS else "false"
-                expression = f"workspace_trig(v{angle}, {cosine})"
-            case Binary(op, a, b):
-                expression = f"workspace_{op.value}(v{a}, v{b})"
-        body.append(f"    const WorkspaceInterval v{index} = {expression};\n")
-
-    for index in bounded_indices:
-        x, y, z = groups[index]
-        radius = number(spheres[index].radius)
-        body.append(
-            f"    if (!workspace_clear(v{x}, v{y}, v{z}, {radius}f, "
-            "scene, environment)) return false;\n"
-        )
-
-    return [
-        ("EDGE_FUNCTION", edge_function),
-        *streaming_replacements(edge_emitter, edge_spheres, geometry),
-        ("BOUNDS_CHECKS", "".join(bounds_checks)),
-        ("WORKSPACE_BODY", "".join(body)),
-    ]
 
 
 def prepare_collision(
@@ -570,7 +423,7 @@ def generate_rrt_sources(
     groups = geometry.centers
     dependent = emitter.dag.depends_on_inputs(controls)
     moving = [index for index, group in enumerate(groups) if any(dependent[node] for node in group)]
-    functions = collision_function(emitter, spheres, geometry, "__noinline__", warp_support=True)
+    functions = collision_function(emitter, spheres, geometry, "__noinline__")
     moving_groups = [groups[i] for i in moving]
     moving_outputs = [node for group in moving_groups for node in group]
     moving_emitter = DagEmitter(
@@ -596,13 +449,12 @@ def generate_rrt_sources(
         ("COLLISION_FUNCTIONS", functions),
         ("COLLISION_KERNEL", collision_kernel(kin, spheres)),
     ]
-    replacements.extend(planning_replacements(emitter, spheres, groups, moving, controls, geometry))
 
     files: dict[str, str] = {}
     for path in sorted((TEMPLATES / "rrt").iterdir()):
         name = path.relative_to(TEMPLATES).as_posix()
         files[name] = template(name, replacements)
-    for name in ("sdf", "broad", "streaming", "workspace"):
+    for name in ("sdf", "broad"):
         output_name = f"collision/{name}.cuh"
         files[output_name] = template(output_name, replacements)
     return files

@@ -296,11 +296,9 @@ def test_planner_on_gpu(tmp_path: Path, gpu_backend: Backend, gpu_arch: str) -> 
 
 
 @pytest.mark.gpu
-def test_streaming_and_fallback_paths_on_gpu(
-    tmp_path: Path, gpu_backend: Backend, gpu_arch: str
-) -> None:
+def test_cooperative_planning_on_gpu(tmp_path: Path, gpu_backend: Backend, gpu_arch: str) -> None:
     planner_source(tmp_path, Options(), (2, 0, 1))
-    run_planner_fixture(tmp_path, gpu_backend, gpu_arch, "rrtc_streaming.cu")
+    run_planner_fixture(tmp_path, gpu_backend, gpu_arch, "rrtc_cooperative.cu")
 
 
 @pytest.mark.gpu

@@ -102,7 +102,6 @@ class RrtPlanner {
         trees_(storage_product(problem_count, config.max_nodes)),
         paths_(storage_product(problem_count, config.max_nodes)),
         results_(problem_count),
-        workspace_clear_(environment_count),
         preparation_(problem_count),
         next_problem_(1) {}
 
@@ -120,12 +119,6 @@ class RrtPlanner {
     solved_ = false;
     problems_.upload(problems.data(), problems.size());
 
-    const size_t blocks = (environment_count_ - 1) / 128 + 1;
-    tenkai_rrtc_workspace<<<
-        static_cast<unsigned int>(blocks < 65535 ? blocks : 65535), 128>>>(
-        space_, scene_, environment_count_, workspace_clear_.data());
-    cuda_check(cudaGetLastError(), "check RRT workspace");
-
     tenkai_rrtc_prepare<<<
         static_cast<unsigned int>((problem_count_ - 1) / 128 + 1), 128>>>(
         problems_.data(), problem_count_, space_, scene_, preparation_.data(),
@@ -135,8 +128,7 @@ class RrtPlanner {
     tenkai_rrtc<<<static_cast<unsigned int>((problem_count_ - 1) / 4 + 1),
                   128>>>(problems_.data(), problem_count_, space_, scene_,
                          config_, nodes_.data(), parents_.data(), trees_.data(),
-                         paths_.data(), results_.data(),
-                         workspace_clear_.data(), preparation_.data(),
+                         paths_.data(), results_.data(), preparation_.data(),
                          next_problem_.data());
     cuda_check(cudaGetLastError(), "launch RRT-Connect");
 
@@ -221,7 +213,6 @@ class RrtPlanner {
   DeviceBuffer<RrtTree> trees_;
   DeviceBuffer<uint32_t> paths_;
   DeviceBuffer<tenkai::RrtResult> results_;
-  DeviceBuffer<unsigned char> workspace_clear_;
   DeviceBuffer<RrtPreparation> preparation_;
   DeviceBuffer<uint32_t> next_problem_;
 };

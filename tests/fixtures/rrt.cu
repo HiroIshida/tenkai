@@ -10,7 +10,6 @@ using Status = tenkai::PlanStatus;
 #include "rrtc_reference.cuh"
 namespace sdf = m;
 #include "broad_phase_checks.h"
-#include "workspace_checks.cuh"
 
 __global__ void check_broad_phase_device(bool* result) {
     const unsigned int index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -65,7 +64,7 @@ __global__ void check_edge_grid(m::RrtCandidate* candidates,
     m::RrtProblem problem{};
     problem.environment_id = 1;
     m::rrtc_check_edge(
-        candidates[blockIdx.x], nodes, problem, space, scene, reverse, false);
+        candidates[blockIdx.x], nodes, problem, space, scene, reverse);
 }
 
 void check_edge_grids(const m::RrtSpace& space, m::Scene scene) {
@@ -335,7 +334,7 @@ void check_single_candidate(const m::RrtSpace& space, m::Scene scene,
                 config.step_size = step;
                 config.goal_bias = bias;
                 m::RrtPlanner single(config, space, scene, 3, problems.size());
-                ReferencePlanner general(config, space, scene, 3, problems.size());
+                ReferencePlanner general(config, space, scene, problems.size());
                 const auto actual = single.solve(problems), expected = general.solve(problems);
                 for (size_t i = 0; i < problems.size(); ++i) {
                     assert(actual[i].status == expected[i].status);
@@ -352,7 +351,6 @@ void check_single_candidate(const m::RrtSpace& space, m::Scene scene,
 }
 
 int main() try {
-    check_workspace_bounds();
     m::DeviceBuffer<bool> broad_phase_result(broad_phase_case_count);
     check_broad_phase_device<<<(broad_phase_case_count+127)/128,128>>>(broad_phase_result.data());
     m::cuda_check(cudaGetLastError(), "check broad phase");

@@ -18,8 +18,7 @@ __device__ __forceinline__ void rrtc_check_edge(RrtCandidate& candidate,
                                                 const RrtProblem& problem,
                                                 const RrtSpace& space,
                                                 Scene scene,
-                                                bool reverse,
-                                                bool in_workspace) {
+                                                bool reverse) {
   const uint32_t lane = threadIdx.x % 32;
   const uint64_t checks =
       uint64_t(candidate.steps) + (reverse && candidate.steps ? 1 : 0);
@@ -54,13 +53,8 @@ __device__ __forceinline__ void rrtc_check_edge(RrtCandidate& candidate,
         full[controls[d]] = q;
       }
 
-      if (in_workspace) {
-        hit = tenkai_collision_edge<true>(full, scene, problem.environment_id,
+      hit = tenkai_collision_moving<true>(full, scene, problem.environment_id,
                                           mask);
-      } else {
-        hit = tenkai_collision_moving<true>(full, scene, problem.environment_id,
-                                            mask);
-      }
     }
 
     if (__any_sync(0xffffffffu, hit)) {
@@ -76,7 +70,6 @@ struct RrtcState {
   RrtCandidate candidate;
   tenkai::RrtResult result;
   bool connecting;
-  bool in_workspace;
   volatile bool finished;
   uint32_t round;
   uint32_t target;
@@ -92,7 +85,6 @@ __device__ __forceinline__ void rrtc_search(const RrtProblem* problems,
                                             RrtTree* all_trees,
                                             uint32_t* all_paths,
                                             tenkai::RrtResult* results,
-                                            const unsigned char* clear,
                                             RrtcState& state,
                                             const RrtPreparation* preparation) {
   using namespace tenkai_f32;
@@ -107,7 +99,6 @@ __device__ __forceinline__ void rrtc_search(const RrtProblem* problems,
   RrtCandidate& candidate = state.candidate;
   tenkai::RrtResult& result = state.result;
   bool& connecting = state.connecting;
-  bool& in_workspace = state.in_workspace;
   volatile bool& finished = state.finished;
   uint32_t& round = state.round;
   uint32_t& target = state.target;
@@ -208,18 +199,8 @@ __device__ __forceinline__ void rrtc_search(const RrtProblem* problems,
       candidate.blocked = 0;
     }
 
-    if (lane == 0) {
-      in_workspace = clear[problem.environment_id] &&
-                     tenkai_collision_in_workspace(candidate.q, space.lower,
-                                                   space.upper) &&
-                     tenkai_collision_in_workspace(
-                         nodes + size_t(candidate.parent) * rrt_dimension,
-                         space.lower, space.upper);
-    }
-    __syncwarp();
-
     rrtc_check_edge(candidate, nodes, problem, space, scene,
-                    tree == RrtTree::Goal, in_workspace);
+                    tree == RrtTree::Goal);
     __syncwarp();
 
     if (lane == 0) {
@@ -322,7 +303,6 @@ extern "C" __global__ __launch_bounds__(128, 6) void tenkai_rrtc(
     tenkai_f32::RrtTree* all_trees,
     uint32_t* all_paths,
     tenkai::RrtResult* results,
-    const unsigned char* clear,
     const tenkai_f32::RrtPreparation* preparation,
     uint32_t* next_problem) {
   __shared__ tenkai_f32::RrtcState states[4];
@@ -340,20 +320,10 @@ extern "C" __global__ __launch_bounds__(128, 6) void tenkai_rrtc(
     }
 
     tenkai_f32::rrtc_search(problems, id, space, scene, config, all_nodes,
-                            all_parents, all_trees, all_paths, results, clear,
-                            state, preparation);
+                            all_parents, all_trees, all_paths, results, state,
+                            preparation);
     __syncwarp();
   }
 }
 
-extern "C" __global__ void tenkai_rrtc_workspace(tenkai_f32::RrtSpace space,
-                                                 tenkai_f32::Scene scene,
-                                                 size_t environment_count,
-                                                 unsigned char* clear) {
-  for (size_t id = size_t(blockIdx.x) * blockDim.x + threadIdx.x;
-       id < environment_count; id += size_t(blockDim.x) * gridDim.x) {
-    clear[id] = tenkai_collision_workspace_clear(
-        space.lower, space.upper, space.reference, scene, uint32_t(id));
-  }
-}
 #endif

@@ -42,8 +42,6 @@ def compiler_command(backend: Backend = "cuda", arch: str | None = None) -> tupl
         "hip",
         "-std=c++14",
         "--offload-arch=" + arch,
-        # Workspace bounds need directed rounding, not the default nearest-only intrinsics.
-        "-DOCML_BASIC_ROUNDED_OPERATIONS",
         "-I",
         str(TEMPLATES),
         "-include",

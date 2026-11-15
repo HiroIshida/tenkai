@@ -1,28 +1,25 @@
 #pragma once
 
-// One block per problem bypasses work stealing and workspace pruning.
+// One block per problem checks that work stealing preserves each search.
 __global__ void reference_rrtc(
     const m::RrtProblem* problems, m::RrtSpace space, m::Scene scene,
     tenkai::RrtConfig config, Scalar* nodes, uint32_t* parents, m::RrtTree* trees,
-    uint32_t* paths, tenkai::RrtResult* results, const unsigned char* clear,
+    uint32_t* paths, tenkai::RrtResult* results,
     const m::RrtPreparation* preparation) {
     __shared__ m::RrtcState state;
     m::rrtc_search(problems, blockIdx.x, space, scene, config, nodes, parents, trees,
-                   paths, results, clear, state, preparation);
+                   paths, results, state, preparation);
 }
 
 class ReferencePlanner {
 public:
     ReferencePlanner(const tenkai::RrtConfig& config, const m::RrtSpace& space, m::Scene scene,
-                     size_t environments, size_t problems)
+                     size_t problems)
         : config_(config), space_(space), scene_(scene), count_(problems), problems_(problems),
           nodes_(problems * config.max_nodes * m::rrt_dimension),
           parents_(problems * config.max_nodes), trees_(problems * config.max_nodes),
-          paths_(problems * config.max_nodes), results_(problems), clear_(environments),
-          preparation_(problems), next_problem_(1) {
-        std::vector<unsigned char> clear(environments, 0);
-        clear_.upload(clear.data(), clear.size());
-    }
+          paths_(problems * config.max_nodes), results_(problems),
+          preparation_(problems), next_problem_(1) {}
 
     std::vector<tenkai::RrtResult> solve(const std::vector<m::RrtProblem>& problems) {
         assert(problems.size() == count_);
@@ -32,7 +29,7 @@ public:
         m::cuda_check(cudaGetLastError(), "prepare reference RRT-Connect");
         reference_rrtc<<<static_cast<unsigned int>(count_), 32>>>(
             problems_.data(), space_, scene_, config_, nodes_.data(), parents_.data(),
-            trees_.data(), paths_.data(), results_.data(), clear_.data(), preparation_.data());
+            trees_.data(), paths_.data(), results_.data(), preparation_.data());
         m::cuda_check(cudaGetLastError(), "launch reference RRT-Connect");
         last_.resize(count_);
         results_.download(last_.data(), count_);
@@ -63,7 +60,6 @@ private:
     m::DeviceBuffer<m::RrtTree> trees_;
     m::DeviceBuffer<uint32_t> paths_;
     m::DeviceBuffer<tenkai::RrtResult> results_;
-    m::DeviceBuffer<unsigned char> clear_;
     m::DeviceBuffer<m::RrtPreparation> preparation_;
     m::DeviceBuffer<uint32_t> next_problem_;
     std::vector<tenkai::RrtResult> last_;
