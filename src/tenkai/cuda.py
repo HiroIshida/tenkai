@@ -14,7 +14,7 @@ from .collision import (
     collision_expressions,
 )
 from .dag import Binary, BinaryOp, Constant, Dag, Input, Optimization, Trig, TrigOp, f32
-from .model import FkDag
+from .model import KinematicModel
 from .scheduling import Evaluate, Store, schedule
 
 TEMPLATES = Path(__file__).with_name("templates")
@@ -111,21 +111,21 @@ class DagEmitter:
         return "".join(source)
 
 
-def generate_fk_kernel(fk: FkDag, link_index: int, options: Options = Options()) -> str:
-    if not 0 <= link_index < len(fk.poses):
+def generate_fk_kernel(kin: KinematicModel, link_index: int, options: Options = Options()) -> str:
+    if not 0 <= link_index < len(kin.poses):
         raise ValueError("link index is out of range")
 
-    pose = fk.poses[link_index]
-    dag, outputs = fk.dag.optimize([*pose.translation, *pose.rotation], options.optimization)
-    emitter = DagEmitter("tenkai_fk", dag, len(fk.joint_names), outputs, options)
+    pose = kin.poses[link_index]
+    dag, outputs = kin.dag.optimize([*pose.translation, *pose.rotation], options.optimization)
+    emitter = DagEmitter("tenkai_fk", dag, len(kin.joints), outputs, options)
     return emitter.source()
 
 
 def generate_centers_kernel(
-    fk: FkDag, spheres: Sequence[Sphere], options: Options = Options()
+    kin: KinematicModel, spheres: Sequence[Sphere], options: Options = Options()
 ) -> str:
-    dag, outputs = center_expressions(fk, spheres, options.optimization)
-    emitter = DagEmitter("tenkai_centers", dag, len(fk.joint_names), outputs, options)
+    dag, outputs = center_expressions(kin, spheres, options.optimization)
+    emitter = DagEmitter("tenkai_centers", dag, len(kin.joints), outputs, options)
     return emitter.source()
 
 
@@ -199,9 +199,9 @@ def link_collision_body(
     for link in links:
         pose = geometry.poses[link]
         pose_outputs.extend((*pose.translation, *pose.rotation))
-    fk = DagEmitter("", emitter.dag, emitter.dof, pose_outputs, emitter.options)
-    source = [fk.body("q", lambda _index, _node: "")]
-    cached = {step.node for step in fk.schedule.steps if isinstance(step, Evaluate)}
+    pose_emitter = DagEmitter("", emitter.dag, emitter.dof, pose_outputs, emitter.options)
+    source = [pose_emitter.body("q", lambda _index, _node: "")]
+    cached = {step.node for step in pose_emitter.schedule.steps if isinstance(step, Evaluate)}
     streaming_exit = (
         "    if (__any_sync(mask, collision || retry))\n"
         "        return retry ? StreamingCollision::Retry : StreamingCollision::Blocked;\n"
@@ -461,17 +461,17 @@ def planning_replacements(
 
 
 def prepare_collision(
-    fk: FkDag, spheres: Sequence[Sphere], options: Options, rules: SelfCollisionRules
+    kin: KinematicModel, spheres: Sequence[Sphere], options: Options, rules: SelfCollisionRules
 ) -> tuple[DagEmitter, CollisionDag]:
     for sphere in spheres:
-        sphere.validate(fk)
+        sphere.validate(kin)
 
-    geometry = collision_expressions(fk, spheres, options.optimization, rules)
+    geometry = collision_expressions(kin, spheres, options.optimization, rules)
     outputs = [node for center in geometry.centers for node in center]
     emitter = DagEmitter(
         "tenkai_collision_one",
         geometry.dag,
-        len(fk.joint_names),
+        len(kin.joints),
         outputs,
         options,
         geometry.centers,
@@ -480,23 +480,23 @@ def prepare_collision(
 
 
 def generate_collision_function(
-    fk: FkDag,
+    kin: KinematicModel,
     spheres: Sequence[Sphere],
     options: Options = Options(),
     *,
     rules: SelfCollisionRules = SelfCollisionRules(),
 ) -> str:
-    emitter, geometry = prepare_collision(fk, spheres, options, rules)
+    emitter, geometry = prepare_collision(kin, spheres, options, rules)
     source = template("collision/sdf.cuh")
     # Standalone collision source embeds its dependencies.
     source += template("collision/broad.cuh").replace('#include "sdf.cuh"\n', "")
     return source + collision_function(emitter, spheres, geometry, "inline")
 
 
-def collision_kernel(fk: FkDag, spheres: Sequence[Sphere]) -> str:
+def collision_kernel(kin: KinematicModel, spheres: Sequence[Sphere]) -> str:
     configuration = "configurations"
-    if fk.joint_names:
-        configuration = f"configurations + batch * {len(fk.joint_names)}"
+    if kin.joints:
+        configuration = f"configurations + batch * {len(kin.joints)}"
 
     collision = "false"
     if spheres:
@@ -509,18 +509,18 @@ def collision_kernel(fk: FkDag, spheres: Sequence[Sphere]) -> str:
 
 
 def generate_collision_kernel(
-    fk: FkDag,
+    kin: KinematicModel,
     spheres: Sequence[Sphere],
     options: Options = Options(),
     *,
     rules: SelfCollisionRules = SelfCollisionRules(),
 ) -> str:
-    source = generate_collision_function(fk, spheres, options, rules=rules)
-    return source + collision_kernel(fk, spheres)
+    source = generate_collision_function(kin, spheres, options, rules=rules)
+    return source + collision_kernel(kin, spheres)
 
 
 def generate_rrt_sources(
-    fk: FkDag,
+    kin: KinematicModel,
     spheres: Sequence[Sphere],
     controls: Sequence[int],
     options: Options = Options(),
@@ -530,12 +530,12 @@ def generate_rrt_sources(
     """Return relative paths and source text for a model-specific native planner."""
     if not controls:
         raise ValueError("RRT requires at least one controlled joint")
-    if any(not 0 <= i < len(fk.joint_names) for i in controls):
+    if any(not 0 <= i < len(kin.joints) for i in controls):
         raise ValueError("RRT control index exceeds FK joint count")
     if len(set(controls)) != len(controls):
         raise ValueError("duplicate RRT control index")
 
-    emitter, geometry = prepare_collision(fk, spheres, options, rules)
+    emitter, geometry = prepare_collision(kin, spheres, options, rules)
     groups = geometry.centers
     dependent = emitter.dag.depends_on_inputs(controls)
     moving = [index for index, group in enumerate(groups) if any(dependent[node] for node in group)]
@@ -563,10 +563,10 @@ def generate_rrt_sources(
 
     replacements: list[tuple[str, str | int]] = [
         ("DIMENSION", len(controls)),
-        ("FK_DOF", len(fk.joint_names)),
+        ("FK_DOF", len(kin.joints)),
         ("CONTROLS", ", ".join(map(str, controls))),
         ("COLLISION_FUNCTIONS", functions),
-        ("COLLISION_KERNEL", collision_kernel(fk, spheres)),
+        ("COLLISION_KERNEL", collision_kernel(kin, spheres)),
     ]
     replacements.extend(planning_replacements(emitter, spheres, groups, moving, controls, geometry))
 

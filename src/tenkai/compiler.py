@@ -16,7 +16,7 @@ from .cuda import (
     generate_rrt_sources,
 )
 from .dag import Optimization
-from .model import FkDag, Robot
+from .model import KinematicModel
 
 
 class ControlJoint(TypedDict):
@@ -38,15 +38,15 @@ class ModelMetadata(TypedDict):
     external_sphere_count: int
 
 
-def control_joints(robot: Robot, fk: FkDag, names: list[str]) -> list[ControlJoint]:
+def control_joints(kin: KinematicModel, names: list[str]) -> list[ControlJoint]:
     bounds: list[ControlJoint] = []
-    joints = {joint.name: joint for joint in robot.joints}
+    joint_indices = {joint.name: index for index, joint in enumerate(kin.joints)}
     for name in names:
-        if name not in fk.joint_names:
+        if name not in joint_indices:
             raise ValueError("control is not a movable joint: " + name)
 
-        index = fk.joint_names.index(name)
-        joint = joints[name]
+        index = joint_indices[name]
+        joint = kin.joints[index]
         if joint.kind == "continuous":
             lower, upper = -math.tau, math.tau
         else:
@@ -70,38 +70,34 @@ def generate(
     start = total
     timings: dict[str, float] = {}
 
-    robot = Robot.from_string(urdf_path.read_text())
+    kin = KinematicModel.from_urdf(urdf_path.read_text())
+    timings["kinematics"] = time.perf_counter() - start
+
+    start = time.perf_counter()
     source = yaml_path.read_text()
-    timings["parse_urdf"] = time.perf_counter() - start
-
-    start = time.perf_counter()
-    fk = FkDag.from_robot(robot)
-    timings["fk_dag"] = time.perf_counter() - start
-
-    start = time.perf_counter()
     config = read_config(source)
-    spheres = config.resolve(fk)
-    rules = config.resolve_rules(fk, spheres)
-    bounds = control_joints(robot, fk, config.control_joint_names)
+    spheres = config.resolve(kin)
+    rules = config.resolve_rules(kin, spheres)
+    bounds = control_joints(kin, config.control_joint_names)
     controls = [joint["index"] for joint in bounds]
     timings["spheres_and_controls"] = time.perf_counter() - start
 
     files: dict[str, str] = {}
     start = time.perf_counter()
-    files["collision.cuh"] = generate_collision_kernel(fk, spheres, options, rules=rules)
+    files["collision.cuh"] = generate_collision_kernel(kin, spheres, options, rules=rules)
     timings["collision_codegen"] = time.perf_counter() - start
 
     start = time.perf_counter()
     if controls:
-        files.update(generate_rrt_sources(fk, spheres, controls, options, rules=rules))
+        files.update(generate_rrt_sources(kin, spheres, controls, options, rules=rules))
     timings["rrt_codegen"] = time.perf_counter() - start
 
     if all_kernels:
         start = time.perf_counter()
-        files["fk.cuh"] = generate_fk_kernel(fk, len(fk.poses) - 1, options)
-        files["centers.cuh"] = generate_centers_kernel(fk, spheres, options)
+        files["fk.cuh"] = generate_fk_kernel(kin, len(kin.poses) - 1, options)
+        files["centers.cuh"] = generate_centers_kernel(kin, spheres, options)
         files["collision_function.cuh"] = generate_collision_function(
-            fk, spheres, options, rules=rules
+            kin, spheres, options, rules=rules
         )
         timings["auxiliary_codegen"] = time.perf_counter() - start
 
@@ -113,7 +109,7 @@ def generate(
         path.write_text(contents)
 
     model = ModelMetadata(
-        input_joint_names=fk.joint_names,
+        input_joint_names=kin.joint_names,
         control_joints=bounds,
         sphere_count=len(spheres),
         scalar="float",

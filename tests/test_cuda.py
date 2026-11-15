@@ -8,9 +8,8 @@ from pathlib import Path
 import pytest
 
 from tenkai import (
-    FkDag,
+    KinematicModel,
     Options,
-    Robot,
     SelfCollisionRules,
     Sphere,
     generate_centers_kernel,
@@ -39,14 +38,14 @@ def write_sources(directory: Path, files: dict[str, str]) -> None:
 
 
 def chain_sources(directory: Path, options: Options) -> None:
-    fk = FkDag.from_robot(Robot.from_string((FIXTURES / "fk_chain.urdf").read_text()))
-    tool = fk.link_names.index("tool")
+    kin = KinematicModel.from_urdf((FIXTURES / "fk_chain.urdf").read_text())
+    tool = kin.link_names.index("tool")
     spheres = [Sphere(tool, (0, 0, 0), 0.25)]
     spheres.extend(Sphere(tool, (i, 0, 0), (i + 1) / 64) for i in range(1, 9))
-    spheres.insert(1, Sphere(fk.link_names.index("sensor"), (0, 0, 0), 0.375))
-    (directory / "fk.cuh").write_text(generate_fk_kernel(fk, tool, options))
-    (directory / "centers.cuh").write_text(generate_centers_kernel(fk, spheres, options))
-    (directory / "collision.cuh").write_text(generate_collision_kernel(fk, spheres, options))
+    spheres.insert(1, Sphere(kin.link_names.index("sensor"), (0, 0, 0), 0.375))
+    (directory / "fk.cuh").write_text(generate_fk_kernel(kin, tool, options))
+    (directory / "centers.cuh").write_text(generate_centers_kernel(kin, spheres, options))
+    (directory / "collision.cuh").write_text(generate_collision_kernel(kin, spheres, options))
     radii = ", ".join(f"{sphere.radius}f" for sphere in spheres)
     (directory / "config.h").write_text(
         "using Scalar = float;\nnamespace sdf = tenkai_f32;\nconstexpr double tolerance = 1e-5;\n"
@@ -63,13 +62,13 @@ def planner_source(directory: Path, options: Options, controls: tuple[int, ...] 
         robot += f'<parent link="{parent}"/><child link="{name}"/><axis xyz="{axis}"/></joint>'
         parent = name
     robot += "</robot>"
-    fk = FkDag.from_robot(Robot.from_string(robot))
+    kin = KinematicModel.from_urdf(robot)
     spheres = [Sphere(3, (0, 0, 0), 0.05), Sphere(3, (0, 0, 0.025), 0.025)]
-    write_sources(directory, generate_rrt_sources(fk, spheres, controls, options))
+    write_sources(directory, generate_rrt_sources(kin, spheres, controls, options))
 
 
 def static_planner_source(directory: Path, options: Options, sphere_count: int) -> None:
-    robot = Robot.from_string("""<robot name="fixed_spheres">
+    kin = KinematicModel.from_urdf("""<robot name="fixed_spheres">
       <link name="root"/><link name="arm"/><link name="slide"/><link name="lift"/>
       <joint name="spin" type="revolute"><parent link="lift"/><child link="arm"/>
         <axis xyz="0 0 1"/></joint>
@@ -78,14 +77,13 @@ def static_planner_source(directory: Path, options: Options, sphere_count: int) 
       <joint name="lift" type="prismatic"><parent link="root"/><child link="lift"/>
         <axis xyz="0 0 1"/></joint>
     </robot>""")
-    fk = FkDag.from_robot(robot)
     spheres = [
-        Sphere(fk.link_names.index("root"), (-5, 0, 0), 0.05),
-        Sphere(fk.link_names.index("slide"), (0, 0, 0), 0.05),
-        Sphere(fk.link_names.index("lift"), (0, 0, 0.5), 0.05),
-        Sphere(fk.link_names.index("arm"), (2, 0, 0), 0.05),
+        Sphere(kin.link_names.index("root"), (-5, 0, 0), 0.05),
+        Sphere(kin.link_names.index("slide"), (0, 0, 0), 0.05),
+        Sphere(kin.link_names.index("lift"), (0, 0, 0.5), 0.05),
+        Sphere(kin.link_names.index("arm"), (2, 0, 0), 0.05),
     ]
-    write_sources(directory, generate_rrt_sources(fk, spheres[:sphere_count], [0], options))
+    write_sources(directory, generate_rrt_sources(kin, spheres[:sphere_count], [0], options))
 
 
 def run_planner_fixture(
@@ -121,13 +119,13 @@ def self_collision_sources(directory: Path, options: Options, members: int, cont
         robot += f'<link name="{name}"/><joint name="{name}" type="prismatic">'
         robot += f'<parent link="{parent}"/><child link="{name}"/><axis xyz="{axis}"/></joint>'
         parent = name
-    fk = FkDag.from_robot(Robot.from_string(robot + "</robot>"))
+    kin = KinematicModel.from_urdf(robot + "</robot>")
     spheres = [Sphere(link, (0, i * 0.5, 0), 0.125) for link in (0, 3) for i in range(members)]
     rules = SelfCollisionRules(((0, 3),), (0,))
-    source = generate_collision_kernel(fk, spheres, options, rules=rules)
+    source = generate_collision_kernel(kin, spheres, options, rules=rules)
     (directory / "collision.cuh").write_text(source)
     write_sources(
-        directory, generate_rrt_sources(fk, spheres, list(range(controls)), options, rules=rules)
+        directory, generate_rrt_sources(kin, spheres, list(range(controls)), options, rules=rules)
     )
 
 
@@ -177,14 +175,14 @@ def test_fetch_collision_against_exhaustive_pairs(
     tmp_path: Path, optimization: Optimization
 ) -> None:
     assets = ROOT / "assets/fetch"
-    fk = FkDag.from_robot(Robot.from_string((assets / "fetch.urdf").read_text()))
+    kin = KinematicModel.from_urdf((assets / "fetch.urdf").read_text())
     config = read_config((assets / "collision.yaml").read_text())
-    spheres = config.resolve(fk)
-    rules = config.resolve_rules(fk, spheres)
+    spheres = config.resolve(kin)
+    rules = config.resolve_rules(kin, spheres)
     options = Options(optimization=optimization, live_budget=64)
-    (tmp_path / "centers.cuh").write_text(generate_centers_kernel(fk, spheres, options))
+    (tmp_path / "centers.cuh").write_text(generate_centers_kernel(kin, spheres, options))
     (tmp_path / "collision.cuh").write_text(
-        generate_collision_kernel(fk, spheres, options, rules=rules)
+        generate_collision_kernel(kin, spheres, options, rules=rules)
     )
     pairs = {frozenset(pair) for pair in rules.self_pairs}
     rows = []

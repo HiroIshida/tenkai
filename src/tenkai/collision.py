@@ -9,7 +9,7 @@ import yaml
 from yaml.nodes import MappingNode, Node, ScalarNode, SequenceNode
 
 from .dag import Dag, Optimization
-from .model import FkDag
+from .model import KinematicModel
 from .transform import MatrixNodes, PointNodes, Pose, Vector3
 
 
@@ -19,8 +19,8 @@ class Sphere:
     position: Vector3
     radius: float = 0.0
 
-    def validate(self, fk: FkDag) -> None:
-        if not 0 <= self.link_index < len(fk.poses):
+    def validate(self, kin: KinematicModel) -> None:
+        if not 0 <= self.link_index < len(kin.poses):
             raise ValueError("sphere link index is out of range")
         if len(self.position) != 3 or not all(math.isfinite(value) for value in self.position):
             raise ValueError("sphere position must have three finite components")
@@ -35,27 +35,27 @@ class CollisionConfig:
     self_collision_pairs: list[tuple[str, str]] = field(default_factory=list)
     only_self_collision_links: list[str] = field(default_factory=list)
 
-    def resolve(self, fk: FkDag) -> list[Sphere]:
-        unknown_links = self.groups.keys() - set(fk.link_names)
+    def resolve(self, kin: KinematicModel) -> list[Sphere]:
+        unknown_links = self.groups.keys() - set(kin.link_names)
         if unknown_links:
             raise ValueError(
                 "collision spheres reference unknown link: " + sorted(unknown_links)[0]
             )
 
         spheres: list[Sphere] = []
-        for index, name in enumerate(fk.link_names):
+        for index, name in enumerate(kin.link_names):
             for x, y, z, radius in self.groups.get(name, []):
                 sphere = Sphere(index, (x, y, z), radius)
-                sphere.validate(fk)
+                sphere.validate(kin)
                 spheres.append(sphere)
 
         return spheres
 
-    def resolve_rules(self, fk: FkDag, spheres: Sequence[Sphere]) -> "SelfCollisionRules":
+    def resolve_rules(self, kin: KinematicModel, spheres: Sequence[Sphere]) -> "SelfCollisionRules":
         def link_index(name: str) -> int:
-            if name not in fk.link_names:
+            if name not in kin.link_names:
                 raise ValueError("collision rules reference unknown link: " + name)
-            return fk.link_names.index(name)
+            return kin.link_names.index(name)
 
         pairs = tuple((link_index(a), link_index(b)) for a, b in self.self_collision_pairs)
         self_only = tuple(link_index(name) for name in self.only_self_collision_links)
@@ -184,8 +184,8 @@ def read_config(source: str) -> CollisionConfig:
     return CollisionConfig(groups, controls, pairs, self_only)
 
 
-def read_spheres(source: str, fk: FkDag) -> list[Sphere]:
-    return read_config(source).resolve(fk)
+def read_spheres(source: str, kin: KinematicModel) -> list[Sphere]:
+    return read_config(source).resolve(kin)
 
 
 def enclosing_sphere(spheres: Sequence[Sphere]) -> Sphere:
@@ -205,26 +205,26 @@ def enclosing_sphere(spheres: Sequence[Sphere]) -> Sphere:
 
 
 def center_expressions(
-    fk: FkDag, spheres: Sequence[Sphere], optimization: Optimization
+    kin: KinematicModel, spheres: Sequence[Sphere], optimization: Optimization
 ) -> tuple[Dag, list[int]]:
-    dag, outputs = center_dag(fk, spheres, optimization)
+    dag, outputs = center_dag(kin, spheres, optimization)
     return dag.optimize(outputs, optimization)
 
 
 def center_dag(
-    fk: FkDag, spheres: Sequence[Sphere], optimization: Optimization
+    kin: KinematicModel, spheres: Sequence[Sphere], optimization: Optimization
 ) -> tuple[Dag, list[int]]:
     for sphere in spheres:
-        sphere.validate(fk)
+        sphere.validate(kin)
 
     counts = Counter(sphere.link_index for sphere in spheres)
-    dag = Dag(fk.dag.nodes.copy())
+    dag = Dag(kin.dag.nodes.copy())
     rotations: dict[int, MatrixNodes] = {}
     outputs: list[int] = []
     share_rotations = optimization == "algebraic"
 
     for sphere in spheres:
-        pose = fk.poses[sphere.link_index]
+        pose = kin.poses[sphere.link_index]
         x, y, z = [dag.constant(value) for value in sphere.position]
         local = (x, y, z)
         if share_rotations and counts[sphere.link_index] >= 4:
@@ -256,19 +256,19 @@ class CollisionDag:
 
 
 def collision_expressions(
-    fk: FkDag,
+    kin: KinematicModel,
     spheres: Sequence[Sphere],
     optimization: Optimization,
     rules: SelfCollisionRules = SelfCollisionRules(),
 ) -> CollisionDag:
     rules.validate(spheres)
-    dag, outputs = center_dag(fk, spheres, optimization)
+    dag, outputs = center_dag(kin, spheres, optimization)
     center_count = len(outputs)
     links: dict[int, list[Sphere]] = {}
     for sphere in spheres:
         links.setdefault(sphere.link_index, []).append(sphere)
     for link in links:
-        pose = fk.poses[link]
+        pose = kin.poses[link]
         outputs.extend((*pose.translation, *pose.rotation))
 
     enclosing: list[tuple[Sphere, float]] = []
@@ -278,7 +278,7 @@ def collision_expressions(
         bound = enclosing_sphere(members)
         local_scale = max(sum(abs(value) for value in s.position) for s in [*members, bound])
         x, y, z = [dag.constant(value) for value in bound.position]
-        outputs.extend(fk.poses[link].transform_point(dag, (x, y, z)))
+        outputs.extend(kin.poses[link].transform_point(dag, (x, y, z)))
         enclosing.append((bound, local_scale))
 
     dag, outputs = dag.optimize(outputs, optimization)

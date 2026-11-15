@@ -10,13 +10,14 @@ from .cuda import (
     generate_fk_kernel,
     generate_rrt_sources,
 )
-from .model import FkDag, Robot
+from .model import JointInfo, JointKind, KinematicModel
 from .rrt import Planner, RRTBuild, RRTConfig, RRTResult, build_rrt
 
 __all__ = [
     "sdf",
-    "FkDag",
-    "Robot",
+    "JointInfo",
+    "JointKind",
+    "KinematicModel",
     "Sphere",
     "SelfCollisionRules",
     "read_spheres",
