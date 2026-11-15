@@ -5,6 +5,7 @@ import json
 import shutil
 import subprocess
 import sys
+from collections.abc import Set
 from pathlib import Path
 
 import numpy as np
@@ -217,6 +218,18 @@ def test_invalid_build_options_before_generation(
     assert not (tmp_path / "build").exists()
 
 
+@pytest.mark.parametrize("types", [{object}, {sdf.Ground()}, {"Box"}, sdf.Box, [sdf.Box]])
+def test_invalid_specialization_before_generation(tmp_path: Path, types: object) -> None:
+    with pytest.raises(ValueError, match="specialize_types"):
+        build_rrt(
+            "missing.urdf",
+            "missing.yaml",
+            tmp_path / "build",
+            specialize_types=types,  # type: ignore[arg-type]
+        )
+    assert not (tmp_path / "build").exists()
+
+
 @pytest.fixture(scope="module")
 def compiled(
     tmp_path_factory: pytest.TempPathFactory,
@@ -382,6 +395,79 @@ def test_mixed_environments_share_one_build_on_gpu(
 
     with compiled.planner([sdf.Ground(z=0.0)]) as other:
         assert other.solve([[-0.5, -0.5]], [[0.5, 0.5]], [0], [42])[0]["status"] == "invalid_start"
+
+
+@pytest.mark.gpu
+@pytest.mark.parametrize(
+    "types",
+    [
+        set(),
+        {sdf.Box, sdf.Ground},
+        {sdf.Sphere, sdf.Cylinder},
+        {sdf.Box, sdf.Sphere, sdf.Cylinder, sdf.Ground},
+    ],
+    ids=["empty", "box-ground", "sphere-cylinder", "all"],
+)
+def test_union_specialization_matches_generic_paths(
+    tmp_path: Path,
+    compiled: RRTBuild,
+    gpu_backend: Backend,
+    gpu_arch: str,
+    types: Set[sdf.CollisionObjectType],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    urdf, spheres = robot_inputs(tmp_path)
+    specialized = build_rrt(
+        urdf,
+        spheres,
+        tmp_path / "specialized",
+        backend=gpu_backend,
+        arch=gpu_arch,
+        specialize_types=types,
+    )
+
+    def no_compilation(*args: object, **kwargs: object) -> None:
+        pytest.fail("choosing a kernel must not invoke a compiler")
+
+    monkeypatch.setattr(subprocess, "run", no_compilation)
+    box = sdf.Box((0, 0, 0), (0.3, 0.4, 0.2), ((0.6, -0.8, 0), (0.8, 0.6, 0), (0, 0, 1)))
+    sphere = sdf.Sphere((0, 0, 0), 0.2)
+    cylinder = sdf.Cylinder((0, 0, 0), 0.2, 0.5)
+    environments: list[list[sdf.CollisionObject]] = [
+        [],
+        [box],
+        [sdf.Ground(z=-0.2)],
+        [box, sdf.Box((0.5, -0.5, 0), (0.2, 0.2, 0.2)), sdf.Ground(z=-0.2), sdf.Ground(z=-1)],
+        [sphere],
+        [cylinder],
+        [sphere, cylinder, sdf.Sphere((0.5, -0.5, 0), 0.1), sdf.Cylinder((-0.5, 0.5, 0), 0.1, 0.5)],
+        [sdf.Sphere((-0.75, -0.75, 0), 0.1)],
+        [sdf.Cylinder((0.75, 0.75, 0), 0.1, 0.4)],
+    ]
+    count = 37
+    starts = np.tile([-0.75, -0.75], (count, 1))
+    goals = -starts
+    seeds = np.arange(count, dtype=np.uint64) + 42
+    config = RRTConfig(max_nodes=1024, max_rounds=512, step_size=0.3)
+    with (
+        compiled.planner(environments, config=config, problem_count=count) as generic,
+        specialized.planner(environments, config=config, problem_count=count) as actual,
+    ):
+        # Unreferenced environments must not prevent specialization; later solves
+        # can introduce other types and then return to the original union.
+        for ids in ([0], [1, 2, 3, 0], [4, 5, 6, 0], list(range(9)), [1, 2, 3, 0]):
+            environment_ids = np.resize(np.asarray(ids, dtype=np.uint32), count)
+            expected = generic.solve(starts, goals, environment_ids, seeds)
+            result = actual.solve(starts, goals, environment_ids, seeds)
+            assert result == expected
+            for index, item in enumerate(result):
+                path = actual.path(index)
+                np.testing.assert_array_equal(path, generic.path(index))
+                if item["status"] == "success":
+                    assert not actual.collisions(
+                        path[:, ::-1], [environment_ids[index]] * len(path)
+                    ).any()
+            assert any(item["status"] == "success" for item in result)
 
 
 @pytest.mark.gpu_compile

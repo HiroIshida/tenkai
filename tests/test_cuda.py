@@ -125,7 +125,10 @@ def self_collision_sources(directory: Path, options: Options, members: int, cont
     source = generate_collision_kernel(kin, spheres, options, rules=rules)
     (directory / "collision.cuh").write_text(source)
     write_sources(
-        directory, generate_rrt_sources(kin, spheres, list(range(controls)), options, rules=rules)
+        directory,
+        generate_rrt_sources(
+            kin, spheres, list(range(controls)), options, rules=rules, specialize_types=set()
+        ),
     )
 
 

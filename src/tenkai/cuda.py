@@ -1,6 +1,6 @@
 """CUDA emission using the packaged device and runtime templates."""
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Sequence, Set
 from dataclasses import dataclass
 from pathlib import Path
 from typing import assert_never
@@ -15,6 +15,7 @@ from tenkai.modeling import (
     collision_expressions,
 )
 from tenkai.scheduling import Evaluate, Store, schedule
+from tenkai.sdf import CollisionObjectType, geometry_type_mask
 
 TEMPLATES = Path(__file__).with_name("templates")
 
@@ -128,7 +129,7 @@ def generate_centers_kernel(
     return emitter.source()
 
 
-def sphere_collision(radius: float) -> str:
+def sphere_collision(radius: float, *, specialize_types: bool = False) -> str:
     source: list[str] = []
 
     for primitive, field in (
@@ -137,11 +138,14 @@ def sphere_collision(radius: float) -> str:
         ("Cylinder", "cylinders"),
         ("Ground", "grounds"),
     ):
+        count = f"environment.{field}.count"
+        if specialize_types:
+            count = f"(Types & tenkai_f32::{primitive}Type ? {count} : 0)"
         source.append(
             "#ifdef __CUDACC__\n"
             "    #pragma unroll 1\n"
             "#endif\n"
-            f"    for (size_t i = 0; i < environment.{field}.count; ++i) {{\n"
+            f"    for (size_t i = 0; i < {count}; ++i) {{\n"
             f"        const tenkai_f32::{primitive}& obstacle = "
             f"scene.{field}[environment.{field}.offset + i];\n"
         )
@@ -157,7 +161,9 @@ def sphere_collision(radius: float) -> str:
 def collision_definition(
     name: str, qualifier: str, body: str, *, warp_support: bool = False
 ) -> str:
-    prefix = "template <bool Cooperative = false>\n" if warp_support else ""
+    prefix = ""
+    if warp_support:
+        prefix = "template <bool Cooperative = false, unsigned Types = tenkai_f32::AllTypes>\n"
     mask = ", unsigned mask = 0xffffffffu" if warp_support else ""
     return (
         f"\n{prefix}__device__ {qualifier} bool {name}(\n"
@@ -231,7 +237,11 @@ def link_collision_body(
                 step.node for step in bound_emitter.schedule.steps if isinstance(step, Evaluate)
             )
             source.append(link_bound_definition(geometry, link, "enclosing"))
-            source.append("    if (tenkai_f32::may_intersect(scene, environment, enclosing)) {\n")
+            type_argument = "<Types>" if warp_support else ""
+            source.append(
+                f"    if (tenkai_f32::may_intersect{type_argument}"
+                "(scene, environment, enclosing)) {\n"
+            )
 
         def store(index: int, value: int) -> str:
             axis = "xyz"[index % 3]
@@ -240,7 +250,7 @@ def link_collision_body(
                 return text
 
             sphere = members[index // 3]
-            text += sphere_collision(sphere.radius)
+            text += sphere_collision(sphere.radius, specialize_types=warp_support)
 
             end = index // 3 + 1
             if end % 8 == 0 or end == len(members):
@@ -410,6 +420,7 @@ def generate_rrt_sources(
     options: Options = Options(),
     *,
     rules: SelfCollisionRules = SelfCollisionRules(),
+    specialize_types: Set[CollisionObjectType] | None = None,
 ) -> dict[str, str]:
     """Return relative paths and source text for a model-specific native planner."""
     if not controls:
@@ -443,6 +454,7 @@ def generate_rrt_sources(
     )
 
     replacements: list[tuple[str, str | int]] = [
+        ("RRT_TYPES", geometry_type_mask(specialize_types)),
         ("DIMENSION", len(controls)),
         ("FK_DOF", len(kin.joints)),
         ("CONTROLS", ", ".join(map(str, controls))),

@@ -5,6 +5,7 @@ import json
 import math
 import subprocess
 import time
+from collections.abc import Set
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from types import TracebackType
@@ -16,7 +17,7 @@ import numpy.typing as npt
 from tenkai.build import Backend, compiler_command, target_arch
 from tenkai.compiler import ModelMetadata, generate
 from tenkai.cuda import Options
-from tenkai.sdf import Geometry, SceneData, pack_geometry
+from tenkai.sdf import CollisionObjectType, Geometry, SceneData, pack_geometry
 
 type Status = Literal["success", "round_limit", "node_limit", "invalid_start", "invalid_goal"]
 
@@ -96,6 +97,7 @@ def build_rrt(
     backend: Backend = "cuda",
     arch: str | None = None,
     max_registers: int | None = None,
+    specialize_types: Set[CollisionObjectType] | None = None,
 ) -> RRTBuild:
     """Generate and compile RRT-Connect into output/librrt.so using nvcc or hipcc.
 
@@ -103,6 +105,12 @@ def build_rrt(
     rebuilds the library. Use separate output directories for distinct builds.
     HIP defaults to gfx1201 (RX 9070 XT) and requires wave32 at runtime.
     The result includes codegen, nvcc/hipcc, and total wall times in seconds.
+
+    specialize_types adds one search kernel for that union of sdf obstacle
+    classes. Counts and poses stay dynamic. Each solve uses it if every
+    referenced environment fits; otherwise the whole batch uses the generic
+    kernel. None (the default) or all four classes builds only the generic
+    kernel. An empty set specializes obstacle-free environments.
     """
     begin = time.perf_counter()
     arch = target_arch(backend, arch)
@@ -115,7 +123,9 @@ def build_rrt(
         raise ValueError("max_registers is only supported by the CUDA backend")
 
     directory = Path(output).resolve()
-    stages = generate(Path(urdf), Path(spheres), directory, options)
+    stages = generate(
+        Path(urdf), Path(spheres), directory, options, specialize_types=specialize_types
+    )
     model: ModelMetadata = json.loads((directory / "model.json").read_text())
     if not model["control_joints"]:
         raise ValueError("RRT requires at least one control_joint_names entry")

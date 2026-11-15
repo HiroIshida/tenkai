@@ -1,6 +1,6 @@
 """Runtime collision objects, in meters in the robot's root frame."""
 
-from collections.abc import Sequence
+from collections.abc import Sequence, Set
 from dataclasses import dataclass
 from typing import TypeGuard
 
@@ -98,7 +98,18 @@ class Ground:
 
 
 type CollisionObject = Box | Sphere | Cylinder | Ground
+type CollisionObjectType = type[Box] | type[Sphere] | type[Cylinder] | type[Ground]
 type Geometry = Sequence[CollisionObject] | Sequence[Sequence[CollisionObject]]
+
+
+def geometry_type_mask(types: Set[CollisionObjectType] | None) -> int:
+    """Encode the primitive order shared by SceneData and the native Environment."""
+    if types is None:
+        return 15
+    primitives = (Box, Sphere, Cylinder, Ground)
+    if not isinstance(types, Set) or any(kind not in primitives for kind in types):
+        raise ValueError("specialize_types must be a set of sdf.Box, Sphere, Cylinder, or Ground")
+    return sum(1 << index for index, kind in enumerate(primitives) if kind in types)
 
 
 @dataclass

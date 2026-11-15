@@ -13,6 +13,7 @@ enum class RrtPreparation : unsigned char { Search, InvalidStart, InvalidGoal };
 
 // Every interpolation point is required; reverse edges include their new
 // source.
+template <unsigned Types = AllTypes>
 __device__ __forceinline__ void rrtc_check_edge(RrtCandidate& candidate,
                                                 const Scalar* nodes,
                                                 const RrtProblem& problem,
@@ -53,8 +54,8 @@ __device__ __forceinline__ void rrtc_check_edge(RrtCandidate& candidate,
         full[controls[d]] = q;
       }
 
-      hit = tenkai_collision_moving<true>(full, scene, problem.environment_id,
-                                          mask);
+      hit = tenkai_collision_moving<true, Types>(full, scene,
+                                                 problem.environment_id, mask);
     }
 
     if (__any_sync(0xffffffffu, hit)) {
@@ -75,6 +76,7 @@ struct RrtcState {
   uint32_t target;
 };
 
+template <unsigned Types = AllTypes>
 __device__ __forceinline__ void rrtc_search(const RrtProblem* problems,
                                             size_t id,
                                             const RrtSpace& space,
@@ -199,8 +201,8 @@ __device__ __forceinline__ void rrtc_search(const RrtProblem* problems,
       candidate.blocked = 0;
     }
 
-    rrtc_check_edge(candidate, nodes, problem, space, scene,
-                    tree == RrtTree::Goal);
+    rrtc_check_edge<Types>(candidate, nodes, problem, space, scene,
+                           tree == RrtTree::Goal);
     __syncwarp();
 
     if (lane == 0) {
@@ -292,7 +294,8 @@ extern "C" __global__ void tenkai_rrtc_prepare(
   preparation[id] = initial;
 }
 
-extern "C" __global__ __launch_bounds__(128, 6) void tenkai_rrtc(
+template <unsigned Types = tenkai_f32::AllTypes>
+__global__ __launch_bounds__(128, 6) void tenkai_rrtc(
     const tenkai_f32::RrtProblem* problems,
     size_t problem_count,
     tenkai_f32::RrtSpace space,
@@ -319,9 +322,9 @@ extern "C" __global__ __launch_bounds__(128, 6) void tenkai_rrtc(
       return;
     }
 
-    tenkai_f32::rrtc_search(problems, id, space, scene, config, all_nodes,
-                            all_parents, all_trees, all_paths, results, state,
-                            preparation);
+    tenkai_f32::rrtc_search<Types>(problems, id, space, scene, config,
+                                   all_nodes, all_parents, all_trees, all_paths,
+                                   results, state, preparation);
     __syncwarp();
   }
 }

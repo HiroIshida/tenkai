@@ -9,6 +9,7 @@
 namespace tenkai_f32 {
 constexpr uint32_t rrt_dimension = TPL_DIMENSION;
 constexpr uint32_t rrt_fk_dof = TPL_FK_DOF;
+constexpr unsigned rrt_specialized_types = TPL_RRT_TYPES;
 }  // namespace tenkai_f32
 
 /* TPL_COLLISION_FUNCTIONS */

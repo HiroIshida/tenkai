@@ -194,7 +194,7 @@ struct Context {
     scene.cylinders = cylinders.data();
     scene.grounds = grounds.data();
     planner.reset(new model::RrtPlanner(config, space, scene, environment_count,
-                                        problems));
+                                        problems, host.environments.data()));
   }
 };
 

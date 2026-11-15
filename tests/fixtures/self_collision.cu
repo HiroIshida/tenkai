@@ -45,6 +45,9 @@ __device__ void check_predicates() {
                 assert(tenkai_collision_one(q, scene, id) == expected);
 #if defined(__CUDACC__) || defined(__HIPCC__)
                 assert(tenkai_collision_moving(q, scene, id) == expected);
+                if (id == 0) {
+                    assert((tenkai_collision_moving<false, 0>(q, scene, id) == expected));
+                }
 #endif
             }
         }
@@ -91,7 +94,7 @@ int main() {
     }
     tenkai::RrtConfig config;
     config.max_rounds = 256;
-    m::RrtPlanner planner(config, space, scene, 1, 3);
+    m::RrtPlanner planner(config, space, scene, 1, 3, &env);
     std::vector<m::RrtProblem> problems(3);
     for (auto& problem : problems) {
         problem.start[0] = -1;

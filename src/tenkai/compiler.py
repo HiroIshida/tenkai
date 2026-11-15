@@ -3,6 +3,7 @@
 import json
 import math
 import time
+from collections.abc import Set
 from pathlib import Path
 from typing import Literal, TypedDict
 
@@ -16,6 +17,7 @@ from tenkai.cuda import (
 )
 from tenkai.dag import Optimization
 from tenkai.modeling import KinematicModel, read_config
+from tenkai.sdf import CollisionObjectType, geometry_type_mask
 
 
 class ControlJoint(TypedDict):
@@ -64,7 +66,10 @@ def generate(
     output: Path,
     options: Options = Options(),
     all_kernels: bool = False,
+    *,
+    specialize_types: Set[CollisionObjectType] | None = None,
 ) -> dict[str, float]:
+    geometry_type_mask(specialize_types)
     total = time.perf_counter()
     start = total
     timings: dict[str, float] = {}
@@ -88,7 +93,11 @@ def generate(
 
     start = time.perf_counter()
     if controls:
-        files.update(generate_rrt_sources(kin, spheres, controls, options, rules=rules))
+        files.update(
+            generate_rrt_sources(
+                kin, spheres, controls, options, rules=rules, specialize_types=specialize_types
+            )
+        )
     timings["rrt_codegen"] = time.perf_counter() - start
 
     if all_kernels:

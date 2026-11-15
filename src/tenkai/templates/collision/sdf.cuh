@@ -48,6 +48,14 @@ struct Range {
   size_t count;
 };
 
+enum GeometryType : unsigned {
+  BoxType = 1,
+  SphereType = 2,
+  CylinderType = 4,
+  GroundType = 8,
+  AllTypes = BoxType | SphereType | CylinderType | GroundType
+};
+
 struct Environment {
   Range boxes;
   Range spheres;

@@ -55,6 +55,16 @@ Creating a planner uploads its environments and allocates reusable search buffer
 the `with` block releases those buffers on exit. Each call to `build_rrt` rebuilds
 the library, so keep it outside your planning loop.
 
+For a known set of obstacle types, pass `specialize_types={sdf.Box, sdf.Ground}`
+to `build_rrt`. This builds one additional search kernel for that union, with
+runtime obstacle counts and poses. A batch can mix Box-only, Ground-only,
+combined, and empty environments. Each `solve` selects the specialized kernel
+when all referenced environments fit; if any contains a Sphere or Cylinder,
+the entire batch uses the generic kernel. No compilation occurs during `solve`.
+The default `None`, or a set of all four types, builds only the generic kernel.
+An empty set specializes environments without external obstacles; self-collision
+checking remains enabled.
+
 Starts, goals, and returned paths follow
 `compiled.model["control_joints"]` order. The last two arguments to `solve` are
 one environment ID and one unsigned 64-bit random seed per problem. Repeated
