@@ -18,6 +18,10 @@ tenkai-generate = "tenkai.cli:cli"
 
 [project.optional-dependencies]
 bench = ["plainmp>=0.3.6,<0.4"]
+visualize = [
+    "robot-descriptions>=3.3,<4",
+    "viser[urdf]>=1.1,<2",
+]
 
 [dependency-groups]
 dev = [
@@ -27,6 +31,9 @@ dev = [
     "ruff>=0.11",
     "clang-format==23.1.5",
 ]
+docs = [
+    "mkdocs>=1.6,<2",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/tenkai"]
@@ -35,7 +42,7 @@ packages = ["src/tenkai"]
 "licenses" = "tenkai/licenses"
 
 [tool.hatch.build.targets.sdist]
-include = ["src/tenkai", "tests", "assets", "bench", "licenses", "pyproject.toml", "uv.lock", ".python-version", "README.md", "format.sh"]
+include = ["src/tenkai", "tests", "assets", "bench", "example", "licenses", "pyproject.toml", "uv.lock", ".python-version", "README.md", "format.sh"]
 exclude = ["__pycache__"]
 
 [tool.pytest.ini_options]
@@ -55,11 +62,11 @@ select = ["E4", "E7", "E9", "F", "I", "UP"]
 
 [tool.mypy]
 python_version = "3.12"
-files = ["src/tenkai", "bench"]
+files = ["src/tenkai", "bench", "example"]
 exclude = ["^bench/artifacts/"]
 strict = true
 
-# plainmp does not distribute a py.typed marker.
+# These dependencies do not distribute py.typed markers.
 [[tool.mypy.overrides]]
-module = ["plainmp", "plainmp.*"]
+module = ["plainmp", "plainmp.*", "robot_descriptions", "robot_descriptions.*"]
 ignore_missing_imports = true

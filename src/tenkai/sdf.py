@@ -1,7 +1,8 @@
 """Runtime collision objects, in meters in the robot's root frame."""
 
+import json
 from collections.abc import Sequence, Set
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import TypeGuard
 
 import numpy as np
@@ -100,6 +101,40 @@ class Ground:
 type CollisionObject = Box | Sphere | Cylinder | Ground
 type CollisionObjectType = type[Box] | type[Sphere] | type[Cylinder] | type[Ground]
 type Geometry = Sequence[CollisionObject] | Sequence[Sequence[CollisionObject]]
+
+
+def geometry_to_json(obstacles: Sequence[CollisionObject]) -> str:
+    """Serialize one environment without adding implicit obstacles."""
+    records: list[dict[str, object]] = []
+    for obstacle in obstacles:
+        if not isinstance(obstacle, (Box, Sphere, Cylinder, Ground)):
+            raise TypeError("expected sdf.Box, Sphere, Cylinder, or Ground")
+        records.append({"type": type(obstacle).__name__, **asdict(obstacle)})
+    return json.dumps(records, allow_nan=False)
+
+
+def geometry_from_json(source: str) -> list[CollisionObject]:
+    """Restore validated collision objects in their original order."""
+    records = json.loads(source)
+    if not isinstance(records, list):
+        raise ValueError("obstacles must be a JSON array")
+
+    types: dict[str, CollisionObjectType] = {
+        "Box": Box,
+        "Sphere": Sphere,
+        "Cylinder": Cylinder,
+        "Ground": Ground,
+    }
+    obstacles: list[CollisionObject] = []
+    for index, record in enumerate(records):
+        if not isinstance(record, dict):
+            raise ValueError(f"obstacles[{index}] must be an object")
+        parameters = dict(record)
+        kind = parameters.pop("type", None)
+        if not isinstance(kind, str) or kind not in types:
+            raise ValueError(f"obstacles[{index}] has an unknown type: {kind!r}")
+        obstacles.append(types[kind](**parameters))
+    return obstacles
 
 
 def geometry_type_mask(types: Set[CollisionObjectType] | None) -> int:
