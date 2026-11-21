@@ -10,7 +10,7 @@ uv run python bench/compiler.py --repeats 3
 
 `compare_rrtc.py` compares plainmp CPU and tenkai GPU RRT-Connect on one fixed
 Fetch problem. Both use VAMP's 111 collision spheres, the same box and ground plane,
-joint bounds, step size, and motion-check resolution. The YAML selects 97 spheres
+joint bounds, step size, and motion-check resolution (0.02). The YAML selects 97 spheres
 for environment checks and 48 self collision link pairs (2,586 sphere pairs).
 The base spheres participate only in self collision because they overlap the floor.
 The scene is defined with `tenkai.sdf.Box` and `Ground`; both planners use

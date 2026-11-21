@@ -34,7 +34,7 @@ GOAL = [0.386, 0.205, 1.41, 0.308, -1.82, 0.245, 0.417, 6.01]
 BOX = sdf.Box(center=(0.95, 0.0, 0.8), size=(1.0, 2.0, 0.05))
 GROUND = sdf.Ground(z=0.0)
 GEOMETRY: list[sdf.CollisionObject] = [BOX, GROUND]
-RESOLUTION = 0.005
+RESOLUTION = 0.02
 
 
 def make_problem(urdf: Path, spheres: Path, model: ModelMetadata) -> Problem:
