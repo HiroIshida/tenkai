@@ -86,10 +86,17 @@ def test_fetch_spheres_follow_fk_order() -> None:
     config = read_config((ROOT / "assets/fetch/collision.yaml").read_text())
     spheres = config.resolve(kin)
     assert len(kin.joint_names) == 15
-    assert len(kin.poses) == 26
-    assert len(spheres) == 69
+    assert len(kin.poses) == 27
+    assert len(spheres) == 111
     assert [s.link_index for s in spheres] == sorted(s.link_index for s in spheres)
-    for name, count in [("gripper_link", 9), ("head_pan_link", 16), ("torso_lift_link", 2)]:
+    for name, count in [
+        ("base_link", 14),
+        ("torso_fixed_link", 6),
+        ("torso_lift_link", 6),
+        ("torso_lift_link_collision_2", 1),
+        ("head_pan_link", 28),
+        ("gripper_link", 4),
+    ]:
         assert sum(kin.link_names[s.link_index] == name for s in spheres) == count
 
 

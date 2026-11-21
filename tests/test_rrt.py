@@ -10,10 +10,12 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from helpers import fetch_collision_cases
 
 from tenkai import Planner, RRTBuild, RRTConfig, build_rrt, sdf
 from tenkai.build import Backend
 from tenkai.compiler import ModelMetadata
+from tenkai.modeling import KinematicModel, read_config
 from tenkai.rrt import BuildInfo, NativeConfig, NativeScene
 from tenkai.sdf import pack_geometry
 
@@ -289,6 +291,51 @@ def test_public_planner_on_gpu(compiled: RRTBuild) -> None:
         assert not planner.collisions(path[:, ::-1], [0] * len(path)).any()
         assert planner.solve(*inputs) == results
         np.testing.assert_array_equal(planner.path(0), path)
+
+
+@pytest.mark.gpu
+def test_fetch_body_collisions_and_planning_on_gpu(
+    tmp_path: Path, gpu_backend: Backend, gpu_arch: str
+) -> None:
+    assets = Path(__file__).resolve().parents[1] / "assets/fetch"
+    urdf = assets / "fetch.urdf"
+    yaml = assets / "collision.yaml"
+    kin = KinematicModel.from_urdf(urdf.read_text())
+    spheres = read_config(yaml.read_text()).resolve(kin)
+    cases = fetch_collision_cases(kin, spheres)
+    compiled = build_rrt(urdf, yaml, tmp_path, backend=gpu_backend, arch=gpu_arch)
+    controls = [joint["index"] for joint in compiled.model["control_joints"]]
+    configurations = np.array([case.joints for case in cases])
+    home, goal, base_collision, torso_collision = configurations[:4, controls]
+    environments = [[], [sdf.Box((0.95, 0, 0.8), (1, 2, 0.05)), sdf.Ground()]]
+
+    with compiled.planner(
+        environments,
+        config=RRTConfig(max_rounds=8192, goal_bias=0.0),
+        problem_count=3,
+        resolution=0.005,
+    ) as planner:
+        np.testing.assert_array_equal(
+            planner.collisions(configurations, [0] * len(cases)),
+            [case.collision for case in cases],
+        )
+        results = planner.solve(
+            [home, base_collision, home], [goal, goal, torso_collision], [1, 0, 0], [42] * 3
+        )
+        assert [result["status"] for result in results] == [
+            "success",
+            "invalid_start",
+            "invalid_goal",
+        ]
+
+        path = planner.path(0)
+        np.testing.assert_array_equal(path[0], home.astype(np.float32))
+        np.testing.assert_array_equal(path[-1], goal.astype(np.float32))
+        for begin, end in zip(path[:-1], path[1:], strict=True):
+            steps = int(np.ceil(np.max(np.abs(end - begin)) / 0.0025))
+            samples = np.zeros((steps + 1, len(kin.joints)))
+            samples[:, controls] = np.linspace(begin, end, steps + 1)
+            assert not planner.collisions(samples, [1] * len(samples)).any()
 
 
 @pytest.mark.parametrize("geometry", [[], [[], []], [sdf.Sphere((0, 0, 0), 0.1)]])

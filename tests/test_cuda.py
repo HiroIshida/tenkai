@@ -6,6 +6,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from helpers import fetch_collision_cases
 
 from tenkai import (
     KinematicModel,
@@ -194,11 +195,17 @@ def test_fetch_collision_against_exhaustive_pairs(
         rows.append("{" + ",".join(row) + "}")
     radii = ",".join(f"{sphere.radius}f" for sphere in spheres)
     external = ",".join(str(int(s.link_index not in rules.self_only_links)) for s in spheres)
+    cases = fetch_collision_cases(kin, spheres)
+    configurations = ["{" + ",".join(f"{q:.17e}f" for q in case.joints) + "}" for case in cases]
+    expected = ",".join(str(int(case.collision)) for case in cases)
     (tmp_path / "reference.h").write_text(
         f"constexpr unsigned sphere_count = {len(spheres)};\n"
         f"constexpr float radii[] = {{{radii}}};\n"
         f"constexpr bool external[] = {{{external}}};\n"
         "constexpr bool self_pairs[sphere_count][sphere_count] = {" + ",".join(rows) + "};\n"
+        f"constexpr unsigned reference_count = {len(cases)};\n"
+        f"constexpr float reference_q[][15] = {{{','.join(configurations)}}};\n"
+        f"constexpr bool reference_collision[] = {{{expected}}};\n"
     )
     binary = tmp_path / "self-reference"
     run(

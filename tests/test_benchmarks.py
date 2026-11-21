@@ -122,7 +122,7 @@ def test_problem_keeps_all_spheres_and_full_box_extents(
 ) -> None:
     problem = compare.make_problem(URDF, SPHERES, model)
     checker = problem.global_ineq_const
-    assert len(checker.get_all_spheres()) == 69
+    assert len(checker.get_all_spheres()) == 111
     sdf = checker.get_sdf()
     assert sdf.evaluate(np.array([0.45, 0, 0.8])) == pytest.approx(0)
     assert sdf.evaluate(np.array([0.95, 1, 0.8])) == pytest.approx(0)

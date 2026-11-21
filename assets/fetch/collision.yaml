@@ -1,6 +1,13 @@
-# Fetch collision spheres and settings from plainmp.
-# Copyright (c) 2024 Hirokazu Ishida. SPDX-License-Identifier: BSD-3-Clause
-# See NOTICE.md and LICENSE-BSD3.txt.
+# Control joint order retained from plainmp, Copyright (c) 2024 Hirokazu Ishida.
+# See NOTICE.md, LICENSE-APACHE-2.0.txt, and LICENSE-BSD3.txt.
+#
+# Fetch collision spheres and self-collision pairs adapted from KavrakiLab/vamp.
+# Generated with Codex (Astra, reasoning effort: xhigh).
+# Source: https://github.com/KavrakiLab/vamp/tree/681813351b745f7b5732761a026b06a97c494a95
+# Python/XML extraction of link-local centers and radii from
+# resources/fetch/fetch_spherized.urdf; sphere-index pairs from Fetch::fkcc_debug
+# in src/impl/vamp/robots/fetch.hh were grouped into complete link-pair products.
+# SPDX-License-Identifier: Apache-2.0 AND BSD-3-Clause
 
 control_joint_names:
   - torso_lift_joint
@@ -12,147 +19,199 @@ control_joint_names:
   - wrist_flex_joint
   - wrist_roll_joint
 
-default_joint_positions:
-  - torso_lift_joint: 0.0
-  - shoulder_pan_joint: 1.312
-  - shoulder_lift_joint: 1.40
-  - upperarm_roll_joint: -0.20
-  - elbow_flex_joint: 1.72
-  - forearm_roll_joint: 0.0
-  - wrist_flex_joint: 1.66
-  - wrist_roll_joint: 0.0
-
 self_collision_pairs:
-  - [head_pan_link,   upperarm_roll_link]
-  - [head_pan_link,   elbow_flex_link]
-  - [head_pan_link,   forearm_roll_link]
-  - [head_pan_link,   wrist_flex_link]
-  - [head_pan_link,   gripper_link]
-  - [head_pan_link,   l_gripper_finger_link]
-  - [head_pan_link,   r_gripper_finger_link]
+  - [base_link, elbow_flex_link]
+  - [base_link, forearm_roll_link]
+  - [base_link, wrist_flex_link]
+  - [base_link, wrist_roll_link]
+  - [base_link, gripper_link]
+  - [base_link, l_gripper_finger_link]
+  - [base_link, r_gripper_finger_link]
+  - [torso_fixed_link, upperarm_roll_link]
+  - [torso_fixed_link, elbow_flex_link]
+  - [torso_fixed_link, forearm_roll_link]
+  - [torso_fixed_link, wrist_flex_link]
+  - [torso_fixed_link, wrist_roll_link]
+  - [torso_fixed_link, gripper_link]
+  - [torso_fixed_link, l_gripper_finger_link]
+  - [torso_fixed_link, r_gripper_finger_link]
   - [torso_lift_link, upperarm_roll_link]
   - [torso_lift_link, elbow_flex_link]
   - [torso_lift_link, forearm_roll_link]
   - [torso_lift_link, wrist_flex_link]
+  - [torso_lift_link, wrist_roll_link]
   - [torso_lift_link, gripper_link]
   - [torso_lift_link, l_gripper_finger_link]
   - [torso_lift_link, r_gripper_finger_link]
+  - [head_pan_link, upperarm_roll_link]
+  - [head_pan_link, elbow_flex_link]
+  - [head_pan_link, forearm_roll_link]
+  - [head_pan_link, wrist_flex_link]
+  - [head_pan_link, wrist_roll_link]
+  - [head_pan_link, gripper_link]
+  - [head_pan_link, l_gripper_finger_link]
+  - [head_pan_link, r_gripper_finger_link]
+  - [shoulder_pan_link, upperarm_roll_link]
+  - [shoulder_pan_link, wrist_roll_link]
+  - [shoulder_pan_link, gripper_link]
+  - [shoulder_pan_link, l_gripper_finger_link]
+  - [shoulder_pan_link, r_gripper_finger_link]
+  - [shoulder_lift_link, gripper_link]
+  - [shoulder_lift_link, l_gripper_finger_link]
+  - [shoulder_lift_link, r_gripper_finger_link]
+  - [shoulder_lift_link, torso_lift_link_collision_2]
+  - [upperarm_roll_link, torso_lift_link_collision_2]
+  - [elbow_flex_link, torso_lift_link_collision_2]
+  - [forearm_roll_link, torso_lift_link_collision_2]
+  - [wrist_flex_link, torso_lift_link_collision_2]
+  - [wrist_roll_link, torso_lift_link_collision_2]
+  - [gripper_link, torso_lift_link_collision_2]
+  - [l_gripper_finger_link, torso_lift_link_collision_2]
+  - [r_gripper_finger_link, torso_lift_link_collision_2]
 
+# The base spheres extend below the floor of the fixed-base planning scene.
 only_self_collision_links:
-  - head_pan_link
-  - torso_lift_link
-
-self_body_collision_primitives:
-  - type: cylinder
-    radius: 0.29
-    height: 0.32
-    position: [0.005, 0.0, 0.2]
-    rotation: [0.0, 0.0, 0.0]
-  - type: box
-    extents: [0.16, 0.16, 1.0]
-    position: [-0.12, 0.0, 0.5]
-    rotation: [0.0, 0.0, 0.0]
-  - type: cylinder
-    radius: 0.1
-    height: 1.5
-    position: [-0.143, 0.09, 0.75]
-    rotation: [0.0, 0.0, 0.0]
-  - type: cylinder
-    radius: 0.1
-    height: 1.5
-    position: [-0.143, -0.09, 0.75]
-    rotation: [0.0, 0.0, 0.0]
+  - base_link
 
 collision_spheres:
+  base_link:
+    spheres:
+      - [-0.12, 0.0, 0.182, 0.24]
+      - [0.225, 0.0, 0.31, 0.066]
+      - [0.08, -0.06, 0.16, 0.22]
+      - [0.215, -0.07, 0.31, 0.066]
+      - [0.185, -0.135, 0.31, 0.066]
+      - [0.13, -0.185, 0.31, 0.066]
+      - [0.065, -0.2, 0.31, 0.066]
+      - [0.01, -0.2, 0.31, 0.066]
+      - [0.08, 0.06, 0.16, 0.22]
+      - [0.215, 0.07, 0.31, 0.066]
+      - [0.185, 0.135, 0.31, 0.066]
+      - [0.13, 0.185, 0.31, 0.066]
+      - [0.065, 0.2, 0.31, 0.066]
+      - [0.01, 0.2, 0.31, 0.066]
+  torso_fixed_link:
+    spheres:
+      - [-0.1, -0.07, 0.35, 0.12]
+      - [-0.1, 0.07, 0.35, 0.12]
+      - [-0.1, -0.07, 0.2, 0.12]
+      - [-0.1, 0.07, 0.2, 0.12]
+      - [-0.1, 0.07, 0.07, 0.12]
+      - [-0.1, -0.07, 0.07, 0.12]
+  torso_lift_link:
+    spheres:
+      - [-0.1, -0.05, 0.15, 0.15]
+      - [-0.1, 0.05, 0.15, 0.15]
+      - [-0.1, 0.05, 0.3, 0.15]
+      - [-0.1, 0.05, 0.45, 0.15]
+      - [-0.1, -0.05, 0.45, 0.15]
+      - [-0.1, -0.05, 0.3, 0.15]
+  head_pan_link:
+    spheres:
+      - [0.0, 0.0, 0.06, 0.15]
+      - [0.145, 0.0, 0.058, 0.05]
+      - [0.145, -0.0425, 0.058, 0.05]
+      - [0.145, 0.0425, 0.058, 0.05]
+      - [0.145, 0.085, 0.058, 0.05]
+      - [0.145, -0.085, 0.058, 0.05]
+      - [0.0625, -0.115, 0.03, 0.03]
+      - [0.088, -0.115, 0.03, 0.03]
+      - [0.1135, -0.115, 0.03, 0.03]
+      - [0.139, -0.115, 0.03, 0.03]
+      - [0.0625, -0.115, 0.085, 0.03]
+      - [0.088, -0.115, 0.085, 0.03]
+      - [0.1135, -0.115, 0.085, 0.03]
+      - [0.139, -0.115, 0.085, 0.03]
+      - [0.16, -0.115, 0.075, 0.03]
+      - [0.168, -0.115, 0.0575, 0.03]
+      - [0.16, -0.115, 0.04, 0.03]
+      - [0.0625, 0.115, 0.03, 0.03]
+      - [0.088, 0.115, 0.03, 0.03]
+      - [0.1135, 0.115, 0.03, 0.03]
+      - [0.139, 0.115, 0.03, 0.03]
+      - [0.0625, 0.115, 0.085, 0.03]
+      - [0.088, 0.115, 0.085, 0.03]
+      - [0.1135, 0.115, 0.085, 0.03]
+      - [0.139, 0.115, 0.085, 0.03]
+      - [0.16, 0.115, 0.075, 0.03]
+      - [0.168, 0.115, 0.0575, 0.03]
+      - [0.16, 0.115, 0.04, 0.03]
   shoulder_pan_link:
     spheres:
-      - [0.0, 0.0, -0.14, 0.06]
-      - [0.0, 0.0, -0.105, 0.06]
-      - [0.0, 0.0, -0.07, 0.06]
-      - [0.0, 0.0, -0.035, 0.06]
-      - [0.0, 0.0, -0.00, 0.06]
-      - [0.0, 0.0, 0.035, 0.06]
-      - [0.045, -0.04, 0.07, 0.06]
-      - [0.085, -0.03, 0.07, 0.06]
+      - [0.0, 0.0, 0.0, 0.055]
+      - [0.025, -0.015, 0.035, 0.055]
+      - [0.05, -0.03, 0.06, 0.055]
+      - [0.12, -0.03, 0.06, 0.055]
   shoulder_lift_link:
     spheres:
-      - [0.0, -0.039, 0.0, 0.065]
-      - [0.0, -0.013, 0.0, 0.065]
-      - [0.0, 0.013, 0.0, 0.065]
-      - [0.0, 0.04, 0.0, 0.065]
-      - [0.04, 0.02, 0.0, 0.055]
-      - [0.073, 0.01, 0.0, 0.057]
-      - [0.124, 0.0, 0.0, 0.055]
-      - [0.158, 0.0, 0.0, 0.055]
+      - [0.025, 0.04, 0.025, 0.04]
+      - [-0.025, 0.04, -0.025, 0.04]
+      - [0.025, 0.04, -0.025, 0.04]
+      - [-0.025, 0.04, 0.025, 0.04]
+      - [0.08, 0.0, 0.0, 0.055]
+      - [0.11, 0.0, 0.0, 0.055]
+      - [0.14, 0.0, 0.0, 0.055]
   upperarm_roll_link:
+    spheres:
+      - [-0.02, 0.0, 0.0, 0.055]
+      - [0.03, 0.0, 0.0, 0.055]
+      - [0.08, 0.0, 0.0, 0.055]
+      - [0.11, -0.045, 0.02, 0.03]
+      - [0.11, -0.045, -0.02, 0.03]
+      - [0.155, -0.045, 0.02, 0.03]
+      - [0.155, -0.045, -0.02, 0.03]
+      - [0.13, 0.0, 0.0, 0.055]
+  elbow_flex_link:
+    spheres:
+      - [0.02, 0.045, 0.02, 0.03]
+      - [0.02, 0.045, -0.02, 0.03]
+      - [-0.02, 0.045, 0.02, 0.03]
+      - [-0.02, 0.045, -0.02, 0.03]
+      - [0.08, 0.0, 0.0, 0.055]
+      - [0.14, 0.0, 0.0, 0.055]
+  forearm_roll_link:
+    spheres:
+      - [0.0, 0.0, 0.0, 0.055]
+      - [0.05, -0.06, 0.02, 0.03]
+      - [0.05, -0.06, -0.02, 0.03]
+      - [0.1, -0.06, 0.02, 0.03]
+      - [0.1, -0.06, -0.02, 0.03]
+      - [0.15, -0.06, 0.02, 0.03]
+      - [0.15, -0.06, -0.02, 0.03]
+  wrist_flex_link:
+    spheres:
+      - [0.0, 0.0, 0.0, 0.055]
+      - [0.06, 0.0, 0.0, 0.055]
+      - [0.02, 0.045, 0.02, 0.03]
+      - [0.02, 0.045, -0.02, 0.03]
+      - [-0.02, 0.045, 0.02, 0.03]
+      - [-0.02, 0.045, -0.02, 0.03]
+  wrist_roll_link:
     spheres:
       - [-0.03, 0.0, 0.0, 0.055]
       - [0.0, 0.0, 0.0, 0.055]
-      - [0.05, -0.02, 0.0, 0.055]
-      - [0.08, -0.02, 0.0, 0.055]
-  elbow_flex_link:
-    spheres:
-      - [0, -0.035, 0, 0.06]
-      - [0, 0.005, 0, 0.06]
-      - [0, 0.04, 0, 0.06]
-      - [0.04, 0.0, 0, 0.06]
-      - [0.1, 0.0, 0, 0.06]
-      - [0.14, 0.0, 0, 0.06]
-  forearm_roll_link:
-    spheres:
-      - [-0.02, 0, 0, 0.06]
-      - [0.0, -0.02, 0, 0.05]
-      - [+0.02, -0.04, 0, 0.05]
-      - [+0.05, -0.04, 0, 0.05]
-
-  wrist_flex_link:
-    spheres:
-      - [0.0, -0.05, 0, 0.06]
-      - [0.0, -0.01, 0, 0.06]
-      - [0.0, 0.03, 0, 0.06]
-      - [0.033, 0, 0, 0.06]
-      - [0.076, 0, 0, 0.06]
-      - [0.119, 0, 0, 0.06]
   gripper_link:
     spheres:
-      - [-0.065, 0.0, 0.0, 0.05]
-      - [-0.065, 0.03, 0.0, 0.05]
-      - [-0.065, -0.03, 0.0, 0.05]
-      - [-0.1, 0.0, 0.0, 0.05]
-      - [-0.1, 0.03, 0.0, 0.05]
-      - [-0.1, -0.03, 0.0, 0.05]
-      - [-0.13, 0.0, 0.0, 0.05]
-      - [-0.13, 0.03, 0.0, 0.05]
-      - [-0.13, -0.03, 0.0, 0.05]
+      - [-0.07, 0.02, 0.0, 0.05]
+      - [-0.07, -0.02, 0.0, 0.05]
+      - [-0.1, 0.02, 0.0, 0.05]
+      - [-0.1, -0.02, 0.0, 0.05]
   l_gripper_finger_link:
     spheres:
-      - [0.02, 0.01, 0.0, 0.02]
-      - [-0.005, 0.01, 0.0, 0.02]
-      - [-0.03, 0.01, 0.0, 0.02]
+      - [0.017, 0.0085, -0.005, 0.012]
+      - [0.017, 0.0085, 0.005, 0.012]
+      - [0.0, 0.0085, -0.005, 0.012]
+      - [0.0, 0.0085, 0.005, 0.012]
+      - [-0.017, 0.0085, -0.005, 0.012]
+      - [-0.017, 0.0085, 0.005, 0.012]
   r_gripper_finger_link:
     spheres:
-      - [0.02, -0.01, 0.0, 0.02]
-      - [-0.005, -0.01, 0.0, 0.02]
-      - [-0.03, -0.01, 0.0, 0.02]
-  head_pan_link:
+      - [0.017, -0.0085, -0.005, 0.012]
+      - [0.017, -0.0085, 0.005, 0.012]
+      - [0.0, -0.0085, -0.005, 0.012]
+      - [0.0, -0.0085, 0.005, 0.012]
+      - [-0.017, -0.0085, -0.005, 0.012]
+      - [-0.017, -0.0085, 0.005, 0.012]
+  torso_lift_link_collision_2:
     spheres:
-      - [-0.02625,     0.03,        0.04956858    ,0.08]
-      - [0.03375 ,   0.03  ,     0.04956858       ,0.08]
-      - [0.09375 ,   0.03  ,     0.04956858       ,0.08]
-      - [0.15375 ,   0.03  ,     0.04956858       ,0.08]
-      - [-0.02625,     0.09,        0.04956858    ,0.08]
-      - [0.03375 ,   0.09  ,     0.04956858       ,0.08]
-      - [0.09375 ,   0.09  ,     0.04956858       ,0.08]
-      - [0.15375 ,   0.09  ,     0.04956858       ,0.08]
-      - [-0.02625,    -0.03,        0.04956858    ,0.08]
-      - [ 0.03375,    -0.03,        0.04956858    ,0.08]
-      - [ 0.09375,    -0.03,        0.04956858    ,0.08]
-      - [ 0.15375,    -0.03,        0.04956858    ,0.08]
-      - [-0.02625,    -0.09,        0.04956858    ,0.08]
-      - [ 0.03375,    -0.09,        0.04956858    ,0.08]
-      - [ 0.09375,    -0.09,        0.04956858    ,0.08]
-      - [ 0.15375,    -0.09,        0.04956858    ,0.08]
-  torso_lift_link:
-    spheres:
-      - [0.006875, 0.,       0.55257, 0.1]
-      - [0.036875, 0.,       0.59257, 0.1]
+      - [0.1, 0.0, 0.24, 0.07]

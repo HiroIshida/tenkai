@@ -20,6 +20,9 @@ int main() {
     const m::Cylinder cylinder{{{0.5f,-0.5f,0.8f}, {1,0,0,0,1,0,0,0,1}}, 0.1f, 0.3f};
     const m::Ground ground{0};
     const m::Scene scene{env, &box, &obstacle, &cylinder, &ground};
+    for (unsigned i = 0; i < reference_count; ++i) {
+        assert(tenkai_collision_one(reference_q[i], scene, 0) == reference_collision[i]);
+    }
     uint32_t state = 42;
     unsigned hits = 0;
     for (unsigned sample = 0; sample < 4096; ++sample) {

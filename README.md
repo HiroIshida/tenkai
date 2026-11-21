@@ -116,7 +116,9 @@ Uncontrolled joints stay at zero during planning. Collision checking first tests
 the robot against the environment, then checks the link pairs listed in
 `self_collision_pairs` if no external collision was found. Links listed in
 `only_self_collision_links` participate only in self collision. An omitted pair
-list disables self collision; `self_body_collision_primitives` is not evaluated.
+list disables self collision. The bundled Fetch configuration uses VAMP's spheres
+for the base, torso, head, and arm, without separate body collision primitives;
+see [its provenance and adaptations](assets/fetch/NOTICE.md).
 
 Self collision always uses a conservative enclosing sphere per link to reject
 separated link pairs, then tests their individual sphere pairs. This also applies

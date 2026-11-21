@@ -4,7 +4,8 @@
   d22b98f6c21577895f4d2e3a8bd54e329083732b.
   SPDX-License-Identifier: CC-BY-NC-SA-4.0
   Authors: Michael Ferguson and Melonee Wise (Fetch Robotics).
-  Modified for tenkai: retain links and joints only.
+  Modified for tenkai: retain links and joints only; add VAMP's fixed torso
+  collision link to preserve its separate self-collision pairs.
   Bundled with tenkai for URDF parsing; no meshes or ROS packages are needed.
   See NOTICE.md and LICENSE-CC-BY-NC-SA-4.0.txt in this directory.
 -->
@@ -27,6 +28,11 @@
     <limit effort="8.85" velocity="17.4"/>
   </joint>
   <link name="torso_lift_link"/>
+  <link name="torso_lift_link_collision_2"/>
+  <joint name="torso_lift_collision_2_joint" type="fixed">
+    <parent link="torso_lift_link"/>
+    <child link="torso_lift_link_collision_2"/>
+  </joint>
   <joint name="torso_lift_joint" type="prismatic">
     <origin rpy="-6.123E-17 0 0" xyz="-0.086875 0 0.37743"/>
     <parent link="base_link"/>

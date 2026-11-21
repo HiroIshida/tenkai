@@ -9,9 +9,10 @@ uv run python bench/compiler.py --repeats 3
 ```
 
 `compare_rrtc.py` compares plainmp CPU and tenkai GPU RRT-Connect on one fixed
-Fetch problem. Both use all 69 collision spheres, the same box and ground plane,
-joint bounds, step size, and motion-check resolution. The YAML selects 51 spheres
-for environment checks and 14 self collision link pairs (630 sphere pairs).
+Fetch problem. Both use VAMP's 111 collision spheres, the same box and ground plane,
+joint bounds, step size, and motion-check resolution. The YAML selects 97 spheres
+for environment checks and 48 self collision link pairs (2,586 sphere pairs).
+The base spheres participate only in self collision because they overlap the floor.
 The scene is defined with `tenkai.sdf.Box` and `Ground`; both planners use
 these same dimensions and poses.
 tenkai uses one sample and one warp per problem. Failed solves stop the benchmark.
@@ -42,8 +43,9 @@ linearly from a prior measured CPU median divided by its batch size. Use a
 baseline from the same machine, model, and planning settings. For example,
 `--batch 8192 --cpu-ms-per-problem 3.281841224609394` estimates CPU time from
 the 4096-problem median of 13442.422 ms while measuring the GPU normally.
-Historical measurements with self collision disabled are not comparable to the
-current default; obtain a new baseline with the same collision configuration.
+Historical measurements with self collision disabled or the previous plainmp
+sphere configuration are not comparable to the current default; obtain a new
+baseline with the same collision configuration.
 The report keeps `plainmp_ms` empty and stores the estimate separately as
 `plainmp_estimated_ms`, alongside the supplied `plainmp_ms_per_problem`.
 
@@ -65,7 +67,8 @@ variants; every planning problem succeeded. Times include Python API overhead,
 transfers and per-call collision scratch allocation. They exclude compilation,
 planner allocation, warmups and validation.
 
-On 2026-11-15, the default Fetch workload above gave these median RRT times
+On 2026-11-15, the previous Fetch configuration (69 spheres, 14 self-collision
+link pairs, without lower-body primitives) gave these median RRT times
 (nine measured pairs, milliseconds per batch):
 
 | GPU | Batch | Direct narrow | Broad → narrow | Time reduction |
