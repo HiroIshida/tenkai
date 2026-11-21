@@ -197,6 +197,41 @@ def enclosing_sphere(spheres: Sequence[Sphere]) -> Sphere:
     ]
     center = (coordinates[0], coordinates[1], coordinates[2])
     radius = max(math.dist(sphere.position, center) + sphere.radius for sphere in spheres)
+
+    for initial in spheres:
+        candidate = initial.position
+        candidate_radius = initial.radius
+        ordered = sorted(
+            spheres,
+            key=lambda sphere: math.dist(sphere.position, initial.position) + sphere.radius,
+            reverse=True,
+        )
+        for sphere in ordered:
+            distance = math.dist(sphere.position, candidate)
+            if distance + sphere.radius <= candidate_radius:
+                continue
+            if distance + candidate_radius <= sphere.radius:
+                candidate = sphere.position
+                candidate_radius = sphere.radius
+                continue
+
+            grown_radius = (candidate_radius + distance + sphere.radius) * 0.5
+            fraction = (grown_radius - candidate_radius) / distance
+            x, y, z = (
+                candidate[axis] + fraction * (sphere.position[axis] - candidate[axis])
+                for axis in range(3)
+            )
+            candidate = (x, y, z)
+            candidate_radius = grown_radius
+
+        # Incremental growth can accumulate rounding error; check every member again.
+        candidate_radius = max(
+            math.dist(sphere.position, candidate) + sphere.radius for sphere in spheres
+        )
+        if candidate_radius < radius:
+            center = candidate
+            radius = candidate_radius
+
     return Sphere(link, center, math.nextafter(radius, math.inf))
 
 

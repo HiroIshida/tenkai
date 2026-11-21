@@ -18,6 +18,33 @@ def test_enclosing_sphere_contains_members_with_different_radii() -> None:
         assert math.dist(sphere.position, bound.position) + sphere.radius <= bound.radius
 
 
+@pytest.mark.parametrize(
+    "spheres,center,radius",
+    [
+        ([Sphere(0, (-2, 0, 0), 0.25), Sphere(0, (1, 0, 0), 2)], (0.375, 0, 0), 2.625),
+        ([Sphere(0, (0, 0, 0), 2), Sphere(0, (1, 0, 0), 0.125)], (0, 0, 0), 2),
+        ([Sphere(0, (1, 2, 3), 0), Sphere(0, (1, 2, 3), 0)], (1, 2, 3), 0),
+        (
+            [
+                Sphere(0, position, 0.125)
+                for position in ((1, 1, 1), (1, -1, -1), (-1, 1, -1), (-1, -1, 1))
+            ],
+            (0, 0, 0),
+            math.sqrt(3) + 0.125,
+        ),
+    ],
+)
+def test_enclosing_sphere_tight_bounds(
+    spheres: list[Sphere], center: tuple[float, float, float], radius: float
+) -> None:
+    bound = enclosing_sphere(spheres)
+    assert bound.position == pytest.approx(center)
+    assert bound.radius == pytest.approx(radius)
+    assert bound.radius <= math.nextafter(radius, math.inf)
+    for sphere in spheres:
+        assert math.dist(sphere.position, bound.position) + sphere.radius <= bound.radius
+
+
 @pytest.mark.parametrize("optimization", ["none", "basic", "algebraic"])
 def test_link_bounds_preserve_narrow_phase_arithmetic(optimization: Optimization) -> None:
     source = (Path(__file__).parent / "fixtures/fk_chain.urdf").read_text()
