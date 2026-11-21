@@ -35,6 +35,7 @@ class ModelMetadata(TypedDict):
     math: Literal["f32-sfu"]
     optimization: Optimization
     live_budget: int | None
+    sphere_batch_size: int
     self_collision_pair_count: int
     external_sphere_count: int
 
@@ -124,6 +125,7 @@ def generate(
         math="f32-sfu",
         optimization=options.optimization,
         live_budget=options.live_budget,
+        sphere_batch_size=options.sphere_batch_size,
         self_collision_pair_count=len(rules.self_pairs),
         external_sphere_count=sum(s.link_index not in rules.self_only_links for s in spheres),
     )

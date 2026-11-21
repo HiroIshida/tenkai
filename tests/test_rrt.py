@@ -49,6 +49,7 @@ def binding(tmp_path_factory: pytest.TempPathFactory) -> RRTBuild:
         math="f32-sfu",
         optimization="algebraic",
         live_budget=None,
+        sphere_batch_size=8,
     )
     info = BuildInfo(nvcc="CPU ABI fixture", compile_command=[], max_registers=None)
     return RRTBuild(library, model, info)

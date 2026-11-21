@@ -22,14 +22,24 @@ TEMPLATES = Path(__file__).with_name("templates")
 
 @dataclass(frozen=True)
 class Options:
+    """Code generation settings.
+
+    sphere_batch_size is the maximum number of robot spheres on one link
+    sharing an obstacle traversal. It must be a positive integer and is fixed
+    at compile time (default: 8).
+    """
+
     optimization: Optimization = "algebraic"
     live_budget: int | None = None
+    sphere_batch_size: int = 8
 
     def __post_init__(self) -> None:
         if self.optimization not in ("none", "basic", "algebraic"):
             raise ValueError("invalid optimization")
         if self.live_budget is not None and self.live_budget < 0:
             raise ValueError("live budget must be nonnegative")
+        if type(self.sphere_batch_size) is not int or self.sphere_batch_size <= 0:
+            raise ValueError("sphere batch size must be a positive integer")
 
 
 def number(value: float) -> str:
@@ -129,7 +139,9 @@ def generate_centers_kernel(
     return emitter.source()
 
 
-def sphere_collision(radius: float, *, specialize_types: bool = False) -> str:
+def sphere_batch_collision(
+    spheres: Sequence[Sphere], start: int, *, specialize_types: bool = False
+) -> str:
     source: list[str] = []
 
     for primitive, field in (
@@ -150,9 +162,11 @@ def sphere_collision(radius: float, *, specialize_types: bool = False) -> str:
             f"scene.{field}[environment.{field}.offset + i];\n"
         )
 
-        source.append(
-            f"        collision |= tenkai_f32::intersects(obstacle, center, {number(radius)}f);\n"
-        )
+        for index, sphere in enumerate(spheres, start):
+            source.append(
+                "        collision |= tenkai_f32::intersects"
+                f"(obstacle, center{index}, {number(sphere.radius)}f);\n"
+            )
         source.append("    }\n")
 
     return "".join(source)
@@ -249,11 +263,14 @@ def link_collision_body(
             if index % 3 != 2:
                 return text
 
-            sphere = members[index // 3]
-            text += sphere_collision(sphere.radius, specialize_types=warp_support)
-
+            text += f"    const tenkai_f32::Vec3 center{index // 3} = center;\n"
             end = index // 3 + 1
-            if end % 8 == 0 or end == len(members):
+            batch_size = emitter.options.sphere_batch_size
+            if end % batch_size == 0 or end == len(members):
+                start = (end - 1) // batch_size * batch_size
+                text += sphere_batch_collision(
+                    members[start:end], start, specialize_types=warp_support
+                )
                 text += scalar_exit
                 if warp_support and bound is None:
                     text += warp_exit

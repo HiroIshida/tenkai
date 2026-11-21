@@ -11,6 +11,13 @@
 namespace tenkai_f32 {
 enum class RrtPreparation : unsigned char { Search, InvalidStart, InvalidGoal };
 
+#ifdef __HIPCC__
+constexpr int rrtc_min_blocks = 6;
+#else
+// A higher residency target spills the sphere batches on CUDA.
+constexpr int rrtc_min_blocks = 3;
+#endif
+
 // Every interpolation point is required; reverse edges include their new
 // source.
 template <unsigned Types = AllTypes>
@@ -295,7 +302,7 @@ extern "C" __global__ void tenkai_rrtc_prepare(
 }
 
 template <unsigned Types = tenkai_f32::AllTypes>
-__global__ __launch_bounds__(128, 6) void tenkai_rrtc(
+__global__ __launch_bounds__(128, tenkai_f32::rrtc_min_blocks) void tenkai_rrtc(
     const tenkai_f32::RrtProblem* problems,
     size_t problem_count,
     tenkai_f32::RrtSpace space,

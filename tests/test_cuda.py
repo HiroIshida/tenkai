@@ -218,11 +218,16 @@ def test_fetch_collision_against_exhaustive_pairs(
 
 @pytest.mark.parametrize("optimization", ["none", "basic", "algebraic"])
 @pytest.mark.parametrize("budget", [None, 64])
-def test_host_arithmetic(tmp_path: Path, optimization: Optimization, budget: int | None) -> None:
+@pytest.mark.parametrize("sphere_batch_size", [1, 3, 8, 16])
+def test_host_arithmetic(
+    tmp_path: Path, optimization: Optimization, budget: int | None, sphere_batch_size: int
+) -> None:
     compiler = shutil.which(os.environ.get("CXX", "c++"))
     if compiler is None:
         pytest.skip("host arithmetic requires a C++ compiler")
-    options = Options(optimization=optimization, live_budget=budget)
+    options = Options(
+        optimization=optimization, live_budget=budget, sphere_batch_size=sphere_batch_size
+    )
     chain_sources(tmp_path, options)
     binary = tmp_path / "arithmetic"
     run(
@@ -271,8 +276,11 @@ def test_planner_headers_are_self_contained(
 
 
 @pytest.mark.gpu
-def test_arithmetic_on_gpu(tmp_path: Path, gpu_backend: Backend, gpu_arch: str) -> None:
-    chain_sources(tmp_path, Options())
+@pytest.mark.parametrize("sphere_batch_size", [1, 3, 8, 16])
+def test_arithmetic_on_gpu(
+    tmp_path: Path, gpu_backend: Backend, gpu_arch: str, sphere_batch_size: int
+) -> None:
+    chain_sources(tmp_path, Options(sphere_batch_size=sphere_batch_size))
     command, _ = compiler_command(gpu_backend, gpu_arch)
     if gpu_backend == "cuda":
         command.extend(["-x", "cu"])
@@ -299,8 +307,11 @@ def test_planner_on_gpu(tmp_path: Path, gpu_backend: Backend, gpu_arch: str) -> 
 
 
 @pytest.mark.gpu
-def test_cooperative_planning_on_gpu(tmp_path: Path, gpu_backend: Backend, gpu_arch: str) -> None:
-    planner_source(tmp_path, Options(), (2, 0, 1))
+@pytest.mark.parametrize("sphere_batch_size", [1, 8])
+def test_cooperative_planning_on_gpu(
+    tmp_path: Path, gpu_backend: Backend, gpu_arch: str, sphere_batch_size: int
+) -> None:
+    planner_source(tmp_path, Options(sphere_batch_size=sphere_batch_size), (2, 0, 1))
     run_planner_fixture(tmp_path, gpu_backend, gpu_arch, "rrtc_cooperative.cu")
 
 

@@ -22,6 +22,7 @@ def main(
     scheduling: Annotated[bool, SCHEDULING] = False,
     no_scheduling: Annotated[bool, SCHEDULING] = False,
     live_budget: Annotated[int | None, SCHEDULING] = None,
+    sphere_batch_size: int = 8,
 ) -> None:
     """Generate CUDA source from a URDF model and collision sphere configuration.
 
@@ -29,16 +30,20 @@ def main(
         scheduling: Schedule with a live budget of 64.
         no_scheduling: Disable scheduling (the default).
         live_budget: Schedule with a nonnegative live-value budget.
+        sphere_batch_size: Compile-time maximum robot spheres on one link sharing
+            an obstacle traversal. Must be positive.
     """
-    if live_budget is not None and live_budget < 0:
-        print("live budget must be nonnegative", file=sys.stderr)
-        raise SystemExit(2)
-
     if scheduling:
         live_budget = 64
     elif no_scheduling:
         live_budget = None
-    options = Options(optimization=optimization, live_budget=live_budget)
+    try:
+        options = Options(
+            optimization=optimization, live_budget=live_budget, sphere_batch_size=sphere_batch_size
+        )
+    except ValueError as error:
+        print(error, file=sys.stderr)
+        raise SystemExit(2) from error
     timings = generate(urdf, spheres, output, options, all_kernels)
     print(json.dumps(timings))
 
