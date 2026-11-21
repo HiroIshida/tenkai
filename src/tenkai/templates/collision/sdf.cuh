@@ -6,7 +6,6 @@
 #if defined(__CUDACC__) || defined(__HIPCC__)
 #include <cuda_runtime.h>
 #endif
-#include <float.h>
 #include <math.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -82,22 +81,7 @@ struct SphereBounds {
 __device__ inline bool overlaps(Vec3 position,
                                 Vec3 half_extents,
                                 const SphereBounds& bounds) {
-  const Scalar epsilon = FLT_EPSILON;
-  const Scalar minimum = FLT_MIN;
-
-  const Scalar scale = fabsf(position.x) + fabsf(position.y) +
-                       fabsf(position.z) + half_extents.x + half_extents.y +
-                       half_extents.z + bounds.radius +
-                       fmaxf(fabsf(bounds.lower.x), fabsf(bounds.upper.x)) +
-                       fmaxf(fabsf(bounds.lower.y), fabsf(bounds.upper.y)) +
-                       fmaxf(fabsf(bounds.lower.z), fabsf(bounds.upper.z));
-
-  // Broad-phase rounding must not discard contact accepted by the narrow phase.
-  // Its squared distances can also underflow near zero; uncertain bounds fall
-  // through.
-  const Scalar radius =
-      bounds.radius + Scalar(64) * epsilon * scale + Scalar(8) * sqrtf(minimum);
-
+  const Scalar radius = bounds.radius;
   return !(bounds.lower.x > position.x + half_extents.x + radius ||
            bounds.upper.x < position.x - half_extents.x - radius ||
            bounds.lower.y > position.y + half_extents.y + radius ||
@@ -201,12 +185,6 @@ __device__ inline Scalar distance(const Ground& ground, Vec3 point) {
 
 __device__ inline bool intersects(const Box& box, Vec3 point, Scalar radius) {
   const Scalar squared_radius = radius * radius;
-  // Finite radii can overflow when squared; infinity <= infinity would report a
-  // hit.
-  if (isinf(squared_radius)) {
-    return distance(box, point) <= radius;
-  }
-
   return squared_outside_distance(box_face_distances(box, point)) <=
          squared_radius;
 }
@@ -216,10 +194,6 @@ __device__ inline bool intersects(const Sphere& sphere,
                                   Scalar radius) {
   const Scalar sum = sphere.radius + radius;
   const Scalar squared_radius = sum * sum;
-  if (isinf(squared_radius)) {
-    return distance(sphere, point) <= radius;
-  }
-
   return squared_distance(point, sphere.position) <= squared_radius;
 }
 

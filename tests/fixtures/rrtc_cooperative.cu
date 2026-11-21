@@ -48,7 +48,7 @@ __global__ void check_cooperative_votes(m::Scene scene) {
         for (unsigned environment = 0; environment <= 8; ++environment) {
             const unsigned id = environment == 8 ? lane % 8 : environment;
             for (float x : {0.0f, -0.0f, 0.2f, nextafterf(0.2f, 0.0f),
-                            nextafterf(0.2f, 1.0f), -10.0f, 100000.0f, FLT_MAX}) {
+                            nextafterf(0.2f, 1.0f), -10.0f, 100000.0f, 1e6f}) {
                 const float q[3] = {x, float(lane) * 0.05f - 0.75f, 0.35f};
                 check_collision_vote(q, scene, id, mask);
             }

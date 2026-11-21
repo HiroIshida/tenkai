@@ -238,7 +238,6 @@ def center_dag(
 class LinkBound:
     sphere: Sphere
     center: PointNodes
-    local_scale: float
 
 
 @dataclass
@@ -267,15 +266,14 @@ def collision_expressions(
         pose = kin.poses[link]
         outputs.extend((*pose.translation, *pose.rotation))
 
-    enclosing: list[tuple[Sphere, float]] = []
+    enclosing: list[Sphere] = []
     for link, members in links.items():
         if len(members) < 2:
             continue
         bound = enclosing_sphere(members)
-        local_scale = max(sum(abs(value) for value in s.position) for s in [*members, bound])
         x, y, z = [dag.constant(value) for value in bound.position]
         outputs.extend(kin.poses[link].transform_point(dag, (x, y, z)))
-        enclosing.append((bound, local_scale))
+        enclosing.append(bound)
 
     dag, outputs = dag.optimize(outputs, optimization)
     centers = [outputs[i : i + 3] for i in range(0, center_count, 3)]
@@ -285,8 +283,8 @@ def collision_expressions(
         tx, ty, tz, qx, qy, qz, qw = outputs[start : start + 7]
         poses[link] = Pose((tx, ty, tz), (qx, qy, qz, qw))
     bounds: dict[int, LinkBound] = {}
-    for index, (bound, local_scale) in enumerate(enclosing):
+    for index, bound in enumerate(enclosing):
         start = center_count + len(links) * 7 + index * 3
         x, y, z = outputs[start : start + 3]
-        bounds[bound.link_index] = LinkBound(bound, (x, y, z), local_scale)
+        bounds[bound.link_index] = LinkBound(bound, (x, y, z))
     return CollisionDag(dag, centers, poses, bounds, list(spheres), rules)

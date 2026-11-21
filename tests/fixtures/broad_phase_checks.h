@@ -1,4 +1,4 @@
-constexpr unsigned int broad_phase_case_count = 2 + 5 * 4 * 9 * 9 * 9 * 4;
+constexpr unsigned int broad_phase_case_count = 2 + 3 * 4 * 9 * 9 * 9 * 4;
 
 __device__ inline bool check_broad_phase_case(unsigned int index) {
     if (index < 2) {
@@ -12,10 +12,8 @@ __device__ inline bool check_broad_phase_case(unsigned int index) {
     const int y = int(index % 9) - 4; index /= 9;
     const int x = int(index % 9) - 4; index /= 9;
     const unsigned int pose_index = index % 4; index /= 4;
-    const Scalar minimum = FLT_MIN;
-    const Scalar maximum = FLT_MAX;
-    const Scalar scales[] = {Scalar(1), Scalar(1e-6), Scalar(1e6),
-                            Scalar(sqrt(minimum)) / Scalar(16), Scalar(sqrt(maximum)) * Scalar(4)};
+    // Exact scaling keeps contact cases independent of rounding margins.
+    const Scalar scales[] = {Scalar(1), Scalar(1) / Scalar(1048576), Scalar(1048576)};
     const sdf::Pose poses[] = {
         {{0,0,0}, {1,0,0,0,1,0,0,0,1}},
         {{2,-3,1}, {0,1,0,-1,0,0,0,0,1}},

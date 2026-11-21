@@ -293,11 +293,9 @@ def point_expression(nodes: Sequence[int]) -> str:
 
 def link_bound_definition(geometry: CollisionDag, link: int, name: str) -> str:
     bound = geometry.bounds[link]
-    pose = geometry.poses[link]
-    arguments = [point_expression(bound.center), point_expression(pose.translation)]
-    arguments.extend(f"v{node}" for node in pose.rotation)
-    arguments.extend((number(bound.sphere.radius) + "f", number(bound.local_scale) + "f"))
-    return f"    const auto {name} = tenkai_f32::link_sphere(" + ", ".join(arguments) + ");\n"
+    center = point_expression(bound.center)
+    radius = number(bound.sphere.radius)
+    return f"    const tenkai_f32::Sphere {name} = {{{center}, {radius}f}};\n"
 
 
 def self_collision_body(

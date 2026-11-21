@@ -197,8 +197,7 @@ __device__ __forceinline__ void rrtc_search(const RrtProblem* problems,
     const uint32_t width = unscanned < 32 ? 1 : 32;
     if (lane < width) {
       rrt_extend(candidate, nodes, result.node_count, space, config.step_size,
-                 trees, tree, connecting ? &candidate.nearest : nullptr, width,
-                 true);
+                 trees, tree, connecting ? &candidate.nearest : nullptr, width);
     }
     // Lane-zero predicates can still compile to shared loads in every lane.
     __syncwarp();

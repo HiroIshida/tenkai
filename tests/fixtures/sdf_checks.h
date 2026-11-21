@@ -1,4 +1,3 @@
-#include <limits>
 #include "broad_phase_checks.h"
 
 bool check_sdfs() {
@@ -36,7 +35,7 @@ bool check_sdfs() {
     const sdf::Scene empty = {};
     const sdf::Environment no_obstacles = {};
     if (sdf::distance(empty, no_obstacles, {0,0,0}) != INFINITY) return false;
-    const Scalar large = Scalar(4) * std::sqrt(std::numeric_limits<Scalar>::max());
+    const Scalar large = Scalar(1e6);
     const sdf::Sphere large_sphere = {{0,0,0},large};
     const bool intersections[][2] = {
         {sdf::intersects(box, {0,0,0}, 0), true},

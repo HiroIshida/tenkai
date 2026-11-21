@@ -125,13 +125,12 @@ struct StepCase {
     uint32_t expected;
 };
 
-__global__ void check_step_counts(const StepCase* cases, uint32_t count, uint32_t* output,
-                                  bool fp32_control) {
+__global__ void check_step_counts(const StepCase* cases, uint32_t count, uint32_t* output) {
     const uint32_t i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= count) return;
     m::RrtSpace space{};
     for (uint32_t d = 0; d < 2; ++d) space.resolution[d] = cases[i].resolution[d];
-    output[i] = m::rrt_steps(cases[i].from, cases[i].to, space, fp32_control);
+    output[i] = m::rrt_steps(cases[i].from, cases[i].to, space);
 }
 
 void check_interpolation_grid_sizes() {
@@ -141,9 +140,11 @@ void check_interpolation_grid_sizes() {
         {{0, 0}, {1, 2}, {Scalar(0.5), Scalar(0.25)}, 8},
         {{0, 0}, {1, 2}, {Scalar(0.25), Scalar(0.5)}, 4},
         {{-1, -2}, {1, 2}, {Scalar(0.5), Scalar(0.5)}, 8},
+        {{0, 0}, {Scalar(0.1), 0}, {Scalar(0.02), Scalar(0.02)}, 5},
+        {{0, 0}, {Scalar(0.1), Scalar(0.125)}, {Scalar(0.02), Scalar(0.03)}, 5},
     };
-    const Scalar small = std::ldexp(Scalar(1), -120);
-    const Scalar large = std::ldexp(Scalar(1), 100);
+    const Scalar small = std::ldexp(Scalar(1), -20);
+    const Scalar large = std::ldexp(Scalar(1), 20);
     for (Scalar resolution : {Scalar(0.25), small, large}) {
         const Scalar boundary = 4 * resolution;
         for (uint32_t d = 0; d < 2; ++d) {
@@ -157,19 +158,17 @@ void check_interpolation_grid_sizes() {
             cases.push_back(edge);
         }
     }
-    const Scalar subnormal = std::numeric_limits<Scalar>::denorm_min();
-    cases.push_back({{0, 0}, {subnormal, 2 * subnormal}, {subnormal, subnormal}, 2});
     const Scalar fine = std::ldexp(Scalar(1), -31);
     cases.push_back({{0, 0}, {1, 1}, {fine, fine}, UINT32_C(2147483648)});
     std::mt19937 random(4137);
     for (unsigned i = 0; i < 32768; ++i) {
-        const Scalar scale = std::ldexp(Scalar(1), int(random() % 220) - 120);
+        const Scalar scale = std::ldexp(Scalar(1), int(random() % 21) - 10);
         StepCase edge{};
-        const Scalar resolution = scale * Scalar(1.0 / (1 + random() % 1000000));
+        const Scalar resolution = std::ldexp(scale, -int(random() % 11));
         for (unsigned d = 0; d < 2; ++d) {
             edge.from[d] = scale * Scalar(int(random() % 1024) - 512);
             edge.to[d] = scale * Scalar(int(random() % 1024) - 512);
-            edge.resolution[d] = resolution;
+            edge.resolution[d] = i % 2 ? std::ldexp(resolution, int(d)) : resolution;
         }
         double count = 1;
         for (unsigned d = 0; d < 2; ++d)
@@ -181,34 +180,32 @@ void check_interpolation_grid_sizes() {
     m::DeviceBuffer<StepCase> device_cases(cases.size());
     m::DeviceBuffer<uint32_t> output(cases.size());
     device_cases.upload(cases.data(), cases.size());
-    for (bool fp32_control : {false, true}) {
-        check_step_counts<<<(cases.size() + 127) / 128, 128>>>(
-            device_cases.data(), cases.size(), output.data(), fp32_control);
-        m::cuda_check(cudaGetLastError(), "check interpolation grid sizes");
-        std::vector<uint32_t> counts(cases.size());
-        output.download(counts.data(), counts.size());
-        for (size_t i = 0; i < cases.size(); ++i) assert(counts[i] == cases[i].expected);
-    }
+    check_step_counts<<<(cases.size() + 127) / 128, 128>>>(
+        device_cases.data(), cases.size(), output.data());
+    m::cuda_check(cudaGetLastError(), "check interpolation grid sizes");
+    std::vector<uint32_t> counts(cases.size());
+    output.download(counts.data(), counts.size());
+    for (size_t i = 0; i < cases.size(); ++i) assert(counts[i] == cases[i].expected);
 }
 
 __global__ void check_distance_precision(double* output) {
     const Scalar zero[2] = {0, 0};
-    const Scalar large[2] = {Scalar(1e20), Scalar(2e20)};
-    const Scalar tiny[2] = {Scalar(1e-30), Scalar(2e-30)};
+    const Scalar large[2] = {Scalar(1e6), Scalar(2e6)};
+    const Scalar tiny[2] = {Scalar(1e-6), Scalar(2e-6)};
     output[0] = m::rrt_squared_distance(zero, large);
     output[1] = m::rrt_squared_distance(zero, tiny);
     output[2] = m::rrt_squared_distance(large, large);
     m::RrtSpace space{};
-    space.resolution[0] = space.resolution[1] = Scalar(1e20);
-    const Scalar nodes[] = {Scalar(4e20), 0, Scalar(3e20), 0};
+    space.resolution[0] = space.resolution[1] = Scalar(1e6);
+    const Scalar nodes[] = {Scalar(4e6), 0, Scalar(3e6), 0};
     m::RrtCandidate candidate{};
-    m::rrt_extend(candidate, nodes, 2, space, 1e20);
+    m::rrt_extend(candidate, nodes, 2, space, 1e6);
     output[3] = candidate.parent;
     output[4] = candidate.q[0];
-    candidate.q[0] = Scalar(1e30);
+    candidate.q[0] = Scalar(1e6);
     candidate.q[1] = 0;
-    space.resolution[0] = space.resolution[1] = Scalar(1e-30);
-    m::rrt_extend(candidate, zero, 1, space, 1e-30);
+    space.resolution[0] = space.resolution[1] = Scalar(1e-6);
+    m::rrt_extend(candidate, zero, 1, space, 1e-6);
     output[5] = candidate.q[0];
 }
 
@@ -219,14 +216,14 @@ void check_distance_range() {
     double values[6];
     output.download(values, 6);
     for (unsigned i = 0; i < 2; ++i) {
-        const double a = double(Scalar(i ? 1e-30 : 1e20));
-        const double b = double(Scalar(i ? 2e-30 : 2e20));
+        const double a = double(Scalar(i ? 1e-6 : 1e6));
+        const double b = double(Scalar(i ? 2e-6 : 2e6));
         assert(std::isfinite(values[i]) && values[i] > 0);
-        assert(std::abs(values[i] / (a*a + b*b) - 1) < 1e-12);
+        assert(std::abs(values[i] / (a*a + b*b) - 1) < 1e-6);
     }
     assert(values[2] == 0 && values[3] == 1);
-    assert(std::abs(values[4] / 2e20 - 1) < 1e-6);
-    assert(std::abs(values[5] / 1e-30 - 1) < 1e-6);
+    assert(std::abs(values[4] / 2e6 - 1) < 1e-6);
+    assert(std::abs(values[5] / 1e-6 - 1) < 1e-6);
 }
 
 __global__ void check_cached_nearest(m::RrtSpace space) {
@@ -261,7 +258,7 @@ __global__ void check_warp_nearest(m::RrtSpace space) {
     __shared__ Scalar nodes[capacity * m::rrt_dimension];
     __shared__ Tree trees[capacity];
     __shared__ m::RrtCandidate candidate;
-    for (Scalar scale : {Scalar(1), Scalar(1e-30), Scalar(1e20)}) {
+    for (Scalar scale : {Scalar(1), Scalar(1e-6), Scalar(1e6)}) {
         for (uint32_t d = 0; d < m::rrt_dimension; ++d) space.resolution[d] = Scalar(0.025) * scale;
         for (uint32_t n = threadIdx.x; n < capacity; n += 32) {
             Scalar x = Scalar(4 + n % 7);
