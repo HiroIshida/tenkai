@@ -11,6 +11,7 @@ from tenkai.cuda import (
 )
 from tenkai.modeling import JointInfo, JointKind, KinematicModel, SelfCollisionRules, Sphere
 from tenkai.rrt import Planner, RRTBuild, RRTConfig, RRTResult, build_rrt
+from tenkai.shortcut import ShortcutConfig
 
 __all__ = [
     "sdf",
@@ -30,4 +31,5 @@ __all__ = [
     "RRTConfig",
     "RRTResult",
     "build_rrt",
+    "ShortcutConfig",
 ]

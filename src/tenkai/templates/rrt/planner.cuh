@@ -3,83 +3,16 @@
 #include <cuda_runtime.h>
 #include <cstddef>
 #include <cstdint>
-#include <limits>
 #include <stdexcept>
-#include <string>
 #include <vector>
 
 #include "common.cuh"
 #include "generated_model.cuh"
+#include "path_batch.cuh"
 #include "rrtc.cuh"
 #include "types.hpp"
 
 namespace tenkai_f32 {
-inline void cuda_check(cudaError_t error, const char* operation) {
-  if (error != cudaSuccess) {
-    throw std::runtime_error(std::string(operation) + ": " +
-                             cudaGetErrorString(error));
-  }
-}
-
-inline size_t storage_product(size_t a, size_t b) {
-  if (b && a > std::numeric_limits<size_t>::max() / b) {
-    throw std::length_error("RRT storage size overflow");
-  }
-
-  return a * b;
-}
-
-template <typename T>
-class DeviceBuffer {
- public:
-  explicit DeviceBuffer(size_t count) : count_(count) {
-    const size_t bytes = storage_product(count, sizeof(T));
-    if (bytes) {
-      cuda_check(cudaMalloc(&data_, bytes), "cudaMalloc");
-    }
-  }
-
-  ~DeviceBuffer() {
-    if (data_) {
-      cudaFree(data_);
-    }
-  }
-
-  DeviceBuffer(const DeviceBuffer&) = delete;
-  DeviceBuffer& operator=(const DeviceBuffer&) = delete;
-
-  T* data() { return data_; }
-  const T* data() const { return data_; }
-
-  void upload(const T* input, size_t count) {
-    if (count > count_) {
-      throw std::out_of_range("device upload exceeds buffer");
-    }
-
-    if (count) {
-      cuda_check(
-          cudaMemcpy(data_, input, count * sizeof(T), cudaMemcpyHostToDevice),
-          "upload");
-    }
-  }
-
-  void download(T* output, size_t count, size_t offset = 0) const {
-    if (offset > count_ || count > count_ - offset) {
-      throw std::out_of_range("device download exceeds buffer");
-    }
-
-    if (count) {
-      cuda_check(cudaMemcpy(output, data_ + offset, count * sizeof(T),
-                            cudaMemcpyDeviceToHost),
-                 "download");
-    }
-  }
-
- private:
-  T* data_ = nullptr;
-  size_t count_;
-};
-
 // Scene buffers are borrowed and must outlive the planner. All search storage
 // is reused across solves; a new solve invalidates the previous tree/path.
 // With host ranges supplied, each environment's set of types must stay fixed.
@@ -120,9 +53,13 @@ class RrtPlanner {
   }
 
   std::vector<tenkai::RrtResult> solve(
-      const std::vector<RrtProblem>& problems) {
+      const std::vector<RrtProblem>& problems,
+      const tenkai::ShortcutConfig* shortcut = nullptr) {
     if (problems.size() != problem_count_) {
       throw std::invalid_argument("RRT problem count mismatch");
+    }
+    if (shortcut) {
+      validate_shortcut(*shortcut);
     }
     unsigned types = 0;
     for (const auto& problem : problems) {
@@ -150,6 +87,8 @@ class RrtPlanner {
 
     std::vector<tenkai::RrtResult> result(problem_count_);
     results_.download(result.data(), result.size());
+    path_batch_.build(problems, result, nodes_.data(), paths_.data(),
+                      config_.max_nodes, shortcut, space_, scene_);
     solved_ = true;
     return result;
   }
@@ -159,29 +98,26 @@ class RrtPlanner {
       throw std::out_of_range("RRT path unavailable");
     }
 
-    tenkai::RrtResult result;
-    results_.download(&result, 1, problem_id);
+    return path_batch_.path(problem_id);
+  }
 
-    std::vector<uint32_t> indices(result.path_length);
-    paths_.download(indices.data(), indices.size(),
-                    problem_id * config_.max_nodes);
+  std::vector<Scalar> paths() const {
+    require_solved();
+    return path_batch_.paths();
+  }
 
-    std::vector<Scalar> nodes(size_t(result.node_count) * rrt_dimension);
-    nodes_.download(nodes.data(), nodes.size(),
-                    problem_id * config_.max_nodes * rrt_dimension);
-
-    std::vector<Scalar> path(size_t(result.path_length) * rrt_dimension);
-    for (size_t i = 0; i < indices.size(); ++i) {
-      for (uint32_t d = 0; d < rrt_dimension; ++d) {
-        path[i * rrt_dimension + d] =
-            nodes[size_t(indices[i]) * rrt_dimension + d];
-      }
-    }
-
-    return path;
+  size_t path_vertex_count() const {
+    require_solved();
+    return path_batch_.length();
   }
 
  private:
+  void require_solved() const {
+    if (!solved_) {
+      throw std::out_of_range("RRT path unavailable; call solve first");
+    }
+  }
+
   template <unsigned Types>
   void launch_search() {
     tenkai_rrtc<Types>
@@ -246,6 +182,7 @@ class RrtPlanner {
   DeviceBuffer<tenkai::RrtResult> results_;
   DeviceBuffer<RrtPreparation> preparation_;
   DeviceBuffer<uint32_t> next_problem_;
+  PathBatch path_batch_;
 };
 
 }  // namespace tenkai_f32

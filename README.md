@@ -21,7 +21,7 @@ This example uses the included Fetch robot. Save it as a Python file and run it
 with `uv run python your_script.py` from the repository root.
 
 ```python
-from tenkai import RRTConfig, build_rrt, sdf
+from tenkai import RRTConfig, ShortcutConfig, build_rrt, sdf
 
 compiled = build_rrt(
     "assets/fetch/fetch.urdf",
@@ -42,7 +42,7 @@ with compiled.planner(
     problem_count=1,
     resolution=0.01,
 ) as planner:
-    result = planner.solve([start], [goal], [0], [42])[0]
+    result = planner.solve([start], [goal], [0], [42], shortcut=ShortcutConfig())[0]
     print(result)
     if result["status"] == "success":
         path = planner.path(0)
@@ -51,9 +51,7 @@ with compiled.planner(
 
 `build_rrt` compiles the robot once. Reuse `compiled` with different obstacles,
 and call `solve` repeatedly on a planner with new starts, goals, and seeds.
-Creating a planner uploads its environments and allocates reusable search buffers;
-the `with` block releases those buffers on exit. Each call to `build_rrt` rebuilds
-the library, so keep it outside your planning loop.
+Each call to `build_rrt` rebuilds the library, so keep it outside your planning loop.
 
 For a known set of obstacle types, pass `specialize_types={sdf.Box, sdf.Ground}`
 to `build_rrt`. This builds one additional search kernel for that union, with
@@ -66,10 +64,11 @@ An empty set specializes environments without external obstacles; self-collision
 checking remains enabled.
 
 Starts, goals, and returned paths follow
-`compiled.model["control_joints"]` order. The last two arguments to `solve` are
+`compiled.model["control_joints"]` order. The last two positional arguments to `solve` are
 one environment ID and one unsigned 64-bit random seed per problem. Repeated
 solves with the same inputs on the same backend are deterministic.
-`path(i)` retrieves problem `i`'s path from the last solve.
+`shortcut=ShortcutConfig()` enables path shortening.
+Use `path(i)` to retrieve one path, or `paths()` to retrieve all paths.
 
 ## Define your environments
 

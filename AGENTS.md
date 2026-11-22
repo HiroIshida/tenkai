@@ -3,6 +3,16 @@
 Code should explain how. Tests should specify what. Commit messages should explain why. Code comments should explain why not.
 Unless explicitly requested, avoid unnecessary explanations or extra content.
 
+Markdown documentation is for users. Do not use Markdown files to record internal technical details; put technical details relevant to a change in its commit message.
+
+When copying or porting external code, reimplementing an external algorithm, or carrying over parameters/defaults, add or update a concise row in [PORTING.md](PORTING.md). Use the existing columns: upstream repository, license, local files, and porting method. Keep the upstream repository first so its authors can quickly recognize reuse.
+
+Do not commit benchmark code unless the user explicitly asks to include it in a commit. Running or writing a benchmark does not imply permission to commit it.
+
+Preserve significant decisions from discussions with the user in commit messages, especially nontrivial decisions involving trade-offs. Record the alternatives considered, the trade-offs, and the rationale for the chosen approach.
+
+Include the evidence used to make those decisions in the commit log, such as benchmark results. Record the measured results, comparison baseline, and relevant measurement conditions so the reasoning remains verifiable.
+
 Treat questions about reasons (e.g., "Why did you do X?") as requests for explanation only. Do not modify code or files in response unless the user explicitly requests a change.
 
 # Python guidelines

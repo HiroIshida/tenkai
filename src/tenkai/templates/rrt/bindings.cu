@@ -245,7 +245,8 @@ extern "C" int rrt_solve(void* handle,
                          const double* goals,
                          const uint32_t* environment_ids,
                          const uint64_t* seeds,
-                         tenkai::RrtResult* output) {
+                         tenkai::RrtResult* output,
+                         const tenkai::ShortcutConfig* shortcut) {
   return boundary([&] {
     auto& ctx = context(handle);
     if (!starts || !goals || !environment_ids || !seeds || !output) {
@@ -262,7 +263,7 @@ extern "C" int rrt_solve(void* handle,
       }
     }
 
-    const auto results = ctx.planner->solve(problems);
+    const auto results = ctx.planner->solve(problems, shortcut);
     std::copy(results.begin(), results.end(), output);
   });
 }
@@ -284,6 +285,23 @@ extern "C" int rrt_path(void* handle,
     }
 
     std::copy(path.begin(), path.end(), output);
+  });
+}
+
+extern "C" int rrt_paths(void* handle, double* output, uint64_t capacity) {
+  return boundary([&] {
+    const auto& planner = *context(handle).planner;
+    const size_t length = planner.path_vertex_count();
+    if (length > capacity) {
+      throw std::length_error("path output buffer too small");
+    }
+    if (length && !output) {
+      throw std::invalid_argument("null RRT paths output");
+    }
+    const auto paths = planner.paths();
+    if (!paths.empty()) {
+      std::copy(paths.begin(), paths.end(), output);
+    }
   });
 }
 

@@ -19,8 +19,9 @@ tenkai uses one sample and one warp per problem. Failed solves stop the benchmar
 
 Times cover Python API calls for a batch after one warmup batch. plainmp solves
 sequentially and includes native planner creation and trajectory conversion;
-tenkai solves the batch in parallel, reuses GPU buffers, and includes transfers
-but not path retrieval. Compilation and setup are excluded. CPU trials advance
+tenkai solves the batch in parallel, reuses GPU buffers, and assembles paths on
+the GPU. Its timing includes input/result-metadata transfers but not path
+retrieval to the CPU. Compilation and setup are excluded. CPU trials advance
 the random generator; GPU trials repeat fixed seeds. This measures the two Python
 interfaces, including their different overheads. A GPU for the selected backend is required.
 

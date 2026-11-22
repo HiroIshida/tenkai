@@ -13,6 +13,7 @@
 #define cudaMemcpyDeviceToHost hipMemcpyDeviceToHost
 #define cudaGetLastError hipGetLastError
 #define cudaDeviceSynchronize hipDeviceSynchronize
+#define cudaStreamSynchronize hipStreamSynchronize
 #define cudaGetDevice hipGetDevice
 #define cudaDeviceProp hipDeviceProp_t
 #define cudaFuncAttributes hipFuncAttributes

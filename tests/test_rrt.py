@@ -12,7 +12,7 @@ import numpy as np
 import pytest
 from helpers import fetch_collision_cases
 
-from tenkai import Planner, RRTBuild, RRTConfig, build_rrt, sdf
+from tenkai import Planner, RRTBuild, RRTConfig, ShortcutConfig, build_rrt, sdf
 from tenkai.build import Backend
 from tenkai.compiler import ModelMetadata
 from tenkai.modeling import KinematicModel, read_config
@@ -271,6 +271,7 @@ def test_public_build(compiled: RRTBuild, gpu_backend: Backend) -> None:
         "rrt_destroy",
         "rrt_solve",
         "rrt_path",
+        "rrt_paths",
         "rrt_check",
     ):
         assert getattr(library, symbol)
@@ -289,6 +290,7 @@ def test_public_planner_on_gpu(compiled: RRTBuild) -> None:
         np.testing.assert_array_equal(path[-1], inputs[1][0])
         assert results[0]["path_length"] == len(path)
         assert not planner.collisions(path[:, ::-1], [0] * len(path)).any()
+        planner.solve(*inputs, shortcut=ShortcutConfig())
         assert planner.solve(*inputs) == results
         np.testing.assert_array_equal(planner.path(0), path)
 
@@ -320,7 +322,11 @@ def test_fetch_body_collisions_and_planning_on_gpu(
             [case.collision for case in cases],
         )
         results = planner.solve(
-            [home, base_collision, home], [goal, goal, torso_collision], [1, 0, 0], [42] * 3
+            [home, base_collision, home],
+            [goal, goal, torso_collision],
+            [1, 0, 0],
+            [42] * 3,
+            shortcut=ShortcutConfig(max_steps=50, max_empty_steps=20),
         )
         assert [result["status"] for result in results] == [
             "success",

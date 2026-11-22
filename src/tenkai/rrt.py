@@ -18,6 +18,7 @@ from tenkai.build import Backend, compiler_command, target_arch
 from tenkai.compiler import ModelMetadata, generate
 from tenkai.cuda import Options
 from tenkai.sdf import CollisionObjectType, Geometry, SceneData, pack_geometry
+from tenkai.shortcut import NativeShortcutConfig, ShortcutConfig
 
 type Status = Literal["success", "round_limit", "node_limit", "invalid_start", "invalid_goal"]
 
@@ -268,6 +269,7 @@ class Planner:
             raise ValueError("model must have movable control joints")
 
         self.max_nodes = config.max_nodes
+        self._path_lengths: list[int] | None = None
         lower = np.array([joint["lower"] for joint in model["control_joints"]], dtype=np.float64)
         upper = np.array([joint["upper"] for joint in model["control_joints"]], dtype=np.float64)
         if not np.isfinite(lower).all() or not np.isfinite(upper).all() or (lower >= upper).any():
@@ -307,6 +309,7 @@ class Planner:
             id_array,
             seed_array,
             ct.POINTER(NativeResult),
+            ct.POINTER(NativeShortcutConfig),
         ]
         self.library.rrt_solve.restype = ct.c_int
 
@@ -373,8 +376,14 @@ class Planner:
         goals: npt.ArrayLike,
         environment_ids: npt.ArrayLike,
         seeds: npt.ArrayLike,
+        *,
+        shortcut: ShortcutConfig | None = None,
     ) -> list[RRTResult]:
-        """Solve a batch; results and paths replace those from the previous solve."""
+        """Solve, optionally shorten, and replace the stored paths.
+
+        Shortcutting uses the same per-problem seeds and environments as planning.
+        path_length reports the final vertex count; nodes and rounds describe the search.
+        """
         self._require_open()
 
         start = np.ascontiguousarray(starts, dtype=np.float64)
@@ -388,9 +397,20 @@ class Planner:
         if (ids >= self.environment_count).any():
             raise ValueError("environment ID out of range")
 
+        native_shortcut = None if shortcut is None else NativeShortcutConfig.from_config(shortcut)
         results = (NativeResult * self.problem_count)()
-        status = self.library.rrt_solve(self.handle, start, goal, ids, seed, results)
+        self._path_lengths = None
+        status = self.library.rrt_solve(
+            self.handle,
+            start,
+            goal,
+            ids,
+            seed,
+            results,
+            None if native_shortcut is None else ct.byref(native_shortcut),
+        )
         self.check(status)
+        self._path_lengths = [result.path_length for result in results]
 
         return [
             RRTResult(
@@ -409,14 +429,39 @@ class Planner:
         if problem_id >= self.problem_count:
             raise ValueError("problem_id out of range")
 
-        path = np.empty((self.max_nodes, self.dimension), dtype=np.float64)
+        lengths = self._require_paths()
+        path = np.empty((lengths[problem_id], self.dimension), dtype=np.float64)
         length = ct.c_uint32()
-        status = self.library.rrt_path(
-            self.handle, problem_id, path, self.max_nodes, ct.byref(length)
-        )
+        status = self.library.rrt_path(self.handle, problem_id, path, len(path), ct.byref(length))
         self.check(status)
 
         return path[: length.value].copy()
+
+    def _require_paths(self) -> list[int]:
+        self._require_open()
+        if self._path_lengths is None:
+            raise RuntimeError("RRT path unavailable; call solve first")
+        return self._path_lengths
+
+    def paths(self) -> list[npt.NDArray[np.float64]]:
+        """Download all stored paths in one transfer, including empty failed paths."""
+        lengths = self._require_paths()
+        packed = np.empty((sum(lengths), self.dimension), dtype=np.float64)
+        operation = self.library.rrt_paths
+        operation.argtypes = [
+            ct.c_void_p,
+            np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
+            ct.c_uint64,
+        ]
+        operation.restype = ct.c_int
+        self.check(operation(self.handle, packed, len(packed)))
+
+        paths: list[npt.NDArray[np.float64]] = []
+        offset = 0
+        for length in lengths:
+            paths.append(packed[offset : offset + length].copy())
+            offset += length
+        return paths
 
     def collisions(
         self, configurations: npt.ArrayLike, environment_ids: npt.ArrayLike
