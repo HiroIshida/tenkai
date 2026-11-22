@@ -28,7 +28,7 @@ extern "C" int test_shortcut(void* handle,
     model::DeviceBuffer<uint32_t> output_lengths(count);
     coordinates.upload(paths, capacity * model::rrt_dimension);
     descriptors.upload(problems.data(), count);
-    model::tenkai_shortcut<<<count, 128>>>(
+    model::tenkai_shortcut<<<count, 32>>>(
         coordinates.data(), distances.data(), descriptors.data(), space,
         context(handle).scene, *config, output_lengths.data());
     model::cuda_check(cudaGetLastError(), "test shortcut kernel");

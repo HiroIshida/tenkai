@@ -67,7 +67,7 @@ class PathBatch {
     if (shorten) {
       distances_.reserve(vertices_);
       device_lengths_.reserve(paths_.size());
-      tenkai_shortcut<<<static_cast<unsigned int>(paths_.size()), 128>>>(
+      tenkai_shortcut<<<static_cast<unsigned int>(paths_.size()), 32>>>(
           coordinates_.data(), distances_.data(), device_paths_.data(), space,
           scene, *shortcut, device_lengths_.data());
       cuda_check(cudaGetLastError(), "shortcut RRT paths");
