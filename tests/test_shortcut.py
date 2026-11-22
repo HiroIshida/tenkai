@@ -2,7 +2,7 @@
 
 import ctypes as ct
 import subprocess
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import replace
 from pathlib import Path
 
@@ -87,23 +87,23 @@ def path_length(path: npt.NDArray[np.float64]) -> float:
 
 
 @pytest.mark.parametrize(
-    "config",
+    "make_config",
     [
-        ShortcutConfig(max_steps=-1),
-        ShortcutConfig(max_steps=2**32 - 1),
-        ShortcutConfig(max_empty_steps=1.5),  # type: ignore[arg-type]
-        ShortcutConfig(max_empty_steps=True),
-        ShortcutConfig(range_ratio=0),
-        ShortcutConfig(range_ratio=1.01),
-        ShortcutConfig(range_ratio=float("nan")),
-        ShortcutConfig(snap_to_vertex=-0.01),
-        ShortcutConfig(snap_to_vertex=1.01),
-        ShortcutConfig(snap_to_vertex=float("inf")),
+        lambda: ShortcutConfig(max_steps=-1),
+        lambda: ShortcutConfig(max_steps=2**32 - 1),
+        lambda: ShortcutConfig(max_empty_steps=1.5),  # type: ignore[arg-type]
+        lambda: ShortcutConfig(max_empty_steps=True),
+        lambda: ShortcutConfig(range_ratio=0),
+        lambda: ShortcutConfig(range_ratio=1.01),
+        lambda: ShortcutConfig(range_ratio=float("nan")),
+        lambda: ShortcutConfig(snap_to_vertex=-0.01),
+        lambda: ShortcutConfig(snap_to_vertex=1.01),
+        lambda: ShortcutConfig(snap_to_vertex=float("inf")),
     ],
 )
-def test_invalid_shortcut_config(config: ShortcutConfig) -> None:
+def test_invalid_shortcut_config_at_construction(make_config: Callable[[], ShortcutConfig]) -> None:
     with pytest.raises(ValueError):
-        config.validate()
+        make_config()
 
 
 @pytest.mark.gpu
