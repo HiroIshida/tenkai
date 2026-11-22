@@ -28,7 +28,7 @@ jobs:
       - name: Install uv and Python dependencies
         run: |
           python3 -m pip install uv==0.7.9
-          uv sync --locked
+          uv sync --locked --extra visualize
 
       - name: Check formatting, lint and types
         run: |
