@@ -46,16 +46,16 @@ def test_scene_packing_preserves_objects_rotations_and_environment_ids() -> None
     cylinder = sdf.Cylinder((7, 8, 9), 0.25, 2, rotation)
     scene = pack_geometry(
         [
-            [sdf.Sphere((1, 0, 0), 0.1), box, sdf.Sphere((2, 0, 0), 0.2)],
-            [],
-            [sdf.Ground(z=2), cylinder, sdf.Ground(z=-3)],
-            [box],
+            [sdf.Sphere((1, 0, 0), 0.1), box, sdf.Sphere((2, 0, 0), 0.2), sdf.Ground()],
+            [sdf.Ground(z=-1)],
+            [sdf.Ground(z=2), cylinder],
+            [box, sdf.Ground(z=-3)],
         ]
     )
     np.testing.assert_array_equal(
-        scene.ranges[:, :, 1], [[1, 2, 0, 0], [0, 0, 0, 0], [0, 0, 1, 2], [1, 0, 0, 0]]
+        scene.ranges[:, :, 1], [[1, 2, 0], [0, 0, 0], [0, 0, 1], [1, 0, 0]]
     )
-    np.testing.assert_array_equal(scene.ranges[3, :, 0], [1, 2, 1, 2])
+    np.testing.assert_array_equal(scene.ranges[3, :, 0], [1, 2, 1])
     np.testing.assert_array_equal(scene.boxes[:, :3], [[1, 2, 3], [1, 2, 3]])
     np.testing.assert_array_equal(scene.boxes[0, 3:12].reshape(3, 3), np.array(rotation).T)
     np.testing.assert_array_equal(scene.boxes[:, 12:], [[4, 5, 6], [4, 5, 6]])
@@ -63,12 +63,12 @@ def test_scene_packing_preserves_objects_rotations_and_environment_ids() -> None
     np.testing.assert_array_equal(scene.cylinders[0, :3], [7, 8, 9])
     np.testing.assert_array_equal(scene.cylinders[0, 3:12].reshape(3, 3), np.array(rotation).T)
     np.testing.assert_array_equal(scene.cylinders[0, 12:], [0.25, 2])
-    np.testing.assert_array_equal(scene.grounds[:, 0], [-2, 3])
+    np.testing.assert_array_equal(scene.grounds, [0, 1, -2, 3])
 
 
 @pytest.mark.parametrize("geometry", [[], [[]], [[], []]])
 def test_empty_scenes_have_no_implicit_obstacles(geometry: sdf.Geometry) -> None:
-    scene = pack_geometry(geometry)
+    scene = pack_geometry(geometry, ground=False)
     assert not scene.ranges.any()
     assert len(scene.boxes) == len(scene.spheres) == len(scene.cylinders) == len(scene.grounds) == 0
 

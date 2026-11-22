@@ -136,7 +136,7 @@ def self_collision_sources(directory: Path, options: Options, members: int, cont
 @pytest.mark.parametrize("optimization", ["none", "basic", "algebraic"])
 @pytest.mark.parametrize("members", [1, 2])
 def test_self_collision_on_host(tmp_path: Path, optimization: Optimization, members: int) -> None:
-    options = Options(optimization=optimization)
+    options = Options(optimization=optimization, ground=False)
     self_collision_sources(tmp_path, options, members, 3)
     binary = tmp_path / "self-collision"
     run(
@@ -167,7 +167,7 @@ def test_self_collision_on_gpu(
     gpu_backend: Backend,
     gpu_arch: str,
 ) -> None:
-    options = Options()
+    options = Options(ground=False)
     self_collision_sources(tmp_path, options, members, controls)
     run_planner_fixture(
         tmp_path, gpu_backend, gpu_arch, "self_collision.cu", (f"TEST_MEMBERS={members}",)
@@ -175,15 +175,16 @@ def test_self_collision_on_gpu(
 
 
 @pytest.mark.parametrize("optimization", ["none", "basic", "algebraic"])
+@pytest.mark.parametrize("ground", [False, True])
 def test_fetch_collision_against_exhaustive_pairs(
-    tmp_path: Path, optimization: Optimization
+    tmp_path: Path, optimization: Optimization, ground: bool
 ) -> None:
     assets = ROOT / "assets/fetch"
     kin = KinematicModel.from_urdf((assets / "fetch.urdf").read_text())
     config = read_config((assets / "collision.yaml").read_text())
     spheres = config.resolve(kin)
     rules = config.resolve_rules(kin, spheres)
-    options = Options(optimization=optimization, live_budget=64)
+    options = Options(optimization=optimization, live_budget=64, ground=ground)
     (tmp_path / "centers.cuh").write_text(generate_centers_kernel(kin, spheres, options))
     (tmp_path / "collision.cuh").write_text(
         generate_collision_kernel(kin, spheres, options, rules=rules)
@@ -226,14 +227,22 @@ def test_fetch_collision_against_exhaustive_pairs(
 @pytest.mark.parametrize("optimization", ["none", "basic", "algebraic"])
 @pytest.mark.parametrize("budget", [None, 64])
 @pytest.mark.parametrize("sphere_batch_size", [1, 3, 8, 16])
+@pytest.mark.parametrize("ground", [False, True])
 def test_host_arithmetic(
-    tmp_path: Path, optimization: Optimization, budget: int | None, sphere_batch_size: int
+    tmp_path: Path,
+    optimization: Optimization,
+    budget: int | None,
+    sphere_batch_size: int,
+    ground: bool,
 ) -> None:
     compiler = shutil.which(os.environ.get("CXX", "c++"))
     if compiler is None:
         pytest.skip("host arithmetic requires a C++ compiler")
     options = Options(
-        optimization=optimization, live_budget=budget, sphere_batch_size=sphere_batch_size
+        optimization=optimization,
+        live_budget=budget,
+        sphere_batch_size=sphere_batch_size,
+        ground=ground,
     )
     chain_sources(tmp_path, options)
     binary = tmp_path / "arithmetic"
@@ -255,8 +264,11 @@ def test_host_arithmetic(
 
 
 @pytest.mark.gpu_compile
-def test_all_kernels_compile(tmp_path: Path, gpu_backend: Backend, gpu_arch: str) -> None:
-    options = Options()
+@pytest.mark.parametrize("ground", [False, True])
+def test_all_kernels_compile(
+    tmp_path: Path, gpu_backend: Backend, gpu_arch: str, ground: bool
+) -> None:
+    options = Options(ground=ground)
     chain_sources(tmp_path, options)
     planner_source(tmp_path, options)
     arithmetic = tmp_path / "arithmetic.cu"
@@ -268,10 +280,11 @@ def test_all_kernels_compile(tmp_path: Path, gpu_backend: Backend, gpu_arch: str
 
 
 @pytest.mark.gpu_compile
+@pytest.mark.parametrize("ground", [False, True])
 def test_planner_headers_are_self_contained(
-    tmp_path: Path, gpu_backend: Backend, gpu_arch: str
+    tmp_path: Path, gpu_backend: Backend, gpu_arch: str, ground: bool
 ) -> None:
-    planner_source(tmp_path, Options())
+    planner_source(tmp_path, Options(ground=ground))
     command, _ = compiler_command(gpu_backend, gpu_arch)
     compile_only = "-c" if gpu_backend == "hip" else "--ptx"
     headers = sorted(path for path in tmp_path.rglob("*") if path.suffix in (".cuh", ".hpp"))
@@ -284,10 +297,11 @@ def test_planner_headers_are_self_contained(
 
 @pytest.mark.gpu
 @pytest.mark.parametrize("sphere_batch_size", [1, 3, 8, 16])
+@pytest.mark.parametrize("ground", [False, True])
 def test_arithmetic_on_gpu(
-    tmp_path: Path, gpu_backend: Backend, gpu_arch: str, sphere_batch_size: int
+    tmp_path: Path, gpu_backend: Backend, gpu_arch: str, sphere_batch_size: int, ground: bool
 ) -> None:
-    chain_sources(tmp_path, Options(sphere_batch_size=sphere_batch_size))
+    chain_sources(tmp_path, Options(sphere_batch_size=sphere_batch_size, ground=ground))
     command, _ = compiler_command(gpu_backend, gpu_arch)
     if gpu_backend == "cuda":
         command.extend(["-x", "cu"])
@@ -309,16 +323,17 @@ def test_arithmetic_on_gpu(
 
 @pytest.mark.gpu
 def test_planner_on_gpu(tmp_path: Path, gpu_backend: Backend, gpu_arch: str) -> None:
-    planner_source(tmp_path, Options())
+    planner_source(tmp_path, Options(ground=False))
     run_planner_fixture(tmp_path, gpu_backend, gpu_arch, "rrt.cu")
 
 
 @pytest.mark.gpu
 @pytest.mark.parametrize("sphere_batch_size", [1, 8])
+@pytest.mark.parametrize("ground", [False, True])
 def test_cooperative_planning_on_gpu(
-    tmp_path: Path, gpu_backend: Backend, gpu_arch: str, sphere_batch_size: int
+    tmp_path: Path, gpu_backend: Backend, gpu_arch: str, sphere_batch_size: int, ground: bool
 ) -> None:
-    planner_source(tmp_path, Options(sphere_batch_size=sphere_batch_size), (2, 0, 1))
+    planner_source(tmp_path, Options(sphere_batch_size=sphere_batch_size, ground=ground), (2, 0, 1))
     run_planner_fixture(tmp_path, gpu_backend, gpu_arch, "rrtc_cooperative.cu")
 
 
@@ -330,7 +345,7 @@ def test_fixed_spheres_and_reference_joints_on_gpu(
     gpu_backend: Backend,
     gpu_arch: str,
 ) -> None:
-    static_planner_source(tmp_path, Options(), sphere_count)
+    static_planner_source(tmp_path, Options(ground=False), sphere_count)
     run_planner_fixture(
         tmp_path,
         gpu_backend,

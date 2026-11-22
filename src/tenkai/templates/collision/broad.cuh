@@ -11,8 +11,9 @@ __device__ inline bool may_intersect(const Obstacle& obstacle,
 
 template <unsigned Types = AllTypes>
 __device__ inline bool may_intersect(const Scene& scene,
-                                     const Environment& env,
+                                     size_t environment_id,
                                      const Sphere& enclosing) {
+  const Environment& env = scene.environments[environment_id];
   for (size_t i = 0; i < (Types & BoxType ? env.boxes.count : 0); ++i) {
     if (may_intersect(scene.boxes[env.boxes.offset + i], enclosing))
       return true;
@@ -26,8 +27,8 @@ __device__ inline bool may_intersect(const Scene& scene,
     if (may_intersect(scene.cylinders[env.cylinders.offset + i], enclosing))
       return true;
   }
-  for (size_t i = 0; i < (Types & GroundType ? env.grounds.count : 0); ++i) {
-    if (may_intersect(scene.grounds[env.grounds.offset + i], enclosing))
+  if (has_ground) {
+    if (may_intersect(scene.grounds[environment_id], enclosing))
       return true;
   }
   return false;

@@ -46,8 +46,7 @@ class RrtPlanner {
         const auto& env = host_environments[i];
         environment_types_[i] = (env.boxes.count ? BoxType : 0) |
                                 (env.spheres.count ? SphereType : 0) |
-                                (env.cylinders.count ? CylinderType : 0) |
-                                (env.grounds.count ? GroundType : 0);
+                                (env.cylinders.count ? CylinderType : 0);
       }
     }
   }

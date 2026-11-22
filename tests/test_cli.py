@@ -19,17 +19,22 @@ def arguments(output: Path) -> list[str]:
 
 
 @pytest.mark.parametrize(
-    "flags,live_budget,sphere_batch_size",
+    "flags,live_budget,sphere_batch_size,ground",
     [
-        ([], None, 8),
-        (["--scheduling"], 64, 8),
-        (["--no-scheduling"], None, 8),
-        (["--live-budget", "16"], 16, 8),
-        (["--sphere-batch-size", "3"], None, 3),
+        ([], None, 8, True),
+        (["--scheduling"], 64, 8, True),
+        (["--no-scheduling"], None, 8, True),
+        (["--live-budget", "16"], 16, 8, True),
+        (["--sphere-batch-size", "3"], None, 3, True),
+        (["--no-ground"], None, 8, False),
     ],
 )
 def test_cli_generates_sfu_kernels(
-    tmp_path: Path, flags: list[str], live_budget: int | None, sphere_batch_size: int
+    tmp_path: Path,
+    flags: list[str],
+    live_budget: int | None,
+    sphere_batch_size: int,
+    ground: bool,
 ) -> None:
     cli([*arguments(tmp_path), *flags])
     model = json.loads((tmp_path / "model.json").read_text())
@@ -37,6 +42,7 @@ def test_cli_generates_sfu_kernels(
     assert model["scalar"] == "float"
     assert model["live_budget"] == live_budget
     assert model["sphere_batch_size"] == sphere_batch_size
+    assert model["ground"] is ground
 
 
 @pytest.mark.parametrize("size", ["0", "-1"])

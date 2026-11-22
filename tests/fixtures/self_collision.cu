@@ -31,11 +31,10 @@ __host__ __device__ bool expected_self(const float* q) {
 }
 
 __device__ void check_predicates() {
-    const m::Environment env[] = {{}, {{0,1},{},{},{0,1}}, {{},{0,1},{},{}}};
+    const m::Environment env[] = {{}, {{0,1},{},{}}, {{},{0,1},{}}};
     const m::Box box = {{{100,100,100}, {1,0,0,0,1,0,0,0,1}}, {1,1,1}};
-    const m::Ground ground{10};
     m::Sphere obstacle{{0,0,0}, 0.125f};
-    const m::Scene scene{env, &box, &obstacle, nullptr, &ground};
+    const m::Scene scene{env, &box, &obstacle, nullptr, nullptr};
     for (float x : {-1.0f, -0.25f, 0.0f, 0.2f, 0.25f, nextafterf(0.25f, 0.0f),
                     nextafterf(0.25f, 1.0f), 1.0f}) {
         for (float y : {0.0f, 0.25f, 0.5f}) {

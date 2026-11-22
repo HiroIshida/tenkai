@@ -32,9 +32,9 @@ bool check_sdfs() {
             return false;
         }
     }
-    const sdf::Scene empty = {};
     const sdf::Environment no_obstacles = {};
-    if (sdf::distance(empty, no_obstacles, {0,0,0}) != INFINITY) return false;
+    const sdf::Scene empty = {&no_obstacles, nullptr, nullptr, nullptr, nullptr};
+    if (!sdf::has_ground && sdf::distance(empty, 0, {0,0,0}) != INFINITY) return false;
     const Scalar large = Scalar(1e6);
     const sdf::Sphere large_sphere = {{0,0,0},large};
     const bool intersections[][2] = {

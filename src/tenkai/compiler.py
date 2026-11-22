@@ -17,7 +17,7 @@ from tenkai.cuda import (
 )
 from tenkai.dag import Optimization
 from tenkai.modeling import KinematicModel, read_config
-from tenkai.sdf import CollisionObjectType, geometry_type_mask
+from tenkai.sdf import SpecializationType, geometry_type_mask
 
 
 class ControlJoint(TypedDict):
@@ -36,6 +36,7 @@ class ModelMetadata(TypedDict):
     optimization: Optimization
     live_budget: int | None
     sphere_batch_size: int
+    ground: bool
     self_collision_pair_count: int
     external_sphere_count: int
 
@@ -68,7 +69,7 @@ def generate(
     options: Options = Options(),
     all_kernels: bool = False,
     *,
-    specialize_types: Set[CollisionObjectType] | None = None,
+    specialize_types: Set[SpecializationType] | None = None,
 ) -> dict[str, float]:
     geometry_type_mask(specialize_types)
     total = time.perf_counter()
@@ -126,6 +127,7 @@ def generate(
         optimization=options.optimization,
         live_budget=options.live_budget,
         sphere_batch_size=options.sphere_batch_size,
+        ground=options.ground,
         self_collision_pair_count=len(rules.self_pairs),
         external_sphere_count=sum(s.link_index not in rules.self_only_links for s in spheres),
     )

@@ -25,7 +25,6 @@ struct SceneInput {
   uint32_t box_count;
   uint32_t sphere_count;
   uint32_t cylinder_count;
-  uint32_t ground_count;
 };
 
 namespace {
@@ -97,27 +96,26 @@ struct HostScene {
         boxes(input.box_count),
         spheres(input.sphere_count),
         cylinders(input.cylinder_count),
-        grounds(input.ground_count) {
+        grounds(model::has_ground ? count : 0) {
     if (!input.ranges || (input.box_count && !input.boxes) ||
         (input.sphere_count && !input.spheres) ||
         (input.cylinder_count && !input.cylinders) ||
-        (input.ground_count && !input.grounds)) {
+        (model::has_ground && !input.grounds)) {
       throw std::invalid_argument("null scene input");
     }
 
-    const size_t totals[] = {boxes.size(), spheres.size(), cylinders.size(),
-                             grounds.size()};
+    const size_t totals[] = {boxes.size(), spheres.size(), cylinders.size()};
     for (size_t i = 0; i < count; ++i) {
-      model::Range ranges[4];
-      for (size_t kind = 0; kind < 4; ++kind) {
-        const size_t offset = input.ranges[i * 8 + kind * 2];
-        const size_t size = input.ranges[i * 8 + kind * 2 + 1];
+      model::Range ranges[3];
+      for (size_t kind = 0; kind < 3; ++kind) {
+        const size_t offset = input.ranges[i * 6 + kind * 2];
+        const size_t size = input.ranges[i * 6 + kind * 2 + 1];
         if (offset > totals[kind] || size > totals[kind] - offset) {
           throw std::invalid_argument("scene range exceeds primitive array");
         }
         ranges[kind] = {offset, size};
       }
-      environments[i] = {ranges[0], ranges[1], ranges[2], ranges[3]};
+      environments[i] = {ranges[0], ranges[1], ranges[2]};
     }
 
     for (size_t i = 0; i < boxes.size(); ++i) {

@@ -51,7 +51,8 @@ __global__ void check_grouped_collisions(const Scalar* configurations, const Sca
     if (batch >= count) return;
     const Scalar* q = configurations + batch * 4;
     const Scalar* points = centers + batch * sphere_count * 3;
-    const sdf::Environment environment = {{0,0},{0,1},{0,0},{0,0}};
+    const sdf::Ground ground = {100};
+    const sdf::Environment environment = {{0,0},{0,1},{0,0}};
 
     bool valid = true;
     // Isolated probes prevent an earlier hit from hiding a skipped sphere.
@@ -59,7 +60,7 @@ __global__ void check_grouped_collisions(const Scalar* configurations, const Sca
         for (Scalar factor : {0.5f, 1.5f}) {
             const sdf::Sphere obstacle = {
                 {points[3*i], points[3*i+1], points[3*i+2] + factor * radii[i]}, 0};
-            const sdf::Scene scene = {&environment, nullptr, &obstacle, nullptr, nullptr};
+            const sdf::Scene scene = {&environment, nullptr, &obstacle, nullptr, &ground};
             valid &= tenkai_collision_one(q, scene, 0) == (factor < 1);
         }
     }
@@ -78,7 +79,7 @@ int main() {
     };
     const sdf::Sphere obstacle = {{6.5,1,0},0.25};
     const sdf::Ground ground = {1};
-    const sdf::Environment environment = {{0,0},{0,1},{0,0},{0,1}};
+    const sdf::Environment environment = {{0,0},{0,1},{0,0}};
     const sdf::Scene scene = {&environment, nullptr, &obstacle, nullptr, &ground};
     const uint32_t ids[] = {0,0,0};
     const double directions[][3] = {{0,1,0}, {-1,0,0}, {0,1,0}};
@@ -131,7 +132,7 @@ int main() {
                     return 3;
             }
         }
-        if (flags[i] != (i == 1 ? 0 : 1)) return 4;
+        if (flags[i] != (i == 0 || (i == 2 && sdf::has_ground))) return 4;
         if (grouped[i] != 1) return 8;
     }
     for (size_t i = 21; i < 28; ++i) if (poses[i] != 123) return 5;

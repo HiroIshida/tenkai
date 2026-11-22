@@ -62,22 +62,22 @@ int main() try {
         {{{0,0,Scalar(0.3)}, {1,0,0,0,1,0,0,0,1}}, {Scalar(0.3),Scalar(0.8),Scalar(0.6)}},
         {{{0,0,Scalar(0.3)}, {c,c,0,-c,c,0,0,0,1}}, {Scalar(0.3),Scalar(0.8),Scalar(0.6)}},
     };
-    const m::Ground ground{0};
+    const m::Ground grounds[] = {{0}, {0}, {0}, {0}, {0}, {10}, {10}, {0}};
     const m::Sphere sphere{{0, Scalar(0.65), Scalar(0.35)}, Scalar(0.1)};
     const m::Cylinder cylinder{{{0,Scalar(-0.65),Scalar(0.3)}, {1,0,0,0,1,0,0,0,1}},
                                Scalar(0.1), Scalar(0.6)};
     m::Environment environments[] = {
-        {{0,1},{},{},{0,1}}, {{1,1},{},{},{0,1}}, {{0,2},{},{},{0,1}},
-        {{0,1},{0,1},{},{0,1}}, {{0,1},{},{0,1},{0,1}}, {},
-        {{0,1},{},{},{}}, {{},{},{},{0,1}},
+        {{0,1},{},{}}, {{1,1},{},{}}, {{0,2},{},{}},
+        {{0,1},{0,1},{}}, {{0,1},{},{0,1}}, {},
+        {{0,1},{},{}}, {},
     };
     m::DeviceBuffer<m::Box> device_boxes(2);
-    m::DeviceBuffer<m::Ground> device_ground(1);
+    m::DeviceBuffer<m::Ground> device_ground(m::has_ground ? 8 : 0);
     m::DeviceBuffer<m::Sphere> device_sphere(1);
     m::DeviceBuffer<m::Cylinder> device_cylinder(1);
     m::DeviceBuffer<m::Environment> device_environments(8);
     device_boxes.upload(boxes, 2);
-    device_ground.upload(&ground, 1);
+    if (m::has_ground) device_ground.upload(grounds, 8);
     device_sphere.upload(&sphere, 1);
     device_cylinder.upload(&cylinder, 1);
     device_environments.upload(environments, 8);

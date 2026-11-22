@@ -12,6 +12,7 @@
 
 namespace tenkai_f32 {
 using Scalar = float;
+constexpr bool has_ground = TPL_HAS_GROUND;
 
 struct Vec3 {
   Scalar x, y, z;
@@ -51,15 +52,13 @@ enum GeometryType : unsigned {
   BoxType = 1,
   SphereType = 2,
   CylinderType = 4,
-  GroundType = 8,
-  AllTypes = BoxType | SphereType | CylinderType | GroundType
+  AllTypes = BoxType | SphereType | CylinderType
 };
 
 struct Environment {
   Range boxes;
   Range spheres;
   Range cylinders;
-  Range grounds;
 };
 
 struct Scene {
@@ -210,8 +209,9 @@ __device__ inline bool intersects(const Ground& ground,
 }
 
 __device__ inline Scalar distance(const Scene& scene,
-                                  const Environment& env,
+                                  size_t environment_id,
                                   Vec3 point) {
+  const Environment& env = scene.environments[environment_id];
   Scalar result = INFINITY;
 
   // Keep reductions unconditional; short-circuit tests would skip remaining
@@ -230,9 +230,8 @@ __device__ inline Scalar distance(const Scene& scene,
                    distance(scene.cylinders[env.cylinders.offset + i], point));
   }
 
-  for (size_t i = 0; i < env.grounds.count; ++i) {
-    result =
-        fminf(result, distance(scene.grounds[env.grounds.offset + i], point));
+  if (has_ground) {
+    result = fminf(result, distance(scene.grounds[environment_id], point));
   }
 
   return result;

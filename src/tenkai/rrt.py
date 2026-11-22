@@ -17,7 +17,7 @@ import numpy.typing as npt
 from tenkai.build import Backend, compiler_command, target_arch
 from tenkai.compiler import ModelMetadata, generate
 from tenkai.cuda import Options
-from tenkai.sdf import CollisionObjectType, Geometry, SceneData, pack_geometry
+from tenkai.sdf import Geometry, SceneData, SpecializationType, pack_geometry
 from tenkai.shortcut import NativeShortcutConfig, ShortcutConfig
 from tenkai.validation import check_count
 
@@ -92,7 +92,7 @@ def build_rrt(
     backend: Backend = "cuda",
     arch: str | None = None,
     max_registers: int | None = None,
-    specialize_types: Set[CollisionObjectType] | None = None,
+    specialize_types: Set[SpecializationType] | None = None,
 ) -> RRTBuild:
     """Generate and compile RRT-Connect into output/librrt.so using nvcc or hipcc.
 
@@ -104,8 +104,9 @@ def build_rrt(
     specialize_types adds one search kernel for that union of sdf obstacle
     classes. Counts and poses stay dynamic. Each solve uses it if every
     referenced environment fits; otherwise the whole batch uses the generic
-    kernel. None (the default) or all four classes builds only the generic
-    kernel. An empty set specializes obstacle-free environments.
+    kernel. None (the default) or all three classes builds only the generic
+    kernel. An empty set specializes environments without Box, Sphere, or Cylinder.
+    options.ground fixes Ground presence for every environment at compile time.
     """
     begin = time.perf_counter()
     arch = target_arch(backend, arch)
@@ -195,7 +196,6 @@ class NativeScene(ct.Structure):
         ("box_count", ct.c_uint32),
         ("sphere_count", ct.c_uint32),
         ("cylinder_count", ct.c_uint32),
-        ("ground_count", ct.c_uint32),
     ]
 
     @classmethod
@@ -205,11 +205,10 @@ class NativeScene(ct.Structure):
             scene.boxes.ctypes.data_as(ct.POINTER(ct.c_double)),
             scene.spheres.ctypes.data_as(ct.POINTER(ct.c_double)),
             scene.cylinders.ctypes.data_as(ct.POINTER(ct.c_double)),
-            scene.grounds.ctypes.data_as(ct.POINTER(ct.c_double)),
+            scene.grounds.ctypes.data_as(ct.POINTER(ct.c_double)) if scene.grounds.size else None,
             len(scene.boxes),
             len(scene.spheres),
             len(scene.cylinders),
-            len(scene.grounds),
         )
 
 
@@ -235,7 +234,7 @@ class Planner:
     """A reusable batch of RRT-Connect problems with owned GPU search and scene buffers.
 
     Geometry is a list of sdf collision objects for one environment, or a list
-    of such lists for multiple environments. An empty list is an empty scene.
+    of such lists for multiple environments.
     Uncontrolled joints remain at zero.
     """
 
@@ -253,7 +252,7 @@ class Planner:
         if not math.isfinite(resolution) or resolution <= 0:
             raise ValueError("resolution must be finite and positive")
 
-        scene = pack_geometry(geometry)
+        scene = pack_geometry(geometry, ground=model["ground"])
 
         self.problem_count = problem_count
         self.environment_count = len(scene.ranges)

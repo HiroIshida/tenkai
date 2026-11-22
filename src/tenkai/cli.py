@@ -23,6 +23,7 @@ def main(
     no_scheduling: Annotated[bool, SCHEDULING] = False,
     live_budget: Annotated[int | None, SCHEDULING] = None,
     sphere_batch_size: int = 8,
+    ground: bool = True,
 ) -> None:
     """Generate CUDA source from a URDF model and collision sphere configuration.
 
@@ -32,6 +33,7 @@ def main(
         live_budget: Schedule with a nonnegative live-value budget.
         sphere_batch_size: Compile-time maximum robot spheres on one link sharing
             an obstacle traversal. Must be positive.
+        ground: Require exactly one Ground in every environment.
     """
     if scheduling:
         live_budget = 64
@@ -39,7 +41,10 @@ def main(
         live_budget = None
     try:
         options = Options(
-            optimization=optimization, live_budget=live_budget, sphere_batch_size=sphere_batch_size
+            optimization=optimization,
+            live_budget=live_budget,
+            sphere_batch_size=sphere_batch_size,
+            ground=ground,
         )
     except ValueError as error:
         print(error, file=sys.stderr)

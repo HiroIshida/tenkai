@@ -100,6 +100,8 @@ class Ground:
 
 type CollisionObject = Box | Sphere | Cylinder | Ground
 type CollisionObjectType = type[Box] | type[Sphere] | type[Cylinder] | type[Ground]
+# Ground presence is fixed separately from the dynamic obstacle types.
+type SpecializationType = type[Box] | type[Sphere] | type[Cylinder]
 type Geometry = Sequence[CollisionObject] | Sequence[Sequence[CollisionObject]]
 
 
@@ -137,13 +139,16 @@ def geometry_from_json(source: str) -> list[CollisionObject]:
     return obstacles
 
 
-def geometry_type_mask(types: Set[CollisionObjectType] | None) -> int:
+def geometry_type_mask(types: Set[SpecializationType] | None) -> int:
     """Encode the primitive order shared by SceneData and the native Environment."""
     if types is None:
-        return 15
-    primitives = (Box, Sphere, Cylinder, Ground)
+        return 7
+    primitives = (Box, Sphere, Cylinder)
     if not isinstance(types, Set) or any(kind not in primitives for kind in types):
-        raise ValueError("specialize_types must be a set of sdf.Box, Sphere, Cylinder, or Ground")
+        raise ValueError(
+            "specialize_types must be a set of sdf.Box, Sphere, or Cylinder; "
+            "use Options(ground=True) for Ground"
+        )
     return sum(1 << index for index, kind in enumerate(primitives) if kind in types)
 
 
@@ -164,7 +169,7 @@ def _is_environment(value: object) -> TypeGuard[Sequence[CollisionObject]]:
     )
 
 
-def _primitive_index(obstacle: CollisionObject) -> int:
+def _primitive_index(obstacle: Box | Sphere | Cylinder) -> int:
     match obstacle:
         case Box():
             return 0
@@ -172,20 +177,29 @@ def _primitive_index(obstacle: CollisionObject) -> int:
             return 1
         case Cylinder():
             return 2
-        case Ground():
-            return 3
 
 
-def _pack_environments(environments: Sequence[Sequence[CollisionObject]]) -> SceneData:
+def _pack_environments(
+    environments: Sequence[Sequence[CollisionObject]], *, ground: bool
+) -> SceneData:
     if not 0 < len(environments) < 2**32:
         raise ValueError("environment count must be between 1 and 2**32 - 1")
 
-    ranges = np.zeros((len(environments), 4, 2), dtype=np.uint32)
-    totals = [0, 0, 0, 0]
+    ranges = np.zeros((len(environments), 3, 2), dtype=np.uint32)
+    grounds = np.empty(len(environments) if ground else 0, dtype=np.float64)
+    totals = [0, 0, 0]
     for i, obstacles in enumerate(environments):
         ranges[i, :, 0] = totals
+        ground_count = 0
         for obstacle in obstacles:
-            totals[_primitive_index(obstacle)] += 1
+            if isinstance(obstacle, Ground):
+                ground_count += 1
+                if ground:
+                    grounds[i] = -obstacle.z
+            else:
+                totals[_primitive_index(obstacle)] += 1
+        if ground_count != int(ground):
+            raise ValueError(f"environment {i} must contain exactly {int(ground)} Ground")
         if max(totals) >= 2**32:
             raise ValueError("too many collision objects")
         ranges[i, :, 1] = np.asarray(totals, dtype=np.uint32) - ranges[i, :, 0]
@@ -194,15 +208,15 @@ def _pack_environments(environments: Sequence[Sequence[CollisionObject]]) -> Sce
     boxes = np.empty((totals[0], 15), dtype=np.float64)
     spheres = np.empty((totals[1], 4), dtype=np.float64)
     cylinders = np.empty((totals[2], 14), dtype=np.float64)
-    grounds = np.empty((totals[3], 1), dtype=np.float64)
-    arrays = (boxes, spheres, cylinders, grounds)
-    cursors = [0, 0, 0, 0]
+    arrays = (boxes, spheres, cylinders)
+    cursors = [0, 0, 0]
     for obstacles in environments:
         for obstacle in obstacles:
+            if isinstance(obstacle, Ground):
+                continue
             kind = _primitive_index(obstacle)
             row = arrays[kind][cursors[kind]]
-            if isinstance(obstacle, (Box, Sphere, Cylinder)):
-                row[:3] = obstacle.center
+            row[:3] = obstacle.center
             if isinstance(obstacle, (Box, Cylinder)):
                 row[3:12] = np.asarray(obstacle.rotation).T.reshape(9)
             match obstacle:
@@ -212,17 +226,15 @@ def _pack_environments(environments: Sequence[Sequence[CollisionObject]]) -> Sce
                     row[3] = obstacle.radius
                 case Cylinder():
                     row[12:14] = obstacle.radius, obstacle.height
-                case Ground():
-                    row[0] = -obstacle.z
             cursors[kind] += 1
 
     return SceneData(ranges, boxes, spheres, cylinders, grounds)
 
 
-def pack_geometry(geometry: Geometry) -> SceneData:
+def pack_geometry(geometry: Geometry, *, ground: bool = True) -> SceneData:
     """Pack one collision-object sequence or a sequence of environments."""
     if _is_environment(geometry):
-        return _pack_environments([geometry])
+        return _pack_environments([geometry], ground=ground)
     if not isinstance(geometry, Sequence) or isinstance(geometry, (str, bytes)):
         raise ValueError("geometry must contain collision objects or lists of collision objects")
 
@@ -231,4 +243,4 @@ def pack_geometry(geometry: Geometry) -> SceneData:
         if not _is_environment(environment):
             raise ValueError(f"geometry[{index}] must be a sequence of collision objects")
         environments.append(environment)
-    return _pack_environments(environments)
+    return _pack_environments(environments, ground=ground)

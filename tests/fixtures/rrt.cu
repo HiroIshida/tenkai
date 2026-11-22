@@ -364,7 +364,7 @@ int main() try {
         {{{0,0,Scalar(0.25)}, {1,0,0,0,1,0,0,0,1}}, {Scalar(0.2),4,4}},
     };
     const m::Environment environments[] = {
-        {{0,0},{0,0},{0,0},{0,0}}, {{0,1},{0,0},{0,0},{0,0}}, {{1,1},{0,0},{0,0},{0,0}},
+        {{0,0},{0,0},{0,0}}, {{0,1},{0,0},{0,0}}, {{1,1},{0,0},{0,0}},
     };
     m::DeviceBuffer<m::Box> device_boxes(2);
     m::DeviceBuffer<m::Environment> device_environments(3);

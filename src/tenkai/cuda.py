@@ -15,7 +15,7 @@ from tenkai.modeling import (
     collision_expressions,
 )
 from tenkai.scheduling import Evaluate, Store, schedule
-from tenkai.sdf import CollisionObjectType, geometry_type_mask
+from tenkai.sdf import SpecializationType, geometry_type_mask
 
 TEMPLATES = Path(__file__).with_name("templates")
 
@@ -27,11 +27,13 @@ class Options:
     sphere_batch_size is the maximum number of robot spheres on one link
     sharing an obstacle traversal. It must be a positive integer and is fixed
     at compile time (default: 8).
+    ground fixes whether every environment contains one Ground or none.
     """
 
     optimization: Optimization = "algebraic"
     live_budget: int | None = None
     sphere_batch_size: int = 8
+    ground: bool = True
 
     def __post_init__(self) -> None:
         if self.optimization not in ("none", "basic", "algebraic"):
@@ -40,6 +42,8 @@ class Options:
             raise ValueError("live budget must be nonnegative")
         if type(self.sphere_batch_size) is not int or self.sphere_batch_size <= 0:
             raise ValueError("sphere batch size must be a positive integer")
+        if type(self.ground) is not bool:
+            raise ValueError("ground must be a bool")
 
 
 def number(value: float) -> str:
@@ -140,27 +144,37 @@ def generate_centers_kernel(
 
 
 def sphere_batch_collision(
-    spheres: Sequence[Sphere], start: int, *, specialize_types: bool = False
+    spheres: Sequence[Sphere], start: int, *, ground: bool, specialize_types: bool = False
 ) -> str:
     source: list[str] = []
 
-    for primitive, field in (
+    primitives = [
         ("Box", "boxes"),
         ("Sphere", "spheres"),
         ("Cylinder", "cylinders"),
-        ("Ground", "grounds"),
-    ):
-        count = f"environment.{field}.count"
-        if specialize_types:
-            count = f"(Types & tenkai_f32::{primitive}Type ? {count} : 0)"
-        source.append(
-            "#ifdef __CUDACC__\n"
-            "    #pragma unroll 1\n"
-            "#endif\n"
-            f"    for (size_t i = 0; i < {count}; ++i) {{\n"
-            f"        const tenkai_f32::{primitive}& obstacle = "
-            f"scene.{field}[environment.{field}.offset + i];\n"
-        )
+    ]
+    if ground:
+        primitives.append(("Ground", "grounds"))
+
+    for primitive, field in primitives:
+        if primitive == "Ground":
+            source.append(
+                "    {\n"
+                "        const tenkai_f32::Ground& obstacle = "
+                "scene.grounds[environment_id];\n"
+            )
+        else:
+            count = f"environment.{field}.count"
+            if specialize_types:
+                count = f"(Types & tenkai_f32::{primitive}Type ? {count} : 0)"
+            source.append(
+                "#ifdef __CUDACC__\n"
+                "    #pragma unroll 1\n"
+                "#endif\n"
+                f"    for (size_t i = 0; i < {count}; ++i) {{\n"
+                f"        const tenkai_f32::{primitive}& obstacle = "
+                f"scene.{field}[environment.{field}.offset + i];\n"
+            )
 
         for index, sphere in enumerate(spheres, start):
             source.append(
@@ -254,7 +268,7 @@ def link_collision_body(
             type_argument = "<Types>" if warp_support else ""
             source.append(
                 f"    if (tenkai_f32::may_intersect{type_argument}"
-                "(scene, environment, enclosing)) {\n"
+                "(scene, environment_id, enclosing)) {\n"
             )
 
         def store(index: int, value: int) -> str:
@@ -269,7 +283,10 @@ def link_collision_body(
             if end % batch_size == 0 or end == len(members):
                 start = (end - 1) // batch_size * batch_size
                 text += sphere_batch_collision(
-                    members[start:end], start, specialize_types=warp_support
+                    members[start:end],
+                    start,
+                    ground=emitter.options.ground,
+                    specialize_types=warp_support,
                 )
                 text += scalar_exit
                 if warp_support and bound is None:
@@ -396,7 +413,7 @@ def generate_collision_function(
     rules: SelfCollisionRules = SelfCollisionRules(),
 ) -> str:
     emitter, geometry = prepare_collision(kin, spheres, options, rules)
-    source = template("collision/sdf.cuh")
+    source = template("collision/sdf.cuh", (("HAS_GROUND", str(options.ground).lower()),))
     # Standalone collision source embeds its dependencies.
     source += template("collision/broad.cuh").replace('#include "sdf.cuh"\n', "")
     return source + collision_function(emitter, spheres, geometry, "inline")
@@ -435,7 +452,7 @@ def generate_rrt_sources(
     options: Options = Options(),
     *,
     rules: SelfCollisionRules = SelfCollisionRules(),
-    specialize_types: Set[CollisionObjectType] | None = None,
+    specialize_types: Set[SpecializationType] | None = None,
 ) -> dict[str, str]:
     """Return relative paths and source text for a model-specific native planner."""
     if not controls:
@@ -469,6 +486,7 @@ def generate_rrt_sources(
     )
 
     replacements: list[tuple[str, str | int]] = [
+        ("HAS_GROUND", str(options.ground).lower()),
         ("RRT_TYPES", geometry_type_mask(specialize_types)),
         ("DIMENSION", len(controls)),
         ("FK_DOF", len(kin.joints)),

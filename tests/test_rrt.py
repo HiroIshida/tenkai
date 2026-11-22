@@ -12,7 +12,7 @@ import numpy as np
 import pytest
 from helpers import fetch_collision_cases
 
-from tenkai import Planner, RRTBuild, RRTConfig, ShortcutConfig, build_rrt, sdf
+from tenkai import Options, Planner, RRTBuild, RRTConfig, ShortcutConfig, build_rrt, sdf
 from tenkai.build import Backend
 from tenkai.compiler import ModelMetadata
 from tenkai.modeling import KinematicModel, read_config
@@ -52,6 +52,7 @@ def binding(tmp_path_factory: pytest.TempPathFactory) -> RRTBuild:
         optimization="algebraic",
         live_budget=None,
         sphere_batch_size=8,
+        ground=False,
     )
     info = BuildInfo(nvcc="CPU ABI fixture", compile_command=[], max_registers=None)
     return RRTBuild(library, model, info)
@@ -221,7 +222,9 @@ def test_invalid_build_options_before_generation(
     assert not (tmp_path / "build").exists()
 
 
-@pytest.mark.parametrize("types", [{object}, {sdf.Ground()}, {"Box"}, sdf.Box, [sdf.Box]])
+@pytest.mark.parametrize(
+    "types", [{object}, {sdf.Ground}, {sdf.Ground()}, {"Box"}, sdf.Box, [sdf.Box]]
+)
 def test_invalid_specialization_before_generation(tmp_path: Path, types: object) -> None:
     with pytest.raises(ValueError, match="specialize_types"):
         build_rrt(
@@ -240,6 +243,24 @@ def compiled(
     gpu_arch: str,
 ) -> RRTBuild:
     directory = tmp_path_factory.mktemp("rrt build")
+    urdf, spheres = robot_inputs(directory)
+    return build_rrt(
+        urdf,
+        spheres,
+        directory / "build",
+        options=Options(ground=False),
+        backend=gpu_backend,
+        arch=gpu_arch,
+    )
+
+
+@pytest.fixture(scope="module")
+def compiled_ground(
+    tmp_path_factory: pytest.TempPathFactory,
+    gpu_backend: Backend,
+    gpu_arch: str,
+) -> RRTBuild:
+    directory = tmp_path_factory.mktemp("rrt ground build")
     urdf, spheres = robot_inputs(directory)
     return build_rrt(
         urdf,
@@ -278,10 +299,10 @@ def test_public_build(compiled: RRTBuild, gpu_backend: Backend) -> None:
 
 
 @pytest.mark.gpu
-def test_public_planner_on_gpu(compiled: RRTBuild) -> None:
+def test_public_planner_on_gpu(compiled_ground: RRTBuild) -> None:
     config = RRTConfig(max_nodes=256, max_rounds=512, goal_bias=1.0)
     obstacles = [sdf.Box((10, 10, 10), (1, 1, 1)), sdf.Ground(z=-10)]
-    with compiled.planner(obstacles, config=config) as planner:
+    with compiled_ground.planner(obstacles, config=config) as planner:
         inputs = ([[-0.5, -0.5]], [[0.5, 0.5]], [0], [42])
         results = planner.solve(*inputs)
         assert results[0]["status"] == "success"
@@ -305,11 +326,13 @@ def test_fetch_body_collisions_and_planning_on_gpu(
     kin = KinematicModel.from_urdf(urdf.read_text())
     spheres = read_config(yaml.read_text()).resolve(kin)
     cases = fetch_collision_cases(kin, spheres)
-    compiled = build_rrt(urdf, yaml, tmp_path, backend=gpu_backend, arch=gpu_arch)
+    compiled = build_rrt(
+        urdf, yaml, tmp_path, options=Options(ground=True), backend=gpu_backend, arch=gpu_arch
+    )
     controls = [joint["index"] for joint in compiled.model["control_joints"]]
     configurations = np.array([case.joints for case in cases])
     home, goal, base_collision, torso_collision = configurations[:4, controls]
-    environments = [[], [sdf.Box((0.95, 0, 0.8), (1, 2, 0.05)), sdf.Ground()]]
+    environments = [[sdf.Ground(z=-100)], [sdf.Box((0.95, 0, 0.8), (1, 2, 0.05)), sdf.Ground()]]
 
     with compiled.planner(
         environments,
@@ -387,7 +410,6 @@ def test_object_scenes_and_empty_environments(binding: RRTBuild, geometry: sdf.G
                 sdf.Sphere((0.25, 0.5, 0), 0.1),
                 sdf.Cylinder((0.5, 0, 0), 0.05, 0.4),
                 sdf.Cylinder((0.75, 0, 0), 0.05, 0.4),
-                sdf.Ground(z=-0.25),
                 sdf.Ground(z=-0.2),
             ],
             [[-0.75, 0], [-0.5, 0], [0, 0.5], [0.25, 0.5], [0.5, 0], [0.75, 0], [0, 0]],
@@ -397,17 +419,19 @@ def test_object_scenes_and_empty_environments(binding: RRTBuild, geometry: sdf.G
 )
 def test_primitive_collisions_on_gpu(
     compiled: RRTBuild,
+    compiled_ground: RRTBuild,
     obstacles: list[sdf.CollisionObject],
     points: list[list[float]],
     expected: list[int],
 ) -> None:
-    with compiled.planner(obstacles) as planner:
+    build = compiled_ground if any(isinstance(item, sdf.Ground) for item in obstacles) else compiled
+    with build.planner(obstacles) as planner:
         np.testing.assert_array_equal(planner.collisions(points, [0] * len(points)), expected)
 
 
 @pytest.mark.gpu
 def test_mixed_environments_share_one_build_on_gpu(
-    compiled: RRTBuild, monkeypatch: pytest.MonkeyPatch
+    compiled_ground: RRTBuild, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     def no_compilation(*args: object, **kwargs: object) -> None:
         pytest.fail("creating or solving scenes must not invoke a compiler")
@@ -421,14 +445,14 @@ def test_mixed_environments_share_one_build_on_gpu(
     ]
     environments = [
         obstacles,
-        [sdf.Sphere((-0.5, -0.5, 0), 0.1)],
-        [sdf.Cylinder((0.5, 0.5, 0), 0.1, 0.4)],
-        [],
+        [sdf.Sphere((-0.5, -0.5, 0), 0.1), sdf.Ground(z=-0.2)],
+        [sdf.Cylinder((0.5, 0.5, 0), 0.1, 0.4), sdf.Ground(z=-0.3)],
+        [sdf.Ground(z=-0.4)],
     ]
     config = RRTConfig(max_nodes=64, max_rounds=32, goal_bias=1.0)
     starts = [[-0.5, -0.5]] * 4
     goals = [[0.5, 0.5]] * 4
-    with compiled.planner(environments, config=config, problem_count=4) as planner:
+    with compiled_ground.planner(environments, config=config, problem_count=4) as planner:
         # Scene storage is owned by the planner after creation.
         environments.clear()
         results = planner.solve(starts, goals, [0, 1, 2, 3], [42] * 4)
@@ -447,27 +471,30 @@ def test_mixed_environments_share_one_build_on_gpu(
             np.testing.assert_array_equal(path[-1], goals[index])
             assert not planner.collisions(path[:, ::-1], [index] * len(path)).any()
 
-    with compiled.planner([sdf.Ground(z=0.0)]) as other:
+    with compiled_ground.planner([sdf.Ground(z=0.0)]) as other:
         assert other.solve([[-0.5, -0.5]], [[0.5, 0.5]], [0], [42])[0]["status"] == "invalid_start"
 
 
 @pytest.mark.gpu
+@pytest.mark.parametrize("ground", [False, True])
 @pytest.mark.parametrize(
     "types",
     [
         set(),
-        {sdf.Box, sdf.Ground},
+        {sdf.Box},
         {sdf.Sphere, sdf.Cylinder},
-        {sdf.Box, sdf.Sphere, sdf.Cylinder, sdf.Ground},
+        {sdf.Box, sdf.Sphere, sdf.Cylinder},
     ],
-    ids=["empty", "box-ground", "sphere-cylinder", "all"],
+    ids=["empty", "box", "sphere-cylinder", "all"],
 )
 def test_union_specialization_matches_generic_paths(
     tmp_path: Path,
     compiled: RRTBuild,
+    compiled_ground: RRTBuild,
     gpu_backend: Backend,
     gpu_arch: str,
-    types: Set[sdf.CollisionObjectType],
+    types: Set[sdf.SpecializationType],
+    ground: bool,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     urdf, spheres = robot_inputs(tmp_path)
@@ -478,6 +505,7 @@ def test_union_specialization_matches_generic_paths(
         backend=gpu_backend,
         arch=gpu_arch,
         specialize_types=types,
+        options=Options(ground=ground),
     )
 
     def no_compilation(*args: object, **kwargs: object) -> None:
@@ -490,21 +518,25 @@ def test_union_specialization_matches_generic_paths(
     environments: list[list[sdf.CollisionObject]] = [
         [],
         [box],
-        [sdf.Ground(z=-0.2)],
-        [box, sdf.Box((0.5, -0.5, 0), (0.2, 0.2, 0.2)), sdf.Ground(z=-0.2), sdf.Ground(z=-1)],
+        [],
+        [box, sdf.Box((0.5, -0.5, 0), (0.2, 0.2, 0.2))],
         [sphere],
         [cylinder],
         [sphere, cylinder, sdf.Sphere((0.5, -0.5, 0), 0.1), sdf.Cylinder((-0.5, 0.5, 0), 0.1, 0.5)],
         [sdf.Sphere((-0.75, -0.75, 0), 0.1)],
         [sdf.Cylinder((0.75, 0.75, 0), 0.1, 0.4)],
     ]
+    if ground:
+        for index, environment in enumerate(environments):
+            environment.append(sdf.Ground(z=-0.2 - 0.1 * index))
+    generic_build = compiled_ground if ground else compiled
     count = 37
     starts = np.tile([-0.75, -0.75], (count, 1))
     goals = -starts
     seeds = np.arange(count, dtype=np.uint64) + 42
     config = RRTConfig(max_nodes=1024, max_rounds=512, step_size=0.3)
     with (
-        compiled.planner(environments, config=config, problem_count=count) as generic,
+        generic_build.planner(environments, config=config, problem_count=count) as generic,
         specialized.planner(environments, config=config, problem_count=count) as actual,
     ):
         # Unreferenced environments must not prevent specialization; later solves
@@ -538,7 +570,7 @@ def test_union_specialization_matches_generic_paths(
     ],
 )
 def test_native_scene_rejects_invalid_input_before_gpu_allocation(
-    compiled: RRTBuild, invalid: str, message: str
+    compiled_ground: RRTBuild, invalid: str, message: str
 ) -> None:
     scene = pack_geometry(
         [
@@ -560,12 +592,12 @@ def test_native_scene_rejects_invalid_input_before_gpu_allocation(
         case "height":
             scene.cylinders[0, 13] = -1
         case "nonfinite":
-            scene.grounds[0, 0] = float("inf")
+            scene.grounds[0] = float("inf")
     native_scene = NativeScene.from_scene(scene)
     if invalid == "pointer":
         native_scene.spheres = None
 
-    library = ct.CDLL(str(compiled.library))
+    library = ct.CDLL(str(compiled_ground.library))
     library.rrt_error.restype = ct.c_char_p
     config = NativeConfig(64, 32, 1.0, 0.1)
     lower = (ct.c_double * 2)(-1, -1)

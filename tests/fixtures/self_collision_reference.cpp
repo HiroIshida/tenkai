@@ -14,12 +14,14 @@ Dim blockIdx{}, blockDim{1}, threadIdx{};
 
 int main() {
     namespace m = tenkai_f32;
-    const m::Environment env[] = {{}, {{0,1},{0,1},{0,1},{0,1}}};
+    const m::Environment env[] = {
+        {}, {{0,1},{0,1},{0,1}}
+    };
     const m::Box box = {{{0.95f,0,0.8f}, {1,0,0,0,1,0,0,0,1}}, {1,2,0.05f}};
     const m::Sphere obstacle{{0.1f,0.5f,0.8f}, 0.1f};
     const m::Cylinder cylinder{{{0.5f,-0.5f,0.8f}, {1,0,0,0,1,0,0,0,1}}, 0.1f, 0.3f};
-    const m::Ground ground{0};
-    const m::Scene scene{env, &box, &obstacle, &cylinder, &ground};
+    const m::Ground grounds[] = {{100}, {0}};
+    const m::Scene scene{env, &box, &obstacle, &cylinder, grounds};
     for (unsigned i = 0; i < reference_count; ++i) {
         assert(tenkai_collision_one(reference_q[i], scene, 0) == reference_collision[i]);
     }
@@ -41,7 +43,7 @@ int main() {
                     expected |= m::intersects(box, center, radii[i]);
                     expected |= m::intersects(obstacle, center, radii[i]);
                     expected |= m::intersects(cylinder, center, radii[i]);
-                    expected |= m::intersects(ground, center, radii[i]);
+                    if (m::has_ground) expected |= m::intersects(grounds[1], center, radii[i]);
                 }
                 for (unsigned j = i + 1; j < sphere_count; ++j) {
                     if (!self_pairs[i][j]) continue;
