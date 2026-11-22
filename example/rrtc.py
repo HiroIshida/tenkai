@@ -1,4 +1,4 @@
-"""Solve a Fetch RRT-Connect problem, optionally visualizing the path in viser."""
+"""Solve and shortcut a Fetch RRT-Connect path, optionally visualizing it in viser."""
 
 import math
 from pathlib import Path
@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import tyro
 
-from tenkai import RRTConfig, build_rrt, sdf
+from tenkai import RRTConfig, ShortcutConfig, build_rrt, sdf
 from tenkai.build import Backend, target_arch
 from tenkai.utils import detect_backend
 
@@ -22,7 +22,7 @@ def main(
     port: int = 8080,
     fps: float = 30.0,
 ) -> None:
-    """Plan a Fetch path, then optionally display it.
+    """Plan and shortcut a Fetch path, then optionally display it.
 
     Args:
         urdf: Override the URDF used for planning and visualization.
@@ -56,12 +56,12 @@ def main(
         problem_count=1,
         resolution=0.005,
     ) as planner:
-        print("Solving Fetch problem...", flush=True)
-        result = planner.solve([start], [goal], [0], [42])[0]
+        print("Solving and shortcutting Fetch problem...", flush=True)
+        result = planner.solve([start], [goal], [0], [42], shortcut=ShortcutConfig())[0]
         if result["status"] != "success":
             raise RuntimeError(f"Fetch planning failed: {result['status']}")
         path = planner.path(0)
-    print(f"Solved: {len(path)} waypoints.", flush=True)
+    print(f"Solved: {len(path)} waypoints after shortcutting.", flush=True)
 
     if not visualize:
         return
