@@ -5,6 +5,8 @@ import math
 from dataclasses import dataclass
 from typing import Self
 
+from tenkai.validation import check_count
+
 
 @dataclass(frozen=True)
 class ShortcutConfig:
@@ -14,8 +16,6 @@ class ShortcutConfig:
     snap_to_vertex: float = 0.005
 
     def __post_init__(self) -> None:
-        from tenkai.rrt import check_count
-
         for name, value in (
             ("max_steps", self.max_steps),
             ("max_empty_steps", self.max_empty_steps),

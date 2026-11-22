@@ -66,6 +66,7 @@ def main(
     if not visualize:
         return
 
+    # Planning alone needs neither the visualization dependencies nor mesh downloads.
     from tenkai.visualize import Scene
 
     if urdf is None:

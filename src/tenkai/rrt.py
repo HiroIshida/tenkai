@@ -19,6 +19,7 @@ from tenkai.compiler import ModelMetadata, generate
 from tenkai.cuda import Options
 from tenkai.sdf import CollisionObjectType, Geometry, SceneData, pack_geometry
 from tenkai.shortcut import NativeShortcutConfig, ShortcutConfig
+from tenkai.validation import check_count
 
 type Status = Literal["success", "round_limit", "node_limit", "invalid_start", "invalid_goal"]
 
@@ -29,13 +30,6 @@ STATUSES: tuple[Status, ...] = (
     "invalid_start",
     "invalid_goal",
 )
-
-
-def check_count(value: int, name: str, minimum: int = 1) -> None:
-    if isinstance(value, bool) or not isinstance(value, (int, np.integer)):
-        raise ValueError(f"{name} must be an integer")
-    if not minimum <= value < 2**32:
-        raise ValueError(f"{name} must be between {minimum} and 2**32 - 1")
 
 
 @dataclass(frozen=True)
