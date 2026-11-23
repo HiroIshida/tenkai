@@ -8,13 +8,6 @@ namespace m = TENKAI_MODEL_NAMESPACE;
 using Scalar = m::Scalar;
 using Status = tenkai::PlanStatus;
 #include "rrtc_reference.cuh"
-namespace sdf = m;
-#include "broad_phase_checks.h"
-
-__global__ void check_broad_phase_device(bool* result) {
-    const unsigned int index = blockIdx.x * blockDim.x + threadIdx.x;
-    if (index < broad_phase_case_count) result[index] = check_broad_phase_case(index);
-}
 
 template <typename F> void rejects(F operation) {
     bool rejected = false;
@@ -348,15 +341,6 @@ void check_single_candidate(const m::RrtSpace& space, m::Scene scene,
 }
 
 int main() try {
-    m::DeviceBuffer<bool> broad_phase_result(broad_phase_case_count);
-    check_broad_phase_device<<<(broad_phase_case_count+127)/128,128>>>(broad_phase_result.data());
-    m::cuda_check(cudaGetLastError(), "check broad phase");
-    bool broad_phase_passed[broad_phase_case_count];
-    broad_phase_result.download(broad_phase_passed, broad_phase_case_count);
-    for (unsigned int i=0; i<broad_phase_case_count; ++i) {
-        if (!broad_phase_passed[i]) std::cerr << "broad phase case " << i << " failed\n";
-        assert(broad_phase_passed[i]);
-    }
     check_distance_range();
     check_interpolation_grid_sizes();
     const m::Box boxes[] = {

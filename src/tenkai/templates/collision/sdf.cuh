@@ -67,62 +67,6 @@ struct Scene {
   const Ground* grounds;
 };
 
-// Bounds of the computed centers, expanded by the group's largest sphere
-// radius.
-struct SphereBounds {
-  Vec3 lower;
-  Vec3 upper;
-  Scalar radius;
-};
-
-__device__ inline bool overlaps(Vec3 position,
-                                Vec3 half_extents,
-                                const SphereBounds& bounds) {
-  const Scalar radius = bounds.radius;
-  return !(bounds.lower.x > position.x + half_extents.x + radius ||
-           bounds.upper.x < position.x - half_extents.x - radius ||
-           bounds.lower.y > position.y + half_extents.y + radius ||
-           bounds.upper.y < position.y - half_extents.y - radius ||
-           bounds.lower.z > position.z + half_extents.z + radius ||
-           bounds.upper.z < position.z - half_extents.z - radius);
-}
-
-__device__ inline bool overlaps(const Pose& pose,
-                                Vec3 half_extents,
-                                const SphereBounds& bounds) {
-  const Scalar* r = pose.world_to_local;
-  const Vec3 world_half_extents = {
-      fabsf(r[0]) * half_extents.x + fabsf(r[3]) * half_extents.y +
-          fabsf(r[6]) * half_extents.z,
-      fabsf(r[1]) * half_extents.x + fabsf(r[4]) * half_extents.y +
-          fabsf(r[7]) * half_extents.z,
-      fabsf(r[2]) * half_extents.x + fabsf(r[5]) * half_extents.y +
-          fabsf(r[8]) * half_extents.z};
-
-  return overlaps(pose.position, world_half_extents, bounds);
-}
-
-__device__ inline bool overlaps(const Box& box, const SphereBounds& bounds) {
-  return overlaps(box.pose,
-                  {box.extents.x * Scalar(0.5), box.extents.y * Scalar(0.5),
-                   box.extents.z * Scalar(0.5)},
-                  bounds);
-}
-
-__device__ inline bool overlaps(const Sphere& sphere,
-                                const SphereBounds& bounds) {
-  return overlaps(sphere.position,
-                  {sphere.radius, sphere.radius, sphere.radius}, bounds);
-}
-
-__device__ inline bool overlaps(const Cylinder& cylinder,
-                                const SphereBounds& bounds) {
-  return overlaps(
-      cylinder.pose,
-      {cylinder.radius, cylinder.radius, cylinder.height * Scalar(0.5)},
-      bounds);
-}
-
 __device__ inline Vec3 local_point(const Pose& pose, Vec3 point) {
   const Scalar x = point.x - pose.position.x;
   const Scalar y = point.y - pose.position.y;
