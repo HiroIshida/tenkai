@@ -57,7 +57,12 @@ with compiled.planner(
 
 `build_rrt` compiles the robot once. Reuse `compiled` with different obstacles,
 and call `solve` repeatedly on a planner with new starts, goals, and seeds.
-Each call to `build_rrt` rebuilds the library, so keep it outside your planning loop.
+Each call to `build_rrt` regenerates sources and model metadata, but reuses a
+compiled library when the source contents and compiler settings match. Libraries
+are cached in `$XDG_CACHE_HOME/tenkai` (default: `~/.cache/tenkai`) and
+copied to your output directory. Check `compiled.cache_hit` or pass `cache=False`
+to always compile. The selected toolkit is required even on cache hits.
+Keep `build_rrt` outside your planning loop to avoid repeating code generation.
 
 For a known set of obstacle types, pass `specialize_types={sdf.Box, sdf.Ground}`
 to `build_rrt`. This builds one additional search kernel for that union, with

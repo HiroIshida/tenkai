@@ -1,6 +1,18 @@
+from pathlib import Path
+
 import pytest
+from helpers import FakeCompiler
 
 from tenkai.build import Backend, target_arch
+
+
+@pytest.fixture
+def fake_compiler(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> FakeCompiler:
+    compiler = FakeCompiler()
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "cache"))
+    monkeypatch.setattr("tenkai.build.subprocess.run", compiler.run)
+    monkeypatch.setattr("tenkai.build.compiler_command", compiler.command)
+    return compiler
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:

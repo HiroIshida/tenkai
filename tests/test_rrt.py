@@ -10,7 +10,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from helpers import fetch_collision_cases
+from helpers import FakeCompiler, fetch_collision_cases
 
 from tenkai import Options, Planner, RRTBuild, RRTConfig, ShortcutConfig, build_rrt, sdf
 from tenkai.build import Backend
@@ -191,10 +191,25 @@ def test_compiler_failure_includes_log(
     monkeypatch.setattr("tenkai.build.compiler_command", lambda *_: ([sys.executable], "test"))
     compiler_name = "hipcc" if backend == "hip" else "nvcc"
     with pytest.raises(RuntimeError, match=compiler_name + " failed; see") as failure:
-        build_rrt(urdf, spheres, tmp_path / "build", backend=backend)
+        build_rrt(urdf, spheres, tmp_path / "build", backend=backend, cache=False)
     log = tmp_path / "build/compile.log"
     assert log.read_text().strip()
     assert log.read_text() in str(failure.value)
+
+
+def test_cached_build_refreshes_model_metadata(tmp_path: Path, fake_compiler: FakeCompiler) -> None:
+    urdf, spheres = robot_inputs(tmp_path)
+    first = build_rrt(urdf, spheres, tmp_path / "first")
+
+    urdf.write_text(urdf.read_text().replace('lower="-1"', 'lower="-2"'))
+    second = build_rrt(urdf, spheres, tmp_path / "second")
+
+    assert not first.cache_hit and second.cache_hit
+    assert len(fake_compiler.calls) == 1
+    assert first.library.read_bytes() == second.library.read_bytes()
+    assert [joint["lower"] for joint in first.model["control_joints"]] == [-1, -1]
+    assert [joint["lower"] for joint in second.model["control_joints"]] == [-2, -2]
+    assert second.model == json.loads((second.library.parent / "model.json").read_text())
 
 
 @pytest.mark.parametrize(
@@ -251,6 +266,7 @@ def compiled(
         options=Options(ground=False),
         backend=gpu_backend,
         arch=gpu_arch,
+        cache=False,
     )
 
 

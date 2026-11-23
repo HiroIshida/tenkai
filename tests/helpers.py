@@ -2,13 +2,39 @@
 
 import json
 import math
+import subprocess
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import TextIO
 
+from tenkai.build import Backend, target_arch
 from tenkai.dag import Binary, BinaryOp, Constant, Dag, Input, Node, Trig, TrigOp
 from tenkai.modeling import KinematicModel, Sphere
 from tenkai.scheduling import Evaluate, Schedule, Store
+
+
+@dataclass
+class FakeCompiler:
+    calls: list[list[str]] = field(default_factory=list)
+    fail: bool = False
+    version: str = "version 1"
+
+    def command(self, backend: Backend, arch: str | None) -> tuple[list[str], str]:
+        return ["fake-" + backend, "-arch=" + target_arch(backend, arch)], self.version
+
+    def run(
+        self, command: list[str], *, cwd: Path, stdout: TextIO, stderr: int
+    ) -> subprocess.CompletedProcess[bytes]:
+        self.calls.append(command.copy())
+        library = cwd / command[command.index("-o") + 1]
+        if self.fail:
+            library.write_bytes(b"incomplete library")
+            stdout.write("fake compiler error\n")
+            return subprocess.CompletedProcess(command, 1)
+
+        library.write_bytes(b"compiled library")
+        return subprocess.CompletedProcess(command, 0)
 
 
 def evaluate_node(node: Node, inputs: Sequence[float], values: dict[int, float]) -> float:

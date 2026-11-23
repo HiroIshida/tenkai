@@ -7,6 +7,7 @@ import time
 from collections.abc import Set
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from types import TracebackType
 from typing import Literal, Self, TypedDict
 
@@ -62,6 +63,7 @@ class RRTBuild:
     model: ModelMetadata
     toolchain: BuildInfo
     timings: dict[str, float] = field(default_factory=dict)
+    cache_hit: bool = False
 
     def planner(
         self,
@@ -85,13 +87,17 @@ def build_rrt(
     arch: str | None = None,
     max_registers: int | None = None,
     specialize_types: Set[SpecializationType] | None = None,
+    cache: bool = True,
 ) -> RRTBuild:
     """Generate and compile RRT-Connect into output/librrt.so using nvcc or hipcc.
 
-    Requires the selected GPU toolkit, but no GPU. Each call
-    rebuilds the library. Use separate output directories for distinct builds.
+    Requires the selected GPU toolkit, but no GPU. Each call generates sources
+    and model metadata; matching sources and compiler settings reuse a cached
+    library. Pass cache=False to always compile. Use separate output directories
+    for distinct builds.
     HIP defaults to gfx1201 (RX 9070 XT) and requires wave32 at runtime.
     The result includes codegen, nvcc/hipcc, and total wall times in seconds.
+    Compilation time is zero on a cache hit.
 
     specialize_types adds one search kernel for that union of sdf obstacle
     classes. Counts and poses stay dynamic. Each solve uses it if every
@@ -104,23 +110,31 @@ def build_rrt(
     compile_options = CompileOptions(backend=backend, arch=arch, max_registers=max_registers)
 
     directory = Path(output).resolve()
-    stages = generate(
-        Path(urdf), Path(spheres), directory, options, specialize_types=specialize_types
-    )
-    model: ModelMetadata = json.loads((directory / "model.json").read_text())
-    if not model["control_joints"]:
-        raise ValueError("RRT requires at least one control_joint_names entry")
+    with TemporaryDirectory(prefix="tenkai-sources-") as temporary:
+        generated = Path(temporary)
+        stages = generate(
+            Path(urdf), Path(spheres), generated, options, specialize_types=specialize_types
+        )
+        model: ModelMetadata = json.loads((generated / "model.json").read_text())
+        if not model["control_joints"]:
+            raise ValueError("RRT requires at least one control_joint_names entry")
 
-    compiled = compile_library(
-        directory, "rrt/bindings.cu", directory / "librrt.so", options=compile_options
-    )
+        compiled = compile_library(
+            generated,
+            "rrt/bindings.cu",
+            directory / "librrt.so",
+            options=compile_options,
+            cache=cache,
+        )
 
     timings = {
         "codegen": stages["total"],
         compiled.compiler_name: compiled.seconds,
         "total": time.perf_counter() - begin,
     }
-    return RRTBuild(compiled.library, model, compiled.toolchain, timings)
+    return RRTBuild(
+        compiled.library, model, compiled.toolchain, timings, cache_hit=compiled.cache_hit
+    )
 
 
 class NativeConfig(ct.Structure):
