@@ -4,7 +4,10 @@ tenkai (展開 in Japanese) is a GPU-accelerated batched motion planner (rrtc on
 It generates robot-specific kernels from URDF models and plans paths from Python
 on NVIDIA CUDA or AMD HIP GPUs.
 
-tenkai is heavily inspired by [VAMP](https://github.com/KavrakiLab/vamp)'s
+It is designed for solving a large number of different problems at once, not for
+solving a single planning problem as fast as possible (for that, use [VAMP](https://github.com/KavrakiLab/vamp)!).
+
+tenkai is heavily inspired by VAMP's
 robot-specific code generation and vectorized collision checking, adapted here
 for GPUs. It also builds on my earlier projects,
 [_tenkai](https://github.com/HiroIshida/_tenkai) (expression compilation) and
@@ -36,8 +39,14 @@ start = [0.0, 1.32, 1.40, -0.20, 1.72, 0.0, 1.66, 0.0]
 goal = [0.386, 0.205, 1.41, 0.308, -1.82, 0.245, 0.417, 6.01]
 
 with compiled.planner(obstacles, config=RRTConfig(max_rounds=8192), resolution=0.01) as planner:
+    # For batch planning, append more elements to these lists (one entry per problem).
+    # All lists must have the same length.
     result = planner.solve(
-        [start], [goal], environment_ids=[0], seeds=[42], shortcut=ShortcutConfig()
+        [start],  # starts: add more start configurations
+        [goal],  # goals: add more goal configurations
+        environment_ids=[0],  # environment index per problem
+        seeds=[42],  # random seed per problem
+        shortcut=ShortcutConfig(),
     )[0]
     if result["status"] == "success":
         print(planner.path(0))
