@@ -9,9 +9,13 @@ When copying or porting external code, reimplementing an external algorithm, or 
 
 Do not commit benchmark code unless the user explicitly asks to include it in a commit. Running or writing a benchmark does not imply permission to commit it.
 
-Preserve significant decisions from discussions with the user in commit messages, especially nontrivial decisions involving trade-offs. Record the alternatives considered, the trade-offs, and the rationale for the chosen approach.
+Keep commit messages concise and explain why the change is needed. A subject line is sufficient when it conveys that reason; otherwise, add a short body.
 
-Include the evidence used to make those decisions in the commit log, such as benchmark results. Record the measured results, comparison baseline, and relevant measurement conditions so the reasoning remains verifiable.
+Add a short body only for significant reasons or trade-offs that are not apparent from the diff. Preserve relevant decisions from user discussions without recounting the discussion.
+
+Summarize routine validation in at most one line. Include measured results, the comparison baseline, and measurement conditions when they justify a design decision.
+
+Do not include implementation walkthroughs, work logs, exhaustive checklists, or lists of unchanged behavior.
 
 Treat questions about reasons (e.g., "Why did you do X?") as requests for explanation only. Do not modify code or files in response unless the user explicitly requests a change.
 
