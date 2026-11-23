@@ -106,18 +106,18 @@ def test_context_closes_on_exception(binding: RRTBuild) -> None:
 
 
 @pytest.mark.parametrize(
-    "config",
+    "arguments",
     [
-        RRTConfig(max_nodes=1),
-        RRTConfig(max_rounds=2**32),
-        RRTConfig(step_size=float("nan")),
-        RRTConfig(goal_bias=1.1),
-        RRTConfig(max_nodes=True),
+        {"max_nodes": 1},
+        {"max_rounds": 2**32},
+        {"step_size": float("nan")},
+        {"goal_bias": 1.1},
+        {"max_nodes": True},
     ],
 )
-def test_invalid_config_before_load(binding: RRTBuild, config: RRTConfig) -> None:
+def test_invalid_config(arguments: dict[str, object]) -> None:
     with pytest.raises(ValueError):
-        Planner("missing.so", binding.model, config, 1, [], 0.05)
+        RRTConfig(**arguments)  # type: ignore[arg-type]
 
 
 @pytest.mark.parametrize("geometry", [[object()], [[sdf.Ground()], [object()]], [[0] * 7]])

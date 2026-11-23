@@ -42,15 +42,7 @@ struct RrtCandidate {
   RrtNearestCache nearest;
 };
 
-inline void validate_rrt(const tenkai::RrtConfig& config,
-                         const RrtSpace& space) {
-  if (config.max_nodes < 2 || !config.max_rounds ||
-      !std::isfinite(config.step_size) || config.step_size <= 0 ||
-      !std::isfinite(config.goal_bias) || config.goal_bias < 0 ||
-      config.goal_bias > 1) {
-    throw std::invalid_argument("invalid RRT config");
-  }
-
+inline void validate_rrt(const RrtSpace& space) {
   double diameter_squared = 0;
   for (uint32_t d = 0; d < rrt_dimension; ++d) {
     const double span = double(space.upper[d]) - double(space.lower[d]);

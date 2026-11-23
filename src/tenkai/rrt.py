@@ -39,7 +39,7 @@ class RRTConfig:
     step_size: float = 1.0
     goal_bias: float = 0.1
 
-    def validate(self) -> None:
+    def __post_init__(self) -> None:
         check_count(self.max_nodes, "max_nodes", 2)
         check_count(self.max_rounds, "max_rounds")
 
@@ -278,7 +278,6 @@ class Planner:
         geometry: Geometry,
         resolution: float,
     ) -> None:
-        config.validate()
         check_count(problem_count, "problem_count")
         if not math.isfinite(resolution) or resolution <= 0:
             raise ValueError("resolution must be finite and positive")

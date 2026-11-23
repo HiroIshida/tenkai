@@ -178,7 +178,7 @@ struct Context {
       space.upper[d] = Scalar(upper[d]);
       space.resolution[d] = Scalar(resolution[d]);
     }
-    model::validate_rrt(config, space);
+    model::validate_rrt(space);
 
     environments.upload(host.environments.data(), host.environments.size());
     boxes.upload(host.boxes.data(), host.boxes.size());
