@@ -435,7 +435,6 @@ class Planner:
         ids = unsigned_array(environment_ids, np.uint32, "environment_ids")
         if q.ndim != 2 or q.shape[1] != self.fk_dof or ids.shape != (len(q),):
             raise ValueError("invalid collision array shapes")
-        check_count(len(q), "configuration_count", 0)
         if not np.isfinite(q).all():
             raise ValueError("configurations must be finite")
         if (ids >= self.environment_count).any():

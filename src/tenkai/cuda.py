@@ -40,10 +40,8 @@ class Options:
             raise ValueError("invalid optimization")
         if self.live_budget is not None and self.live_budget < 0:
             raise ValueError("live budget must be nonnegative")
-        if type(self.sphere_batch_size) is not int or self.sphere_batch_size <= 0:
+        if self.sphere_batch_size <= 0:
             raise ValueError("sphere batch size must be a positive integer")
-        if type(self.ground) is not bool:
-            raise ValueError("ground must be a bool")
 
 
 def number(value: float) -> str:
@@ -389,9 +387,6 @@ def self_collision_body(
 def prepare_collision(
     kin: KinematicModel, spheres: Sequence[Sphere], options: Options, rules: SelfCollisionRules
 ) -> tuple[DagEmitter, CollisionDag]:
-    for sphere in spheres:
-        sphere.validate(kin)
-
     geometry = collision_expressions(kin, spheres, options.optimization, rules)
     outputs = [node for center in geometry.centers for node in center]
     emitter = DagEmitter(

@@ -245,9 +245,6 @@ def center_expressions(
 def center_dag(
     kin: KinematicModel, spheres: Sequence[Sphere], optimization: Optimization
 ) -> tuple[Dag, list[int]]:
-    for sphere in spheres:
-        sphere.validate(kin)
-
     counts = Counter(sphere.link_index for sphere in spheres)
     dag = Dag(kin.dag.nodes.copy())
     rotations: dict[int, MatrixNodes] = {}
@@ -291,7 +288,6 @@ def collision_expressions(
     optimization: Optimization,
     rules: SelfCollisionRules = SelfCollisionRules(),
 ) -> CollisionDag:
-    rules.validate(spheres)
     dag, outputs = center_dag(kin, spheres, optimization)
     center_count = len(outputs)
     links: dict[int, list[Sphere]] = {}

@@ -15,7 +15,6 @@ from tempfile import TemporaryDirectory
 from typing import Literal, NotRequired, TypedDict
 
 from tenkai.cuda import TEMPLATES
-from tenkai.validation import check_count
 
 type Backend = Literal["cuda", "hip"]
 
@@ -42,8 +41,7 @@ class CompileOptions:
 
     def __post_init__(self) -> None:
         target_arch(self.backend, self.arch)
-        registers = 0 if self.max_registers is None else self.max_registers
-        check_count(registers, "max_registers", 0)
+        registers = self.max_registers or 0
         if registers != 0 and not 32 <= registers <= 255:
             raise ValueError("max_registers must be 0 or between 32 and 255")
         if self.backend == "hip" and registers:

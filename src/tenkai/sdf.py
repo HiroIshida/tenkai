@@ -109,8 +109,6 @@ def geometry_to_json(obstacles: Sequence[CollisionObject]) -> str:
     """Serialize one environment without adding implicit obstacles."""
     records: list[dict[str, object]] = []
     for obstacle in obstacles:
-        if not isinstance(obstacle, (Box, Sphere, Cylinder, Ground)):
-            raise TypeError("expected sdf.Box, Sphere, Cylinder, or Ground")
         records.append({"type": type(obstacle).__name__, **asdict(obstacle)})
     return json.dumps(records, allow_nan=False)
 
@@ -182,8 +180,8 @@ def _primitive_index(obstacle: Box | Sphere | Cylinder) -> int:
 def _pack_environments(
     environments: Sequence[Sequence[CollisionObject]], *, ground: bool
 ) -> SceneData:
-    if not 0 < len(environments) < 2**32:
-        raise ValueError("environment count must be between 1 and 2**32 - 1")
+    if not environments:
+        raise ValueError("at least one environment is required")
 
     ranges = np.zeros((len(environments), 3, 2), dtype=np.uint32)
     grounds = np.empty(len(environments) if ground else 0, dtype=np.float64)
@@ -200,8 +198,6 @@ def _pack_environments(
                 totals[_primitive_index(obstacle)] += 1
         if ground_count != int(ground):
             raise ValueError(f"environment {i} must contain exactly {int(ground)} Ground")
-        if max(totals) >= 2**32:
-            raise ValueError("too many collision objects")
         ranges[i, :, 1] = np.asarray(totals, dtype=np.uint32) - ranges[i, :, 0]
 
     # Allocate once instead of retaining a second Python object per packed primitive.
