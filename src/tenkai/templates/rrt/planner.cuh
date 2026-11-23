@@ -28,7 +28,6 @@ class RrtPlanner {
             checked_config(config, space, environment_count, problem_count)),
         space_(space),
         scene_(scene),
-        environment_count_(environment_count),
         problem_count_(problem_count),
         environment_types_(environment_count, AllTypes),
         problems_(problem_count),
@@ -54,14 +53,8 @@ class RrtPlanner {
   std::vector<tenkai::RrtResult> solve(
       const std::vector<RrtProblem>& problems,
       const tenkai::ShortcutConfig* shortcut = nullptr) {
-    if (problems.size() != problem_count_) {
-      throw std::invalid_argument("RRT problem count mismatch");
-    }
     unsigned types = 0;
     for (const auto& problem : problems) {
-      if (problem.environment_id >= environment_count_) {
-        throw std::invalid_argument("RRT environment ID out of range");
-      }
       types |= environment_types_[problem.environment_id];
     }
 
@@ -90,7 +83,7 @@ class RrtPlanner {
   }
 
   std::vector<Scalar> path(size_t problem_id) const {
-    if (!solved_ || problem_id >= problem_count_) {
+    if (!solved_) {
       throw std::out_of_range("RRT path unavailable");
     }
 
@@ -165,7 +158,6 @@ class RrtPlanner {
   tenkai::RrtConfig config_;
   RrtSpace space_;
   Scene scene_;
-  size_t environment_count_;
   size_t problem_count_;
   std::vector<unsigned> environment_types_;
   bool solved_ = false;

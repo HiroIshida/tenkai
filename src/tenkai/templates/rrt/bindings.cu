@@ -109,7 +109,6 @@ struct HostScene {
 
 struct Context {
   size_t problem_count;
-  size_t environment_count;
 
   model::DeviceBuffer<model::Environment> environments;
   model::DeviceBuffer<model::Box> boxes;
@@ -126,7 +125,6 @@ struct Context {
           const double* upper,
           const double* resolution)
       : problem_count(problems),
-        environment_count(host.environments.size()),
         environments(host.environments.size()),
         boxes(host.boxes.size()),
         spheres(host.spheres.size()),
@@ -151,8 +149,9 @@ struct Context {
     scene.spheres = spheres.data();
     scene.cylinders = cylinders.data();
     scene.grounds = grounds.data();
-    planner.reset(new model::RrtPlanner(config, space, scene, environment_count,
-                                        problems, host.environments.data()));
+    planner.reset(new model::RrtPlanner(config, space, scene,
+                                        host.environments.size(), problems,
+                                        host.environments.data()));
   }
 };
 
@@ -280,14 +279,6 @@ extern "C" int rrt_check(void* handle,
     std::vector<Scalar> q(size_t(count) * model::rrt_fk_dof);
     for (size_t i = 0; i < q.size(); ++i) {
       q[i] = Scalar(configurations[i]);
-      if (!std::isfinite(q[i])) {
-        throw std::invalid_argument("nonfinite collision input");
-      }
-    }
-    for (size_t i = 0; i < count; ++i) {
-      if (environment_ids[i] >= ctx.environment_count) {
-        throw std::invalid_argument("invalid environment ID");
-      }
     }
 
     model::DeviceBuffer<Scalar> device_q(q.size());
