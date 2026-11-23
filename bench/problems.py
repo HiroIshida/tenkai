@@ -71,6 +71,7 @@ class ProblemSet:
 
     def batch(self) -> Batch:
         ids = np.tile(np.arange(len(self.goals), dtype=np.uint32), self.multiplier)
+        np.random.default_rng(42).shuffle(ids)
         return Batch(np.tile(self.start, (len(ids), 1)), self.goals[ids], ids, problem_seed(ids))
 
 

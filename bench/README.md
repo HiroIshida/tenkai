@@ -29,9 +29,11 @@ contains `goal` and `obstacles`. Joint vectors follow `collision.yaml`'s
 `Box`, `Sphere`, `Cylinder`, and `Ground`. `--problems PATH` selects another set.
 Set `multiplier: 50` in the YAML or pass `--multiplier 50` to run 51,200 solves.
 Each copy reuses the environment and the verified per-problem seed (`42 + index`).
-`--batch-size` caps the number of problems per GPU call (default 8,192), so large
-multipliers run in chunks with reusable buffers. Reported batch time covers the
-entire multiplied set, including all chunks; `gpu_batches` records the call count.
+Problem order is shuffled with seed 42 and reused across timing repetitions.
+`--batch-size` caps the number of search workers (default 8,192). Workers reuse
+their search buffers and take the next queued problem as soon as they finish;
+the entire multiplied set is submitted in one GPU call. Reported time covers
+that entire set; `gpu_batches` is 1 and `gpu_batch_size` records the worker limit.
 
 ## Problem set
 

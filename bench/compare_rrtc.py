@@ -5,7 +5,6 @@ import statistics
 import sys
 import time
 from collections.abc import Callable
-from contextlib import ExitStack
 from dataclasses import asdict
 from importlib.metadata import version
 from pathlib import Path
@@ -47,7 +46,7 @@ def main(
         urdf: Robot model; defaults to the registered set's.
         spheres: Collision spheres; defaults to the registered set's.
         multiplier: Repeat the entire problem set this many times; defaults to the YAML value.
-        batch_size: Maximum problems per GPU call; larger workloads use multiple calls.
+        batch_size: Maximum search workers; each worker continuously consumes queued problems.
         cpu_ms_per_problem: Skip CPU solves and extrapolate from this measured time per problem.
     """
     if problem_set not in PROBLEM_SETS:
@@ -73,7 +72,8 @@ def main(
     inputs = cases.batch()
     batch = len(inputs)
     print(
-        f"{len(cases.goals)} different problems x {cases.multiplier} = {batch} solves/batch",
+        f"{len(cases.goals)} different problems x {cases.multiplier} = {batch} solves/repeat; "
+        f"{min(batch_size, batch)} search workers",
         flush=True,
     )
 
@@ -90,9 +90,8 @@ def main(
             "CPU time is linearly extrapolated from the supplied milliseconds per problem. "
         )
 
-    chunks = [slice(begin, min(begin + batch_size, batch)) for begin in range(0, batch, batch_size)]
     print("Measuring tenkai...", flush=True)
-    gpu_times = measure_gpu(compiled, cases.environments, inputs, chunks, repeats)
+    gpu_times = measure_gpu(compiled, cases.environments, inputs, batch_size, repeats)
     gpu_ms = statistics.median(gpu_times)
 
     report = {
@@ -100,7 +99,7 @@ def main(
         "problem_count": len(cases.goals),
         "multiplier": cases.multiplier,
         "gpu_batch_size": min(batch_size, batch),
-        "gpu_batches": len(chunks),
+        "gpu_batches": 1,
         "problems": str(problems.resolve()),
         "problems_sha256": sha256(problems),
         "math": compiled.model["math"],
@@ -132,26 +131,20 @@ def measure_gpu(
     compiled: RRTBuild,
     environments: list[list[sdf.CollisionObject]],
     inputs: Batch,
-    chunks: list[slice],
+    batch_size: int,
     repeats: int,
 ) -> list[float]:
-    with ExitStack() as stack:
-        planners = {
-            size: stack.enter_context(
-                compiled.planner(
-                    environments, config=CONFIG, problem_count=size, resolution=RESOLUTION
-                )
-            )
-            for size in {chunk.stop - chunk.start for chunk in chunks}
-        }
+    with compiled.planner(
+        environments,
+        config=CONFIG,
+        problem_count=len(inputs),
+        batch_size=batch_size,
+        resolution=RESOLUTION,
+    ) as planner:
 
         def solve_gpu() -> int:
-            successes = 0
-            for chunk in chunks:
-                part = inputs[chunk]
-                results = planners[len(part)].solve(part.starts, part.goals, part.ids, part.seeds)
-                successes += sum(result["status"] == "success" for result in results)
-            return successes
+            results = planner.solve(inputs.starts, inputs.goals, inputs.ids, inputs.seeds)
+            return sum(result["status"] == "success" for result in results)
 
         return measure(solve_gpu, len(inputs), repeats)
 
