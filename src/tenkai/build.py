@@ -3,6 +3,7 @@
 import fcntl
 import hashlib
 import json
+import logging
 import os
 import re
 import shutil
@@ -14,6 +15,8 @@ from tempfile import TemporaryDirectory
 from typing import Literal, NotRequired, TypedDict
 
 from tenkai.cuda import TEMPLATES
+
+logger = logging.getLogger(__name__)
 
 type Backend = Literal["cuda", "hip"]
 
@@ -228,7 +231,9 @@ def _build_library(
             shutil.copyfile(cached, built)
             log_path.write_text("Compilation cache hit.\n")
             seconds, hit = 0.0, True
+            logger.info("Reusing cached GPU kernel: %s", cached)
         else:
+            logger.info("Compiling GPU kernel with %s (cache disabled).", compiler_name)
             seconds = _run_compiler(command, compiler_name, built, log_path)
             hit = False
             if cached is not None:
@@ -236,6 +241,7 @@ def _build_library(
                     stored = Path(staging) / command.output.name
                     shutil.copyfile(built, stored)
                     stored.replace(cached)
+            logger.info("Compilation finished in %.2f s.", seconds)
 
         built.replace(target)
     return seconds, hit

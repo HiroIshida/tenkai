@@ -1,5 +1,6 @@
 """Build interactive robot scenes with optional trajectory playback."""
 
+import logging
 import math
 import time
 import webbrowser
@@ -17,6 +18,8 @@ from viser.extras import ViserUrdf
 from viser.transforms import SO3
 
 from tenkai import sdf
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -194,7 +197,7 @@ class Scene:
                     host = f"[{host}]"
                 url = f"http://{host}:{self.server.get_port()}"
                 if not webbrowser.open_new_tab(url):
-                    print(f"Could not open a browser. Open {url} manually.")
+                    logger.warning("Could not open a browser. Open %s manually.", url)
 
             previous = time.monotonic()
             while not self._closed:
