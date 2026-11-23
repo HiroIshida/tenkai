@@ -289,33 +289,34 @@ def collision_expressions(
     rules: SelfCollisionRules = SelfCollisionRules(),
 ) -> CollisionDag:
     dag, outputs = center_dag(kin, spheres, optimization)
-    center_count = len(outputs)
+    centers = [outputs[i : i + 3] for i in range(0, len(outputs), 3)]
     links: dict[int, list[Sphere]] = {}
     for sphere in spheres:
         links.setdefault(sphere.link_index, []).append(sphere)
+    poses: dict[int, Pose] = {}
     for link in links:
         pose = kin.poses[link]
         outputs.extend((*pose.translation, *pose.rotation))
+        poses[link] = pose
 
-    enclosing: list[Sphere] = []
+    bounds: dict[int, LinkBound] = {}
     for link, members in links.items():
         if len(members) < 2:
             continue
         bound = enclosing_sphere(members)
         x, y, z = [dag.constant(value) for value in bound.position]
-        outputs.extend(kin.poses[link].transform_point(dag, (x, y, z)))
-        enclosing.append(bound)
+        center = kin.poses[link].transform_point(dag, (x, y, z))
+        outputs.extend(center)
+        bounds[link] = LinkBound(bound, center)
 
-    dag, outputs = dag.optimize(outputs, optimization)
-    centers = [outputs[i : i + 3] for i in range(0, center_count, 3)]
-    poses: dict[int, Pose] = {}
-    for index, link in enumerate(links):
-        start = center_count + index * 7
-        tx, ty, tz, qx, qy, qz, qw = outputs[start : start + 7]
+    dag, optimized_outputs = dag.optimize(outputs, optimization)
+    remapped = dict(zip(outputs, optimized_outputs))
+    centers = [[remapped[node] for node in center] for center in centers]
+    for link, pose in poses.items():
+        tx, ty, tz = [remapped[node] for node in pose.translation]
+        qx, qy, qz, qw = [remapped[node] for node in pose.rotation]
         poses[link] = Pose((tx, ty, tz), (qx, qy, qz, qw))
-    bounds: dict[int, LinkBound] = {}
-    for index, bound in enumerate(enclosing):
-        start = center_count + len(links) * 7 + index * 3
-        x, y, z = outputs[start : start + 3]
-        bounds[bound.link_index] = LinkBound(bound, (x, y, z))
+    for link, link_bound in bounds.items():
+        x, y, z = [remapped[node] for node in link_bound.center]
+        bounds[link] = LinkBound(link_bound.sphere, (x, y, z))
     return CollisionDag(dag, centers, poses, bounds, list(spheres), rules)

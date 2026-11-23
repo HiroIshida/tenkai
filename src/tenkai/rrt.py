@@ -199,6 +199,63 @@ def unsigned_array[T: (np.uint32, np.uint64)](
     return np.ascontiguousarray(array, dtype=dtype)
 
 
+def _configure_library(library: ct.CDLL) -> None:
+    float_array = np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS")
+    id_array = np.ctypeslib.ndpointer(dtype=np.uint32, flags="C_CONTIGUOUS")
+    seed_array = np.ctypeslib.ndpointer(dtype=np.uint64, flags="C_CONTIGUOUS")
+    flag_array = np.ctypeslib.ndpointer(dtype=np.uint8, flags="C_CONTIGUOUS")
+
+    library.rrt_error.argtypes = []
+    library.rrt_error.restype = ct.c_char_p
+
+    library.rrtc_create_scene.argtypes = [
+        ct.POINTER(NativeConfig),
+        ct.c_uint32,
+        ct.c_uint32,
+        ct.POINTER(NativeScene),
+        float_array,
+        float_array,
+        float_array,
+        ct.POINTER(ct.c_void_p),
+    ]
+    library.rrtc_create_scene.restype = ct.c_int
+
+    library.rrt_destroy.argtypes = [ct.c_void_p]
+    library.rrt_destroy.restype = None
+
+    library.rrt_solve.argtypes = [
+        ct.c_void_p,
+        float_array,
+        float_array,
+        id_array,
+        seed_array,
+        ct.POINTER(NativeResult),
+        ct.POINTER(NativeShortcutConfig),
+    ]
+    library.rrt_solve.restype = ct.c_int
+
+    library.rrt_path.argtypes = [
+        ct.c_void_p,
+        ct.c_uint32,
+        float_array,
+        ct.c_uint32,
+        ct.POINTER(ct.c_uint32),
+    ]
+    library.rrt_path.restype = ct.c_int
+
+    library.rrt_paths.argtypes = [ct.c_void_p, float_array, ct.c_uint64]
+    library.rrt_paths.restype = ct.c_int
+
+    library.rrt_check.argtypes = [
+        ct.c_void_p,
+        float_array,
+        id_array,
+        ct.c_uint32,
+        flag_array,
+    ]
+    library.rrt_check.restype = ct.c_int
+
+
 class Planner:
     """A reusable batch of RRT-Connect problems with owned GPU search and scene buffers.
 
@@ -240,62 +297,11 @@ class Planner:
 
         self.handle = ct.c_void_p()
         self.library = ct.CDLL(str(Path(library).resolve()))
-        float_array = np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS")
-        id_array = np.ctypeslib.ndpointer(dtype=np.uint32, flags="C_CONTIGUOUS")
-        seed_array = np.ctypeslib.ndpointer(dtype=np.uint64, flags="C_CONTIGUOUS")
-        flag_array = np.ctypeslib.ndpointer(dtype=np.uint8, flags="C_CONTIGUOUS")
-
-        self.library.rrt_error.argtypes = []
-        self.library.rrt_error.restype = ct.c_char_p
-
-        create = self.library.rrtc_create_scene
-        create.argtypes = [
-            ct.POINTER(NativeConfig),
-            ct.c_uint32,
-            ct.c_uint32,
-            ct.POINTER(NativeScene),
-            float_array,
-            float_array,
-            float_array,
-            ct.POINTER(ct.c_void_p),
-        ]
-        create.restype = ct.c_int
-
-        self.library.rrt_destroy.argtypes = [ct.c_void_p]
-        self.library.rrt_destroy.restype = None
-
-        self.library.rrt_solve.argtypes = [
-            ct.c_void_p,
-            float_array,
-            float_array,
-            id_array,
-            seed_array,
-            ct.POINTER(NativeResult),
-            ct.POINTER(NativeShortcutConfig),
-        ]
-        self.library.rrt_solve.restype = ct.c_int
-
-        self.library.rrt_path.argtypes = [
-            ct.c_void_p,
-            ct.c_uint32,
-            float_array,
-            ct.c_uint32,
-            ct.POINTER(ct.c_uint32),
-        ]
-        self.library.rrt_path.restype = ct.c_int
-
-        self.library.rrt_check.argtypes = [
-            ct.c_void_p,
-            float_array,
-            id_array,
-            ct.c_uint32,
-            flag_array,
-        ]
-        self.library.rrt_check.restype = ct.c_int
+        _configure_library(self.library)
 
         native_config = NativeConfig(**asdict(config))
         native_scene = NativeScene.from_scene(scene)
-        status = create(
+        status = self.library.rrtc_create_scene(
             ct.byref(native_config),
             problem_count,
             self.environment_count,
@@ -409,14 +415,7 @@ class Planner:
         """Download all stored paths in one transfer, including empty failed paths."""
         lengths = self._require_paths()
         packed = np.empty((sum(lengths), self.dimension), dtype=np.float64)
-        operation = self.library.rrt_paths
-        operation.argtypes = [
-            ct.c_void_p,
-            np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
-            ct.c_uint64,
-        ]
-        operation.restype = ct.c_int
-        self.check(operation(self.handle, packed, len(packed)))
+        self.check(self.library.rrt_paths(self.handle, packed, len(packed)))
 
         paths: list[npt.NDArray[np.float64]] = []
         offset = 0

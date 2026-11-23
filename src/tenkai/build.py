@@ -8,7 +8,6 @@ import re
 import shutil
 import subprocess
 import time
-from contextlib import nullcontext
 from dataclasses import dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -65,6 +64,34 @@ class Compilation:
     cache_hit: bool
 
 
+@dataclass
+class _CompileCommand:
+    compiler: list[str]
+    directory: Path
+    source: Path
+    output: Path
+    max_registers: int | None
+
+    def arguments(
+        self,
+        *,
+        output: str | Path | None = None,
+        path_roots: tuple[tuple[Path, Path], ...] = (),
+    ) -> list[str]:
+        arguments = [*self.compiler, "-I", str(self.directory), str(self.source)]
+        for index, argument in enumerate(arguments):
+            path = Path(argument)
+            for root, replacement in path_roots:
+                if path.is_relative_to(root):
+                    arguments[index] = (replacement / path.relative_to(root)).as_posix()
+                    break
+
+        arguments.extend(["-o", str(self.output if output is None else output)])
+        if self.max_registers:
+            arguments.append("--maxrregcount=" + str(self.max_registers))
+        return arguments
+
+
 def _source_digest(directory: Path, backend: Backend) -> str:
     files = [
         (path.relative_to(directory).as_posix(), path)
@@ -81,22 +108,15 @@ def _source_digest(directory: Path, backend: Backend) -> str:
     return hashlib.sha256(json.dumps(contents).encode()).hexdigest()
 
 
-def _library_cache_path(sources: str, command: list[str], version: str, directory: Path) -> Path:
-    output_index = command.index("-o") + 1
-    normalized_command: list[str] = []
-    for index, argument in enumerate(command):
-        path = Path(argument)
-        if index == output_index:
-            argument = "<output>"
-        elif path.is_relative_to(TEMPLATES):
-            argument = (Path("<templates>") / path.relative_to(TEMPLATES)).as_posix()
-        elif path.is_relative_to(directory):
-            argument = path.relative_to(directory).as_posix()
-        normalized_command.append(argument)
+def _library_cache_path(sources: str, command: _CompileCommand, version: str) -> Path:
+    normalized_command = command.arguments(
+        output="<output>",
+        path_roots=((TEMPLATES, Path("<templates>")), (command.directory, Path("."))),
+    )
 
     host_version = ""
-    if "-ccbin" in command:
-        host = command[command.index("-ccbin") + 1]
+    if "-ccbin" in command.compiler:
+        host = command.compiler[command.compiler.index("-ccbin") + 1]
         host_version = subprocess.check_output([host, "--version"], text=True)
 
     environment = {
@@ -123,27 +143,17 @@ def _library_cache_path(sources: str, command: list[str], version: str, director
     return root / "tenkai" / (key + ".so")
 
 
-def _export_sources(directory: Path, library: Path, command: list[str]) -> list[str]:
-    output = library.parent
+def _export_sources(directory: Path, output: Path) -> None:
     if directory != output:
         for path in list(directory.rglob("*")):
             if not path.is_file():
                 continue
+            # A nested output directory must not be copied into itself.
             if output.is_relative_to(directory) and path.is_relative_to(output):
                 continue
             destination = output / path.relative_to(directory)
             destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(path, destination)
-
-    exported_command = command.copy()
-    output_index = command.index("-o") + 1
-    for index, argument in enumerate(command):
-        path = Path(argument)
-        if index == output_index:
-            exported_command[index] = str(library)
-        elif path.is_relative_to(directory):
-            exported_command[index] = str(output / path.relative_to(directory))
-    return exported_command
 
 
 def compile_library(
@@ -167,22 +177,22 @@ def compile_library(
     if not source.is_relative_to(directory):
         raise ValueError("source must be within the generated source directory")
     library = library.absolute()
-    command, version = compiler_command(options.backend, options.arch)
+    compiler, version = compiler_command(options.backend, options.arch)
     compiler_name = "hipcc" if options.backend == "hip" else "nvcc"
-    command.extend(["-O3", "-shared"])
+    compiler.extend(["-O3", "-shared"])
     if options.backend == "cuda":
-        command.append("-Xcompiler")
-    command.extend(["-fPIC", "-I", str(directory), str(source), "-o", str(library)])
-    if options.max_registers:
-        command.append("--maxrregcount=" + str(options.max_registers))
+        compiler.append("-Xcompiler")
+    compiler.append("-fPIC")
+    command = _CompileCommand(compiler, directory, source, library, options.max_registers)
 
     library.parent.mkdir(parents=True, exist_ok=True)
     cached = None
     if cache:
         sources = _source_digest(directory, options.backend)
-        cached = _library_cache_path(sources, command, version, directory)
-    exported_command = _export_sources(directory, library, command)
-    seconds, hit = _compile_or_restore(directory, library, command, compiler_name, cached)
+        cached = _library_cache_path(sources, command, version)
+    _export_sources(directory, library.parent)
+    exported_command = command.arguments(path_roots=((directory, library.parent),))
+    seconds, hit = _compile_or_restore(command, compiler_name, cached)
 
     info = BuildInfo(
         backend=options.backend,
@@ -197,47 +207,53 @@ def compile_library(
 
 
 def _compile_or_restore(
-    directory: Path, library: Path, command: list[str], compiler_name: str, cached: Path | None
+    command: _CompileCommand, compiler_name: str, cached: Path | None
 ) -> tuple[float, bool]:
     if cached is not None:
         cached.parent.mkdir(parents=True, exist_ok=True)
-    lock_context = cached.with_suffix(".lock").open("a") if cached else nullcontext()
-    with lock_context as lock:
-        if lock is not None:
+        with cached.with_suffix(".lock").open("a") as lock:
             fcntl.flock(lock, fcntl.LOCK_EX)
+            return _build_library(command, compiler_name, cached)
+    return _build_library(command, compiler_name, cached)
 
-        log_path = library.parent / "compile.log"
-        target = library.resolve()
-        with TemporaryDirectory(prefix=".tenkai-", dir=target.parent) as temporary:
-            built = Path(temporary) / library.name
-            hit = cached is not None and cached.is_file()
-            seconds = 0.0
-            if hit:
-                assert cached is not None
-                shutil.copyfile(cached, built)
-                log_path.write_text("Compilation cache hit.\n")
-            else:
-                invocation = command.copy()
-                invocation[invocation.index("-o") + 1] = str(built)
-                with log_path.open("w") as log:
-                    begin = time.perf_counter()
-                    result = subprocess.run(
-                        invocation, cwd=directory, stdout=log, stderr=subprocess.STDOUT
-                    )
-                    seconds = time.perf_counter() - begin
-                if result.returncode:
-                    raise RuntimeError(
-                        f"{compiler_name} failed; see {log_path}\n{log_path.read_text()}"
-                    )
 
-                if cached is not None:
-                    with TemporaryDirectory(prefix=".tenkai-", dir=cached.parent) as staging:
-                        stored = Path(staging) / library.name
-                        shutil.copyfile(built, stored)
-                        stored.replace(cached)
+def _build_library(
+    command: _CompileCommand, compiler_name: str, cached: Path | None
+) -> tuple[float, bool]:
+    log_path = command.output.parent / "compile.log"
+    target = command.output.resolve()
+    with TemporaryDirectory(prefix=".tenkai-", dir=target.parent) as temporary:
+        built = Path(temporary) / command.output.name
+        if cached is not None and cached.is_file():
+            shutil.copyfile(cached, built)
+            log_path.write_text("Compilation cache hit.\n")
+            seconds, hit = 0.0, True
+        else:
+            seconds = _run_compiler(command, compiler_name, built, log_path)
+            hit = False
+            if cached is not None:
+                with TemporaryDirectory(prefix=".tenkai-", dir=cached.parent) as staging:
+                    stored = Path(staging) / command.output.name
+                    shutil.copyfile(built, stored)
+                    stored.replace(cached)
 
-            built.replace(target)
+        built.replace(target)
     return seconds, hit
+
+
+def _run_compiler(
+    command: _CompileCommand, compiler_name: str, output: Path, log_path: Path
+) -> float:
+    invocation = command.arguments(output=output)
+    with log_path.open("w") as log:
+        begin = time.perf_counter()
+        result = subprocess.run(
+            invocation, cwd=command.directory, stdout=log, stderr=subprocess.STDOUT
+        )
+        seconds = time.perf_counter() - begin
+    if result.returncode:
+        raise RuntimeError(f"{compiler_name} failed; see {log_path}\n{log_path.read_text()}")
+    return seconds
 
 
 def compiler_command(backend: Backend = "cuda", arch: str | None = None) -> tuple[list[str], str]:

@@ -159,6 +159,17 @@ class SceneData:
     grounds: npt.NDArray[np.float64]
 
 
+# Packed row layout consumed by templates/rrt/bindings.cu.
+_BOX_WIDTH = 15
+_SPHERE_WIDTH = 4
+_CYLINDER_WIDTH = 14
+_CENTER_COLUMNS = slice(0, 3)
+_WORLD_TO_LOCAL_COLUMNS = slice(3, 12)
+_BOX_SIZE_COLUMNS = slice(12, 15)
+_SPHERE_RADIUS_COLUMN = 3
+_CYLINDER_SIZE_COLUMNS = slice(12, 14)
+
+
 def _is_environment(value: object) -> TypeGuard[Sequence[CollisionObject]]:
     return (
         isinstance(value, Sequence)
@@ -201,9 +212,9 @@ def _pack_environments(
         ranges[i, :, 1] = np.asarray(totals, dtype=np.uint32) - ranges[i, :, 0]
 
     # Allocate once instead of retaining a second Python object per packed primitive.
-    boxes = np.empty((totals[0], 15), dtype=np.float64)
-    spheres = np.empty((totals[1], 4), dtype=np.float64)
-    cylinders = np.empty((totals[2], 14), dtype=np.float64)
+    boxes = np.empty((totals[0], _BOX_WIDTH), dtype=np.float64)
+    spheres = np.empty((totals[1], _SPHERE_WIDTH), dtype=np.float64)
+    cylinders = np.empty((totals[2], _CYLINDER_WIDTH), dtype=np.float64)
     arrays = (boxes, spheres, cylinders)
     cursors = [0, 0, 0]
     for obstacles in environments:
@@ -212,16 +223,17 @@ def _pack_environments(
                 continue
             kind = _primitive_index(obstacle)
             row = arrays[kind][cursors[kind]]
-            row[:3] = obstacle.center
+            row[_CENTER_COLUMNS] = obstacle.center
             if isinstance(obstacle, (Box, Cylinder)):
-                row[3:12] = np.asarray(obstacle.rotation).T.reshape(9)
+                # Native poses need the row-major inverse of the local-to-world rotation.
+                row[_WORLD_TO_LOCAL_COLUMNS] = np.asarray(obstacle.rotation).T.reshape(9)
             match obstacle:
                 case Box():
-                    row[12:15] = obstacle.size
+                    row[_BOX_SIZE_COLUMNS] = obstacle.size
                 case Sphere():
-                    row[3] = obstacle.radius
+                    row[_SPHERE_RADIUS_COLUMN] = obstacle.radius
                 case Cylinder():
-                    row[12:14] = obstacle.radius, obstacle.height
+                    row[_CYLINDER_SIZE_COLUMNS] = obstacle.radius, obstacle.height
             cursors[kind] += 1
 
     return SceneData(ranges, boxes, spheres, cylinders, grounds)
