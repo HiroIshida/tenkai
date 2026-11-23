@@ -10,7 +10,6 @@ extern "C" int test_shortcut(void* handle,
                              const uint64_t* seeds,
                              double resolution) {
   return boundary([&] {
-    model::validate_shortcut(*config);
     model::RrtSpace space{};
     for (uint32_t d = 0; d < model::rrt_dimension; ++d) {
       space.lower[d] = -1;

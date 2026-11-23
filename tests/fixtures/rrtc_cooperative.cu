@@ -111,7 +111,7 @@ int main() try {
         for (double step : {0.2, 1.0}) {
             config.step_size = step;
             config.goal_bias = step == 1.0 ? 0.0 : 0.2;
-            m::RrtPlanner actual(config, space, scene, 8, count);
+            m::RrtPlanner actual(config, space, scene, 8, count, nullptr, 3);
             ReferencePlanner reference(config, space, scene, count);
             compare(actual, reference, problems);
             boxes[0].pose.world_to_local[0] = c;

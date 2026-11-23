@@ -25,8 +25,10 @@ extern "C" const char* rrt_error() { return error; }
 extern "C" int live_contexts() { return alive; }
 
 extern "C" int rrtc_create_scene(const Config* config, uint32_t problems,
+                          uint32_t workers,
                           uint32_t environments, const void*, const double*,
                           const double*, const double*, void** output) {
+    if (!workers || workers > problems) return -1;
     *output = new Context{*config, problems, environments, {}, {}, {}};
     ++alive;
     return 0;

@@ -86,6 +86,7 @@ struct RrtcState {
 template <unsigned Types = AllTypes>
 __device__ __forceinline__ void rrtc_search(const RrtProblem* problems,
                                             size_t id,
+                                            size_t worker,
                                             const RrtSpace& space,
                                             Scene scene,
                                             tenkai::RrtConfig config,
@@ -100,10 +101,10 @@ __device__ __forceinline__ void rrtc_search(const RrtProblem* problems,
 
   const uint32_t lane = threadIdx.x % 32;
   const RrtProblem& problem = problems[id];
-  Scalar* nodes = all_nodes + id * config.max_nodes * rrt_dimension;
-  uint32_t* parents = all_parents + id * config.max_nodes;
-  RrtTree* trees = all_trees + id * config.max_nodes;
-  uint32_t* path = all_paths + id * config.max_nodes;
+  Scalar* nodes = all_nodes + worker * config.max_nodes * rrt_dimension;
+  uint32_t* parents = all_parents + worker * config.max_nodes;
+  RrtTree* trees = all_trees + worker * config.max_nodes;
+  uint32_t* path = all_paths + worker * config.max_nodes;
 
   RrtCandidate& candidate = state.candidate;
   tenkai::RrtResult& result = state.result;
@@ -275,12 +276,14 @@ extern "C" __global__ void tenkai_rrtc_prepare(
     tenkai_f32::RrtSpace space,
     tenkai_f32::Scene scene,
     tenkai_f32::RrtPreparation* preparation,
-    uint32_t* next_problem) {
+    uint32_t* next_problem,
+    unsigned long long* next_vertex) {
   using namespace tenkai_f32;
 
   const size_t id = size_t(blockIdx.x) * blockDim.x + threadIdx.x;
   if (id == 0) {
     *next_problem = 0;
+    *next_vertex = 0;
   }
   if (id >= problem_count) {
     return;
@@ -304,6 +307,7 @@ template <unsigned Types = tenkai_f32::AllTypes>
 __global__ __launch_bounds__(128, tenkai_f32::rrtc_min_blocks) void tenkai_rrtc(
     const tenkai_f32::RrtProblem* problems,
     size_t problem_count,
+    size_t worker_count,
     tenkai_f32::RrtSpace space,
     tenkai_f32::Scene scene,
     tenkai::RrtConfig config,
@@ -313,9 +317,17 @@ __global__ __launch_bounds__(128, tenkai_f32::rrtc_min_blocks) void tenkai_rrtc(
     uint32_t* all_paths,
     tenkai::RrtResult* results,
     const tenkai_f32::RrtPreparation* preparation,
-    uint32_t* next_problem) {
+    uint32_t* next_problem,
+    tenkai_f32::Scalar* coordinates,
+    size_t coordinate_capacity,
+    unsigned long long* offsets,
+    unsigned long long* next_vertex) {
   __shared__ tenkai_f32::RrtcState states[4];
   auto& state = states[threadIdx.x / 32];
+  const size_t worker = size_t(blockIdx.x) * 4 + threadIdx.x / 32;
+  if (worker >= worker_count) {
+    return;
+  }
 
   // A finished plan must not strand its warp behind another plan in the block.
   for (;;) {
@@ -328,9 +340,33 @@ __global__ __launch_bounds__(128, tenkai_f32::rrtc_min_blocks) void tenkai_rrtc(
       return;
     }
 
-    tenkai_f32::rrtc_search<Types>(problems, id, space, scene, config,
+    tenkai_f32::rrtc_search<Types>(problems, id, worker, space, scene, config,
                                    all_nodes, all_parents, all_trees, all_paths,
                                    results, state, preparation);
+    __syncwarp();
+
+    unsigned long long offset = 0;
+    if (threadIdx.x % 32 == 0) {
+      offset =
+          atomicAdd(next_vertex,
+                    static_cast<unsigned long long>(state.result.path_length));
+      offsets[id] = offset;
+    }
+    offset = __shfl_sync(0xffffffffu, offset, 0);
+    if (offset + state.result.path_length <= coordinate_capacity) {
+      for (size_t i = threadIdx.x % 32;
+           i < size_t(state.result.path_length) * tenkai_f32::rrt_dimension;
+           i += 32) {
+        const uint32_t node = all_paths[worker * config.max_nodes +
+                                        i / tenkai_f32::rrt_dimension];
+        coordinates[offset * tenkai_f32::rrt_dimension + i] =
+            all_nodes[(worker * config.max_nodes + node) *
+                          tenkai_f32::rrt_dimension +
+                      i % tenkai_f32::rrt_dimension];
+      }
+    }
+    // Every lane must finish copying before the next search overwrites its
+    // tree.
     __syncwarp();
   }
 }

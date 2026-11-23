@@ -49,6 +49,13 @@ With visualization:
 uv run --extra visualize python example/rrtc.py --visualize
 ```
 
+For large workloads, set `problem_count` to the total number of inputs and
+`batch_size` to the maximum number of search workers, for example
+`compiled.planner(obstacles, problem_count=65536, batch_size=8192)`.
+Workers take the next queued problem as soon as they finish and reuse their
+search buffers. All results and paths remain available in input order; paths
+stay in GPU memory until retrieved with `path()` or `paths()`.
+
 For more usage details, see the [example directory](example/).
 To add your own robot, use the [Fetch robot configuration](assets/fetch/collision.yaml)
 as a reference.

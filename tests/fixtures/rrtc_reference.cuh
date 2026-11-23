@@ -7,7 +7,7 @@ __global__ void reference_rrtc(
     uint32_t* paths, tenkai::RrtResult* results,
     const m::RrtPreparation* preparation) {
     __shared__ m::RrtcState state;
-    m::rrtc_search(problems, blockIdx.x, space, scene, config, nodes, parents, trees,
+    m::rrtc_search(problems, blockIdx.x, blockIdx.x, space, scene, config, nodes, parents, trees,
                    paths, results, state, preparation);
 }
 
@@ -19,13 +19,14 @@ public:
           nodes_(problems * config.max_nodes * m::rrt_dimension),
           parents_(problems * config.max_nodes), trees_(problems * config.max_nodes),
           paths_(problems * config.max_nodes), results_(problems),
-          preparation_(problems), next_problem_(1) {}
+          preparation_(problems), next_problem_(1), next_vertex_(1) {}
 
     std::vector<tenkai::RrtResult> solve(const std::vector<m::RrtProblem>& problems) {
         assert(problems.size() == count_);
         problems_.upload(problems.data(), count_);
         tenkai_rrtc_prepare<<<static_cast<unsigned int>((count_ - 1) / 128 + 1), 128>>>(
-            problems_.data(), count_, space_, scene_, preparation_.data(), next_problem_.data());
+            problems_.data(), count_, space_, scene_, preparation_.data(), next_problem_.data(),
+            next_vertex_.data());
         m::cuda_check(cudaGetLastError(), "prepare reference RRT-Connect");
         reference_rrtc<<<static_cast<unsigned int>(count_), 32>>>(
             problems_.data(), space_, scene_, config_, nodes_.data(), parents_.data(),
@@ -62,5 +63,6 @@ private:
     m::DeviceBuffer<tenkai::RrtResult> results_;
     m::DeviceBuffer<m::RrtPreparation> preparation_;
     m::DeviceBuffer<uint32_t> next_problem_;
+    m::DeviceBuffer<unsigned long long> next_vertex_;
     std::vector<tenkai::RrtResult> last_;
 };

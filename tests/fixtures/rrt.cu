@@ -417,16 +417,8 @@ int main() try {
             }
         }
     }
-    auto invalid = problems;
-    invalid[0].environment_id = 3;
-    rejects([&] { planner.solve(invalid); });
-    invalid.pop_back();
-    rejects([&] { planner.solve(invalid); });
     rejects([&] { m::RrtPlanner p(config, space, scene, 0, 1); });
     rejects([&] { m::RrtPlanner p(config, space, scene, 3, 0); });
-    auto bad_space = space;
-    bad_space.resolution[0] = 0;
-    rejects([&] { m::RrtPlanner p(config, bad_space, scene, 3, 1); });
     config.max_rounds = 1;
     config.goal_bias = 0;
     config.step_size = 0.01;

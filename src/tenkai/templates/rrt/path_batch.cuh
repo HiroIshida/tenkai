@@ -6,18 +6,16 @@
 #include "shortcut.cuh"
 
 namespace tenkai_f32 {
-__global__ void tenkai_gather_paths(const Scalar* nodes,
-                                    const uint32_t* indices,
-                                    uint32_t max_nodes,
+__global__ void tenkai_gather_paths(const Scalar* source,
+                                    const unsigned long long* offsets,
                                     const ShortcutProblem* paths,
                                     Scalar* coordinates) {
   const size_t p = blockIdx.x;
   const ShortcutProblem path = paths[p];
   for (size_t i = threadIdx.x; i < size_t(path.length) * rrt_dimension;
        i += blockDim.x) {
-    const uint32_t node = indices[p * max_nodes + i / rrt_dimension];
     coordinates[path.offset * rrt_dimension + i] =
-        nodes[(p * max_nodes + node) * rrt_dimension + i % rrt_dimension];
+        source[offsets[p] * rrt_dimension + i];
   }
 }
 
@@ -25,9 +23,8 @@ class PathBatch {
  public:
   void build(const std::vector<RrtProblem>& problems,
              std::vector<tenkai::RrtResult>& results,
-             const Scalar* nodes,
-             const uint32_t* indices,
-             uint32_t max_nodes,
+             const Scalar* coordinates,
+             const unsigned long long* offsets,
              const tenkai::ShortcutConfig* shortcut,
              const RrtSpace& space,
              Scene scene) {
@@ -52,7 +49,7 @@ class PathBatch {
       vertices_ += size_t(capacity);
     }
 
-    // Every solve rebuilds coordinates from the tree, so buffer growth needs no
+    // Every solve copies coordinates from the search, so buffer growth needs no
     // repacking.
     coordinates_.reserve(storage_product(vertices_, rrt_dimension));
     device_paths_.reserve(paths_.size());
@@ -61,7 +58,7 @@ class PathBatch {
       return;
     }
     tenkai_gather_paths<<<static_cast<unsigned int>(paths_.size()), 128>>>(
-        nodes, indices, max_nodes, device_paths_.data(), coordinates_.data());
+        coordinates, offsets, device_paths_.data(), coordinates_.data());
     cuda_check(cudaGetLastError(), "gather RRT paths");
 
     if (shorten) {

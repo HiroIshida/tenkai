@@ -120,6 +120,7 @@ struct Context {
 
   Context(const tenkai::RrtConfig& config,
           size_t problems,
+          size_t workers,
           const HostScene& host,
           const double* lower,
           const double* upper,
@@ -149,7 +150,7 @@ struct Context {
     scene.grounds = grounds.data();
     planner.reset(new model::RrtPlanner(config, space, scene,
                                         host.environments.size(), problems,
-                                        host.environments.data()));
+                                        host.environments.data(), workers));
   }
 };
 
@@ -169,6 +170,7 @@ extern "C" const char* rrt_error() {
 
 extern "C" int rrtc_create_scene(const tenkai::RrtConfig* config,
                                  uint32_t problems,
+                                 uint32_t workers,
                                  uint32_t environments,
                                  const SceneInput* input,
                                  const double* lower,
@@ -181,13 +183,14 @@ extern "C" int rrtc_create_scene(const tenkai::RrtConfig* config,
     }
     *output = nullptr;
 
-    if (!config || !problems || !environments || !input || !lower || !upper ||
-        !resolution) {
+    if (!config || !problems || !workers || !environments || !input || !lower ||
+        !upper || !resolution) {
       throw std::invalid_argument("invalid RRT creation arguments");
     }
 
     const HostScene host(environments, *input);
-    *output = new Context(*config, problems, host, lower, upper, resolution);
+    *output =
+        new Context(*config, problems, workers, host, lower, upper, resolution);
   });
 }
 

@@ -70,10 +70,19 @@ class RRTBuild:
         *,
         config: RRTConfig = RRTConfig(),
         problem_count: int = 1,
+        batch_size: int | None = None,
         resolution: float = 0.05,
     ) -> "Planner":
-        """Allocate a planner; close it explicitly or use it as a context manager."""
-        return Planner(self.library, self.model, config, problem_count, geometry, resolution)
+        """Allocate a planner; close it explicitly or use it as a context manager.
+
+        batch_size limits reusable search workers, not the number of input problems.
+        Each completed worker takes the next problem without waiting for other workers.
+        None allocates one worker per problem. All paths are retained in GPU memory.
+        Search may run twice when stored path capacity needs to grow.
+        """
+        return Planner(
+            self.library, self.model, config, problem_count, geometry, resolution, batch_size
+        )
 
 
 def build_rrt(
@@ -246,6 +255,7 @@ def _configure_library(library: ct.CDLL) -> None:
         ct.POINTER(NativeConfig),
         ct.c_uint32,
         ct.c_uint32,
+        ct.c_uint32,
         ct.POINTER(NativeScene),
         float_array,
         float_array,
@@ -306,8 +316,12 @@ class Planner:
         problem_count: int,
         geometry: Geometry,
         resolution: float,
+        batch_size: int | None = None,
     ) -> None:
         check_count(problem_count, "problem_count")
+        if batch_size is not None:
+            check_count(batch_size, "batch_size")
+        self.batch_size = min(problem_count, batch_size or problem_count)
         scene = pack_geometry(geometry, ground=model["ground"])
 
         self.problem_count = problem_count
@@ -330,6 +344,7 @@ class Planner:
         status = self.library.rrtc_create_scene(
             ct.byref(native_config),
             problem_count,
+            self.batch_size,
             self.environment_count,
             ct.byref(native_scene),
             lower,

@@ -1,6 +1,7 @@
 #ifndef tenkai_f32_RRT_PLANNER_INCLUDED
 #define tenkai_f32_RRT_PLANNER_INCLUDED
 #include <cuda_runtime.h>
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <stdexcept>
@@ -23,22 +24,29 @@ class RrtPlanner {
              Scene scene,
              size_t environment_count,
              size_t problem_count,
-             const Environment* host_environments = nullptr)
+             const Environment* host_environments = nullptr,
+             size_t batch_size = 0)
       : config_(
             checked_config(config, space, environment_count, problem_count)),
         space_(space),
         scene_(scene),
         problem_count_(problem_count),
+        worker_count_(batch_size ? std::min(batch_size, problem_count)
+                                 : problem_count),
         environment_types_(environment_count, AllTypes),
         problems_(problem_count),
-        nodes_(storage_product(storage_product(problem_count, config.max_nodes),
+        nodes_(storage_product(storage_product(worker_count_, config.max_nodes),
                                rrt_dimension)),
-        parents_(storage_product(problem_count, config.max_nodes)),
-        trees_(storage_product(problem_count, config.max_nodes)),
-        paths_(storage_product(problem_count, config.max_nodes)),
+        parents_(storage_product(worker_count_, config.max_nodes)),
+        trees_(storage_product(worker_count_, config.max_nodes)),
+        paths_(storage_product(worker_count_, config.max_nodes)),
         results_(problem_count),
         preparation_(problem_count),
-        next_problem_(1) {
+        next_problem_(1),
+        coordinate_capacity_(storage_product(problem_count, 2)),
+        coordinates_(storage_product(coordinate_capacity_, rrt_dimension)),
+        offsets_(problem_count),
+        next_vertex_(1) {
     // Without host ranges, borrowed device scenes must use the generic kernel.
     if (host_environments) {
       for (size_t i = 0; i < environment_count; ++i) {
@@ -61,23 +69,35 @@ class RrtPlanner {
     solved_ = false;
     problems_.upload(problems.data(), problems.size());
 
-    tenkai_rrtc_prepare<<<
-        static_cast<unsigned int>((problem_count_ - 1) / 128 + 1), 128>>>(
-        problems_.data(), problem_count_, space_, scene_, preparation_.data(),
-        next_problem_.data());
-    cuda_check(cudaGetLastError(), "prepare RRT-Connect problems");
+    for (;;) {
+      tenkai_rrtc_prepare<<<
+          static_cast<unsigned int>((problem_count_ - 1) / 128 + 1), 128>>>(
+          problems_.data(), problem_count_, space_, scene_, preparation_.data(),
+          next_problem_.data(), next_vertex_.data());
+      cuda_check(cudaGetLastError(), "prepare RRT-Connect problems");
 
-    if ((types & ~rrt_specialized_types) == 0) {
-      launch_search<rrt_specialized_types>();
-    } else {
-      launch_search<AllTypes>();
+      if ((types & ~rrt_specialized_types) == 0) {
+        launch_search<rrt_specialized_types>();
+      } else {
+        launch_search<AllTypes>();
+      }
+      cuda_check(cudaGetLastError(), "launch RRT-Connect");
+
+      unsigned long long vertices;
+      next_vertex_.download(&vertices, 1);
+      if (vertices <= coordinate_capacity_) {
+        break;
+      }
+      // Replay deterministic searches only when their packed paths outgrow
+      // storage.
+      coordinates_.reserve(storage_product(vertices, rrt_dimension));
+      coordinate_capacity_ = vertices;
     }
-    cuda_check(cudaGetLastError(), "launch RRT-Connect");
 
     std::vector<tenkai::RrtResult> result(problem_count_);
     results_.download(result.data(), result.size());
-    path_batch_.build(problems, result, nodes_.data(), paths_.data(),
-                      config_.max_nodes, shortcut, space_, scene_);
+    path_batch_.build(problems, result, coordinates_.data(), offsets_.data(),
+                      shortcut, space_, scene_);
     solved_ = true;
     return result;
   }
@@ -110,10 +130,12 @@ class RrtPlanner {
   template <unsigned Types>
   void launch_search() {
     tenkai_rrtc<Types>
-        <<<static_cast<unsigned int>((problem_count_ - 1) / 4 + 1), 128>>>(
-            problems_.data(), problem_count_, space_, scene_, config_,
-            nodes_.data(), parents_.data(), trees_.data(), paths_.data(),
-            results_.data(), preparation_.data(), next_problem_.data());
+        <<<static_cast<unsigned int>((worker_count_ - 1) / 4 + 1), 128>>>(
+            problems_.data(), problem_count_, worker_count_, space_, scene_,
+            config_, nodes_.data(), parents_.data(), trees_.data(),
+            paths_.data(), results_.data(), preparation_.data(),
+            next_problem_.data(), coordinates_.data(), coordinate_capacity_,
+            offsets_.data(), next_vertex_.data());
   }
 
   static tenkai::RrtConfig checked_config(const tenkai::RrtConfig& config,
@@ -158,6 +180,7 @@ class RrtPlanner {
   RrtSpace space_;
   Scene scene_;
   size_t problem_count_;
+  size_t worker_count_;
   std::vector<unsigned> environment_types_;
   bool solved_ = false;
 
@@ -169,6 +192,10 @@ class RrtPlanner {
   DeviceBuffer<tenkai::RrtResult> results_;
   DeviceBuffer<RrtPreparation> preparation_;
   DeviceBuffer<uint32_t> next_problem_;
+  size_t coordinate_capacity_;
+  DeviceBuffer<Scalar> coordinates_;
+  DeviceBuffer<unsigned long long> offsets_;
+  DeviceBuffer<unsigned long long> next_vertex_;
   PathBatch path_batch_;
 };
 

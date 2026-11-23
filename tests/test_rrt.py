@@ -105,6 +105,23 @@ def test_context_closes_on_exception(binding: RRTBuild) -> None:
     assert ct.CDLL(str(binding.library)).live_contexts() == 0
 
 
+@pytest.mark.parametrize("batch_size", [0, -1, True, 2**32])
+def test_invalid_worker_limit(binding: RRTBuild, batch_size: int) -> None:
+    with pytest.raises(ValueError, match="batch_size"):
+        binding.planner([], problem_count=8, batch_size=batch_size)
+
+
+@pytest.mark.parametrize("batch_size", [None, 1, 3, 100])
+def test_worker_limit_does_not_change_input_count(
+    binding: RRTBuild, batch_size: int | None
+) -> None:
+    with binding.planner([], problem_count=8, batch_size=batch_size) as planner:
+        assert planner.batch_size == min(8, batch_size or 8)
+        results = planner.solve([[0, 0]] * 8, [[0.5, 0.5]] * 8, [0] * 8, range(8))
+        assert len(results) == 8
+        assert len(planner.paths()) == 8
+
+
 @pytest.mark.parametrize(
     "arguments",
     [
@@ -357,6 +374,42 @@ def test_public_planner_on_gpu(compiled_ground: RRTBuild) -> None:
 
 
 @pytest.mark.gpu
+@pytest.mark.parametrize("batch_size", [1, 3, 5])
+def test_workers_preserve_paths_across_reuse_and_shortcut(
+    compiled: RRTBuild, batch_size: int
+) -> None:
+    environments: sdf.Geometry = [[], [sdf.Box((0, 0, 0), (0.3, 0.4, 0.2))]]
+    count = 37
+    starts = np.tile([-0.75, -0.75], (count, 1))
+    goals = -starts
+    ids = np.arange(count, dtype=np.uint32) % 2
+    seeds = np.arange(count, dtype=np.uint64) + 42
+    starts[1] = 0
+    goals[3] = 0
+    goals[4] = starts[4]
+    config = RRTConfig(max_nodes=1024, max_rounds=512, step_size=0.3)
+    with (
+        compiled.planner(environments, config=config, problem_count=count) as reference,
+        compiled.planner(
+            environments, config=config, problem_count=count, batch_size=batch_size
+        ) as actual,
+    ):
+        for shortcut in (None, ShortcutConfig(max_steps=20), None):
+            expected = reference.solve(starts, goals, ids, seeds, shortcut=shortcut)
+            assert actual.solve(starts, goals, ids, seeds, shortcut=shortcut) == expected
+            assert sorted(expected[i]["status"] for i in (1, 3, 4)) == [
+                "invalid_goal",
+                "invalid_start",
+                "success",
+            ]
+            expected_paths = reference.paths()
+            for i, path in enumerate(actual.paths()):
+                np.testing.assert_array_equal(path, expected_paths[i])
+                np.testing.assert_array_equal(actual.path(i), path)
+            starts, goals = goals, starts
+
+
+@pytest.mark.gpu
 def test_fetch_body_collisions_and_planning_on_gpu(
     tmp_path: Path, gpu_backend: Backend, gpu_arch: str
 ) -> None:
@@ -577,7 +630,9 @@ def test_union_specialization_matches_generic_paths(
     config = RRTConfig(max_nodes=1024, max_rounds=512, step_size=0.3)
     with (
         generic_build.planner(environments, config=config, problem_count=count) as generic,
-        specialized.planner(environments, config=config, problem_count=count) as actual,
+        specialized.planner(
+            environments, config=config, problem_count=count, batch_size=5
+        ) as actual,
     ):
         # Unreferenced environments must not prevent specialization; later solves
         # can introduce other types and then return to the original union.
@@ -630,7 +685,15 @@ def test_native_scene_rejects_invalid_input_before_gpu_allocation(
     resolution = (ct.c_double * 2)(0.05, 0.05)
     handle = ct.c_void_p(123)
     status = library.rrtc_create_scene(
-        ct.byref(config), 1, 1, ct.byref(native_scene), lower, upper, resolution, ct.byref(handle)
+        ct.byref(config),
+        1,
+        1,
+        1,
+        ct.byref(native_scene),
+        lower,
+        upper,
+        resolution,
+        ct.byref(handle),
     )
     assert status == -1
     assert handle.value is None
