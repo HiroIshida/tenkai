@@ -14,9 +14,9 @@ from helpers import FakeCompiler, fetch_collision_cases
 
 from tenkai import Options, Planner, RRTBuild, RRTConfig, ShortcutConfig, build_rrt, sdf
 from tenkai.build import Backend
-from tenkai.compiler import ModelMetadata
+from tenkai.compiler import ControlJoint, ModelMetadata
 from tenkai.modeling import KinematicModel, read_config
-from tenkai.rrt import BuildInfo, NativeConfig, NativeScene
+from tenkai.rrt import BuildInfo, NativeConfig, NativeScene, sampling_space
 from tenkai.sdf import pack_geometry
 
 FIXTURES = Path(__file__).with_name("fixtures")
@@ -118,6 +118,30 @@ def test_context_closes_on_exception(binding: RRTBuild) -> None:
 def test_invalid_config(arguments: dict[str, object]) -> None:
     with pytest.raises(ValueError):
         RRTConfig(**arguments)  # type: ignore[arg-type]
+
+
+def control(lower: float, upper: float) -> ControlJoint:
+    return {"name": "x", "index": 0, "lower": lower, "upper": upper}
+
+
+@pytest.mark.parametrize(
+    "joint,resolution",
+    [
+        (control(-1, 1), float("nan")),
+        (control(-1, 1), 0.0),
+        (control(-1, 1), 1e-50),  # rounds to zero in float32
+        (control(-1, 1), 1e50),  # overflows float32
+        (control(-1, 1), 1e-30),  # more than 2**32 - 2 steps
+        (control(-1, 1e39), 0.05),  # overflows float32
+        (control(-3e38, 3e38), 1e30),  # span overflows float32
+        (control(1.0, 1.0 + 1e-9), 0.05),  # collapses in float32
+        (control(1, -1), 0.05),
+        (control(float("-inf"), 1), 0.05),
+    ],
+)
+def test_invalid_sampling_space(joint: ControlJoint, resolution: float) -> None:
+    with pytest.raises(ValueError):
+        sampling_space([joint], resolution)
 
 
 @pytest.mark.parametrize("geometry", [[object()], [[sdf.Ground()], [object()]], [[0] * 7]])

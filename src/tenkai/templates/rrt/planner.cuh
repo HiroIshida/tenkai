@@ -120,7 +120,6 @@ class RrtPlanner {
                                           const RrtSpace& space,
                                           size_t environments,
                                           size_t problems) {
-    validate_rrt(space);
     if (!environments || !problems) {
       throw std::invalid_argument("invalid RRT execution dimensions");
     }

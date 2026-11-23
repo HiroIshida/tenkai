@@ -3,7 +3,7 @@
 import ctypes as ct
 import math
 import time
-from collections.abc import Set
+from collections.abc import Sequence, Set
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -15,7 +15,7 @@ import numpy.typing as npt
 
 from tenkai.build import Backend, CompileOptions, compile_library
 from tenkai.build import BuildInfo as BuildInfo
-from tenkai.compiler import ModelMetadata, generate
+from tenkai.compiler import ControlJoint, ModelMetadata, generate
 from tenkai.cuda import Options
 from tenkai.sdf import Geometry, SceneData, SpecializationType, pack_geometry
 from tenkai.shortcut import NativeShortcutConfig, ShortcutConfig
@@ -204,6 +204,35 @@ def unsigned_array[T: (np.uint32, np.uint64)](
     return np.ascontiguousarray(array, dtype=dtype)
 
 
+def sampling_space(
+    joints: Sequence[ControlJoint], resolution: float
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Return control bounds and per-joint resolution after checking them as the planner stores them.
+
+    The native planner narrows these to float32, which can overflow, collapse
+    an interval, or round a resolution to zero.
+    """
+    lower = np.array([joint["lower"] for joint in joints], dtype=np.float64)
+    upper = np.array([joint["upper"] for joint in joints], dtype=np.float64)
+    resolutions = np.full(len(joints), resolution, dtype=np.float64)
+
+    with np.errstate(over="ignore"):
+        lower32, upper32, resolution32 = (
+            array.astype(np.float32) for array in (lower, upper, resolutions)
+        )
+    span = upper32.astype(np.float64) - lower32.astype(np.float64)
+    fits = (span > 0) & (span <= np.finfo(np.float32).max)
+    if not (np.isfinite(lower32).all() and np.isfinite(upper32).all() and fits.all()):
+        raise ValueError("control joint bounds must be finite and increasing in float32")
+    if not (np.isfinite(resolution32).all() and (resolution32 > 0).all()):
+        raise ValueError("resolution must be finite and positive in float32")
+    steps = np.ceil(span / resolution32.astype(np.float64))
+    if (steps > np.iinfo(np.uint32).max - 1).any():
+        raise ValueError("resolution is too small for the control joint bounds")
+
+    return lower, upper, resolutions
+
+
 def _configure_library(library: ct.CDLL) -> None:
     float_array = np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS")
     id_array = np.ctypeslib.ndpointer(dtype=np.uint32, flags="C_CONTIGUOUS")
@@ -279,9 +308,6 @@ class Planner:
         resolution: float,
     ) -> None:
         check_count(problem_count, "problem_count")
-        if not math.isfinite(resolution) or resolution <= 0:
-            raise ValueError("resolution must be finite and positive")
-
         scene = pack_geometry(geometry, ground=model["ground"])
 
         self.problem_count = problem_count
@@ -293,11 +319,7 @@ class Planner:
 
         self.max_nodes = config.max_nodes
         self._path_lengths: list[int] | None = None
-        lower = np.array([joint["lower"] for joint in model["control_joints"]], dtype=np.float64)
-        upper = np.array([joint["upper"] for joint in model["control_joints"]], dtype=np.float64)
-        if not np.isfinite(lower).all() or not np.isfinite(upper).all() or (lower >= upper).any():
-            raise ValueError("control joint bounds must be finite and increasing")
-        resolutions = np.full(self.dimension, resolution, dtype=np.float64)
+        lower, upper, resolutions = sampling_space(model["control_joints"], resolution)
 
         self.handle = ct.c_void_p()
         self.library = ct.CDLL(str(Path(library).resolve()))

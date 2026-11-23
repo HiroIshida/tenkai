@@ -42,32 +42,6 @@ struct RrtCandidate {
   RrtNearestCache nearest;
 };
 
-inline void validate_rrt(const RrtSpace& space) {
-  double diameter_squared = 0;
-  for (uint32_t d = 0; d < rrt_dimension; ++d) {
-    const double span = double(space.upper[d]) - double(space.lower[d]);
-    diameter_squared += span * span;
-
-    if (!std::isfinite(space.lower[d]) || !std::isfinite(space.upper[d]) ||
-        !(span > 0) || !std::isfinite(span) ||
-        span > double(std::numeric_limits<Scalar>::max()) ||
-        !std::isfinite(space.resolution[d]) || space.resolution[d] <= 0 ||
-        std::ceil(span / double(space.resolution[d])) >
-            double(UINT32_MAX - 1)) {
-      throw std::invalid_argument("invalid RRT bounds or resolution");
-    }
-  }
-  if (!std::isfinite(diameter_squared)) {
-    throw std::invalid_argument("RRT distance overflows double precision");
-  }
-
-  for (uint32_t d = 0; d < rrt_fk_dof; ++d) {
-    if (!std::isfinite(space.reference[d])) {
-      throw std::invalid_argument("nonfinite RRT reference configuration");
-    }
-  }
-}
-
 __device__ inline uint64_t rrt_random(uint64_t& state) {
   uint64_t z = (state += UINT64_C(0x9e3779b97f4a7c15));
   z = (z ^ (z >> 30)) * UINT64_C(0xbf58476d1ce4e5b9);
