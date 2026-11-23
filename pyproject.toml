@@ -41,8 +41,19 @@ docs = [
 packages = ["src/tenkai"]
 
 [tool.hatch.build.targets.sdist]
-include = ["src/tenkai", "tests", "assets", "bench", "example", "LICENSE", "pyproject.toml", "uv.lock", ".python-version", "README.md", "format.sh"]
-exclude = ["__pycache__"]
+include = [
+    "/src/tenkai",
+    "/tests",
+    "/assets",
+    "/example",
+    "/LICENSE",
+    "/pyproject.toml",
+    "/uv.lock",
+    "/.python-version",
+    "/README.md",
+    "/format.sh",
+]
+exclude = ["__pycache__", "/tests/test_benchmarks.py"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
