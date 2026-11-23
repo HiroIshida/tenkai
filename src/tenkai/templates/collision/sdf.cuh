@@ -1,4 +1,3 @@
-// Copyright (C) 2024 Hirokazu Ishida. SPDX-License-Identifier: MPL-2.0
 #ifndef tenkai_f32_SDF_INCLUDED
 #define tenkai_f32_SDF_INCLUDED
 #if defined(__CUDACC__) || defined(__HIPCC__)

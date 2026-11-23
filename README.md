@@ -10,6 +10,8 @@ for GPUs. It also builds on my earlier projects,
 [_tenkai](https://github.com/HiroIshida/_tenkai) (expression compilation) and
 [plainmp](https://github.com/HiroIshida/plainmp) (SDFs and collision checking).
 
+See [PORTING.md](PORTING.md) for porting credits (whether ported manually or with AI assistance).
+
 ## Setup
 
 Requires Python 3.12, [uv](https://docs.astral.sh/uv/), and a CUDA or HIP (wave32)
@@ -48,4 +50,4 @@ uv run --extra visualize python example/rrtc.py --visualize
 ```
 
 [Example](example/rrtc.py) · [Robot configuration](assets/fetch/collision.yaml) ·
-[Benchmarks](bench/README.md) · [Porting credits](PORTING.md)
+[Benchmarks](bench/README.md)

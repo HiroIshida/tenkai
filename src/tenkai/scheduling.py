@@ -1,4 +1,3 @@
-# Copyright (C) 2026 Hirokazu Ishida. SPDX-License-Identifier: MPL-2.0
 """DAG-order and liveness scheduling, with ordered output stores."""
 
 from collections.abc import Sequence
