@@ -57,9 +57,6 @@ class RrtPlanner {
     if (problems.size() != problem_count_) {
       throw std::invalid_argument("RRT problem count mismatch");
     }
-    if (shortcut) {
-      validate_shortcut(*shortcut);
-    }
     unsigned types = 0;
     for (const auto& problem : problems) {
       if (problem.environment_id >= environment_count_) {

@@ -26,15 +26,6 @@ struct ShortcutPoint {
   uint32_t right;
 };
 
-inline void validate_shortcut(const tenkai::ShortcutConfig& config) {
-  if (!std::isfinite(config.range_ratio) || config.range_ratio <= 0 ||
-      config.range_ratio > 1 || !std::isfinite(config.snap_to_vertex) ||
-      config.snap_to_vertex < 0 || config.snap_to_vertex > 1) {
-    throw std::invalid_argument(
-        "invalid shortcut range_ratio or snap_to_vertex");
-  }
-}
-
 __device__ inline double shortcut_distance(const Scalar* a, const Scalar* b) {
   double squared = 0;
   for (uint32_t d = 0; d < rrt_dimension; ++d) {
