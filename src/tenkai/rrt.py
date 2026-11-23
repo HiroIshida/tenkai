@@ -181,20 +181,26 @@ class NativeScene(ct.Structure):
         )
 
 
+def _integers(values: npt.ArrayLike, name: str) -> npt.NDArray[np.generic]:
+    array = np.asarray(values)
+    if array.dtype.kind in ("i", "u") or not array.size:
+        return array
+
+    # NumPy can infer float64 for a list mixing small ints and large uint64 seeds.
+    exact = np.asarray(values, dtype=object)
+    for value in exact.flat:
+        if isinstance(value, (bool, np.bool_)) or not isinstance(value, (int, np.integer)):
+            raise ValueError(f"{name} must contain integers")
+
+    return exact
+
+
 def unsigned_array[T: (np.uint32, np.uint64)](
     values: npt.ArrayLike, dtype: type[T], name: str
 ) -> npt.NDArray[T]:
-    array = np.asarray(values)
-    if array.size:
-        if array.dtype.kind not in ("i", "u"):
-            # NumPy can infer float64 for a list mixing small ints and large uint64 seeds.
-            array = np.asarray(values, dtype=object)
-            for value in array.flat:
-                if isinstance(value, (bool, np.bool_)) or not isinstance(value, (int, np.integer)):
-                    raise ValueError(f"{name} must contain integers")
-
-        if int(array.min()) < 0 or int(array.max()) > np.iinfo(dtype).max:
-            raise ValueError(f"{name} values must fit {np.dtype(dtype).name}")
+    array = _integers(values, name)
+    if array.size and (int(array.min()) < 0 or int(array.max()) > np.iinfo(dtype).max):
+        raise ValueError(f"{name} values must fit {np.dtype(dtype).name}")
 
     return np.ascontiguousarray(array, dtype=dtype)
 
@@ -432,8 +438,10 @@ class Planner:
 
         q = np.ascontiguousarray(configurations, dtype=np.float64)
         ids = unsigned_array(environment_ids, np.uint32, "environment_ids")
-        if q.ndim != 2 or q.shape[1] != self.fk_dof or ids.shape != (len(q),):
-            raise ValueError("invalid collision array shapes")
+        if q.ndim != 2 or q.shape[1] != self.fk_dof:
+            raise ValueError(f"configurations must have shape (count, {self.fk_dof})")
+        if ids.shape != (len(q),):
+            raise ValueError("environment_ids must have shape (configuration count,)")
         if not np.isfinite(q).all():
             raise ValueError("configurations must be finite")
         if (ids >= self.environment_count).any():

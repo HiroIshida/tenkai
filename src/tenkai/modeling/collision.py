@@ -132,6 +132,16 @@ def scalar(value: object) -> float:
     return float(value)
 
 
+def strings(value: object, message: str) -> list[str]:
+    items: list[str] = []
+    for item in sequence(value):
+        if not isinstance(item, str):
+            raise ValueError(message)
+        items.append(item)
+
+    return items
+
+
 def read_config(source: str) -> CollisionConfig:
     node = yaml.compose(source, Loader=yaml.SafeLoader)
     if node is None:
@@ -159,27 +169,20 @@ def read_config(source: str) -> CollisionConfig:
             spheres.append((x, y, z, radius))
         groups[name] = spheres
 
-    controls: list[str] = []
-    for control in sequence(config.get("control_joint_names", [])):
-        if not isinstance(control, str):
-            raise ValueError("control joint names must be strings")
-        controls.append(control)
+    controls = strings(config.get("control_joint_names", []), "control joint names must be strings")
 
+    pair_message = "self_collision_pairs entries must contain two link names"
     pairs: list[tuple[str, str]] = []
     for item in sequence(config.get("self_collision_pairs", [])):
-        pair = sequence(item)
+        pair = strings(item, pair_message)
         if len(pair) != 2:
-            raise ValueError("self_collision_pairs entries must contain two link names")
-        a, b = pair
-        if not isinstance(a, str) or not isinstance(b, str):
-            raise ValueError("self_collision_pairs entries must contain two link names")
-        pairs.append((a, b))
+            raise ValueError(pair_message)
+        pairs.append((pair[0], pair[1]))
 
-    self_only: list[str] = []
-    for self_link in sequence(config.get("only_self_collision_links", [])):
-        if not isinstance(self_link, str):
-            raise ValueError("only_self_collision_links entries must be link names")
-        self_only.append(self_link)
+    self_only = strings(
+        config.get("only_self_collision_links", []),
+        "only_self_collision_links entries must be link names",
+    )
 
     return CollisionConfig(groups, controls, pairs, self_only)
 
@@ -191,6 +194,9 @@ def enclosing_sphere(spheres: Sequence[Sphere]) -> Sphere:
     if any(sphere.link_index != link for sphere in spheres):
         raise ValueError("enclosing sphere requires a single link")
 
+    # Start from the bound around the centroid, then try to beat it by growing a
+    # sphere from each member in turn; the smallest valid result wins. This is a
+    # heuristic, not an exact minimal enclosing sphere.
     count = len(spheres)
     coordinates = [
         math.fsum(sphere.position[axis] / count for sphere in spheres) for axis in range(3)
@@ -201,6 +207,7 @@ def enclosing_sphere(spheres: Sequence[Sphere]) -> Sphere:
     for initial in spheres:
         candidate = initial.position
         candidate_radius = initial.radius
+        # Farthest-first, so distant members enlarge the candidate before nearer ones.
         ordered = sorted(
             spheres,
             key=lambda sphere: math.dist(sphere.position, initial.position) + sphere.radius,
@@ -232,6 +239,7 @@ def enclosing_sphere(spheres: Sequence[Sphere]) -> Sphere:
             center = candidate
             radius = candidate_radius
 
+    # Round the radius up so rounding error cannot leave a member poking out.
     return Sphere(link, center, math.nextafter(radius, math.inf))
 
 
