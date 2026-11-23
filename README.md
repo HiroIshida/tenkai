@@ -4,6 +4,12 @@ tenkai (展開 in Japanese) generates robot-specific GPU kernels for forward
 kinematics, collision checking, and RRT-Connect motion planning from URDF models.
 Plan paths from Python on NVIDIA CUDA or AMD HIP GPUs.
 
+tenkai is heavily inspired by [VAMP](https://github.com/KavrakiLab/vamp)'s
+robot-specific code generation and vectorized collision checking, adapted here
+for GPUs. It also builds on my earlier projects,
+[_tenkai](https://github.com/HiroIshida/_tenkai) (expression compilation) and
+[plainmp](https://github.com/HiroIshida/plainmp) (SDFs and collision checking).
+
 ## Setup
 
 Use Python 3.12 and [uv](https://docs.astral.sh/uv/):
