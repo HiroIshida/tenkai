@@ -1,4 +1,4 @@
-# tenkai [![CI](https://github.com/HiroIshida/tenkai/actions/workflows/ci.yml/badge.svg)](https://github.com/HiroIshida/tenkai/actions/workflows/ci.yml)
+# tenkai [![CI](https://github.com/HiroIshida/tenkai/actions/workflows/ci.yml/badge.svg)](https://github.com/HiroIshida/tenkai/actions/workflows/ci.yml) **(very early alpha !)**
 
 tenkai (展開 in Japanese) is a GPU-accelerated batched motion planner (rrtc only for now).
 It generates robot-specific kernels from URDF models and plans paths from Python
@@ -14,7 +14,7 @@ See [PORTING.md](PORTING.md) for porting credits (whether ported manually or wit
 
 ## Setup
 
-Requires Python 3.12, [uv](https://docs.astral.sh/uv/), and a CUDA or HIP (wave32)
+Requires [uv](https://docs.astral.sh/uv/) and a CUDA or HIP (wave32)
 GPU with its toolkit.
 
 ```sh
