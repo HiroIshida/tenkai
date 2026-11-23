@@ -188,7 +188,7 @@ def test_compiler_failure_includes_log(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, backend: Backend
 ) -> None:
     urdf, spheres = robot_inputs(tmp_path)
-    monkeypatch.setattr("tenkai.rrt.compiler_command", lambda *_: ([sys.executable], "test"))
+    monkeypatch.setattr("tenkai.build.compiler_command", lambda *_: ([sys.executable], "test"))
     compiler_name = "hipcc" if backend == "hip" else "nvcc"
     with pytest.raises(RuntimeError, match=compiler_name + " failed; see") as failure:
         build_rrt(urdf, spheres, tmp_path / "build", backend=backend)

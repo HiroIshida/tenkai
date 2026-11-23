@@ -3,18 +3,18 @@
 import ctypes as ct
 import json
 import math
-import subprocess
 import time
 from collections.abc import Set
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from types import TracebackType
-from typing import Literal, NotRequired, Self, TypedDict
+from typing import Literal, Self, TypedDict
 
 import numpy as np
 import numpy.typing as npt
 
-from tenkai.build import Backend, compiler_command, target_arch
+from tenkai.build import Backend, CompileOptions, compile_library
+from tenkai.build import BuildInfo as BuildInfo
 from tenkai.compiler import ModelMetadata, generate
 from tenkai.cuda import Options
 from tenkai.sdf import Geometry, SceneData, SpecializationType, pack_geometry
@@ -54,14 +54,6 @@ class RRTResult(TypedDict):
     nodes: int
     rounds: int
     path_length: int
-
-
-class BuildInfo(TypedDict):
-    nvcc: NotRequired[str]
-    hipcc: NotRequired[str]
-    backend: NotRequired[Backend]
-    compile_command: list[str]
-    max_registers: int | None
 
 
 @dataclass
@@ -109,14 +101,7 @@ def build_rrt(
     options.ground fixes Ground presence for every environment at compile time.
     """
     begin = time.perf_counter()
-    arch = target_arch(backend, arch)
-    if max_registers is None:
-        max_registers = 0
-    check_count(max_registers, "max_registers", 0)
-    if max_registers != 0 and not 32 <= max_registers <= 255:
-        raise ValueError("max_registers must be 0 or between 32 and 255")
-    if backend == "hip" and max_registers:
-        raise ValueError("max_registers is only supported by the CUDA backend")
+    compile_options = CompileOptions(backend=backend, arch=arch, max_registers=max_registers)
 
     directory = Path(output).resolve()
     stages = generate(
@@ -126,46 +111,16 @@ def build_rrt(
     if not model["control_joints"]:
         raise ValueError("RRT requires at least one control_joint_names entry")
 
-    command, version = compiler_command(backend, arch)
-    compiler_name = "hipcc" if backend == "hip" else "nvcc"
-    source = directory / "rrt/bindings.cu"
-    library = directory / "librrt.so"
-    command.extend(["-O3", "-shared"])
-    if backend == "cuda":
-        command.append("-Xcompiler")
-    command.extend(
-        [
-            "-fPIC",
-            "-I",
-            str(directory),
-            str(source),
-            "-o",
-            str(library),
-        ]
+    compiled = compile_library(
+        directory, "rrt/bindings.cu", directory / "librrt.so", options=compile_options
     )
-    if max_registers:
-        command.append("--maxrregcount=" + str(max_registers))
-
-    log_path = directory / "compile.log"
-    with log_path.open("w") as log:
-        compile_begin = time.perf_counter()
-        result = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT)
-        compile_seconds = time.perf_counter() - compile_begin
-    if result.returncode:
-        raise RuntimeError(f"{compiler_name} failed; see {log_path}\n{log_path.read_text()}")
-
-    info = BuildInfo(backend=backend, compile_command=command, max_registers=max_registers or None)
-    if backend == "hip":
-        info["hipcc"] = version
-    else:
-        info["nvcc"] = version
 
     timings = {
         "codegen": stages["total"],
-        compiler_name: compile_seconds,
+        compiled.compiler_name: compiled.seconds,
         "total": time.perf_counter() - begin,
     }
-    return RRTBuild(library, model, info, timings)
+    return RRTBuild(compiled.library, model, compiled.toolchain, timings)
 
 
 class NativeConfig(ct.Structure):
