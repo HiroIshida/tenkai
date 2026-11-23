@@ -185,17 +185,41 @@ def sphere_batch_collision(
     return "".join(source)
 
 
-def collision_definition(
-    name: str, qualifier: str, body: str, *, warp_support: bool = False
-) -> str:
-    prefix = ""
-    if warp_support:
-        prefix = "template <bool Cooperative = false, unsigned Types = tenkai_f32::AllTypes>\n"
-    mask = ", unsigned mask = 0xffffffffu" if warp_support else ""
+@dataclass(frozen=True)
+class CollisionMode:
+    """Source text that differs between scalar and warp-cooperative collision functions."""
+
+    template_header: str
+    mask_parameter: str
+    lane_exit: str  # A lane returns as soon as it collides.
+    vote: str  # Warp-wide return; every lane of the mask must have rejoined first.
+    type_argument: str
+    typed_counts: bool
+
+
+SCALAR = CollisionMode(
+    template_header="",
+    mask_parameter="",
+    lane_exit="    if (collision) return true;\n",
+    vote="",
+    type_argument="",
+    typed_counts=False,
+)
+WARP = CollisionMode(
+    template_header="template <bool Cooperative = false, unsigned Types = tenkai_f32::AllTypes>\n",
+    mask_parameter=", unsigned mask = 0xffffffffu",
+    lane_exit="    if (!Cooperative && collision) return true;\n",
+    vote="    if (Cooperative && __any_sync(mask, collision)) return true;\n",
+    type_argument="<Types>",
+    typed_counts=True,
+)
+
+
+def collision_definition(name: str, qualifier: str, body: str, mode: CollisionMode) -> str:
     return (
-        f"\n{prefix}__device__ {qualifier} bool {name}(\n"
+        f"\n{mode.template_header}__device__ {qualifier} bool {name}(\n"
         "    const float* q, tenkai_f32::Scene scene, "
-        f"uint32_t environment_id{mask}) {{\n"
+        f"uint32_t environment_id{mode.mask_parameter}) {{\n"
         f"{body}}}\n"
     )
 
@@ -205,8 +229,7 @@ def collision_function(
     spheres: Sequence[Sphere],
     geometry: CollisionDag,
     qualifier: str,
-    *,
-    warp_support: bool = False,
+    mode: CollisionMode = SCALAR,
 ) -> str:
     if spheres or geometry.rules.self_pairs:
         body = (
@@ -215,20 +238,19 @@ def collision_function(
             "    bool collision = false;\n"
             "    tenkai_f32::Vec3 center;\n"
         )
-        body += link_collision_body(emitter, spheres, geometry, warp_support=warp_support)
+        body += link_collision_body(emitter, spheres, geometry, mode)
         body += "    return collision;\n"
     else:
         body = "    return false;\n"
 
-    return collision_definition(emitter.name, qualifier, body, warp_support=warp_support)
+    return collision_definition(emitter.name, qualifier, body, mode)
 
 
 def link_collision_body(
     emitter: DagEmitter,
     spheres: Sequence[Sphere],
     geometry: CollisionDag,
-    *,
-    warp_support: bool,
+    mode: CollisionMode,
 ) -> str:
     links: dict[int, list[int]] = {}
     for index, sphere in enumerate(spheres):
@@ -243,10 +265,6 @@ def link_collision_body(
     pose_emitter = DagEmitter("", emitter.dag, emitter.dof, pose_outputs, emitter.options)
     source = [pose_emitter.body("q", lambda _index, _node: "")]
     cached = {step.node for step in pose_emitter.schedule.steps if isinstance(step, Evaluate)}
-    scalar_exit = "    if (collision) return true;\n"
-    if warp_support:
-        scalar_exit = "    if (!Cooperative && collision) return true;\n"
-    warp_exit = "    if (Cooperative && __any_sync(mask, collision)) return true;\n"
 
     outputs = [step.node for step in emitter.schedule.steps if isinstance(step, Store)]
     for link, indices in links.items():
@@ -264,9 +282,8 @@ def link_collision_body(
                 step.node for step in bound_emitter.schedule.steps if isinstance(step, Evaluate)
             )
             source.append(link_bound_definition(geometry, link, "enclosing"))
-            type_argument = "<Types>" if warp_support else ""
             source.append(
-                f"    if (tenkai_f32::may_intersect{type_argument}"
+                f"    if (tenkai_f32::may_intersect{mode.type_argument}"
                 "(scene, environment_id, enclosing)) {\n"
             )
 
@@ -285,21 +302,20 @@ def link_collision_body(
                     members[start:end],
                     start,
                     ground=emitter.options.ground,
-                    specialize_types=warp_support,
+                    specialize_types=mode.typed_counts,
                 )
-                text += scalar_exit
-                if warp_support and bound is None:
-                    text += warp_exit
+                text += mode.lane_exit
+                if bound is None:
+                    text += mode.vote
             return text
 
         source.append(link_emitter.body("q", store, link_cached))
         if bound is not None:
             source.append("    }\n")
-            if warp_support:
-                # Skipped lanes must rejoin before a vote using the caller's mask.
-                source.append(warp_exit)
+            # Skipped lanes must rejoin before a vote using the caller's mask.
+            source.append(mode.vote)
         source.append("    }\n")
-    source.append(self_collision_body(emitter, geometry, cached, warp_support=warp_support))
+    source.append(self_collision_body(emitter, geometry, cached, mode))
     return "".join(source)
 
 
@@ -318,8 +334,7 @@ def self_collision_body(
     emitter: DagEmitter,
     geometry: CollisionDag,
     cached: set[NodeId],
-    *,
-    warp_support: bool,
+    mode: CollisionMode,
 ) -> str:
     pairs = geometry.rules.self_pairs
     if not pairs:
@@ -372,16 +387,12 @@ def self_collision_body(
                 source.append(
                     f"    collision |= tenkai_f32::intersects(self_sphere, {center}, {radius}f);\n"
                 )
-            if warp_support:
-                source.append("    if (!Cooperative && collision) return true;\n")
-            else:
-                source.append("    if (collision) return true;\n")
+            source.append(mode.lane_exit)
             source.append("    }\n")
         source.append("    }\n")
         source.append("    }\n")
-        if warp_support:
-            # All lanes rejoin after their broad-phase branch before voting.
-            source.append("    if (Cooperative && __any_sync(mask, collision)) return true;\n")
+        # All lanes rejoin after their broad-phase branch before voting.
+        source.append(mode.vote)
     return "".join(source)
 
 
@@ -478,7 +489,7 @@ def generate_rrt_sources(
         [spheres[i] for i in moving],
         geometry,
         "__forceinline__",
-        warp_support=True,
+        WARP,
     )
 
     replacements: list[tuple[str, str | int]] = [
