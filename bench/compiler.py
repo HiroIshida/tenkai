@@ -36,6 +36,7 @@ def main(
             output / "build",
             backend=backend,
             arch=arch,
+            cache=False,
         )
         samples.append(compiled.timings)
         print(f"Build {repetition + 1}: {compiled.timings}", flush=True)
@@ -53,6 +54,7 @@ def main(
         "timing": "Uncached build_rrt calls in one Python process; first sample retained. "
         "Includes source/file generation and GPU compilation; excludes Python imports and GPU driver JIT.",
     }
+    output.mkdir(parents=True, exist_ok=True)
     (output / "results.json").write_text(json.dumps(report, indent=2) + "\n")
     print(
         f"Median: codegen {medians['codegen']:.3f}s, "

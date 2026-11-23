@@ -1,28 +1,71 @@
 # Benchmarks
 
-Two independent scripts use the installed `tenkai` package. Neither imports
-another bench file or builds native code outside the library.
+Scripts in this directory use the installed `tenkai` package and do not build native
+code outside the library. `compiler.py` is standalone. The RRT-Connect comparison is split by
+role: `problems.py` (problem file format, registered sets, release download; no plainmp),
+`plainmp_baseline.py` (all plainmp code), `compare_rrtc.py` (CLI, tenkai GPU timing, report).
+
 
 ```sh
-uv run --extra bench python bench/compare_rrtc.py --batch 256 --repeats 7
+uv run --extra bench python bench/compare_rrtc.py --multiplier 1 --repeats 7
 uv run python bench/compiler.py --repeats 3
 ```
 
-`compare_rrtc.py` compares plainmp CPU and tenkai GPU RRT-Connect on one fixed
-Fetch problem. Both use VAMP's 111 collision spheres, the same box and ground plane,
-joint bounds, step size, and motion-check resolution (0.02). The YAML selects 97 spheres
+`compare_rrtc.py` compares plainmp CPU and tenkai GPU RRT-Connect on the 1,024
+different Fetch problems in `fetch_problems.yaml`, kept out of the repository
+(see [Problem set](#problem-set)).
+The start is shared; every problem has a different goal and environment. There are
+128 environments for each obstacle count from 1 to 8, mixing boxes, spheres, and
+cylinders with different sizes and poses, plus a ground plane in every environment.
+Both planners use the same geometry, VAMP's 111 collision spheres,
+joint bounds, step size, and motion-check resolution (0.02). The collision YAML selects 97 spheres
 for environment checks and 48 self collision link pairs (2,586 sphere pairs).
 The base spheres participate only in self collision because they overlap the floor.
-The scene is defined with `tenkai.sdf.Box` and `Ground`; both planners use
-these same dimensions and poses.
 tenkai uses one sample and one warp per problem. Failed solves stop the benchmark.
+
+The problem YAML contains `start`, `multiplier`, and a `problems` list; each entry
+contains `goal` and `obstacles`. Joint vectors follow `collision.yaml`'s
+`control_joint_names`. Obstacles use the `tenkai.sdf` class names and fields:
+`Box`, `Sphere`, `Cylinder`, and `Ground`. `--problems PATH` selects another set.
+Set `multiplier: 50` in the YAML or pass `--multiplier 50` to run 51,200 solves.
+Each copy reuses the environment and the verified per-problem seed (`42 + index`).
+`--batch-size` caps the number of problems per GPU call (default 8,192), so large
+multipliers run in chunks with reusable buffers. Reported batch time covers the
+entire multiplied set, including all chunks; `gpu_batches` records the call count.
+
+## Problem set
+
+Problem sets are release assets, not tracked files. Each is registered in `PROBLEM_SETS` in
+`problems.py` with its release tag, sha256, and robot files; select one with
+`--problem-set NAME` (default `fetch`). `fetch` is
+<https://github.com/HiroIshida/tenkai/releases/download/bench-fetch-data-v1/fetch_problems.yaml>
+
+`compare_rrtc.py` downloads the set to `artifacts/rrtc-problems/` on first use, with `gh`,
+and checks it against the pinned sha256. To fetch it manually:
+
+```sh
+mkdir -p artifacts/rrtc-problems
+curl -L -o artifacts/rrtc-problems/fetch_problems.yaml \
+  https://github.com/HiroIshida/tenkai/releases/download/bench-fetch-data-v1/fetch_problems.yaml
+sha256sum artifacts/rrtc-problems/fetch_problems.yaml
+```
+
+A regenerated or new set is published under a new tag (`bench-fetch-data-v2`, ...) and its
+`PROBLEM_SETS` entry is updated together; published tags are not overwritten.
+
+### Provenance
+
+The `fetch` set holds 1,024 problems (seed 42) kept only if both plainmp and tenkai solve
+them and both paths pass endpoint, joint-bound, self-collision, and environment-collision
+checks along every edge at 0.005 resolution. It was verified on HIP. Feasibility is
+established for the supplied Fetch model and collision settings.
 
 Times cover Python API calls for a batch after one warmup batch. plainmp solves
 sequentially and includes native planner creation and trajectory conversion;
 tenkai solves the batch in parallel, reuses GPU buffers, and assembles paths on
 the GPU. Its timing includes input/result-metadata transfers but not path
-retrieval to the CPU. Compilation and setup are excluded. CPU trials advance
-the random generator; GPU trials repeat fixed seeds. This measures the two Python
+retrieval to the CPU. Compilation and setup are excluded. Both planners replay
+fixed per-problem seeds for copies and timing repetitions. This measures the two Python
 interfaces, including their different overheads. A GPU for the selected backend is required.
 
 `compiler.py` reports code generation, nvcc/hipcc, and total `build_rrt()` wall time.
@@ -36,19 +79,18 @@ Both scripts use FP32 with SFU trigonometric intrinsics and accept
 
 ```sh
 uv run python bench/compiler.py --backend hip --repeats 1
-uv run --extra bench python bench/compare_rrtc.py --backend hip --batch 256
+uv run --extra bench python bench/compare_rrtc.py --backend hip --multiplier 50
 ```
 
 For larger batches, `--cpu-ms-per-problem MS` skips CPU solves and extrapolates
 linearly from a prior measured CPU median divided by its batch size. Use a
-baseline from the same machine, model, and planning settings. For example,
-`--batch 8192 --cpu-ms-per-problem 3.281841224609394` estimates CPU time from
-the 4096-problem median of 13442.422 ms while measuring the GPU normally.
-Historical measurements with self collision disabled or the previous plainmp
-sphere configuration are not comparable to the current default; obtain a new
-baseline with the same collision configuration.
+baseline from the same machine, problem set, model, and planning settings. For
+example, measure `--multiplier 1`, divide the CPU median by 1,024, and supply that
+value with `--multiplier 50 --cpu-ms-per-problem MS`.
+Historical single-problem timings are not comparable to this varied set.
 The report keeps `plainmp_ms` empty and stores the estimate separately as
 `plainmp_estimated_ms`, alongside the supplied `plainmp_ms_per_problem`.
+It also records the problem file's SHA-256, distinct problem count, and multiplier.
 
 `--urdf` and `--spheres` override the model file paths;
 the planning benchmark's start, goal, and scene are specific to Fetch.
