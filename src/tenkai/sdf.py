@@ -137,17 +137,20 @@ def geometry_from_json(source: str) -> list[CollisionObject]:
     return obstacles
 
 
+# Order shared by SceneData's arrays and ranges, the type mask, and the native Environment.
+PRIMITIVES = (Box, Sphere, Cylinder)
+
+
 def geometry_type_mask(types: Set[SpecializationType] | None) -> int:
-    """Encode the primitive order shared by SceneData and the native Environment."""
+    """Encode specialized primitives as one bit each, in PRIMITIVES order."""
     if types is None:
-        return 7
-    primitives = (Box, Sphere, Cylinder)
-    if not isinstance(types, Set) or any(kind not in primitives for kind in types):
+        return (1 << len(PRIMITIVES)) - 1
+    if not isinstance(types, Set) or any(kind not in PRIMITIVES for kind in types):
         raise ValueError(
             "specialize_types must be a set of sdf.Box, Sphere, or Cylinder; "
             "use Options(ground=True) for Ground"
         )
-    return sum(1 << index for index, kind in enumerate(primitives) if kind in types)
+    return sum(1 << index for index, kind in enumerate(PRIMITIVES) if kind in types)
 
 
 @dataclass
@@ -160,9 +163,7 @@ class SceneData:
 
 
 # Packed row layout consumed by templates/rrt/bindings.cu.
-_BOX_WIDTH = 15
-_SPHERE_WIDTH = 4
-_CYLINDER_WIDTH = 14
+_ROW_WIDTHS = (15, 4, 14)
 _CENTER_COLUMNS = slice(0, 3)
 _WORLD_TO_LOCAL_COLUMNS = slice(3, 12)
 _BOX_SIZE_COLUMNS = slice(12, 15)
@@ -179,13 +180,7 @@ def _is_environment(value: object) -> TypeGuard[Sequence[CollisionObject]]:
 
 
 def _primitive_index(obstacle: Box | Sphere | Cylinder) -> int:
-    match obstacle:
-        case Box():
-            return 0
-        case Sphere():
-            return 1
-        case Cylinder():
-            return 2
+    return PRIMITIVES.index(type(obstacle))
 
 
 def _pack_environments(
@@ -194,9 +189,9 @@ def _pack_environments(
     if not environments:
         raise ValueError("at least one environment is required")
 
-    ranges = np.zeros((len(environments), 3, 2), dtype=np.uint32)
+    ranges = np.zeros((len(environments), len(PRIMITIVES), 2), dtype=np.uint32)
     grounds = np.empty(len(environments) if ground else 0, dtype=np.float64)
-    totals = [0, 0, 0]
+    totals = [0] * len(PRIMITIVES)
     for i, obstacles in enumerate(environments):
         ranges[i, :, 0] = totals
         ground_count = 0
@@ -212,11 +207,10 @@ def _pack_environments(
         ranges[i, :, 1] = np.asarray(totals, dtype=np.uint32) - ranges[i, :, 0]
 
     # Allocate once instead of retaining a second Python object per packed primitive.
-    boxes = np.empty((totals[0], _BOX_WIDTH), dtype=np.float64)
-    spheres = np.empty((totals[1], _SPHERE_WIDTH), dtype=np.float64)
-    cylinders = np.empty((totals[2], _CYLINDER_WIDTH), dtype=np.float64)
-    arrays = (boxes, spheres, cylinders)
-    cursors = [0, 0, 0]
+    arrays = [
+        np.empty((total, width), dtype=np.float64) for total, width in zip(totals, _ROW_WIDTHS)
+    ]
+    cursors = [0] * len(PRIMITIVES)
     for obstacles in environments:
         for obstacle in obstacles:
             if isinstance(obstacle, Ground):
@@ -236,6 +230,7 @@ def _pack_environments(
                     row[_CYLINDER_SIZE_COLUMNS] = obstacle.radius, obstacle.height
             cursors[kind] += 1
 
+    boxes, spheres, cylinders = arrays
     return SceneData(ranges, boxes, spheres, cylinders, grounds)
 
 
