@@ -23,10 +23,14 @@ Treat questions about reasons (e.g., "Why did you do X?") as requests for explan
 
 - Use Python 3.12, the standard `src/tenkai` package layout, and uv with a committed lockfile.
 - Use absolute imports for package references (e.g. `from tenkai.dag import Dag`), including in `__init__.py`.
-- Prefer simple, explicit control flow. Give intermediate results meaningful names; avoid nested expressions and dense one-liners.
+- Prefer simple, explicit control flow. Name an intermediate result only when the name explains something the expression does not; do not name every step.
 - Use ordinary dataclasses for records and concrete types. Add abstractions only when they serve an existing need.
 - Annotate functions and data structures. Keep the compiler and its tooling passing strict mypy checks.
-- Validate external input at the boundary and raise useful exceptions. Do not hide errors with defaults or broad exception handling.
+- Give distinct kinds of integer IDs (node, link, joint, sphere) distinct types (`NewType`) instead of bare `int`.
+- Validate external input once, at the outermost boundary where it enters, and raise useful exceptions. Inner layers trust validated values; do not repeat the same check in each layer. Do not hide errors with defaults or broad exception handling.
+- Do not add a check for an input or state that cannot occur through the public API. Do not add a guard for a failure you have not reproduced; if one is needed, put the reproducer in a test and keep the comment to one line of why.
+- Return results as values. Do not write a file only for another part of the same process to read it back.
+- Keep timing and logging out of core logic; collect them in one place at the call boundary or drop them.
 - Preserve arithmetic order, precision, and deterministic generated output when refactoring the compiler.
 - Add dependencies only when they meaningfully simplify the solution; manage them through uv.
 - After relevant changes, run applicable pytest tests, Ruff formatting/lint checks, and mypy. Fix issues at their cause.
@@ -35,8 +39,14 @@ Treat questions about reasons (e.g., "Why did you do X?") as requests for explan
 # Structure and testing
 
 - Organize code around cohesive responsibilities. Make high-level control flow, data flow, and dependencies clear without requiring every implementation detail to be read.
-- Use blank lines to separate meaningful groups within functions, such as validation, preparation, computation, and result handling. Flag uninterrupted blocks that obscure these boundaries during review; keep closely related statements together rather than separating every statement.
+- Write for a reader who needs the main idea first. Put the core algorithm and public entry points at the top of a module, with edge-case handling and helpers below; keep the core dense and plain, and keep boilerplate short. Not every part deserves equal weight.
+- Use blank lines to separate meaningful groups within functions, not every statement.
 - Use modules, types, methods, and free functions where they naturally fit. Prefer clarity over brevity; avoid excessive fragmentation, indirection, and object-oriented abstractions without a concrete need.
-- As features evolve, proactively consolidate related functions, options, and duplicated logic instead of accumulating variants; do not wait for a separate refactoring request.
+- Deletion is part of every change. Before adding an argument, flag, option, or check, try to remove or merge an existing one. Do not thread a new `bool` through several functions; split the function or introduce a type for the variants.
+- When a feature adds a variant to an existing function, consolidate the variants in the same change rather than accumulating them.
+- Keep public APIs small. Export only what users need; internal and test-only helpers are not exported from `__init__.py`.
+- Keep code generation in one place. Do not split one generated artifact between string concatenation in Python and a template; prefer templates for fixed text and fill only the variable parts.
+- Comments describe the current design, not its history. Do not record past bugs, reviews, or fixes in comments; that belongs in commit messages and tests.
+- After a refactor, reread the changed modules from the top as a new reader and fix anything that needs an explanation to follow.
 - When refactoring, preserve behavior and public APIs unless a change is requested. Add concise comments for non-obvious design choices and invariants.
 - Cover each kernel and supported precision. Reuse test cases and execution harnesses instead of duplicating setup, compilation, and comparison logic; keep test intent separate from execution mechanics.
