@@ -49,5 +49,8 @@ With visualization:
 uv run --extra visualize python example/rrtc.py --visualize
 ```
 
-[Example](example/rrtc.py) · [Robot configuration](assets/fetch/collision.yaml) ·
+For more usage details, see the [example directory](example/).
+To add your own robot, use the [Fetch robot configuration](assets/fetch/collision.yaml)
+as a reference.
+
 [Benchmarks](bench/README.md)
