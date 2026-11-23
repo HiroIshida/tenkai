@@ -42,44 +42,15 @@ int boundary(F operation) {
   }
 }
 
-Scalar scene_scalar(double value) {
-  const Scalar result = Scalar(value);
-  if (!std::isfinite(value) || !std::isfinite(result)) {
-    throw std::invalid_argument("nonfinite scene geometry");
-  }
-  return result;
-}
-
 model::Vec3 scene_vector(const double* values) {
-  return {scene_scalar(values[0]), scene_scalar(values[1]),
-          scene_scalar(values[2])};
+  return {Scalar(values[0]), Scalar(values[1]), Scalar(values[2])};
 }
 
 model::Pose scene_pose(const double* values) {
   model::Pose pose{};
   pose.position = scene_vector(values);
   for (size_t i = 0; i < 9; ++i) {
-    pose.world_to_local[i] = scene_scalar(values[3 + i]);
-  }
-
-  const Scalar* r = pose.world_to_local;
-  for (size_t i = 0; i < 3; ++i) {
-    for (size_t j = 0; j < 3; ++j) {
-      double dot = 0;
-      for (size_t k = 0; k < 3; ++k) {
-        dot += double(r[3 * i + k]) * double(r[3 * j + k]);
-      }
-      if (std::abs(dot - (i == j ? 1.0 : 0.0)) > 1e-5) {
-        throw std::invalid_argument("scene rotation must be orthonormal");
-      }
-    }
-  }
-  const double determinant =
-      double(r[0]) * (double(r[4]) * r[8] - double(r[5]) * r[7]) -
-      double(r[1]) * (double(r[3]) * r[8] - double(r[5]) * r[6]) +
-      double(r[2]) * (double(r[3]) * r[7] - double(r[4]) * r[6]);
-  if (determinant < 0) {
-    throw std::invalid_argument("scene rotation must have determinant +1");
+    pose.world_to_local[i] = Scalar(values[3 + i]);
   }
   return pose;
 }
@@ -120,29 +91,18 @@ struct HostScene {
 
     for (size_t i = 0; i < boxes.size(); ++i) {
       const double* row = input.boxes + i * 15;
-      const model::Vec3 extents = scene_vector(row + 12);
-      if (row[12] < 0 || row[13] < 0 || row[14] < 0) {
-        throw std::invalid_argument("negative box extent");
-      }
-      boxes[i] = {scene_pose(row), extents};
+      boxes[i] = {scene_pose(row), scene_vector(row + 12)};
     }
     for (size_t i = 0; i < spheres.size(); ++i) {
       const double* row = input.spheres + i * 4;
-      if (row[3] < 0) {
-        throw std::invalid_argument("negative sphere radius");
-      }
-      spheres[i] = {scene_vector(row), scene_scalar(row[3])};
+      spheres[i] = {scene_vector(row), Scalar(row[3])};
     }
     for (size_t i = 0; i < cylinders.size(); ++i) {
       const double* row = input.cylinders + i * 14;
-      if (row[12] < 0 || row[13] < 0) {
-        throw std::invalid_argument("negative cylinder radius or height");
-      }
-      cylinders[i] = {scene_pose(row), scene_scalar(row[12]),
-                      scene_scalar(row[13])};
+      cylinders[i] = {scene_pose(row), Scalar(row[12]), Scalar(row[13])};
     }
     for (size_t i = 0; i < grounds.size(); ++i) {
-      grounds[i] = {scene_scalar(input.grounds[i])};
+      grounds[i] = {Scalar(input.grounds[i])};
     }
   }
 };

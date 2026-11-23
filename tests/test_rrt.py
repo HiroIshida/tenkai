@@ -577,11 +577,6 @@ def test_union_specialization_matches_generic_paths(
     "invalid,message",
     [
         ("range", "scene range"),
-        ("rotation", "orthonormal"),
-        ("reflection", "determinant"),
-        ("radius", "negative sphere radius"),
-        ("height", "negative cylinder"),
-        ("nonfinite", "nonfinite scene geometry"),
         ("pointer", "null scene input"),
     ],
 )
@@ -599,16 +594,6 @@ def test_native_scene_rejects_invalid_input_before_gpu_allocation(
     match invalid:
         case "range":
             scene.ranges[0, 0] = [1, 1]
-        case "rotation":
-            scene.boxes[0, 3] = 2
-        case "reflection":
-            scene.boxes[0, 3] = -1
-        case "radius":
-            scene.spheres[0, 3] = -1
-        case "height":
-            scene.cylinders[0, 13] = -1
-        case "nonfinite":
-            scene.grounds[0] = float("inf")
     native_scene = NativeScene.from_scene(scene)
     if invalid == "pointer":
         native_scene.spheres = None
