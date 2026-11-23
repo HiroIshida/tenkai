@@ -1,4 +1,4 @@
-# tenkai [![CI](https://github.com/HiroIshida/tenkai/actions/workflows/ci.yml/badge.svg)](https://github.com/HiroIshida/tenkai/actions/workflows/ci.yml) **(very early alpha !)**
+# tenkai [![CI](https://github.com/HiroIshida/tenkai/actions/workflows/ci.yml/badge.svg)](https://github.com/HiroIshida/tenkai/actions/workflows/ci.yml) [![PyPI](https://img.shields.io/pypi/v/tenkai.svg)](https://pypi.org/project/tenkai/) **(very early alpha !)**
 
 tenkai (展開 in Japanese) is a GPU-accelerated batched motion planner (rrtc only for now).
 It generates robot-specific kernels from URDF models and plans paths from Python
