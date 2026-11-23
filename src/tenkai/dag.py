@@ -9,6 +9,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Literal, assert_never
 
+from tenkai.ids import JointId, NodeId
+
 type Optimization = Literal["none", "basic", "algebraic"]
 type Fingerprint = tuple[int, int, int]
 
@@ -31,26 +33,26 @@ class Constant:
 
 @dataclass(frozen=True)
 class Input:
-    index: int
+    index: JointId
 
 
 @dataclass(frozen=True)
 class Binary:
     op: BinaryOp
-    a: int
-    b: int
+    a: NodeId
+    b: NodeId
 
 
 @dataclass(frozen=True)
 class Trig:
     op: TrigOp
-    angle: int
+    angle: NodeId
 
 
 type Node = Constant | Input | Binary | Trig
 
 
-def dependencies(node: Node) -> tuple[int, ...]:
+def dependencies(node: Node) -> tuple[NodeId, ...]:
     match node:
         case Constant() | Input():
             return ()
@@ -93,47 +95,47 @@ def arithmetic(op: BinaryOp, x: float, y: float) -> float:
 class Dag:
     nodes: list[Node] = field(default_factory=list)
 
-    def push(self, node: Node) -> int:
-        index = len(self.nodes)
+    def push(self, node: Node) -> NodeId:
+        index = NodeId(len(self.nodes))
         self.nodes.append(node)
         return index
 
-    def constant(self, value: float) -> int:
+    def constant(self, value: float) -> NodeId:
         return self.push(Constant(float(value)))
 
-    def input(self, index: int) -> int:
+    def input(self, index: JointId) -> NodeId:
         return self.push(Input(index))
 
-    def add(self, a: int, b: int) -> int:
+    def add(self, a: NodeId, b: NodeId) -> NodeId:
         return self.push(Binary(BinaryOp.ADD, a, b))
 
-    def sub(self, a: int, b: int) -> int:
+    def sub(self, a: NodeId, b: NodeId) -> NodeId:
         return self.push(Binary(BinaryOp.SUB, a, b))
 
-    def mul(self, a: int, b: int) -> int:
+    def mul(self, a: NodeId, b: NodeId) -> NodeId:
         return self.push(Binary(BinaryOp.MUL, a, b))
 
-    def sin(self, angle: int) -> int:
+    def sin(self, angle: NodeId) -> NodeId:
         return self.push(Trig(TrigOp.SIN, angle))
 
-    def cos(self, angle: int) -> int:
+    def cos(self, angle: NodeId) -> NodeId:
         return self.push(Trig(TrigOp.COS, angle))
 
-    def required_nodes(self, outputs: Sequence[int]) -> list[bool]:
+    def required_nodes(self, outputs: Sequence[NodeId]) -> list[bool]:
         needed = [False] * len(self.nodes)
         for index in outputs:
             if not 0 <= index < len(self.nodes):
                 raise ValueError("output node is outside the DAG")
             needed[index] = True
 
-        for index in range(len(self.nodes) - 1, -1, -1):
-            if needed[index]:
-                for dependency in dependencies(self.nodes[index]):
+        for position in range(len(self.nodes) - 1, -1, -1):
+            if needed[position]:
+                for dependency in dependencies(self.nodes[position]):
                     needed[dependency] = True
 
         return needed
 
-    def depends_on_inputs(self, inputs: Sequence[int]) -> list[bool]:
+    def depends_on_inputs(self, inputs: Sequence[JointId]) -> list[bool]:
         dependent: list[bool] = []
         for node in self.nodes:
             if isinstance(node, Input):
@@ -144,16 +146,17 @@ class Dag:
 
         return dependent
 
-    def optimize(self, outputs: Sequence[int], mode: Optimization) -> tuple["Dag", list[int]]:
+    def optimize(self, outputs: Sequence[NodeId], mode: Optimization) -> tuple["Dag", list[NodeId]]:
         if mode == "none":
             return Dag(self.nodes.copy()), list(outputs)
 
         optimizer = Optimizer(mode)
-        remapped_nodes: dict[int, int] = {}
-        for index, needed in enumerate(self.required_nodes(outputs)):
+        remapped_nodes: dict[NodeId, NodeId] = {}
+        for position, needed in enumerate(self.required_nodes(outputs)):
             if not needed:
                 continue
 
+            index = NodeId(position)
             node = self.nodes[index]
             match node:
                 case Binary(op, a, b):
@@ -183,23 +186,23 @@ def atom(kind: bytes, value: int) -> Fingerprint:
 class Optimizer:
     def __init__(self, mode: Optimization) -> None:
         self.dag = Dag()
-        self.structural: dict[Node | tuple[str, int], int] = {}
+        self.structural: dict[Node | tuple[str, int], NodeId] = {}
 
         self.algebraic = mode == "algebraic"
         self.fingerprints: list[Fingerprint] = []
-        self.canonical: dict[Fingerprint, int] = {}
+        self.canonical: dict[Fingerprint, NodeId] = {}
 
         if self.algebraic:
             self.intern(Constant(0.0))
             self.intern(Constant(1.0))
 
-    def constant(self, index: int) -> float | None:
+    def constant(self, index: NodeId) -> float | None:
         node = self.dag.nodes[index]
         if isinstance(node, Constant):
             return node.value
         return None
 
-    def insert(self, node: Node) -> int:
+    def insert(self, node: Node) -> NodeId:
         if isinstance(node, Constant):
             rounded = f32(node.value)
             if math.isfinite(rounded):
@@ -232,7 +235,7 @@ class Optimizer:
 
         return self.intern(node)
 
-    def intern(self, node: Node) -> int:
+    def intern(self, node: Node) -> NodeId:
         key: Node | tuple[str, int] = node
         if isinstance(node, Constant):
             # Float equality would merge signed zero before the selected CSE mode.

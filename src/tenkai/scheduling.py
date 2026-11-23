@@ -5,17 +5,18 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from tenkai.dag import Constant, Dag, dependencies
+from tenkai.ids import NodeId
 
 
 @dataclass(frozen=True)
 class Evaluate:
-    node: int
+    node: NodeId
 
 
 @dataclass(frozen=True)
 class Store:
     index: int
-    node: int
+    node: NodeId
 
 
 type Step = Evaluate | Store
@@ -29,17 +30,18 @@ class Schedule:
 
 
 class Scheduler:
-    def __init__(self, dag: Dag, outputs: Sequence[int]) -> None:
+    def __init__(self, dag: Dag, outputs: Sequence[NodeId]) -> None:
         self.dag = dag
         self.outputs = list(outputs)
 
         size = len(dag.nodes)
         needed = dag.required_nodes(outputs)
-        self.users: list[list[int]] = [[] for _ in range(size)]
+        self.users: list[list[NodeId]] = [[] for _ in range(size)]
         self.pending = [0] * size
         self.remaining = [0] * size
-        self.ready: list[int] = []
-        for index, node in enumerate(dag.nodes):
+        self.ready: list[NodeId] = []
+        for position, node in enumerate(dag.nodes):
+            index = NodeId(position)
             if not needed[index]:
                 continue
 
@@ -53,7 +55,8 @@ class Scheduler:
             self.remaining[output] += 1
 
         self.heights = [0] * size
-        for index in range(size - 1, -1, -1):
+        for position in range(size - 1, -1, -1):
+            index = NodeId(position)
             if needed[index]:
                 height = max((self.heights[i] for i in self.users[index]), default=0)
                 self.heights[index] = 1 + height
@@ -64,15 +67,15 @@ class Scheduler:
         self.peak_live_values = 0
         self.steps: list[Step] = []
 
-    def needs_storage(self, index: int) -> bool:
+    def needs_storage(self, index: NodeId) -> bool:
         return not isinstance(self.dag.nodes[index], Constant)
 
-    def consume(self, index: int) -> None:
+    def consume(self, index: NodeId) -> None:
         self.remaining[index] -= 1
         if self.remaining[index] == 0 and self.needs_storage(index):
             self.live -= 1
 
-    def evaluate(self, index: int) -> None:
+    def evaluate(self, index: NodeId) -> None:
         for dependency in dependencies(self.dag.nodes[index]):
             self.consume(dependency)
 
@@ -92,8 +95,8 @@ class Scheduler:
             self.steps.append(Store(self.next_output, value))
             self.next_output += 1
 
-    def next_output_dependencies(self) -> set[int]:
-        needed: set[int] = set()
+    def next_output_dependencies(self) -> set[NodeId]:
+        needed: set[NodeId] = set()
         stack = [self.outputs[self.next_output]]
         while stack:
             index = stack.pop()
@@ -103,7 +106,7 @@ class Scheduler:
 
         return needed
 
-    def score(self, index: int) -> tuple[int, int, int]:
+    def score(self, index: NodeId) -> tuple[int, int, int]:
         last_uses = 0
         for dependency in dependencies(self.dag.nodes[index]):
             if self.remaining[dependency] == 1 and self.needs_storage(dependency):
@@ -112,7 +115,7 @@ class Scheduler:
         return last_uses, self.heights[index], -index
 
     def select_ready(self, live_budget: int) -> int:
-        needed: set[int] | None = None
+        needed: set[NodeId] | None = None
         if self.live >= live_budget and self.next_output < len(self.outputs):
             needed = self.next_output_dependencies()
 
@@ -125,9 +128,9 @@ class Scheduler:
 
     def run(self, live_budget: int | None) -> Schedule:
         if live_budget is None:
-            for index in range(len(self.dag.nodes)):
-                if self.remaining[index] > 0:
-                    self.evaluate(index)
+            for position in range(len(self.dag.nodes)):
+                if self.remaining[position] > 0:
+                    self.evaluate(NodeId(position))
             self.store_ready_outputs(len(self.outputs))
         else:
             while self.ready:
@@ -152,9 +155,9 @@ class Scheduler:
 
 def schedule(
     dag: Dag,
-    outputs: Sequence[int],
+    outputs: Sequence[NodeId],
     live_budget: int | None = None,
-    groups: Sequence[Sequence[int]] | None = None,
+    groups: Sequence[Sequence[NodeId]] | None = None,
 ) -> Schedule:
     if live_budget is not None and live_budget < 0:
         raise ValueError("live budget must be nonnegative")

@@ -4,6 +4,7 @@ import json
 import math
 import time
 from collections.abc import Set
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, TypedDict
 
@@ -41,6 +42,12 @@ class ModelMetadata(TypedDict):
     external_sphere_count: int
 
 
+@dataclass
+class Generation:
+    model: ModelMetadata
+    timings: dict[str, float]
+
+
 def control_joints(kin: KinematicModel, names: list[str]) -> list[ControlJoint]:
     bounds: list[ControlJoint] = []
     joint_indices = {joint.name: index for index, joint in enumerate(kin.joints)}
@@ -70,7 +77,8 @@ def generate(
     all_kernels: bool = False,
     *,
     specialize_types: Set[SpecializationType] | None = None,
-) -> dict[str, float]:
+) -> Generation:
+    """Write generated sources and model.json to output."""
     geometry_type_mask(specialize_types)
     total = time.perf_counter()
     start = total
@@ -135,4 +143,4 @@ def generate(
 
     timings["write_outputs"] = time.perf_counter() - start
     timings["total"] = time.perf_counter() - total
-    return timings
+    return Generation(model, timings)

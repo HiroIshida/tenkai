@@ -49,8 +49,8 @@ def main(
     except ValueError as error:
         print(error, file=sys.stderr)
         raise SystemExit(2) from error
-    timings = generate(urdf, spheres, output, options, all_kernels)
-    print(json.dumps(timings))
+    generation = generate(urdf, spheres, output, options, all_kernels)
+    print(json.dumps(generation.timings))
 
 
 def cli(argv: Sequence[str] | None = None) -> None:

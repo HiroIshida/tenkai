@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import Literal, Self
 
 from tenkai.dag import Dag
+from tenkai.ids import JointId, NodeId
 from tenkai.modeling.transform import Pose, Vector3, quaternion_product
 
 type JointKind = Literal["revolute", "continuous", "prismatic"]
@@ -146,12 +147,12 @@ class KinematicModel:
         dag = Dag()
 
         joints: list[JointInfo] = []
-        inputs: list[int | None] = []
+        inputs: list[NodeId | None] = []
         for joint in robot.joints:
             if joint.kind == "fixed":
                 inputs.append(None)
             else:
-                inputs.append(dag.input(len(joints)))
+                inputs.append(dag.input(JointId(len(joints))))
                 joints.append(JointInfo(joint.name, joint.kind, joint.lower, joint.upper))
 
         pending = deque([(root, Pose.identity(dag))])
@@ -170,7 +171,7 @@ class KinematicModel:
         return cls(dag, joints, link_names, poses)
 
 
-def _joint_pose(dag: Dag, parent: Pose, joint: _Joint, input_id: int | None) -> Pose:
+def _joint_pose(dag: Dag, parent: Pose, joint: _Joint, input_id: NodeId | None) -> Pose:
     if not all(math.isfinite(value) for value in (*joint.xyz, *joint.rpy)):
         raise ValueError("joint origin must be finite: " + joint.name)
 

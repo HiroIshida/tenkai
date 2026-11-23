@@ -5,15 +5,16 @@ from dataclasses import dataclass
 from typing import Self
 
 from tenkai.dag import Dag
+from tenkai.ids import NodeId
 
 type Vector3 = tuple[float, float, float]
-type PointNodes = tuple[int, int, int]
-type QuaternionNodes = tuple[int, int, int, int]
+type PointNodes = tuple[NodeId, NodeId, NodeId]
+type QuaternionNodes = tuple[NodeId, NodeId, NodeId, NodeId]
 type MatrixNodes = tuple[PointNodes, PointNodes, PointNodes]
 
 
 def cross(dag: Dag, a: PointNodes, b: PointNodes) -> PointNodes:
-    values: list[int] = []
+    values: list[NodeId] = []
     for j, k in ((1, 2), (2, 0), (0, 1)):
         positive = dag.mul(a[j], b[k])
         negative = dag.mul(a[k], b[j])
@@ -24,7 +25,7 @@ def cross(dag: Dag, a: PointNodes, b: PointNodes) -> PointNodes:
 
 def quaternion_product(dag: Dag, a: QuaternionNodes, b: QuaternionNodes) -> QuaternionNodes:
     product = cross(dag, (a[0], a[1], a[2]), (b[0], b[1], b[2]))
-    xyz: list[int] = []
+    xyz: list[NodeId] = []
     for i in range(3):
         left = dag.mul(a[3], b[i])
         right = dag.mul(b[3], a[i])
@@ -83,7 +84,7 @@ class Pose:
         twice_cross = (x, y, z)
 
         correction = cross(dag, imaginary, twice_cross)
-        offset: list[int] = []
+        offset: list[NodeId] = []
         for i in range(3):
             scaled = dag.mul(self.rotation[3], twice_cross[i])
             total = dag.add(point[i], scaled)
@@ -97,13 +98,13 @@ class Pose:
         one = dag.constant(1)
         two = dag.constant(2)
 
-        products: list[int] = []
+        products: list[NodeId] = []
         for a, b in ((x, x), (y, y), (z, z), (x, y), (x, z), (y, z), (w, x), (w, y), (w, z)):
             product = dag.mul(a, b)
             products.append(dag.mul(two, product))
         xx, yy, zz, xy, xz, yz, wx, wy, wz = products
 
-        diagonal: list[int] = []
+        diagonal: list[NodeId] = []
         for a, b in ((yy, zz), (xx, zz), (xx, yy)):
             total = dag.add(a, b)
             diagonal.append(dag.sub(one, total))
@@ -117,7 +118,7 @@ class Pose:
     def transform_point_by_matrix(
         self, dag: Dag, point: PointNodes, rotation: MatrixNodes
     ) -> PointNodes:
-        result: list[int] = []
+        result: list[NodeId] = []
         for i in range(3):
             x, y, z = [dag.mul(rotation[i][j], point[j]) for j in range(3)]
             xy = dag.add(x, y)

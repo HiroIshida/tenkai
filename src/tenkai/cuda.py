@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import assert_never
 
 from tenkai.dag import Binary, BinaryOp, Constant, Dag, Input, Optimization, Trig
+from tenkai.ids import JointId, NodeId
 from tenkai.modeling import (
     CollisionDag,
     KinematicModel,
@@ -66,9 +67,9 @@ class DagEmitter:
         name: str,
         dag: Dag,
         dof: int,
-        outputs: Sequence[int],
+        outputs: Sequence[NodeId],
         options: Options,
-        groups: Sequence[Sequence[int]] | None = None,
+        groups: Sequence[Sequence[NodeId]] | None = None,
     ) -> None:
         self.name = name
         self.dag = dag
@@ -79,7 +80,7 @@ class DagEmitter:
     def source(self) -> str:
         count = self.schedule.output_count
 
-        def store(index: int, value: int) -> str:
+        def store(index: int, value: NodeId) -> str:
             return f"    output[batch * {count} + {index}] = v{value};\n"
 
         body = self.body(f"(configurations + batch * {self.dof})", store)
@@ -88,13 +89,13 @@ class DagEmitter:
             (("NAME", self.name), ("BODY", body)),
         )
 
-    def expression(self, index: int, input_name: str) -> str:
+    def expression(self, index: NodeId, input_name: str) -> str:
         node = self.dag.nodes[index]
         match node:
             case Constant(value):
                 return number(value) + "f"
-            case Input(index):
-                return f"{input_name}[{index}]"
+            case Input(joint):
+                return f"{input_name}[{joint}]"
             case Trig(op, angle):
                 return f"__{op.value}f(v{angle})"
             case Binary(op, a, b):
@@ -105,8 +106,8 @@ class DagEmitter:
     def body(
         self,
         input_name: str,
-        store: Callable[[int, int], str],
-        cached: set[int] | None = None,
+        store: Callable[[int, NodeId], str],
+        cached: set[NodeId] | None = None,
     ) -> str:
         source: list[str] = []
 
@@ -235,7 +236,7 @@ def link_collision_body(
             continue
         links.setdefault(sphere.link_index, []).append(index)
 
-    pose_outputs: list[int] = []
+    pose_outputs: list[NodeId] = []
     for link in links:
         pose = geometry.poses[link]
         pose_outputs.extend((*pose.translation, *pose.rotation))
@@ -269,7 +270,7 @@ def link_collision_body(
                 "(scene, environment_id, enclosing)) {\n"
             )
 
-        def store(index: int, value: int) -> str:
+        def store(index: int, value: NodeId) -> str:
             axis = "xyz"[index % 3]
             text = f"    center.{axis} = v{value};\n"
             if index % 3 != 2:
@@ -302,7 +303,7 @@ def link_collision_body(
     return "".join(source)
 
 
-def point_expression(nodes: Sequence[int]) -> str:
+def point_expression(nodes: Sequence[NodeId]) -> str:
     return "{" + ", ".join(f"v{node}" for node in nodes) + "}"
 
 
@@ -316,7 +317,7 @@ def link_bound_definition(geometry: CollisionDag, link: int, name: str) -> str:
 def self_collision_body(
     emitter: DagEmitter,
     geometry: CollisionDag,
-    cached: set[int],
+    cached: set[NodeId],
     *,
     warp_support: bool,
 ) -> str:
@@ -330,7 +331,7 @@ def self_collision_body(
         for link in links
     }
     source: list[str] = []
-    shared_outputs: list[int] = []
+    shared_outputs: list[NodeId] = []
     for link in links:
         pose = geometry.poses[link]
         shared_outputs.extend((*pose.translation, *pose.rotation))
@@ -459,7 +460,7 @@ def generate_rrt_sources(
 
     emitter, geometry = prepare_collision(kin, spheres, options, rules)
     groups = geometry.centers
-    dependent = emitter.dag.depends_on_inputs(controls)
+    dependent = emitter.dag.depends_on_inputs([JointId(index) for index in controls])
     moving = [index for index, group in enumerate(groups) if any(dependent[node] for node in group)]
     functions = collision_function(emitter, spheres, geometry, "__noinline__")
     moving_groups = [groups[i] for i in moving]

@@ -1,7 +1,6 @@
 """Build and run robot-specific single-candidate GPU RRT-Connect planners."""
 
 import ctypes as ct
-import json
 import math
 import time
 from collections.abc import Set
@@ -112,10 +111,10 @@ def build_rrt(
     directory = Path(output).resolve()
     with TemporaryDirectory(prefix="tenkai-sources-") as temporary:
         generated = Path(temporary)
-        stages = generate(
+        generation = generate(
             Path(urdf), Path(spheres), generated, options, specialize_types=specialize_types
         )
-        model: ModelMetadata = json.loads((generated / "model.json").read_text())
+        model = generation.model
         if not model["control_joints"]:
             raise ValueError("RRT requires at least one control_joint_names entry")
 
@@ -128,7 +127,7 @@ def build_rrt(
         )
 
     timings = {
-        "codegen": stages["total"],
+        "codegen": generation.timings["total"],
         compiled.compiler_name: compiled.seconds,
         "total": time.perf_counter() - begin,
     }

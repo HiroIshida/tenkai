@@ -9,6 +9,7 @@ import yaml
 from yaml.nodes import MappingNode, Node, ScalarNode, SequenceNode
 
 from tenkai.dag import Dag, Optimization
+from tenkai.ids import NodeId
 from tenkai.modeling.model import KinematicModel
 from tenkai.modeling.transform import MatrixNodes, PointNodes, Pose, Vector3
 
@@ -245,18 +246,18 @@ def enclosing_sphere(spheres: Sequence[Sphere]) -> Sphere:
 
 def center_expressions(
     kin: KinematicModel, spheres: Sequence[Sphere], optimization: Optimization
-) -> tuple[Dag, list[int]]:
+) -> tuple[Dag, list[NodeId]]:
     dag, outputs = center_dag(kin, spheres, optimization)
     return dag.optimize(outputs, optimization)
 
 
 def center_dag(
     kin: KinematicModel, spheres: Sequence[Sphere], optimization: Optimization
-) -> tuple[Dag, list[int]]:
+) -> tuple[Dag, list[NodeId]]:
     counts = Counter(sphere.link_index for sphere in spheres)
     dag = Dag(kin.dag.nodes.copy())
     rotations: dict[int, MatrixNodes] = {}
-    outputs: list[int] = []
+    outputs: list[NodeId] = []
     share_rotations = optimization == "algebraic"
 
     for sphere in spheres:
@@ -283,7 +284,7 @@ class LinkBound:
 @dataclass
 class CollisionDag:
     dag: Dag
-    centers: list[list[int]]
+    centers: list[list[NodeId]]
     poses: dict[int, Pose]
     bounds: dict[int, LinkBound]
     spheres: list[Sphere]
