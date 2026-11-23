@@ -1,5 +1,4 @@
 # Copyright (C) 2026 Hirokazu Ishida. SPDX-License-Identifier: MPL-2.0
-# Adapted from tenkai2; see licenses/tenkai2-MPL-2.0.txt.
 """Topologically ordered scalar expressions and deterministic CSE."""
 
 import hashlib
