@@ -14,18 +14,7 @@
 namespace model = tenkai_f32;
 using Scalar = model::Scalar;
 
-// nvcc propagates hidden visibility from anonymous namespace parameter types
-// to the C entry point, preventing ctypes from finding it.
-struct SceneInput {
-  const uint32_t* ranges;
-  const double* boxes;
-  const double* spheres;
-  const double* cylinders;
-  const double* grounds;
-  uint32_t box_count;
-  uint32_t sphere_count;
-  uint32_t cylinder_count;
-};
+/* TPL_LAYOUT_ASSERTS */
 
 namespace {
 thread_local std::string last_error;
@@ -42,69 +31,10 @@ int boundary(F operation) {
   }
 }
 
-model::Vec3 scene_vector(const double* values) {
-  return {Scalar(values[0]), Scalar(values[1]), Scalar(values[2])};
-}
-
-model::Pose scene_pose(const double* values) {
-  model::Pose pose{};
-  pose.position = scene_vector(values);
-  for (size_t i = 0; i < 9; ++i) {
-    pose.world_to_local[i] = Scalar(values[3 + i]);
-  }
-  return pose;
-}
-
-struct HostScene {
-  std::vector<model::Environment> environments;
-  std::vector<model::Box> boxes;
-  std::vector<model::Sphere> spheres;
-  std::vector<model::Cylinder> cylinders;
-  std::vector<model::Ground> grounds;
-
-  HostScene(size_t count, const SceneInput& input)
-      : environments(count),
-        boxes(input.box_count),
-        spheres(input.sphere_count),
-        cylinders(input.cylinder_count),
-        grounds(model::has_ground ? count : 0) {
-    if (!input.ranges || (input.box_count && !input.boxes) ||
-        (input.sphere_count && !input.spheres) ||
-        (input.cylinder_count && !input.cylinders) ||
-        (model::has_ground && !input.grounds)) {
-      throw std::invalid_argument("null scene input");
-    }
-
-    const size_t totals[] = {boxes.size(), spheres.size(), cylinders.size()};
-    for (size_t i = 0; i < count; ++i) {
-      model::Range ranges[3];
-      for (size_t kind = 0; kind < 3; ++kind) {
-        const size_t offset = input.ranges[i * 6 + kind * 2];
-        const size_t size = input.ranges[i * 6 + kind * 2 + 1];
-        if (offset > totals[kind] || size > totals[kind] - offset) {
-          throw std::invalid_argument("scene range exceeds primitive array");
-        }
-        ranges[kind] = {offset, size};
-      }
-      environments[i] = {ranges[0], ranges[1], ranges[2]};
-    }
-
-    for (size_t i = 0; i < boxes.size(); ++i) {
-      const double* row = input.boxes + i * 15;
-      boxes[i] = {scene_pose(row), scene_vector(row + 12)};
-    }
-    for (size_t i = 0; i < spheres.size(); ++i) {
-      const double* row = input.spheres + i * 4;
-      spheres[i] = {scene_vector(row), Scalar(row[3])};
-    }
-    for (size_t i = 0; i < cylinders.size(); ++i) {
-      const double* row = input.cylinders + i * 14;
-      cylinders[i] = {scene_pose(row), Scalar(row[12]), Scalar(row[13])};
-    }
-    for (size_t i = 0; i < grounds.size(); ++i) {
-      grounds[i] = {Scalar(input.grounds[i])};
-    }
-  }
+template <typename T>
+struct HostArray {
+  const T* data;
+  size_t count;
 };
 
 struct Context {
@@ -120,27 +50,31 @@ struct Context {
 
   Context(const tenkai::RrtConfig& config,
           size_t problems,
-          const HostScene& host,
+          HostArray<model::Environment> host_environments,
+          HostArray<model::Box> host_boxes,
+          HostArray<model::Sphere> host_spheres,
+          HostArray<model::Cylinder> host_cylinders,
+          HostArray<model::Ground> host_grounds,
           const double* lower,
           const double* upper,
           const double* resolution)
       : problem_count(problems),
-        environments(host.environments.size()),
-        boxes(host.boxes.size()),
-        spheres(host.spheres.size()),
-        cylinders(host.cylinders.size()),
-        grounds(host.grounds.size()) {
+        environments(host_environments.count),
+        boxes(host_boxes.count),
+        spheres(host_spheres.count),
+        cylinders(host_cylinders.count),
+        grounds(host_grounds.count) {
     model::RrtSpace space{};
     for (uint32_t d = 0; d < model::rrt_dimension; ++d) {
       space.lower[d] = Scalar(lower[d]);
       space.upper[d] = Scalar(upper[d]);
       space.resolution[d] = Scalar(resolution[d]);
     }
-    environments.upload(host.environments.data(), host.environments.size());
-    boxes.upload(host.boxes.data(), host.boxes.size());
-    spheres.upload(host.spheres.data(), host.spheres.size());
-    cylinders.upload(host.cylinders.data(), host.cylinders.size());
-    grounds.upload(host.grounds.data(), host.grounds.size());
+    environments.upload(host_environments.data, host_environments.count);
+    boxes.upload(host_boxes.data, host_boxes.count);
+    spheres.upload(host_spheres.data, host_spheres.count);
+    cylinders.upload(host_cylinders.data, host_cylinders.count);
+    grounds.upload(host_grounds.data, host_grounds.count);
 
     scene.environments = environments.data();
     scene.boxes = boxes.data();
@@ -148,8 +82,8 @@ struct Context {
     scene.cylinders = cylinders.data();
     scene.grounds = grounds.data();
     planner.reset(new model::RrtPlanner(config, space, scene,
-                                        host.environments.size(), problems,
-                                        host.environments.data()));
+                                        host_environments.count, problems,
+                                        host_environments.data));
   }
 };
 
@@ -169,8 +103,15 @@ extern "C" const char* rrt_error() {
 
 extern "C" int rrtc_create_scene(const tenkai::RrtConfig* config,
                                  uint32_t problems,
-                                 uint32_t environments,
-                                 const SceneInput* input,
+                                 uint32_t environment_count,
+                                 const model::Environment* environments,
+                                 const model::Box* boxes,
+                                 uint32_t box_count,
+                                 const model::Sphere* spheres,
+                                 uint32_t sphere_count,
+                                 const model::Cylinder* cylinders,
+                                 uint32_t cylinder_count,
+                                 const model::Ground* grounds,
                                  const double* lower,
                                  const double* upper,
                                  const double* resolution,
@@ -181,13 +122,16 @@ extern "C" int rrtc_create_scene(const tenkai::RrtConfig* config,
     }
     *output = nullptr;
 
-    if (!config || !problems || !environments || !input || !lower || !upper ||
+    if (!config || !problems || !environment_count || !lower || !upper ||
         !resolution) {
       throw std::invalid_argument("invalid RRT creation arguments");
     }
 
-    const HostScene host(environments, *input);
-    *output = new Context(*config, problems, host, lower, upper, resolution);
+    const size_t ground_count = model::has_ground ? environment_count : 0;
+    *output = new Context(*config, problems, {environments, environment_count},
+                          {boxes, box_count}, {spheres, sphere_count},
+                          {cylinders, cylinder_count}, {grounds, ground_count},
+                          lower, upper, resolution);
   });
 }
 

@@ -1,10 +1,12 @@
 """Random arc-length shortcuts for collision-free paths on CUDA and HIP."""
 
-import ctypes as ct
 import math
 from dataclasses import dataclass
-from typing import Self
 
+import numpy as np
+import numpy.typing as npt
+
+from tenkai.layout import SHORTCUT_CONFIG, pack_struct
 from tenkai.validation import check_count
 
 
@@ -30,19 +32,11 @@ class ShortcutConfig:
             raise ValueError("snap_to_vertex must be finite and in [0, 1]")
 
 
-class NativeShortcutConfig(ct.Structure):
-    _fields_ = [
-        ("max_steps", ct.c_uint32),
-        ("max_empty_steps", ct.c_uint32),
-        ("range_ratio", ct.c_double),
-        ("snap_to_vertex", ct.c_double),
-    ]
-
-    @classmethod
-    def from_config(cls, config: ShortcutConfig) -> Self:
-        return cls(
-            2**32 - 1 if config.max_steps is None else config.max_steps,
-            2**32 - 1 if config.max_empty_steps is None else config.max_empty_steps,
-            config.range_ratio,
-            config.snap_to_vertex,
-        )
+def native_shortcut(config: ShortcutConfig) -> npt.NDArray[np.void]:
+    return pack_struct(
+        SHORTCUT_CONFIG,
+        max_steps=2**32 - 1 if config.max_steps is None else config.max_steps,
+        max_empty_steps=2**32 - 1 if config.max_empty_steps is None else config.max_empty_steps,
+        range_ratio=config.range_ratio,
+        snap_to_vertex=config.snap_to_vertex,
+    )

@@ -8,6 +8,8 @@ from typing import TypeGuard
 import numpy as np
 import numpy.typing as npt
 
+from tenkai.layout import BOX, CYLINDER, ENVIRONMENT, GROUND, SPHERE
+
 type Vector3 = tuple[float, float, float]
 type Rotation = tuple[Vector3, Vector3, Vector3]
 
@@ -139,6 +141,8 @@ def geometry_from_json(source: str) -> list[CollisionObject]:
 
 # Order shared by SceneData's arrays and ranges, the type mask, and the native Environment.
 PRIMITIVES = (Box, Sphere, Cylinder)
+_DTYPES = (BOX, SPHERE, CYLINDER)
+_RANGE_FIELDS = ("boxes", "spheres", "cylinders")
 
 
 def geometry_type_mask(types: Set[SpecializationType] | None) -> int:
@@ -155,20 +159,13 @@ def geometry_type_mask(types: Set[SpecializationType] | None) -> int:
 
 @dataclass
 class SceneData:
-    ranges: npt.NDArray[np.uint32]
-    boxes: npt.NDArray[np.float64]
-    spheres: npt.NDArray[np.float64]
-    cylinders: npt.NDArray[np.float64]
-    grounds: npt.NDArray[np.float64]
+    """Structured arrays in the native layout of the tenkai.layout scene dtypes."""
 
-
-# Packed row layout consumed by templates/rrt/bindings.cu.
-_ROW_WIDTHS = (15, 4, 14)
-_CENTER_COLUMNS = slice(0, 3)
-_WORLD_TO_LOCAL_COLUMNS = slice(3, 12)
-_BOX_SIZE_COLUMNS = slice(12, 15)
-_SPHERE_RADIUS_COLUMN = 3
-_CYLINDER_SIZE_COLUMNS = slice(12, 14)
+    environments: npt.NDArray[np.void]
+    boxes: npt.NDArray[np.void]
+    spheres: npt.NDArray[np.void]
+    cylinders: npt.NDArray[np.void]
+    grounds: npt.NDArray[np.void]
 
 
 def _is_environment(value: object) -> TypeGuard[Sequence[CollisionObject]]:
@@ -189,49 +186,57 @@ def _pack_environments(
     if not environments:
         raise ValueError("at least one environment is required")
 
-    ranges = np.zeros((len(environments), len(PRIMITIVES), 2), dtype=np.uint32)
-    grounds = np.empty(len(environments) if ground else 0, dtype=np.float64)
+    ranges = np.zeros(len(environments), dtype=ENVIRONMENT)
+    grounds = np.zeros(len(environments) if ground else 0, dtype=GROUND)
     totals = [0] * len(PRIMITIVES)
     for i, obstacles in enumerate(environments):
-        ranges[i, :, 0] = totals
         ground_count = 0
+        counts = [0] * len(PRIMITIVES)
         for obstacle in obstacles:
             if isinstance(obstacle, Ground):
                 ground_count += 1
                 if ground:
                     grounds[i] = -obstacle.z
             else:
-                totals[_primitive_index(obstacle)] += 1
+                counts[_primitive_index(obstacle)] += 1
         if ground_count != int(ground):
             raise ValueError(f"environment {i} must contain exactly {int(ground)} Ground")
-        ranges[i, :, 1] = np.asarray(totals, dtype=np.uint32) - ranges[i, :, 0]
+        for kind, name in enumerate(_RANGE_FIELDS):
+            ranges[i][name] = totals[kind], counts[kind]
+            totals[kind] += counts[kind]
 
     # Allocate once instead of retaining a second Python object per packed primitive.
-    arrays = [
-        np.empty((total, width), dtype=np.float64) for total, width in zip(totals, _ROW_WIDTHS)
-    ]
+    arrays = [np.zeros(total, dtype=kind) for total, kind in zip(totals, _DTYPES)]
     cursors = [0] * len(PRIMITIVES)
     for obstacles in environments:
         for obstacle in obstacles:
             if isinstance(obstacle, Ground):
                 continue
             kind = _primitive_index(obstacle)
-            row = arrays[kind][cursors[kind]]
-            row[_CENTER_COLUMNS] = obstacle.center
-            if isinstance(obstacle, (Box, Cylinder)):
-                # Native poses need the row-major inverse of the local-to-world rotation.
-                row[_WORLD_TO_LOCAL_COLUMNS] = np.asarray(obstacle.rotation).T.reshape(9)
-            match obstacle:
-                case Box():
-                    row[_BOX_SIZE_COLUMNS] = obstacle.size
-                case Sphere():
-                    row[_SPHERE_RADIUS_COLUMN] = obstacle.radius
-                case Cylinder():
-                    row[_CYLINDER_SIZE_COLUMNS] = obstacle.radius, obstacle.height
+            arrays[kind][cursors[kind]] = _native_obstacle(obstacle)
             cursors[kind] += 1
 
     boxes, spheres, cylinders = arrays
     return SceneData(ranges, boxes, spheres, cylinders, grounds)
+
+
+def _native_obstacle(obstacle: Box | Sphere | Cylinder) -> tuple[object, ...]:
+    match obstacle:
+        case Box():
+            return _native_pose(obstacle.center, obstacle.rotation), obstacle.size
+        case Sphere():
+            return obstacle.center, obstacle.radius
+        case Cylinder():
+            return (
+                _native_pose(obstacle.center, obstacle.rotation),
+                obstacle.radius,
+                obstacle.height,
+            )
+
+
+def _native_pose(center: Vector3, rotation: Rotation) -> tuple[Vector3, npt.NDArray[np.float64]]:
+    # Native poses need the row-major inverse of the local-to-world rotation.
+    return center, np.asarray(rotation).T.reshape(9)
 
 
 def pack_geometry(geometry: Geometry, *, ground: bool = True) -> SceneData:

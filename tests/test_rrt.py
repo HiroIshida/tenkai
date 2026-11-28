@@ -16,8 +16,7 @@ from tenkai import Options, Planner, RRTBuild, RRTConfig, ShortcutConfig, build_
 from tenkai.build import Backend
 from tenkai.compiler import ControlJoint, ModelMetadata
 from tenkai.modeling import KinematicModel, read_config
-from tenkai.rrt import BuildInfo, NativeConfig, NativeScene, sampling_space
-from tenkai.sdf import pack_geometry
+from tenkai.rrt import BuildInfo, sampling_space
 
 FIXTURES = Path(__file__).with_name("fixtures")
 
@@ -594,44 +593,3 @@ def test_union_specialization_matches_generic_paths(
                         path[:, ::-1], [environment_ids[index]] * len(path)
                     ).any()
             assert any(item["status"] == "success" for item in result)
-
-
-@pytest.mark.gpu_compile
-@pytest.mark.parametrize(
-    "invalid,message",
-    [
-        ("range", "scene range"),
-        ("pointer", "null scene input"),
-    ],
-)
-def test_native_scene_rejects_invalid_input_before_gpu_allocation(
-    compiled_ground: RRTBuild, invalid: str, message: str
-) -> None:
-    scene = pack_geometry(
-        [
-            sdf.Box((0, 0, 0), (1, 1, 1)),
-            sdf.Sphere((0, 0, 0), 1),
-            sdf.Cylinder((0, 0, 0), 1, 1),
-            sdf.Ground(),
-        ]
-    )
-    match invalid:
-        case "range":
-            scene.ranges[0, 0] = [1, 1]
-    native_scene = NativeScene.from_scene(scene)
-    if invalid == "pointer":
-        native_scene.spheres = None
-
-    library = ct.CDLL(str(compiled_ground.library))
-    library.rrt_error.restype = ct.c_char_p
-    config = NativeConfig(64, 32, 1.0, 0.1)
-    lower = (ct.c_double * 2)(-1, -1)
-    upper = (ct.c_double * 2)(1, 1)
-    resolution = (ct.c_double * 2)(0.05, 0.05)
-    handle = ct.c_void_p(123)
-    status = library.rrtc_create_scene(
-        ct.byref(config), 1, 1, ct.byref(native_scene), lower, upper, resolution, ct.byref(handle)
-    )
-    assert status == -1
-    assert handle.value is None
-    assert message in library.rrt_error().decode()

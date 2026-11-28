@@ -13,7 +13,8 @@ from test_rrt import binding as binding
 from test_rrt import compiled as compiled
 
 from tenkai import Planner, RRTBuild, RRTConfig, ShortcutConfig, sdf
-from tenkai.shortcut import NativeShortcutConfig
+from tenkai.layout import SHORTCUT_CONFIG
+from tenkai.shortcut import native_shortcut
 
 
 @pytest.fixture(scope="module")
@@ -49,11 +50,10 @@ def run_shortcut(
         packed[int(offset) : int(offset) + len(array)] = array
     ids = np.asarray(environment_ids, dtype=np.uint32)
     seed = np.asarray(seeds, dtype=np.uint64)
-    native_config = NativeShortcutConfig.from_config(config)
     operation = planner.library.test_shortcut
     operation.argtypes = [
         ct.c_void_p,
-        ct.POINTER(NativeShortcutConfig),
+        np.ctypeslib.ndpointer(dtype=SHORTCUT_CONFIG, flags="C_CONTIGUOUS"),
         ct.c_uint32,
         np.ctypeslib.ndpointer(dtype=np.uint64, flags="C_CONTIGUOUS"),
         np.ctypeslib.ndpointer(dtype=np.float32, flags="C_CONTIGUOUS"),
@@ -66,7 +66,7 @@ def run_shortcut(
     planner.check(
         operation(
             planner.handle,
-            ct.byref(native_config),
+            native_shortcut(config),
             len(paths),
             offsets,
             packed,

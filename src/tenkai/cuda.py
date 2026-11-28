@@ -7,6 +7,7 @@ from typing import assert_never
 
 from tenkai.dag import Binary, BinaryOp, Constant, Dag, Input, Optimization, Trig
 from tenkai.ids import JointId, NodeId
+from tenkai.layout import cpp_layout_asserts
 from tenkai.modeling import (
     CollisionDag,
     KinematicModel,
@@ -494,6 +495,7 @@ def generate_rrt_sources(
 
     replacements: list[tuple[str, str | int]] = [
         ("HAS_GROUND", str(options.ground).lower()),
+        ("LAYOUT_ASSERTS", cpp_layout_asserts()),
         ("RRT_TYPES", geometry_type_mask(specialize_types)),
         ("DIMENSION", len(controls)),
         ("FK_DOF", len(kin.joints)),

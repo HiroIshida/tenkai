@@ -8,7 +8,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import TracebackType
-from typing import Literal, Self, TypedDict
+from typing import Any, Literal, Self, TypedDict
 
 import numpy as np
 import numpy.typing as npt
@@ -17,8 +17,18 @@ from tenkai.build import Backend, CompileOptions, compile_library
 from tenkai.build import BuildInfo as BuildInfo
 from tenkai.compiler import ControlJoint, ModelMetadata, generate
 from tenkai.cuda import Options
-from tenkai.sdf import Geometry, SceneData, SpecializationType, pack_geometry
-from tenkai.shortcut import NativeShortcutConfig, ShortcutConfig
+from tenkai.layout import (
+    BOX,
+    CYLINDER,
+    ENVIRONMENT,
+    GROUND,
+    RRT_CONFIG,
+    RRT_RESULT,
+    SPHERE,
+    pack_struct,
+)
+from tenkai.sdf import Geometry, SpecializationType, pack_geometry
+from tenkai.shortcut import ShortcutConfig, native_shortcut
 from tenkai.validation import check_count
 
 type Status = Literal["success", "round_limit", "node_limit", "invalid_start", "invalid_goal"]
@@ -136,50 +146,6 @@ def build_rrt(
     )
 
 
-class NativeConfig(ct.Structure):
-    _fields_ = [
-        ("max_nodes", ct.c_uint32),
-        ("max_rounds", ct.c_uint32),
-        ("step_size", ct.c_double),
-        ("goal_bias", ct.c_double),
-    ]
-
-
-class NativeResult(ct.Structure):
-    _fields_ = [
-        ("status", ct.c_uint32),
-        ("node_count", ct.c_uint32),
-        ("rounds", ct.c_uint32),
-        ("path_length", ct.c_uint32),
-    ]
-
-
-class NativeScene(ct.Structure):
-    _fields_ = [
-        ("ranges", ct.POINTER(ct.c_uint32)),
-        ("boxes", ct.POINTER(ct.c_double)),
-        ("spheres", ct.POINTER(ct.c_double)),
-        ("cylinders", ct.POINTER(ct.c_double)),
-        ("grounds", ct.POINTER(ct.c_double)),
-        ("box_count", ct.c_uint32),
-        ("sphere_count", ct.c_uint32),
-        ("cylinder_count", ct.c_uint32),
-    ]
-
-    @classmethod
-    def from_scene(cls, scene: SceneData) -> Self:
-        return cls(
-            scene.ranges.ctypes.data_as(ct.POINTER(ct.c_uint32)),
-            scene.boxes.ctypes.data_as(ct.POINTER(ct.c_double)),
-            scene.spheres.ctypes.data_as(ct.POINTER(ct.c_double)),
-            scene.cylinders.ctypes.data_as(ct.POINTER(ct.c_double)),
-            scene.grounds.ctypes.data_as(ct.POINTER(ct.c_double)) if scene.grounds.size else None,
-            len(scene.boxes),
-            len(scene.spheres),
-            len(scene.cylinders),
-        )
-
-
 def _integers(values: npt.ArrayLike, name: str) -> npt.NDArray[np.generic]:
     array = np.asarray(values)
     if array.dtype.kind in ("i", "u") or not array.size:
@@ -234,22 +200,31 @@ def sampling_space(
 
 
 def _configure_library(library: ct.CDLL) -> None:
-    float_array = np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS")
-    id_array = np.ctypeslib.ndpointer(dtype=np.uint32, flags="C_CONTIGUOUS")
-    seed_array = np.ctypeslib.ndpointer(dtype=np.uint64, flags="C_CONTIGUOUS")
-    flag_array = np.ctypeslib.ndpointer(dtype=np.uint8, flags="C_CONTIGUOUS")
+    def pointer_to(dtype: npt.DTypeLike) -> type[Any]:
+        return np.ctypeslib.ndpointer(dtype=dtype, flags="C_CONTIGUOUS")
+
+    floats, ids, seeds, flags = (
+        pointer_to(t) for t in (np.float64, np.uint32, np.uint64, np.uint8)
+    )
 
     library.rrt_error.argtypes = []
     library.rrt_error.restype = ct.c_char_p
 
     library.rrtc_create_scene.argtypes = [
-        ct.POINTER(NativeConfig),
+        pointer_to(RRT_CONFIG),
         ct.c_uint32,
         ct.c_uint32,
-        ct.POINTER(NativeScene),
-        float_array,
-        float_array,
-        float_array,
+        pointer_to(ENVIRONMENT),
+        pointer_to(BOX),
+        ct.c_uint32,
+        pointer_to(SPHERE),
+        ct.c_uint32,
+        pointer_to(CYLINDER),
+        ct.c_uint32,
+        pointer_to(GROUND),
+        floats,
+        floats,
+        floats,
         ct.POINTER(ct.c_void_p),
     ]
     library.rrtc_create_scene.restype = ct.c_int
@@ -257,36 +232,31 @@ def _configure_library(library: ct.CDLL) -> None:
     library.rrt_destroy.argtypes = [ct.c_void_p]
     library.rrt_destroy.restype = None
 
+    # The optional shortcut config is passed by address or as NULL.
     library.rrt_solve.argtypes = [
         ct.c_void_p,
-        float_array,
-        float_array,
-        id_array,
-        seed_array,
-        ct.POINTER(NativeResult),
-        ct.POINTER(NativeShortcutConfig),
+        floats,
+        floats,
+        ids,
+        seeds,
+        pointer_to(RRT_RESULT),
+        ct.c_void_p,
     ]
     library.rrt_solve.restype = ct.c_int
 
     library.rrt_path.argtypes = [
         ct.c_void_p,
         ct.c_uint32,
-        float_array,
+        floats,
         ct.c_uint32,
         ct.POINTER(ct.c_uint32),
     ]
     library.rrt_path.restype = ct.c_int
 
-    library.rrt_paths.argtypes = [ct.c_void_p, float_array, ct.c_uint64]
+    library.rrt_paths.argtypes = [ct.c_void_p, floats, ct.c_uint64]
     library.rrt_paths.restype = ct.c_int
 
-    library.rrt_check.argtypes = [
-        ct.c_void_p,
-        float_array,
-        id_array,
-        ct.c_uint32,
-        flag_array,
-    ]
+    library.rrt_check.argtypes = [ct.c_void_p, floats, ids, ct.c_uint32, flags]
     library.rrt_check.restype = ct.c_int
 
 
@@ -311,7 +281,7 @@ class Planner:
         scene = pack_geometry(geometry, ground=model["ground"])
 
         self.problem_count = problem_count
-        self.environment_count = len(scene.ranges)
+        self.environment_count = len(scene.environments)
         self.dimension = len(model["control_joints"])
         self.fk_dof = len(model["input_joint_names"])
         if not 0 < self.dimension <= self.fk_dof:
@@ -325,13 +295,18 @@ class Planner:
         self.library = ct.CDLL(str(Path(library).resolve()))
         _configure_library(self.library)
 
-        native_config = NativeConfig(**asdict(config))
-        native_scene = NativeScene.from_scene(scene)
         status = self.library.rrtc_create_scene(
-            ct.byref(native_config),
+            pack_struct(RRT_CONFIG, **asdict(config)),
             problem_count,
             self.environment_count,
-            ct.byref(native_scene),
+            scene.environments,
+            scene.boxes,
+            len(scene.boxes),
+            scene.spheres,
+            len(scene.spheres),
+            scene.cylinders,
+            len(scene.cylinders),
+            scene.grounds,
             lower,
             upper,
             resolutions,
@@ -391,8 +366,8 @@ class Planner:
         if (ids >= self.environment_count).any():
             raise ValueError("environment ID out of range")
 
-        native_shortcut = None if shortcut is None else NativeShortcutConfig.from_config(shortcut)
-        results = (NativeResult * self.problem_count)()
+        shortcut_struct = None if shortcut is None else native_shortcut(shortcut)
+        results = np.zeros(self.problem_count, dtype=RRT_RESULT)
         self._path_lengths = None
         status = self.library.rrt_solve(
             self.handle,
@@ -401,19 +376,19 @@ class Planner:
             ids,
             seed,
             results,
-            None if native_shortcut is None else ct.byref(native_shortcut),
+            None if shortcut_struct is None else shortcut_struct.ctypes.data,
         )
         self.check(status)
-        self._path_lengths = [result.path_length for result in results]
+        self._path_lengths = results["path_length"].tolist()
 
         return [
             RRTResult(
-                status=STATUSES[result.status],
-                nodes=result.node_count,
-                rounds=result.rounds,
-                path_length=result.path_length,
+                status=STATUSES[code],
+                nodes=nodes,
+                rounds=rounds,
+                path_length=length,
             )
-            for result in results
+            for code, nodes, rounds, length in results.tolist()
         ]
 
     def path(self, problem_id: int) -> npt.NDArray[np.float64]:

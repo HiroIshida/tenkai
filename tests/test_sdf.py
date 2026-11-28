@@ -4,6 +4,7 @@ from collections.abc import Callable
 
 import numpy as np
 import pytest
+from numpy.lib.recfunctions import structured_to_unstructured
 
 from tenkai import sdf
 from tenkai.sdf import pack_geometry
@@ -52,24 +53,32 @@ def test_scene_packing_preserves_objects_rotations_and_environment_ids() -> None
             [box, sdf.Ground(z=-3)],
         ]
     )
+    ranges = structured_to_unstructured(scene.environments).reshape(-1, 3, 2)
+    np.testing.assert_array_equal(ranges[:, :, 1], [[1, 2, 0], [0, 0, 0], [0, 0, 1], [1, 0, 0]])
+    np.testing.assert_array_equal(ranges[3, :, 0], [1, 2, 1])
+    boxes = structured_to_unstructured(scene.boxes)
+    np.testing.assert_array_equal(boxes[:, :3], [[1, 2, 3], [1, 2, 3]])
     np.testing.assert_array_equal(
-        scene.ranges[:, :, 1], [[1, 2, 0], [0, 0, 0], [0, 0, 1], [1, 0, 0]]
+        boxes[0, 3:12].reshape(3, 3), np.array(rotation, dtype=np.float32).T
     )
-    np.testing.assert_array_equal(scene.ranges[3, :, 0], [1, 2, 1])
-    np.testing.assert_array_equal(scene.boxes[:, :3], [[1, 2, 3], [1, 2, 3]])
-    np.testing.assert_array_equal(scene.boxes[0, 3:12].reshape(3, 3), np.array(rotation).T)
-    np.testing.assert_array_equal(scene.boxes[:, 12:], [[4, 5, 6], [4, 5, 6]])
-    np.testing.assert_array_equal(scene.spheres, [[1, 0, 0, 0.1], [2, 0, 0, 0.2]])
-    np.testing.assert_array_equal(scene.cylinders[0, :3], [7, 8, 9])
-    np.testing.assert_array_equal(scene.cylinders[0, 3:12].reshape(3, 3), np.array(rotation).T)
-    np.testing.assert_array_equal(scene.cylinders[0, 12:], [0.25, 2])
-    np.testing.assert_array_equal(scene.grounds, [0, 1, -2, 3])
+    np.testing.assert_array_equal(boxes[:, 12:], [[4, 5, 6], [4, 5, 6]])
+    np.testing.assert_array_equal(
+        structured_to_unstructured(scene.spheres),
+        np.array([[1, 0, 0, 0.1], [2, 0, 0, 0.2]], dtype=np.float32),
+    )
+    cylinders = structured_to_unstructured(scene.cylinders)
+    np.testing.assert_array_equal(cylinders[0, :3], [7, 8, 9])
+    np.testing.assert_array_equal(
+        cylinders[0, 3:12].reshape(3, 3), np.array(rotation, dtype=np.float32).T
+    )
+    np.testing.assert_array_equal(cylinders[0, 12:], [0.25, 2])
+    np.testing.assert_array_equal(scene.grounds["height"], [0, 1, -2, 3])
 
 
 @pytest.mark.parametrize("geometry", [[], [[]], [[], []]])
 def test_empty_scenes_have_no_implicit_obstacles(geometry: sdf.Geometry) -> None:
     scene = pack_geometry(geometry, ground=False)
-    assert not scene.ranges.any()
+    assert not structured_to_unstructured(scene.environments).any()
     assert len(scene.boxes) == len(scene.spheres) == len(scene.cylinders) == len(scene.grounds) == 0
 
 
